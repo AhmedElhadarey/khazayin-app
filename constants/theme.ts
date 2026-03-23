@@ -1,38 +1,61 @@
 export const Colors = {
   light: {
-    primary: '#184B75',        // Deep navy blue (Figma)
+    primary: '#184B75',        // Deep navy blue
     primaryLight: '#2A5080',
-    secondary: '#A88051',      // Gold/brown accent (Figma)
-    secondaryLight: '#C1A584', // Gold bar accent (Figma)
-    background: '#F8F2ED',     // Warm cream (Figma)
-    surface: '#FDF9F2',        // Light cream card surfaces (Figma)
-    surfaceAlt: '#EDE0D1',     // Warm beige for cards (Figma)
+    primaryDark: '#0E3A5C',
+    secondary: '#A88051',      // Gold/brown accent
+    secondaryLight: '#C1A584', // Gold bar accent
+    secondaryDark: '#8B6A42',
+    background: '#F5EDE4',     // Warm beige background (from design)
+    backgroundGradientStart: '#D4C4B0', // Splash gradient start
+    backgroundGradientEnd: '#F5EDE4',   // Splash gradient end
+    surface: '#FFFFFF',        // White card surfaces
+    surfaceAlt: '#F5EEE6',     // Light beige for cards
+    surfaceElevated: '#FFFFFF',
     text: '#1C1C1E',
-    textSecondary: '#5F482D',  // Brown text (Figma)
-    textMuted: '#999999',
+    textSecondary: '#5F482D',  // Brown text
+    textMuted: '#8E8E93',
     textOnPrimary: '#FFFFFF',
-    textOnPrimaryFaint: '#FDF9F2', // Cream text on navy (Figma)
-    border: '#E0D8C8',
-    borderLight: '#EDE0D1',
-    tabBar: '#184B75',
-    tabBarActive: '#FFFFFF',
-    tabBarInactive: '#8BA4C0',
+    textOnPrimaryFaint: '#E8F0F7',
+    border: '#E5DDD3',
+    borderLight: '#EDE5DB',
+    tabBar: '#FFFFFF',         // White tab bar (from design)
+    tabBarActive: '#184B75',   // Navy active
+    tabBarInactive: '#8E8E93', // Gray inactive
+    tabBarBorder: '#E5DDD3',
     error: '#D94040',
     success: '#4CAF50',
-    cardPattern: 'rgba(195, 175, 140, 0.15)',
-    goldBar: '#C1A584',        // Section header accent bar (Figma)
-    blueBar: '#184B75',        // Card accent bar (Figma)
-    queenBg: '#F3E8DC',        // أنتِ ملكة section background
-    bookCardBg: '#EDE0D1',     // Book cards beige background (Figma)
+    warning: '#F5A623',
+    cardPattern: 'rgba(195, 175, 140, 0.12)',
+    goldBar: '#C1A584',        // Section header accent bar
+    blueBar: '#184B75',        // Card accent bar
+    queenBg: '#F5EEE6',        // أنتِ ملكة section background
+    bookCardBg: '#EDE5DB',     // Book cards beige background
+    bannerBlue: '#184B75',     // Blue banner background
+    bannerBlueLight: '#2A5F8F',
+    bannerBeige: '#F5EEE6',    // Beige banner background
+    inputBg: '#FFFFFF',        // Search input background
+    iconBg: '#F5EEE6',         // Icon background circles
+    chipBg: '#F5EEE6',         // Chip/tag background
+    chipBgActive: '#184B75',   // Active chip background
+    progressBg: '#E5DDD3',     // Progress bar background
+    progressFill: '#184B75',   // Progress bar fill
+    switchTrack: '#E5DDD3',
+    switchTrackActive: '#184B75',
   },
   dark: {
-    primary: '#2A5080',
-    primaryLight: '#3A6899',
+    primary: '#3A6899',
+    primaryLight: '#4A78A9',
+    primaryDark: '#2A5080',
     secondary: '#C1A584',
     secondaryLight: '#D4B572',
+    secondaryDark: '#A88051',
     background: '#121212',
+    backgroundGradientStart: '#1A1A1A',
+    backgroundGradientEnd: '#121212',
     surface: '#1E1E1E',
-    surfaceAlt: '#2A2A2A',
+    surfaceAlt: '#252525',
+    surfaceElevated: '#2A2A2A',
     text: '#F2F2F7',
     textSecondary: '#AEAEB2',
     textMuted: '#636366',
@@ -40,16 +63,29 @@ export const Colors = {
     textOnPrimaryFaint: '#E0E0E0',
     border: '#38383A',
     borderLight: '#2C2C2E',
-    tabBar: '#1A1A2E',
+    tabBar: '#1E1E1E',
     tabBarActive: '#D4B572',
     tabBarInactive: '#636366',
+    tabBarBorder: '#38383A',
     error: '#FF453A',
     success: '#32D74B',
+    warning: '#FFD60A',
     cardPattern: 'rgba(212, 181, 114, 0.08)',
     goldBar: '#C1A584',
-    blueBar: '#2A5080',
+    blueBar: '#3A6899',
     queenBg: '#2A2420',
-    bookCardBg: '#2A2A2A',
+    bookCardBg: '#252525',
+    bannerBlue: '#2A5080',
+    bannerBlueLight: '#3A6899',
+    bannerBeige: '#252525',
+    inputBg: '#2A2A2A',
+    iconBg: '#2A2A2A',
+    chipBg: '#2A2A2A',
+    chipBgActive: '#3A6899',
+    progressBg: '#38383A',
+    progressFill: '#3A6899',
+    switchTrack: '#38383A',
+    switchTrackActive: '#3A6899',
   },
 };
 

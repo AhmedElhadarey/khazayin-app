@@ -8,53 +8,135 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Colors, Spacing, Border } from '@/constants/theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Colors, Spacing } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
-import { Ionicons } from '@expo/vector-icons';
+import Svg, { Path, G, Defs, ClipPath, Rect } from 'react-native-svg';
 
 const { width, height } = Dimensions.get('window');
+
+// Islamic geometric pattern SVG component
+function IslamicPattern({ opacity = 0.15 }: { opacity?: number }) {
+  const patternSize = 120;
+  const cols = Math.ceil(width / patternSize) + 1;
+  const rows = Math.ceil(height / patternSize) + 1;
+
+  return (
+    <Svg
+      width={width}
+      height={height}
+      style={StyleSheet.absoluteFillObject}
+    >
+      <Defs>
+        <ClipPath id="clip">
+          <Rect x="0" y="0" width={width} height={height} />
+        </ClipPath>
+      </Defs>
+      <G clipPath="url(#clip)" opacity={opacity}>
+        {Array.from({ length: rows }).map((_, row) =>
+          Array.from({ length: cols }).map((_, col) => {
+            const x = col * patternSize - patternSize / 2;
+            const y = row * patternSize - patternSize / 2;
+            const offset = row % 2 === 0 ? 0 : patternSize / 2;
+            return (
+              <G key={`${row}-${col}`} transform={`translate(${x + offset}, ${y})`}>
+                {/* 8-pointed star pattern */}
+                <Path
+                  d={`
+                    M 60 20 L 70 40 L 90 40 L 75 55 L 80 75 L 60 65 L 40 75 L 45 55 L 30 40 L 50 40 Z
+                  `}
+                  fill="none"
+                  stroke="#A88051"
+                  strokeWidth={1}
+                />
+                {/* Inner cross pattern */}
+                <Path
+                  d={`
+                    M 60 35 L 60 55
+                    M 50 45 L 70 45
+                  `}
+                  fill="none"
+                  stroke="#A88051"
+                  strokeWidth={0.5}
+                />
+                {/* Connecting lines */}
+                <Path
+                  d={`
+                    M 30 40 L 20 60
+                    M 90 40 L 100 60
+                    M 40 75 L 30 95
+                    M 80 75 L 90 95
+                  `}
+                  fill="none"
+                  stroke="#A88051"
+                  strokeWidth={0.5}
+                />
+              </G>
+            );
+          })
+        )}
+      </G>
+    </Svg>
+  );
+}
+
+// Arabic calligraphy logo component
+function ArabicLogo() {
+  return (
+    <View style={styles.logoContainer}>
+      <Text
+        style={styles.logoText}
+        variant="display"
+        weight="bold"
+        color="#5F482D"
+      >
+        {'مؤسسة خزائن الرحمن العلمية'}
+      </Text>
+    </View>
+  );
+}
 
 export default function OnboardingScreen() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const textFadeAnim = useRef(new Animated.Value(0)).current;
-  const buttonFadeAnim = useRef(new Animated.Value(0)).current;
-  const lineWidthAnim = useRef(new Animated.Value(0)).current;
+  const logoFadeAnim = useRef(new Animated.Value(0)).current;
+  const logoSlideAnim = useRef(new Animated.Value(30)).current;
+  const patternFadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    // Animate in sequence: background -> pattern -> logo
     Animated.sequence([
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 800,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          tension: 50,
-          friction: 7,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.timing(textFadeAnim, {
+      Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 600,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(patternFadeAnim, {
+        toValue: 1,
+        duration: 800,
         useNativeDriver: true,
       }),
       Animated.parallel([
-        Animated.timing(buttonFadeAnim, {
-          toValue: 1,
-          duration: 400,
-          useNativeDriver: true,
-        }),
-        Animated.timing(lineWidthAnim, {
+        Animated.timing(logoFadeAnim, {
           toValue: 1,
           duration: 600,
           useNativeDriver: true,
         }),
+        Animated.spring(logoSlideAnim, {
+          toValue: 0,
+          tension: 50,
+          friction: 8,
+          useNativeDriver: true,
+        }),
       ]),
     ]).start();
+
+    // Auto-navigate after splash animation
+    const timer = setTimeout(() => {
+      finishOnboarding();
+    }, 3500);
+
+    return () => clearTimeout(timer);
   }, []);
 
   const finishOnboarding = async () => {
@@ -63,267 +145,74 @@ export default function OnboardingScreen() {
   };
 
   return (
-    <View style={styles.container}>
-      {/* Warm background */}
-      <View style={styles.bgFill} />
+    <TouchableOpacity
+      style={styles.container}
+      activeOpacity={1}
+      onPress={finishOnboarding}
+      accessibilityRole="button"
+      accessibilityLabel="اضغط للمتابعة"
+    >
+      {/* Gradient background */}
+      <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: fadeAnim }]}>
+        <LinearGradient
+          colors={['#D4C4B0', '#E8DDD0', '#F5EDE4']}
+          locations={[0, 0.4, 1]}
+          style={StyleSheet.absoluteFillObject}
+        />
+      </Animated.View>
 
-      {/* Top decorative line */}
-      <View style={[styles.decorativeLine, { top: height * 0.12 }]}>
-        <View style={styles.decoLineInner} />
-      </View>
+      {/* Islamic geometric pattern overlay */}
+      <Animated.View style={[StyleSheet.absoluteFillObject, { opacity: patternFadeAnim }]}>
+        <IslamicPattern opacity={0.12} />
+      </Animated.View>
 
-      {/* Bottom decorative line */}
-      <View style={[styles.decorativeLine, { top: height * 0.88 }]}>
-        <View style={styles.decoLineInner} />
-      </View>
+      {/* Subtle vignette effect */}
+      <View style={styles.vignette} />
 
-      {/* Main content */}
+      {/* Logo at bottom */}
       <View style={styles.content}>
-        {/* Logo badge */}
         <Animated.View
           style={[
-            styles.logoBadge,
+            styles.logoWrapper,
             {
-              opacity: fadeAnim,
-              transform: [{ scale: scaleAnim }],
+              opacity: logoFadeAnim,
+              transform: [{ translateY: logoSlideAnim }],
             },
           ]}
         >
-          <View style={styles.badgeOuter}>
-            {/* Gold border frame */}
-            <View style={styles.badgeInner}>
-              <Ionicons name="book" size={44} color="#FFFFFF" />
-            </View>
-          </View>
-        </Animated.View>
-
-        {/* Decorative separator under logo */}
-        <Animated.View style={[styles.logoSeparator, { opacity: fadeAnim }]}>
-          <View style={styles.sepLineLeft} />
-          <View style={styles.sepDiamond} />
-          <View style={styles.sepLineRight} />
-        </Animated.View>
-
-        {/* Text content */}
-        <Animated.View style={[styles.textContainer, { opacity: textFadeAnim }]}>
-          <Text
-            variant="display"
-            weight="bold"
-            align="center"
-            color={Colors.light.primary}
-          >
-            {'\u062E\u0632\u0627\u0626\u0646 \u0627\u0644\u0631\u062D\u0645\u0646'}
-          </Text>
-          <Text
-            variant="lg"
-            weight="semiBold"
-            color={Colors.light.secondary}
-            align="center"
-            style={styles.tagline}
-          >
-            {'\u062A\u0623\u062E\u0630 \u0628\u064A\u062F\u0643 \u0625\u0644\u0649 \u0627\u0644\u062C\u0646\u0629'}
-          </Text>
-
-          {/* Another subtle separator */}
-          <View style={styles.textSeparator}>
-            <View style={styles.textSepLine} />
-          </View>
-
-          <Text
-            variant="md"
-            color={Colors.light.textSecondary}
-            align="center"
-            style={styles.description}
-          >
-            {'\u0645\u0643\u062A\u0628\u0629 \u0631\u0642\u0645\u064A\u0629 \u0625\u0633\u0644\u0627\u0645\u064A\u0629 \u0634\u0627\u0645\u0644\u0629'}{'\n'}
-            {'\u0644\u0644\u0643\u062A\u0628 \u0648\u0627\u0644\u0645\u062D\u0627\u0636\u0631\u0627\u062A \u0648\u0627\u0644\u0645\u0648\u0627\u0631\u062F \u0627\u0644\u0646\u0627\u0641\u0639\u0629'}
-          </Text>
+          <ArabicLogo />
         </Animated.View>
       </View>
-
-      {/* Bottom CTA */}
-      <Animated.View style={[styles.footer, { opacity: buttonFadeAnim }]}>
-        <TouchableOpacity
-          style={styles.ctaButton}
-          onPress={finishOnboarding}
-          activeOpacity={0.85}
-          accessibilityRole="button"
-          accessibilityLabel={'\u0627\u0628\u062F\u0623 \u0627\u0644\u062A\u0635\u0641\u062D'}
-        >
-          <Text variant="lg" weight="bold" color={Colors.light.textOnPrimary}>
-            {'\u0627\u0628\u062F\u0623 \u0627\u0644\u062A\u0635\u0641\u062D'}
-          </Text>
-          <View style={styles.ctaArrow}>
-            <Ionicons name="arrow-back" size={18} color={Colors.light.primary} />
-          </View>
-        </TouchableOpacity>
-
-        {/* Bottom decorative element */}
-        <View style={styles.bottomDeco}>
-          <View style={styles.bottomDecoLine} />
-          <View style={styles.bottomDecoDot} />
-          <View style={styles.bottomDecoLine} />
-        </View>
-      </Animated.View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5EDD8',
   },
-  bgFill: {
+  vignette: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#F5EDD8',
+    backgroundColor: 'transparent',
   },
-
-  // Decorative lines
-  decorativeLine: {
-    position: 'absolute',
-    left: width * 0.1,
-    right: width * 0.1,
-    alignItems: 'center',
-  },
-  decoLineInner: {
-    width: '100%',
-    height: 1,
-    backgroundColor: 'rgba(199, 162, 84, 0.3)',
-  },
-
-  // Content
   content: {
     flex: 1,
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
     alignItems: 'center',
-    paddingHorizontal: Spacing.xxl,
+    paddingBottom: height * 0.12,
   },
-
-  // Logo badge
-  logoBadge: {
-    marginBottom: Spacing.xl,
-  },
-  badgeOuter: {
-    width: 120,
-    height: 140,
-    backgroundColor: Colors.light.primary,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#1B3A5C',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 10,
-  },
-  badgeInner: {
-    width: 100,
-    height: 120,
-    borderRadius: 12,
-    borderWidth: 2,
-    borderColor: 'rgba(199, 162, 84, 0.6)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Logo separator
-  logoSeparator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: Spacing.xl,
-  },
-  sepLineLeft: {
-    width: 50,
-    height: 2,
-    backgroundColor: Colors.light.goldBar,
-    borderRadius: 1,
-  },
-  sepDiamond: {
-    width: 8,
-    height: 8,
-    borderRadius: 2,
-    backgroundColor: Colors.light.goldBar,
-    transform: [{ rotate: '45deg' }],
-  },
-  sepLineRight: {
-    width: 50,
-    height: 2,
-    backgroundColor: Colors.light.goldBar,
-    borderRadius: 1,
-  },
-
-  // Text
-  textContainer: {
+  logoWrapper: {
     alignItems: 'center',
   },
-  tagline: {
-    marginTop: Spacing.sm,
-    lineHeight: 28,
-  },
-  textSeparator: {
-    marginVertical: Spacing.lg,
+  logoContainer: {
     alignItems: 'center',
+    paddingHorizontal: Spacing.xl,
   },
-  textSepLine: {
-    width: 40,
-    height: 2,
-    backgroundColor: Colors.light.secondary,
-    borderRadius: 1,
-    opacity: 0.5,
-  },
-  description: {
-    lineHeight: 26,
-  },
-
-  // Footer / CTA
-  footer: {
-    paddingHorizontal: Spacing.xxl,
-    paddingBottom: Spacing.xxxl + 10,
-    alignItems: 'center',
-  },
-  ctaButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: Colors.light.primary,
-    paddingVertical: 16,
-    paddingHorizontal: Spacing.xxxl,
-    borderRadius: Border.radius.lg,
-    gap: Spacing.md,
-    width: '100%',
-    shadowColor: '#1B3A5C',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.25,
-    shadowRadius: 8,
-    elevation: 6,
-  },
-  ctaArrow: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.light.goldBar,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  // Bottom decorative
-  bottomDeco: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: Spacing.xl,
-    gap: 8,
-  },
-  bottomDecoLine: {
-    width: 40,
-    height: 1,
-    backgroundColor: 'rgba(199, 162, 84, 0.4)',
-  },
-  bottomDecoDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: Colors.light.secondary,
+  logoText: {
+    fontSize: 24,
+    lineHeight: 40,
+    textAlign: 'center',
+    fontFamily: 'System',
+    fontWeight: '600',
   },
 });

@@ -2,7 +2,7 @@ import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+import { Colors, Shadows } from '@/constants/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function TabLayout() {
@@ -16,7 +16,8 @@ export default function TabLayout() {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: Colors[theme].tabBar,
-          borderTopWidth: 0,
+          borderTopWidth: 1,
+          borderTopColor: Colors[theme].tabBarBorder,
           height: Platform.OS === 'ios' ? 88 : 64,
           paddingBottom: Platform.OS === 'ios' ? 28 : 8,
           paddingTop: 8,
@@ -31,48 +32,77 @@ export default function TabLayout() {
         tabBarItemStyle: {
           gap: 2,
         },
-      }}>
+      }}
+    >
+      {/* الرئيسية - Home (rightmost in RTL) */}
       <Tabs.Screen
         name="index"
         options={{
-          title: '\u0627\u0644\u0631\u0626\u064A\u0633\u064A\u0629',
+          title: 'الرئيسية',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={22} />
+            <View style={focused ? styles.activeIconContainer : undefined}>
+              <Ionicons 
+                name={focused ? 'home' : 'home-outline'} 
+                color={color} 
+                size={22} 
+              />
+            </View>
           ),
         }}
       />
-      <Tabs.Screen
-        name="browse"
-        options={{
-          title: '\u0627\u0644\u0623\u0642\u0633\u0627\u0645',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'grid' : 'grid-outline'} color={color} size={22} />
-          ),
-        }}
-      />
+      
+      {/* مكتبتي - My Library */}
       <Tabs.Screen
         name="saved"
         options={{
-          title: '\u0645\u0643\u062A\u0628\u062A\u064A',
+          title: 'مكتبتي',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'library' : 'library-outline'} color={color} size={22} />
+            <View style={focused ? styles.activeIconContainer : undefined}>
+              <Ionicons 
+                name={focused ? 'library' : 'library-outline'} 
+                color={color} 
+                size={22} 
+              />
+            </View>
           ),
         }}
       />
+      
+      {/* الأقسام - Categories */}
+      <Tabs.Screen
+        name="browse"
+        options={{
+          title: 'الأقسام',
+          tabBarIcon: ({ color, focused }) => (
+            <View style={focused ? styles.activeIconContainer : undefined}>
+              <Ionicons 
+                name={focused ? 'grid' : 'grid-outline'} 
+                color={color} 
+                size={22} 
+              />
+            </View>
+          ),
+        }}
+      />
+      
+      {/* المزيد - More (leftmost in RTL) */}
       <Tabs.Screen
         name="settings"
         options={{
-          title: '\u0627\u0644\u0645\u0632\u064A\u062F',
+          title: 'المزيد',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons
-              name={focused ? 'ellipsis-horizontal' : 'ellipsis-horizontal-outline'}
-              color={color}
-              size={22}
-            />
+            <View style={focused ? styles.activeIconContainer : undefined}>
+              <Ionicons
+                name={focused ? 'ellipsis-horizontal' : 'ellipsis-horizontal-outline'}
+                color={color}
+                size={22}
+              />
+            </View>
           ),
         }}
       />
-      {/* Hide search from tabs - it's accessed via the home header */}
+      
+      {/* Hide search from tabs - it's accessed via the home search bar */}
       <Tabs.Screen
         name="search"
         options={{
@@ -82,3 +112,9 @@ export default function TabLayout() {
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  activeIconContainer: {
+    // Subtle indicator for active tab
+  },
+});

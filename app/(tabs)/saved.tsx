@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   TextInput,
   Platform,
+  Switch,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -14,634 +16,715 @@ import { Text } from '@/components/ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/store/useAppStore';
 import { useRouter } from 'expo-router';
-import { MOCK_RESOURCES, MOCK_CHANNELS } from '@/data/mockData';
+import { MOCK_RESOURCES} from '@/data/mockData';
 
-type QuickFilter = 'favorites' | 'quran' | 'downloads';
-type BookTab = 'all' | 'favorites' | 'downloads';
+type AudioFilter = 'all' | 'playlists' | 'collections';
 
-const QUICK_FILTERS: { key: QuickFilter; label: string; icon: string }[] = [
-  { key: 'downloads', label: 'التحميلات', icon: 'download' },
-  { key: 'quran', label: 'ورد القرآن', icon: 'book' },
-  { key: 'favorites', label: 'مفضلاتي', icon: 'heart' },
-];
+// ─── Quick Stats Card ───
 
-const BOOK_TABS: { key: BookTab; label: string; icon: string }[] = [
-  { key: 'downloads', label: 'التحميلات', icon: 'download-outline' },
-  { key: 'favorites', label: 'المفضلات', icon: 'heart-outline' },
-  { key: 'all', label: 'الكل', icon: 'layers-outline' },
-];
-
-// ─── Section Header (matches home page pattern: title+bar right, "عرض الكل"+arrow left) ───
-
-function SectionHeader({
-  title,
-  titleColor,
-  barColor,
-  onSeeAll,
+function QuickStatCard({
+  icon,
+  label,
+  value,
+  onPress,
 }: {
-  title: string;
-  titleColor?: string;
-  barColor?: string;
-  onSeeAll?: () => void;
+  icon: string;
+  label: string;
+  value: string;
+  onPress?: () => void;
 }) {
   const theme = useColorScheme();
-  const tColor = titleColor || Colors[theme].primary;
-  const bColor = barColor || Colors[theme].goldBar;
-
+  
   return (
-    <View style={styles.sectionHeader}>
-      {/* Left side: "عرض الكل" + arrow */}
-      {onSeeAll ? (
-        <TouchableOpacity
-          onPress={onSeeAll}
-          style={styles.seeAllButton}
-          accessibilityRole="button"
-          accessibilityLabel={`عرض الكل - ${title}`}
-        >
-          <Ionicons name="chevron-back" size={20} color={Colors[theme].secondary} />
-          <Text variant="xs" weight="semiBold" color={Colors[theme].secondary}>
-            عرض الكل
+    <TouchableOpacity
+      style={[styles.statCard, { backgroundColor: Colors[theme].surface }]}
+      activeOpacity={0.8}
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${label}: ${value}`}
+    >
+      <Ionicons name={icon as any} size={24} color={Colors[theme].primary} />
+      <Text style={[styles.statLabel, { color: Colors[theme].textSecondary }]}>{label}</Text>
+      <Text style={[styles.statValue, { color: Colors[theme].textMuted }]}>{value}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Daily Quran Wird Card ───
+
+function DailyWirdCard() {
+  const theme = useColorScheme();
+  const { dailyQuranPage } = useAppStore();
+  
+  // Calculate progress (604 total pages in Quran)
+  const totalPages = 604;
+  const progressPercent = Math.round((dailyQuranPage / totalPages) * 100);
+  
+  return (
+    <View style={[styles.wirdCard, { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].border }]}>
+      {/* Header */}
+      <View style={styles.wirdHeader}>
+        <View style={styles.wirdTitleRow}>
+          <Text style={[styles.wirdTitle, { color: Colors[theme].text }]}>
+            ورد القرآن اليومي
           </Text>
-        </TouchableOpacity>
-      ) : (
-        <View />
-      )}
-      {/* Right side: title + gold/blue bar */}
-      <View style={styles.sectionTitleRow}>
-        <Text
-          style={{
-            fontSize: 16,
-            fontWeight: '600',
-            color: tColor,
-            writingDirection: 'rtl',
-          }}
-        >
-          {title}
-        </Text>
-        <View style={[styles.sectionBar, { backgroundColor: bColor }]} />
+          <View style={[styles.wirdIcon, { backgroundColor: Colors[theme].surfaceAlt }]}>
+            <Ionicons name="book" size={20} color={Colors[theme].primary} />
+          </View>
+        </View>
+        {/* Progress Badge */}
+        <View style={[styles.progressBadge, { backgroundColor: Colors[theme].surfaceAlt }]}>
+          <Text style={[styles.progressBadgeText, { color: Colors[theme].textMuted }]}>
+            {progressPercent}%
+          </Text>
+        </View>
       </View>
+      
+      {/* Info Row */}
+      <View style={styles.wirdInfoRow}>
+        <View style={styles.wirdInfoItem}>
+          <Text style={[styles.wirdInfoLabel, { color: Colors[theme].textMuted }]}>
+            آخر قراءة اليوم
+          </Text>
+          <Text style={[styles.wirdInfoValue, { color: Colors[theme].textSecondary }]}>
+            سورة البقرة - الآية ٢٨٤
+          </Text>
+        </View>
+        <View style={styles.wirdInfoItem}>
+          <Text style={[styles.wirdInfoLabel, { color: Colors[theme].textMuted }]}>
+            التذكير اليومي
+          </Text>
+          <View style={styles.reminderToggle}>
+            <Switch
+              value={true}
+              trackColor={{ false: Colors[theme].border, true: Colors[theme].primary }}
+              thumbColor="#FFFFFF"
+              style={{ transform: [{ scale: 0.8 }] }}
+            />
+          </View>
+        </View>
+      </View>
+      
+      {/* Start Button */}
+      <TouchableOpacity
+        style={[styles.wirdButton, { backgroundColor: Colors[theme].primary }]}
+        activeOpacity={0.85}
+        accessibilityRole="button"
+        accessibilityLabel="بدء الورد"
+      >
+        <Text style={styles.wirdButtonText}>بدء الورد</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
+// ─── Quick Note Input ───
+
+function QuickNoteSection() {
+  const theme = useColorScheme();
+  const [noteText, setNoteText] = useState('');
+  const [recentNotes] = useState([
+    { id: '1', text: 'تأملات في سورة الفاتحة', category: 'حفظ ساخوطي' },
+    { id: '2', text: 'فوائد من درس الأخلاق', category: 'أمس' },
+    { id: '3', text: 'فوائد من درس الأخلاق', category: 'أمس' },
+  ]);
+  
+  return (
+    <View style={styles.noteSection}>
+      {/* Section Header */}
+      <View style={styles.sectionHeader}>
+        <View />
+        <View style={styles.sectionTitleRow}>
+          <Text style={[styles.sectionTitle, { color: Colors[theme].text }]}>
+            ملاحظة سريعة
+          </Text>
+          <View style={[styles.sectionBar, { backgroundColor: Colors[theme].goldBar }]} />
+        </View>
+      </View>
+      
+      {/* Note Input */}
+      <View style={[styles.noteInputContainer, { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].border }]}>
+        <TextInput
+          style={[styles.noteInput, { color: Colors[theme].text }]}
+          placeholder="اكتب ملاحظتك هنا..."
+          placeholderTextColor={Colors[theme].textMuted}
+          value={noteText}
+          onChangeText={setNoteText}
+          textAlign="right"
+          multiline
+        />
+      </View>
+      
+      {/* Note Actions */}
+      <View style={styles.noteActionsRow}>
+        <TouchableOpacity
+          style={[styles.noteSaveButton, { backgroundColor: Colors[theme].primary }]}
+          accessibilityRole="button"
+          accessibilityLabel="حفظ"
+        >
+          <Text style={{ color: '#FFFFFF', fontSize: 12, fontWeight: '600' }}>حفظ</Text>
+        </TouchableOpacity>
+        <View style={styles.noteIcons}>
+          <TouchableOpacity style={styles.noteIconBtn} accessibilityLabel="قائمة">
+            <Ionicons name="list-outline" size={18} color={Colors[theme].textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.noteIconBtn} accessibilityLabel="صورة">
+            <Ionicons name="image-outline" size={18} color={Colors[theme].textMuted} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.noteIconBtn} accessibilityLabel="حذف">
+            <Ionicons name="trash-outline" size={18} color={Colors[theme].textMuted} />
+          </TouchableOpacity>
+        </View>
+      </View>
+      
+      {/* Recent Notes List */}
+      <View style={styles.recentNotesHeader}>
+        <Text style={[styles.recentNotesTitle, { color: Colors[theme].textSecondary }]}>
+          آخر الملاحظات
+        </Text>
+      </View>
+      
+      {recentNotes.map((note) => (
+        <TouchableOpacity
+          key={note.id}
+          style={[styles.noteItem, { borderBottomColor: Colors[theme].borderLight }]}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+        >
+          <Text style={[styles.noteCategory, { color: Colors[theme].textMuted }]}>
+            {note.category}
+          </Text>
+          <Text style={[styles.noteText, { color: Colors[theme].text }]} numberOfLines={1}>
+            {note.text}
+          </Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+// ─── Audio Book Progress Section ───
+
+function AudioBookProgress() {
+  const theme = useColorScheme();
+  const [activeFilter, setActiveFilter] = useState<AudioFilter>('all');
+  
+  const filters: { key: AudioFilter; label: string }[] = [
+    { key: 'playlists', label: 'قوائم التشغيل' },
+    { key: 'collections', label: 'المجموعات' },
+    { key: 'all', label: 'الكل' },
+  ];
+  
+  const audioBooks = [
+    {
+      id: '1',
+      title: 'تفسير سورة البقرة',
+      author: 'الشيخ محمد الشنقيطي',
+      progress: 75,
+      status: '٧٥٪ مكتمل',
+      duration: 'الحلقة ١٥ من ٢٠',
+    },
+    {
+      id: '2',
+      title: 'شرح الأربعين النووية',
+      author: 'الشيخ صالح الفوزان',
+      progress: 100,
+      status: 'مكتمل',
+      duration: '',
+    },
+  ];
+  
+  return (
+    <View style={styles.audioSection}>
+      {/* Section Header */}
+      <View style={styles.sectionHeader}>
+        <View />
+        <View style={styles.sectionTitleRow}>
+          <Text style={[styles.sectionTitle, { color: Colors[theme].text }]}>
+            تقدم الكتب المسموعة
+          </Text>
+          <View style={[styles.sectionBar, { backgroundColor: Colors[theme].goldBar }]} />
+        </View>
+      </View>
+      
+      {/* Filter Chips */}
+      <View style={styles.filterChipsRow}>
+        {filters.map((filter) => {
+          const isActive = activeFilter === filter.key;
+          return (
+            <TouchableOpacity
+              key={filter.key}
+              style={[
+                styles.filterChip,
+                {
+                  backgroundColor: isActive ? Colors[theme].primary : Colors[theme].surface,
+                  borderColor: isActive ? Colors[theme].primary : Colors[theme].border,
+                },
+              ]}
+              onPress={() => setActiveFilter(filter.key)}
+              accessibilityRole="button"
+              accessibilityLabel={filter.label}
+            >
+              <Text
+                style={{
+                  fontSize: 11,
+                  fontWeight: isActive ? '600' : '400',
+                  color: isActive ? '#FFFFFF' : Colors[theme].textSecondary,
+                }}
+              >
+                {filter.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      
+      {/* Audio Book Cards */}
+      {audioBooks.map((book) => (
+        <View
+          key={book.id}
+          style={[styles.audioCard, { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].border }]}
+        >
+          <View style={styles.audioCardHeader}>
+            <View style={styles.audioCardInfo}>
+              <Text style={[styles.audioCardTitle, { color: Colors[theme].text }]}>
+                {book.title}
+              </Text>
+              <Text style={[styles.audioCardAuthor, { color: Colors[theme].textMuted }]}>
+                {book.author}
+              </Text>
+            </View>
+            <View style={[styles.audioIcon, { backgroundColor: Colors[theme].surfaceAlt }]}>
+              <Ionicons name="headset" size={20} color={Colors[theme].primary} />
+            </View>
+          </View>
+          
+          {book.progress < 100 && (
+            <View style={styles.audioProgressRow}>
+              <Text style={[styles.audioProgressText, { color: Colors[theme].textMuted }]}>
+                {book.status}
+              </Text>
+              <Text style={[styles.audioDuration, { color: Colors[theme].textSecondary }]}>
+                {book.duration}
+              </Text>
+            </View>
+          )}
+          
+          {/* Progress Bar */}
+          <View style={[styles.audioProgressBar, { backgroundColor: Colors[theme].progressBg }]}>
+            <View
+              style={[
+                styles.audioProgressFill,
+                {
+                  backgroundColor: book.progress === 100 ? Colors[theme].success : Colors[theme].primary,
+                  width: `${book.progress}%`,
+                },
+              ]}
+            />
+          </View>
+          
+          {/* Action Buttons */}
+          <View style={styles.audioActions}>
+            {book.progress === 100 ? (
+              <TouchableOpacity
+                style={[styles.audioActionBtn, { backgroundColor: Colors[theme].surfaceAlt }]}
+                accessibilityRole="button"
+              >
+                <Text style={{ fontSize: 11, color: Colors[theme].textSecondary }}>عرض الملاحظات</Text>
+              </TouchableOpacity>
+            ) : (
+              <>
+                <TouchableOpacity
+                  style={[styles.audioActionBtn, { backgroundColor: Colors[theme].surfaceAlt }]}
+                  accessibilityRole="button"
+                >
+                  <Text style={{ fontSize: 11, color: Colors[theme].textSecondary }}>إضافة ملاحظة</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.audioActionBtn, { backgroundColor: Colors[theme].primary }]}
+                  accessibilityRole="button"
+                >
+                  <Text style={{ fontSize: 11, color: '#FFFFFF', fontWeight: '600' }}>متابعة</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ─── Smart Reminders Section ───
+
+function SmartReminders() {
+  const theme = useColorScheme();
+  
+  const reminders = [
+    {
+      id: '1',
+      icon: 'book',
+      title: 'تذكير ورد القرآن',
+      description: 'حان وقت ورد "تأملات سورة البقرة" هل وجدنا الخشوع يوم؟ وشعب للعقول!',
+      subtitle: 'التذكير القادم: غدًا الساعة ٦:٠٠ م',
+      enabled: true,
+      color: Colors[theme].primary,
+    },
+    {
+      id: '2',
+      icon: 'headset',
+      title: 'متابعة الاستماع',
+      description: 'حان وقت متابعة "تفسير سورة البقرة"',
+      subtitle: 'التذكير القادم: اليوم الساعة ٩:٠٠ م',
+      enabled: true,
+      color: Colors[theme].secondary,
+    },
+    {
+      id: '3',
+      icon: 'flag',
+      title: 'مراجعة الأهداف',
+      description: 'راجع أهدافك من الأهداف الأسبوعية',
+      subtitle: 'التذكير القادم: بعد الساعة ١٠:٠٠ م',
+      enabled: false,
+      color: Colors[theme].textMuted,
+    },
+  ];
+  
+  return (
+    <View style={styles.remindersSection}>
+      {/* Section Header */}
+      <View style={styles.sectionHeader}>
+        <View />
+        <View style={styles.sectionTitleRow}>
+          <Text style={[styles.sectionTitle, { color: Colors[theme].text }]}>
+            التذكيرات الذكية
+          </Text>
+          <View style={[styles.sectionBar, { backgroundColor: Colors[theme].goldBar }]} />
+        </View>
+      </View>
+      
+      {/* Reminder Cards */}
+      {reminders.map((reminder) => (
+        <View
+          key={reminder.id}
+          style={[
+            styles.reminderCard,
+            {
+              backgroundColor: Colors[theme].surface,
+              borderColor: Colors[theme].border,
+              opacity: reminder.enabled ? 1 : 0.6,
+            },
+          ]}
+        >
+          <View style={styles.reminderHeader}>
+            <Switch
+              value={reminder.enabled}
+              trackColor={{ false: Colors[theme].border, true: Colors[theme].primary }}
+              thumbColor="#FFFFFF"
+              style={{ transform: [{ scale: 0.75 }] }}
+            />
+            <View style={styles.reminderInfo}>
+              <Text style={[styles.reminderTitle, { color: Colors[theme].text }]}>
+                {reminder.title}
+              </Text>
+            </View>
+            <View style={[styles.reminderIcon, { backgroundColor: reminder.color + '15' }]}>
+              <Ionicons name={reminder.icon as any} size={18} color={reminder.color} />
+            </View>
+          </View>
+          
+          <Text style={[styles.reminderDesc, { color: Colors[theme].textSecondary }]}>
+            {reminder.description}
+          </Text>
+          
+          <Text style={[styles.reminderSubtitle, { color: Colors[theme].textMuted }]}>
+            {reminder.subtitle}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+// ─── Add Note Modal ───
+
+function AddNoteModal({
+  visible,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSave: (note: string) => void;
+}) {
+  const theme = useColorScheme();
+  const [noteText, setNoteText] = useState('');
+
+  const handleSave = () => {
+    if (noteText.trim()) {
+      onSave(noteText);
+      setNoteText('');
+      onClose();
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: Colors[theme].surface }]}>
+          <Text style={[styles.modalTitle, { color: Colors[theme].text }]}>إضافة ملاحظة</Text>
+          
+          <View style={[styles.modalInput, { backgroundColor: Colors[theme].surfaceAlt, borderColor: Colors[theme].border }]}>
+            <TextInput
+              style={[styles.modalTextInput, { color: Colors[theme].text }]}
+              placeholder="اكتب ملاحظتك هنا..."
+              placeholderTextColor={Colors[theme].textMuted}
+              value={noteText}
+              onChangeText={setNoteText}
+              textAlign="right"
+              multiline
+              numberOfLines={4}
+            />
+          </View>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: Colors[theme].primary }]}
+              onPress={handleSave}
+            >
+              <Text style={styles.modalButtonText}>حفظ</Text>
+            </TouchableOpacity>
+            <View style={styles.modalIcons}>
+              <TouchableOpacity style={styles.modalIconBtn}>
+                <Ionicons name="list-outline" size={20} color={Colors[theme].textMuted} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalIconBtn}>
+                <Ionicons name="image-outline" size={20} color={Colors[theme].textMuted} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalIconBtn}>
+                <Ionicons name="trash-outline" size={20} color={Colors[theme].textMuted} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.modalClose} onPress={onClose}>
+            <Ionicons name="close" size={24} color={Colors[theme].textMuted} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── View Notes Modal ───
+
+function ViewNotesModal({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const theme = useColorScheme();
+
+  const notesData = [
+    { id: '1', text: 'تأملات في سورة الفاتحة', category: 'حفظ ساخوطي' },
+    { id: '2', text: 'فوائد من درس الأخلاق', category: 'أمس' },
+    { id: '3', text: 'فوائد من درس الأخلاق', category: 'أمس' },
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, styles.notesModalContent, { backgroundColor: Colors[theme].surface }]}>
+          <Text style={[styles.modalTitle, { color: Colors[theme].text }]}>عرض الملاحظات</Text>
+
+          {/* Table Header */}
+          <View style={[styles.tableHeader, { backgroundColor: Colors[theme].surfaceAlt }]}>
+            <Text style={[styles.tableHeaderText, { color: Colors[theme].textSecondary, flex: 1 }]}>آخر الملاحظات</Text>
+            <Text style={[styles.tableHeaderText, { color: Colors[theme].textSecondary, flex: 2, textAlign: 'right' }]}>تأملات في سورة الفاتحة</Text>
+          </View>
+
+          {/* Table Rows */}
+          {notesData.map((note, index) => (
+            <View
+              key={note.id}
+              style={[
+                styles.tableRow,
+                { borderBottomColor: Colors[theme].borderLight },
+                index % 2 === 0 && { backgroundColor: Colors[theme].surfaceAlt + '50' },
+              ]}
+            >
+              <Text style={[styles.tableCell, { color: Colors[theme].textMuted, flex: 1 }]}>{note.category}</Text>
+              <Text style={[styles.tableCell, { color: Colors[theme].text, flex: 2, textAlign: 'right' }]}>{note.text}</Text>
+            </View>
+          ))}
+
+          {/* Underline accent */}
+          <View style={[styles.tableAccent, { backgroundColor: Colors[theme].primary }]} />
+
+          <TouchableOpacity style={styles.modalClose} onPress={onClose}>
+            <Ionicons name="close" size={24} color={Colors[theme].textMuted} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Audio Player Modal ───
+
+function AudioPlayerModal({
+  visible,
+  onClose,
+  book,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  book: { title: string; author: string } | null;
+}) {
+  const theme = useColorScheme();
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  if (!book) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.playerModalOverlay}>
+        <View style={[styles.playerModalContent, { backgroundColor: Colors[theme].surface }]}>
+          {/* Handle bar */}
+          <View style={[styles.playerHandle, { backgroundColor: Colors[theme].border }]} />
+
+          {/* Book Cover Placeholder */}
+          <View style={[styles.playerCover, { backgroundColor: Colors[theme].surfaceAlt }]}>
+            <Ionicons name="book" size={40} color={Colors[theme].primary} />
+          </View>
+
+          {/* Book Info */}
+          <Text style={[styles.playerTitle, { color: Colors[theme].text }]}>{book.title}</Text>
+          <Text style={[styles.playerAuthor, { color: Colors[theme].textMuted }]}>{book.author}</Text>
+
+          {/* Progress Bar */}
+          <View style={styles.playerProgressContainer}>
+            <View style={[styles.playerProgressBar, { backgroundColor: Colors[theme].progressBg }]}>
+              <View style={[styles.playerProgressFill, { backgroundColor: Colors[theme].primary, width: '35%' }]} />
+            </View>
+          </View>
+
+          {/* Playback Controls */}
+          <View style={styles.playerControls}>
+            <TouchableOpacity style={styles.playerControlBtn}>
+              <Ionicons name="play-skip-forward" size={28} color={Colors[theme].text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.playerPlayBtn, { backgroundColor: Colors[theme].primary }]}
+              onPress={() => setIsPlaying(!isPlaying)}
+            >
+              <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.playerControlBtn}>
+              <Ionicons name="play-skip-back" size={28} color={Colors[theme].text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Main Library Screen ───
+
 export default function SavedScreen() {
   const router = useRouter();
   const theme = useColorScheme();
-  const {
-    favorites,
-    downloads,
-    dailyQuranPage,
-    readingProgress,
-    listeningProgress,
-  } = useAppStore();
-  const [bookTab, setBookTab] = useState<BookTab>('all');
   const [searchText, setSearchText] = useState('');
-  const [activeFilter, setActiveFilter] = useState<QuickFilter | null>(null);
+  const [showAddNoteModal, setShowAddNoteModal] = useState(false);
+  const [showViewNotesModal, setShowViewNotesModal] = useState(false);
+  const [showAudioPlayerModal, setShowAudioPlayerModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<{ title: string; author: string } | null>(null);
 
-  const booksWithProgress = MOCK_RESOURCES.filter((r) => r.fileType === 'pdf').slice(0, 5);
-  const audioWithProgress = MOCK_RESOURCES.filter((r) => r.fileType === 'audio').slice(0, 3);
-
-  const getBookTabData = () => {
-    let data = booksWithProgress;
-    switch (bookTab) {
-      case 'favorites':
-        data = booksWithProgress.filter((b) => favorites.some((f) => f.id === b.id));
-        break;
-      case 'downloads':
-        data = booksWithProgress.filter((b) => downloads.some((d) => d.id === b.id));
-        break;
-      default:
-        data = booksWithProgress;
-    }
-    // Filter by search text if present
-    if (searchText.trim()) {
-      data = data.filter(
-        (b) =>
-          b.title.includes(searchText) ||
-          b.author.includes(searchText)
-      );
-    }
-    return data;
+  const handleOpenPlayer = (book: { title: string; author: string }) => {
+    setSelectedBook(book);
+    setShowAudioPlayerModal(true);
   };
-
-  const quranProgress = Math.round((dailyQuranPage / 604) * 100);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[theme].background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {/* ── Page Header ── */}
+        {/* Page Header */}
         <View style={styles.pageHeader}>
-          <Text
-            style={{
-              fontSize: 20,
-              fontWeight: '700',
-              color: Colors[theme].primary,
-              textAlign: 'right',
-              writingDirection: 'rtl',
-            }}
-          >
+          <Text style={[styles.pageTitle, { color: Colors[theme].text }]}>
             مكتبتي
           </Text>
         </View>
-
-        {/* ── Search Bar ── */}
-        <View style={styles.searchBarContainer}>
+        
+        {/* Search Bar */}
+        <View style={styles.searchSection}>
           <View
             style={[
               styles.searchBar,
               {
                 backgroundColor: Colors[theme].surface,
-                borderColor: Colors[theme].borderLight,
+                borderColor: Colors[theme].border,
               },
             ]}
           >
             <TextInput
-              style={[
-                styles.searchInput,
-                {
-                  color: Colors[theme].text,
-                },
-              ]}
-              placeholder="ابحث في مكتبتك..."
+              style={[styles.searchInput, { color: Colors[theme].text }]}
+              placeholder="بحث..."
               placeholderTextColor={Colors[theme].textMuted}
               value={searchText}
               onChangeText={setSearchText}
               textAlign="right"
             />
-            <Ionicons name="search" size={18} color={Colors[theme].textMuted} />
+            <Ionicons name="search-outline" size={18} color={Colors[theme].textMuted} />
           </View>
         </View>
-
-        {/* ── Quick Filter Pills ── */}
-        <View style={styles.filterRow}>
-          {QUICK_FILTERS.map((filter) => {
-            const isActive = activeFilter === filter.key;
-            return (
-              <TouchableOpacity
-                key={filter.key}
-                style={[
-                  styles.filterPill,
-                  {
-                    backgroundColor: isActive
-                      ? Colors[theme].primary
-                      : Colors[theme].surface,
-                    borderColor: isActive
-                      ? Colors[theme].primary
-                      : Colors[theme].borderLight,
-                  },
-                ]}
-                activeOpacity={0.7}
-                onPress={() =>
-                  setActiveFilter(isActive ? null : filter.key)
-                }
-                accessibilityRole="button"
-                accessibilityLabel={filter.label}
-              >
-                <Text
-                  variant="xs"
-                  weight="semiBold"
-                  color={
-                    isActive
-                      ? Colors[theme].textOnPrimary
-                      : Colors[theme].primary
-                  }
-                >
-                  {filter.label}
-                </Text>
-                <Ionicons
-                  name={filter.icon as any}
-                  size={14}
-                  color={
-                    isActive
-                      ? Colors[theme].textOnPrimary
-                      : Colors[theme].secondary
-                  }
-                />
-              </TouchableOpacity>
-            );
-          })}
+        
+        {/* Quick Stats Row */}
+        <View style={styles.statsRow}>
+          <QuickStatCard icon="alarm-outline" label="تذكيراتي" value="+٣ تذكيرات نشطة" />
+          <QuickStatCard icon="book-outline" label="ورد القرآن" value="٧ أيام متتالية" />
+          <QuickStatCard 
+            icon="pencil-outline" 
+            label="ملاحظاتي" 
+            value="٢٣ ملاحظة" 
+            onPress={() => setShowViewNotesModal(true)}
+          />
         </View>
-
-        {/* ── Daily Quran Reading Card ── */}
+        
+        {/* Daily Wird Card */}
         <View style={styles.cardSection}>
-          <View
-            style={[
-              styles.quranCard,
-              {
-                backgroundColor: Colors[theme].surface,
-                borderColor: Colors[theme].borderLight,
-              },
-              Shadows.sm,
-            ]}
-          >
-            {/* Header row: icon + title */}
-            <View style={styles.quranHeader}>
-              <View style={styles.quranTitleRow}>
-                <Text
-                  style={{
-                    fontSize: 16,
-                    fontWeight: '700',
-                    color: Colors[theme].primary,
-                    writingDirection: 'rtl',
-                  }}
-                >
-                  ورد القرآن اليومي
-                </Text>
-                <View
-                  style={[
-                    styles.quranIcon,
-                    { backgroundColor: Colors[theme].primary + '10' },
-                  ]}
-                >
-                  <Ionicons name="book" size={20} color={Colors[theme].primary} />
-                </View>
-              </View>
-            </View>
-
-            {/* Body: two columns (labels+values) */}
-            <View style={styles.quranBody}>
-              {/* Labels row */}
-              <View style={styles.quranInfoRow}>
-                <Text variant="sm" color={Colors[theme].textSecondary}>
-                  آخر قراءة اليوم
-                </Text>
-                <Text variant="sm" color={Colors[theme].textSecondary}>
-                  الصفحة الحالية
-                </Text>
-              </View>
-              {/* Values row */}
-              <View style={styles.quranInfoRow}>
-                <TouchableOpacity
-                  style={[
-                    styles.quranButton,
-                    { backgroundColor: Colors[theme].primary },
-                  ]}
-                  accessibilityRole="button"
-                  accessibilityLabel="ورد اليوم"
-                >
-                  <Text variant="sm" weight="bold" color={Colors[theme].textOnPrimary}>
-                    ورد اليوم
-                  </Text>
-                </TouchableOpacity>
-                <Text
-                  style={{
-                    fontSize: 24,
-                    fontWeight: '700',
-                    color: Colors[theme].primary,
-                    writingDirection: 'rtl',
-                  }}
-                >
-                  {dailyQuranPage}
-                </Text>
-              </View>
-
-              {/* Progress bar */}
-              <View style={styles.progressRow}>
-                <Text variant="xxs" color={Colors[theme].textMuted}>
-                  {quranProgress}%
-                </Text>
-                <View
-                  style={[
-                    styles.progressBg,
-                    { backgroundColor: Colors[theme].borderLight },
-                  ]}
-                >
-                  <View
-                    style={[
-                      styles.progressFill,
-                      {
-                        backgroundColor: Colors[theme].primary,
-                        width: `${quranProgress}%`,
-                      },
-                    ]}
-                  />
-                </View>
-              </View>
-            </View>
-          </View>
+          <DailyWirdCard />
         </View>
-
-        {/* ── Book Progress Section ── */}
-        <View style={styles.section}>
-          <SectionHeader
-            title="تقدم كتبك"
-            titleColor={Colors[theme].primary}
-            barColor={Colors[theme].goldBar}
-          />
-
-          {/* Tab pills row */}
-          <View style={styles.tabPillsRow}>
-            {BOOK_TABS.map((tab) => {
-              const isActive = bookTab === tab.key;
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  style={[
-                    styles.tabPill,
-                    {
-                      backgroundColor: isActive
-                        ? Colors[theme].primary
-                        : 'transparent',
-                      borderColor: isActive
-                        ? Colors[theme].primary
-                        : Colors[theme].border,
-                    },
-                  ]}
-                  onPress={() => setBookTab(tab.key)}
-                  accessibilityRole="button"
-                  accessibilityLabel={tab.label}
-                >
-                  <Ionicons
-                    name={tab.icon as any}
-                    size={12}
-                    color={
-                      isActive
-                        ? Colors[theme].textOnPrimary
-                        : Colors[theme].textSecondary
-                    }
-                    style={{ marginStart: 4 }}
-                  />
-                  <Text
-                    variant="xs"
-                    weight={isActive ? 'bold' : 'regular'}
-                    color={
-                      isActive
-                        ? Colors[theme].textOnPrimary
-                        : Colors[theme].textSecondary
-                    }
-                  >
-                    {tab.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-
-          {/* Book list */}
-          {getBookTabData().length === 0 ? (
-            <View style={styles.emptyMini}>
-              <Ionicons
-                name="book-outline"
-                size={36}
-                color={Colors[theme].border}
-              />
-              <Text
-                variant="sm"
-                color={Colors[theme].textMuted}
-                style={{ marginTop: Spacing.sm }}
-              >
-                لا توجد كتب في هذا القسم
-              </Text>
-            </View>
-          ) : (
-            getBookTabData().map((book, index) => {
-              const fallbackProgress =
-                ((booksWithProgress.indexOf(book) + 1) * 25) % 80 + 15;
-              const progress = readingProgress[book.id] || fallbackProgress;
-              return (
-                <TouchableOpacity
-                  key={book.id}
-                  style={[
-                    styles.progressItem,
-                    {
-                      borderBottomColor: Colors[theme].borderLight,
-                      borderBottomWidth:
-                        index < getBookTabData().length - 1
-                          ? StyleSheet.hairlineWidth
-                          : 0,
-                    },
-                  ]}
-                  activeOpacity={0.7}
-                  onPress={() => router.push(`/resource/${book.id}`)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${book.title} - ${progress}%`}
-                >
-                  {/* Left side: progress percentage + bar */}
-                  <View style={styles.progressItemLeft}>
-                    <Text variant="sm" weight="bold" color={Colors[theme].primary}>
-                      {progress}%
-                    </Text>
-                    <View
-                      style={[
-                        styles.miniProgressBg,
-                        { backgroundColor: Colors[theme].borderLight },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.miniProgressFill,
-                          {
-                            backgroundColor: Colors[theme].primary,
-                            width: `${progress}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                  {/* Right side: title + author */}
-                  <View style={styles.progressItemText}>
-                    <Text
-                      variant="sm"
-                      weight="semiBold"
-                      color={Colors[theme].text}
-                      numberOfLines={1}
-                    >
-                      {book.title}
-                    </Text>
-                    <Text variant="xs" color={Colors[theme].textSecondary}>
-                      {book.author}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })
-          )}
-
-          {/* "عرض المزيد" link at bottom of book section */}
-          {getBookTabData().length > 0 && (
-            <TouchableOpacity
-              style={styles.showMoreRow}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel="عرض المزيد"
-            >
-              <Ionicons
-                name="chevron-back"
-                size={14}
-                color={Colors[theme].secondary}
-              />
-              <Text variant="xs" weight="semiBold" color={Colors[theme].secondary}>
-                عرض المزيد
-              </Text>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* ── Audio Progress Section ── */}
-        <View style={styles.section}>
-          <SectionHeader
-            title="تقدم الكتب المسموعة"
-            titleColor={Colors[theme].primary}
-            barColor={Colors[theme].goldBar}
-          />
-
-          {audioWithProgress.map((audio, index) => {
-            const fallbackProgress =
-              ((audioWithProgress.indexOf(audio) + 1) * 20) % 70 + 10;
-            const progress = listeningProgress[audio.id] || fallbackProgress;
-            return (
-              <TouchableOpacity
-                key={audio.id}
-                style={[
-                  styles.progressItem,
-                  {
-                    borderBottomColor: Colors[theme].borderLight,
-                    borderBottomWidth:
-                      index < audioWithProgress.length - 1
-                        ? StyleSheet.hairlineWidth
-                        : 0,
-                  },
-                ]}
-                activeOpacity={0.7}
-                accessibilityRole="button"
-                accessibilityLabel={`${audio.title} - ${progress}%`}
-              >
-                {/* Left side: headset icon + progress */}
-                <View style={styles.audioItemLeft}>
-                  <Ionicons
-                    name="headset"
-                    size={18}
-                    color={Colors[theme].secondary}
-                  />
-                  <View style={styles.progressItemLeft}>
-                    <Text
-                      variant="sm"
-                      weight="bold"
-                      color={Colors[theme].secondary}
-                    >
-                      {progress}%
-                    </Text>
-                    <View
-                      style={[
-                        styles.miniProgressBg,
-                        { backgroundColor: Colors[theme].borderLight },
-                      ]}
-                    >
-                      <View
-                        style={[
-                          styles.miniProgressFill,
-                          {
-                            backgroundColor: Colors[theme].secondary,
-                            width: `${progress}%`,
-                          },
-                        ]}
-                      />
-                    </View>
-                  </View>
-                </View>
-                {/* Right side: title + author + duration */}
-                <View style={styles.progressItemText}>
-                  <Text
-                    variant="sm"
-                    weight="semiBold"
-                    color={Colors[theme].text}
-                    numberOfLines={1}
-                  >
-                    {audio.title}
-                  </Text>
-                  <Text variant="xs" color={Colors[theme].textSecondary}>
-                    {audio.author} · {audio.durationMinutes} دقيقة
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            );
-          })}
-
-          {/* Badge indicator for audio section */}
-          <View style={styles.audioBadgeRow}>
-            <View
-              style={[
-                styles.audioBadge,
-                { backgroundColor: Colors[theme].secondary + '18' },
-              ]}
-            >
-              <Ionicons
-                name="musical-notes"
-                size={12}
-                color={Colors[theme].secondary}
-              />
-              <Text variant="xxs" color={Colors[theme].secondary}>
-                {audioWithProgress.length} كتب مسموعة
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* ── Religious Channels Section ── */}
-        <View style={[styles.section, { marginBottom: Spacing.xxxl }]}>
-          <SectionHeader
-            title="القنوات الدينية"
-            titleColor={Colors[theme].primary}
-            barColor={Colors[theme].blueBar}
-          />
-
-          {MOCK_CHANNELS.map((channel, index) => (
-            <TouchableOpacity
-              key={channel.id}
-              style={[
-                styles.channelRow,
-                {
-                  borderBottomColor: Colors[theme].borderLight,
-                  borderBottomWidth:
-                    index < MOCK_CHANNELS.length - 1
-                      ? StyleSheet.hairlineWidth
-                      : 0,
-                },
-              ]}
-              activeOpacity={0.7}
-              accessibilityRole="button"
-              accessibilityLabel={channel.name}
-            >
-              {/* Left: chevron */}
-              <Ionicons
-                name="chevron-back"
-                size={14}
-                color={Colors[theme].textMuted}
-              />
-              {/* Center: channel info */}
-              <View style={styles.channelInfo}>
-                <Text
-                  variant="sm"
-                  weight="semiBold"
-                  color={Colors[theme].text}
-                >
-                  {channel.name}
-                </Text>
-                <Text
-                  variant="xs"
-                  color={Colors[theme].textSecondary}
-                  numberOfLines={1}
-                >
-                  {channel.description}
-                </Text>
-              </View>
-              {/* Right: avatar */}
-              <View
-                style={[
-                  styles.channelAvatar,
-                  { backgroundColor: Colors[theme].primary },
-                ]}
-              >
-                <Ionicons
-                  name="radio"
-                  size={18}
-                  color={Colors[theme].textOnPrimary}
-                />
-              </View>
-            </TouchableOpacity>
-          ))}
+        
+        {/* Quick Notes Section */}
+        <QuickNoteSection />
+        
+        {/* Audio Book Progress */}
+        <AudioBookProgress />
+        
+        {/* Smart Reminders */}
+        <View style={{ marginBottom: Spacing.xxxl }}>
+          <SmartReminders />
         </View>
       </ScrollView>
+
+      {/* Modals */}
+      <AddNoteModal
+        visible={showAddNoteModal}
+        onClose={() => setShowAddNoteModal(false)}
+        onSave={(note) => console.log('Note saved:', note)}
+      />
+      <ViewNotesModal
+        visible={showViewNotesModal}
+        onClose={() => setShowViewNotesModal(false)}
+      />
+      <AudioPlayerModal
+        visible={showAudioPlayerModal}
+        onClose={() => setShowAudioPlayerModal(false)}
+        book={selectedBook}
+      />
     </SafeAreaView>
   );
 }
@@ -652,242 +735,512 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-
-  // ── Page Header ──
+  
+  // Page Header
   pageHeader: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xl,
+    paddingTop: Spacing.lg,
     paddingBottom: Spacing.sm,
     alignItems: 'flex-end',
   },
-
-  // ── Search Bar ──
-  searchBarContainer: {
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    writingDirection: 'rtl',
+  },
+  
+  // Search
+  searchSection: {
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.md,
   },
   searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 4,
+    height: 44,
     borderRadius: Border.radius.lg,
     borderWidth: 1,
+    paddingHorizontal: Spacing.md,
     gap: Spacing.sm,
   },
   searchInput: {
     flex: 1,
     fontSize: 14,
     writingDirection: 'rtl',
-    textAlign: 'right',
-    paddingVertical: 0,
   },
-
-  // ── Filter Pills ──
-  filterRow: {
+  
+  // Stats Row
+  statsRow: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     paddingHorizontal: Spacing.lg,
     gap: Spacing.sm,
     marginBottom: Spacing.lg,
   },
-  filterPill: {
-    flexDirection: 'row',
+  statCard: {
+    flex: 1,
     alignItems: 'center',
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: Spacing.md,
-    borderRadius: Border.radius.xl,
-    borderWidth: 1,
+    paddingVertical: Spacing.md,
+    paddingHorizontal: Spacing.sm,
+    borderRadius: Border.radius.md,
+    ...Shadows.sm,
   },
-
-  // ── Quran Card ──
+  statLabel: {
+    fontSize: 11,
+    marginTop: Spacing.xs,
+    textAlign: 'center',
+  },
+  statValue: {
+    fontSize: 9,
+    marginTop: 2,
+    textAlign: 'center',
+  },
+  
+  // Card Section
   cardSection: {
     paddingHorizontal: Spacing.lg,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
   },
-  quranCard: {
-    borderRadius: Border.radius.md,
-    overflow: 'hidden',
+  
+  // Wird Card
+  wirdCard: {
+    borderRadius: Border.radius.lg,
     borderWidth: 1,
-  },
-  quranHeader: {
     padding: Spacing.lg,
-    paddingBottom: 0,
+    ...Shadows.sm,
   },
-  quranTitleRow: {
+  wirdHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: Spacing.md,
+  },
+  wirdTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
     gap: Spacing.sm,
   },
-  quranIcon: {
+  wirdTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  wirdIcon: {
     width: 36,
     height: 36,
     borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  quranBody: {
-    padding: Spacing.lg,
-  },
-  quranInfoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.sm,
-  },
-  quranButton: {
-    paddingVertical: 6,
-    paddingHorizontal: Spacing.lg,
+  progressBadge: {
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: 4,
     borderRadius: Border.radius.sm,
   },
-  progressRow: {
+  progressBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  wirdInfoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.md,
+  },
+  wirdInfoItem: {
+    alignItems: 'flex-end',
+  },
+  wirdInfoLabel: {
+    fontSize: 10,
+    marginBottom: 4,
+  },
+  wirdInfoValue: {
+    fontSize: 12,
+  },
+  reminderToggle: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
-    marginTop: Spacing.xs,
   },
-  progressBg: {
-    flex: 1,
-    height: 4,
-    borderRadius: 2,
-    overflow: 'hidden',
+  wirdButton: {
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    borderRadius: Border.radius.md,
   },
-  progressFill: {
-    height: '100%',
-    borderRadius: 2,
+  wirdButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
   },
-
-  // ── Section Header (matches home page pattern) ──
+  
+  // Section Header
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: Spacing.lg,
-    marginBottom: 14,
+    marginBottom: Spacing.md,
   },
   sectionTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   sectionBar: {
-    width: 5,
-    height: 21,
-    borderRadius: 4,
+    width: 4,
+    height: 18,
+    borderRadius: 2,
   },
-  seeAllButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-
-  // ── Section ──
-  section: {
+  
+  // Note Section
+  noteSection: {
     marginBottom: Spacing.xl,
   },
-
-  // ── Tab Pills ──
-  tabPillsRow: {
+  noteInputContainer: {
+    marginHorizontal: Spacing.lg,
+    borderRadius: Border.radius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+    minHeight: 80,
+    marginBottom: Spacing.sm,
+  },
+  noteInput: {
+    fontSize: 14,
+    writingDirection: 'rtl',
+    textAlignVertical: 'top',
+  },
+  noteActionsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
+  },
+  noteSaveButton: {
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.lg,
+    borderRadius: Border.radius.sm,
+  },
+  noteIcons: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  noteIconBtn: {
+    padding: 4,
+  },
+  recentNotesHeader: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.sm,
+  },
+  recentNotesTitle: {
+    fontSize: 12,
+    textAlign: 'right',
+  },
+  noteItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.lg,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  noteCategory: {
+    fontSize: 10,
+  },
+  noteText: {
+    fontSize: 13,
+    flex: 1,
+    textAlign: 'right',
+    marginLeft: Spacing.md,
+  },
+  
+  // Audio Section
+  audioSection: {
+    marginBottom: Spacing.xl,
+  },
+  filterChipsRow: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
+    paddingHorizontal: Spacing.lg,
     gap: Spacing.sm,
     marginBottom: Spacing.md,
-    paddingHorizontal: Spacing.lg,
   },
-  tabPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  filterChip: {
     paddingVertical: 6,
     paddingHorizontal: Spacing.md,
     borderRadius: Border.radius.xl,
     borderWidth: 1,
-    gap: 4,
   },
-
-  // ── Empty State ──
-  emptyMini: {
-    paddingVertical: Spacing.xxl,
-    alignItems: 'center',
+  audioCard: {
+    marginHorizontal: Spacing.lg,
+    borderRadius: Border.radius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
   },
-
-  // ── Progress Item Row ──
-  progressItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
-  },
-  progressItemText: {
-    flex: 1,
-    alignItems: 'flex-end',
-  },
-  progressItemLeft: {
-    alignItems: 'center',
-    minWidth: 50,
-  },
-  miniProgressBg: {
-    width: 50,
-    height: 3,
-    borderRadius: 1.5,
-    marginTop: 4,
-    overflow: 'hidden',
-  },
-  miniProgressFill: {
-    height: '100%',
-    borderRadius: 1.5,
-  },
-
-  // ── Audio item left area ──
-  audioItemLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: Spacing.sm,
-  },
-
-  // ── Show More ──
-  showMoreRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: Spacing.md,
-  },
-
-  // ── Audio badge ──
-  audioBadgeRow: {
+  audioCardHeader: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
-    paddingHorizontal: Spacing.lg,
-    marginTop: Spacing.sm,
+    alignItems: 'flex-start',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
   },
-  audioBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingVertical: 4,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: Border.radius.sm,
-  },
-
-  // ── Channel Row ──
-  channelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.lg,
-    gap: Spacing.md,
-  },
-  channelInfo: {
+  audioCardInfo: {
     flex: 1,
     alignItems: 'flex-end',
   },
-  channelAvatar: {
+  audioCardTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    textAlign: 'right',
+  },
+  audioCardAuthor: {
+    fontSize: 11,
+    marginTop: 2,
+  },
+  audioIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  audioProgressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  audioProgressText: {
+    fontSize: 10,
+  },
+  audioDuration: {
+    fontSize: 10,
+  },
+  audioProgressBar: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+    marginBottom: Spacing.sm,
+  },
+  audioProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  audioActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    gap: Spacing.sm,
+  },
+  audioActionBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Border.radius.sm,
+  },
+  
+  // Reminders Section
+  remindersSection: {
+    marginBottom: Spacing.lg,
+  },
+  reminderCard: {
+    marginHorizontal: Spacing.lg,
+    borderRadius: Border.radius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+    marginBottom: Spacing.sm,
+  },
+  reminderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    gap: Spacing.sm,
+    marginBottom: Spacing.sm,
+  },
+  reminderInfo: {
+    flex: 1,
+    alignItems: 'flex-end',
+  },
+  reminderTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  reminderIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  reminderDesc: {
+    fontSize: 11,
+    textAlign: 'right',
+    lineHeight: 18,
+    marginBottom: Spacing.xs,
+  },
+  reminderSubtitle: {
+    fontSize: 10,
+    textAlign: 'right',
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: Border.radius.lg,
+    padding: Spacing.xl,
+    ...Shadows.lg,
+  },
+  notesModalContent: {
+    maxWidth: 380,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  modalInput: {
+    borderRadius: Border.radius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+    minHeight: 100,
+    marginBottom: Spacing.md,
+  },
+  modalTextInput: {
+    fontSize: 14,
+    writingDirection: 'rtl',
+    textAlignVertical: 'top',
+    minHeight: 80,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalButton: {
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: Border.radius.sm,
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalIcons: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  modalIconBtn: {
+    padding: 4,
+  },
+  modalClose: {
+    position: 'absolute',
+    top: Spacing.sm,
+    left: Spacing.sm,
+    padding: 4,
+  },
+
+  // Table Styles
+  tableHeader: {
+    flexDirection: 'row',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Border.radius.sm,
+    marginBottom: 2,
+  },
+  tableHeaderText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  tableCell: {
+    fontSize: 12,
+  },
+  tableAccent: {
+    height: 3,
+    width: 60,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: Spacing.md,
+  },
+
+  // Audio Player Modal
+  playerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  playerModalContent: {
+    borderTopLeftRadius: Border.radius.xl,
+    borderTopRightRadius: Border.radius.xl,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xxxl,
+    alignItems: 'center',
+    ...Shadows.lg,
+  },
+  playerHandle: {
     width: 40,
-    height: 40,
-    borderRadius: 20,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: Spacing.xl,
+  },
+  playerCover: {
+    width: 100,
+    height: 100,
+    borderRadius: Border.radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  playerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+  playerAuthor: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  playerProgressContainer: {
+    width: '100%',
+    marginBottom: Spacing.lg,
+  },
+  playerProgressBar: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  playerProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  playerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xl,
+  },
+  playerControlBtn: {
+    padding: Spacing.sm,
+  },
+  playerPlayBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     alignItems: 'center',
     justifyContent: 'center',
   },
