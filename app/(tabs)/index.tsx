@@ -5,10 +5,13 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  TextInput,
+  Dimensions,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors, Spacing } from '@/constants/theme';
+import { Colors, Spacing, Border, Shadows } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
 import { apiService } from '@/services/api';
 import { Resource, Category } from '@/types';
@@ -16,30 +19,109 @@ import {
   MOCK_SCHOLARS,
   MOCK_BOOKS,
   MOCK_QUICK_ACCESS,
+  MOCK_DESIGNS,
 } from '@/data/mockData';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
-// ─── Section Header (Figma: title+gold bar right, "عرض الكل"+arrow left) ───
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+// Helper function to get Hijri date
+function getHijriDate(): string {
+  // This would ideally use a proper Hijri calendar library
+  // For now, returning a placeholder
+  return '٤ جمادى الآخرة ١٤٤٧ هـ';
+}
+
+// ─── Header Component ───
+
+function Header({ onProfilePress }: { onProfilePress?: () => void }) {
+  const theme = useColorScheme();
+  
+  return (
+    <View style={styles.header}>
+      {/* Left: Profile Icon */}
+      <TouchableOpacity
+        onPress={onProfilePress}
+        style={[styles.profileButton, { backgroundColor: Colors[theme].surfaceAlt }]}
+        accessibilityRole="button"
+        accessibilityLabel="الملف الشخصي"
+      >
+        <Ionicons name="person-outline" size={20} color={Colors[theme].textMuted} />
+      </TouchableOpacity>
+      
+      {/* Right: Title, Date, Logo */}
+      <View style={styles.headerRight}>
+        <View style={styles.headerTitleBlock}>
+          <Text
+            style={{
+              fontSize: 18,
+              fontWeight: '700',
+              color: Colors[theme].text,
+              textAlign: 'right',
+              writingDirection: 'rtl',
+            }}
+          >
+            سبحان الله
+          </Text>
+          <Text
+            style={{
+              fontSize: 11,
+              color: Colors[theme].textMuted,
+              textAlign: 'right',
+              writingDirection: 'rtl',
+              marginTop: 2,
+            }}
+          >
+            {getHijriDate()}
+          </Text>
+        </View>
+        {/* Logo */}
+        <View style={[styles.logoContainer, { backgroundColor: Colors[theme].surface }]}>
+          <View style={styles.logoInner}>
+            <Ionicons name="book" size={24} color={Colors[theme].primary} />
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+// ─── Search Bar Component ───
+
+function SearchBar({ onPress }: { onPress: () => void }) {
+  const theme = useColorScheme();
+  
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.8}
+      style={[styles.searchBar, { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].border }]}
+      accessibilityRole="button"
+      accessibilityLabel="البحث"
+    >
+      <Ionicons name="search-outline" size={18} color={Colors[theme].textMuted} style={styles.searchIcon} />
+      <Text style={{ color: Colors[theme].textMuted, fontSize: 14, flex: 1, textAlign: 'right' }}>
+        بحث..
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Section Header ───
 
 function SectionHeader({
   title,
-  titleColor,
-  barColor,
   onSeeAll,
 }: {
   title: string;
-  titleColor?: string;
-  barColor?: string;
   onSeeAll?: () => void;
 }) {
   const theme = useColorScheme();
-  const tColor = titleColor || Colors[theme].primary;
-  const bColor = barColor || Colors[theme].goldBar;
-
+  
   return (
     <View style={styles.sectionHeader}>
-      {/* Left side: "عرض الكل" + arrow */}
+      {/* Left side: "عرض الكل" */}
       {onSeeAll ? (
         <TouchableOpacity
           onPress={onSeeAll}
@@ -47,8 +129,8 @@ function SectionHeader({
           accessibilityRole="button"
           accessibilityLabel={`عرض الكل - ${title}`}
         >
-          <Ionicons name="chevron-back" size={20} color={Colors[theme].secondary} />
-          <Text variant="xs" weight="semiBold" color={Colors[theme].secondary}>
+          <Ionicons name="chevron-back" size={18} color={Colors[theme].textMuted} />
+          <Text style={{ fontSize: 12, color: Colors[theme].textMuted }}>
             عرض الكل
           </Text>
         </TouchableOpacity>
@@ -58,165 +140,273 @@ function SectionHeader({
       {/* Right side: title + gold bar */}
       <View style={styles.sectionTitleRow}>
         <Text
-          style={{ fontSize: 16, fontWeight: '600', color: tColor, writingDirection: 'rtl' }}
+          style={{
+            fontSize: 16,
+            fontWeight: '700',
+            color: Colors[theme].text,
+            writingDirection: 'rtl',
+          }}
         >
           {title}
         </Text>
-        <View style={[styles.sectionBar, { backgroundColor: bColor }]} />
+        <View style={[styles.sectionBar, { backgroundColor: Colors[theme].goldBar }]} />
       </View>
     </View>
   );
 }
 
-// ─── القرآن حياة Banner (Figma: navy bg, image left, text right) ───
+// ─── Quran Banner (القرآن حياة) ───
 
 function QuranBanner() {
   const theme = useColorScheme();
+  
   return (
-    <View style={[styles.featuredBanner, { backgroundColor: Colors[theme].primary }]}>
-      {/* Decorative placeholder (left side) */}
-      <View style={styles.bannerImageArea}>
-        <View style={[styles.bannerImagePlaceholder, { backgroundColor: 'rgba(255,255,255,0.08)' }]}>
-          <Ionicons name="book" size={36} color="rgba(255,255,255,0.25)" />
+    <TouchableOpacity
+      activeOpacity={0.95}
+      style={[styles.quranBanner, { backgroundColor: Colors[theme].bannerBlue }]}
+      accessibilityRole="button"
+      accessibilityLabel="القرآن حياة"
+    >
+      {/* Left: Decorative Image Area */}
+      <View style={styles.quranBannerLeft}>
+        <View style={styles.quranImagePlaceholder}>
+          <Ionicons name="book-outline" size={40} color="rgba(255,255,255,0.3)" />
         </View>
       </View>
-      {/* Arabic content (right side) */}
-      <View style={styles.bannerTextArea}>
+      
+      {/* Right: Content */}
+      <View style={styles.quranBannerRight}>
+        {/* Title Row with Bar */}
         <View style={styles.bannerTitleRow}>
-          <Text variant="xl" weight="bold" color={Colors[theme].textOnPrimary}>
-            القرآن حــياة
-          </Text>
+          <Text style={styles.quranBannerTitle}>القرآن حياة</Text>
           <View style={[styles.bannerTitleBar, { backgroundColor: Colors[theme].goldBar }]} />
         </View>
-        <Text
-          variant="xs"
-          color={Colors[theme].textOnPrimaryFaint}
-          align="right"
-          style={{ marginTop: 6, lineHeight: 18 }}
-        >
-          اقْتَرَبَ فَثَمَّ حَيَاة مع القرآن لَمْ تَحْيَهَا بُعْد !
+        
+        {/* Logo Text */}
+        <Text style={styles.quranLogoText}>القرآن حياة</Text>
+        
+        {/* Description */}
+        <Text style={styles.quranBannerDesc}>
+          اقْتَرَبَ فَثَمَّ حَيَاة مع القرآن لَمْ تَحْيَهَا بُعْد!
         </Text>
+        
+        {/* More Button */}
         <TouchableOpacity
-          style={[styles.moreButton, { backgroundColor: Colors[theme].goldBar }]}
+          style={[styles.bannerButton, { backgroundColor: Colors[theme].goldBar }]}
           accessibilityRole="button"
-          accessibilityLabel="المزيد عن القرآن حياة"
         >
-          <Ionicons name="arrow-back" size={10} color={Colors[theme].primary} />
-          <Text variant="xs" weight="semiBold" color={Colors[theme].primary}>
+          <Ionicons name="arrow-back" size={12} color={Colors[theme].primary} />
+          <Text style={{ fontSize: 11, fontWeight: '600', color: Colors[theme].primary }}>
             المزيد
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
-// ─── محمد رسول الله Banner (Figma: beige bg, calligraphy left, text right) ───
+// ─── Prophet Banner (محمد رسول الله) ───
 
 function ProphetBanner() {
   const theme = useColorScheme();
+  
   return (
-    <View style={[styles.prophetBanner, { backgroundColor: Colors[theme].surfaceAlt }]}>
-      {/* Decorative placeholder (left side) */}
-      <View style={styles.prophetImageArea}>
+    <TouchableOpacity
+      activeOpacity={0.95}
+      style={[styles.prophetBanner, { backgroundColor: Colors[theme].surfaceAlt }]}
+      accessibilityRole="button"
+      accessibilityLabel="محمد رسول الله"
+    >
+      {/* Left: Decorative Image */}
+      <View style={styles.prophetBannerLeft}>
         <View style={[styles.prophetImagePlaceholder, { backgroundColor: Colors[theme].primary + '15' }]}>
           <Ionicons name="star" size={32} color={Colors[theme].primary} />
         </View>
       </View>
-      {/* Text content (right side) */}
-      <View style={styles.prophetTextArea}>
-        <View style={styles.bannerTitleRow}>
-          <Text variant="xl" weight="bold" color={Colors[theme].primary}>
-            محمد رسول الله
-          </Text>
-          <View style={[styles.bannerTitleBar, { backgroundColor: Colors[theme].primary }]} />
-        </View>
-        <Text
-          variant="xs"
-          color={Colors[theme].textSecondary}
-          align="right"
-          style={{ marginTop: 6, lineHeight: 18 }}
-        >
-          وِجهتُك المُثلى لِتَعرفَ وتَغرفَ مِن سِيرة النبيِّ ﷺ{'\n'}
-          وأصحابِه العِظام عَبْرَ محتوًى موثوقٍ شاملٍ
+      
+      {/* Right: Content */}
+      <View style={styles.prophetBannerRight}>
+        {/* Title with calligraphy style */}
+        <Text style={[styles.prophetCalligraphy, { color: Colors[theme].primary }]}>
+          محمد رسول الله
         </Text>
+        
+        {/* Description */}
+        <Text style={[styles.prophetDesc, { color: Colors[theme].textSecondary }]}>
+          وِجهتُك المُثلى لِتَعرفَ وتَغرفَ مِن سِيرة{'\n'}
+          النبيِّ ﷺ وأصحابِه العِظام. وأزواجِه الكِرام{'\n'}
+          عَبْرَ محتوًى موثوقٍ شاملٍ يعزّز الفهم العميش{'\n'}
+          لشخصيّاتهم ويبيّن الأثر العظيم لتضحياتهم
+        </Text>
+        
+        {/* More Button */}
         <TouchableOpacity
-          style={[styles.moreButton, { backgroundColor: Colors[theme].primary }]}
+          style={[styles.bannerButton, { backgroundColor: Colors[theme].primary }]}
           accessibilityRole="button"
-          accessibilityLabel="المزيد عن محمد رسول الله"
         >
-          <Ionicons name="arrow-back" size={10} color={Colors[theme].textOnPrimaryFaint} />
-          <Text variant="xs" weight="semiBold" color={Colors[theme].textOnPrimaryFaint}>
+          <Ionicons name="arrow-back" size={12} color="#FFFFFF" />
+          <Text style={{ fontSize: 11, fontWeight: '600', color: '#FFFFFF' }}>
             المزيد
           </Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
-// ─── Scholar Card (Figma: 194-216px wide, 78-88px tall, navy bg, gold bar top) ───
+// ─── Books Banner (إضاءات في العقيدة) ───
 
-function ScholarCard({ name, title }: { name: string; title: string }) {
+function BooksBanner() {
   const theme = useColorScheme();
+  
+  return (
+    <TouchableOpacity
+      activeOpacity={0.95}
+      style={[styles.booksBanner, { backgroundColor: Colors[theme].surfaceAlt }]}
+      accessibilityRole="button"
+      accessibilityLabel="إضاءات في العقيدة"
+    >
+      {/* Decorative scroll/paper image */}
+      <View style={styles.booksBannerContent}>
+        <View style={[styles.scrollDecoration, { borderColor: Colors[theme].secondary }]}>
+          <Text style={[styles.scrollText, { color: Colors[theme].secondary }]}>
+            إضاءات أنت على{'\n'}طريق المغاني
+          </Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Queen Section (أنتِ ملكة) ───
+
+function QueenSection() {
+  const theme = useColorScheme();
+  
+  return (
+    <TouchableOpacity
+      activeOpacity={0.95}
+      style={[styles.queenSection, { backgroundColor: Colors[theme].surfaceAlt }]}
+      accessibilityRole="button"
+      accessibilityLabel="أنتِ ملكة"
+    >
+      {/* Left: Crown/Image */}
+      <View style={styles.queenLeft}>
+        <View style={[styles.queenImagePlaceholder, { backgroundColor: Colors[theme].secondary + '20' }]}>
+          <Ionicons name="diamond" size={36} color={Colors[theme].secondary} />
+        </View>
+      </View>
+      
+      {/* Right: Content */}
+      <View style={styles.queenRight}>
+        {/* Title with bar */}
+        <View style={styles.bannerTitleRow}>
+          <Text style={[styles.queenTitle, { color: Colors[theme].primary }]}>
+            أنتِ ملكة
+          </Text>
+          <View style={[styles.bannerTitleBar, { backgroundColor: Colors[theme].secondary }]} />
+        </View>
+        
+        {/* Subtitle */}
+        <Text style={[styles.queenSubtitle, { color: Colors[theme].secondary }]}>
+          مَلِكةٌ أنتِ لا سِواكِ
+        </Text>
+        
+        {/* Description */}
+        <Text style={[styles.queenDesc, { color: Colors[theme].textSecondary }]}>
+          وفي قُربك من ربك: هُداكِ فأعدَدنا{'\n'}
+          لكِ هذا المحتوى النَّدِي{'\n'}
+          لتَصنعي جِيلًا على هَدي النبي ﷺ
+        </Text>
+        
+        {/* More Button */}
+        <TouchableOpacity
+          style={[styles.queenButton, { backgroundColor: Colors[theme].primary }]}
+          accessibilityRole="button"
+        >
+          <Ionicons name="arrow-back" size={12} color="#FFFFFF" />
+          <Text style={{ fontSize: 11, fontWeight: '600', color: '#FFFFFF' }}>
+            المزيد
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Quick Access Card (Circular) ───
+
+function QuickAccessCard({ label, icon }: { label: string; icon: string }) {
+  const theme = useColorScheme();
+  
   return (
     <TouchableOpacity
       activeOpacity={0.8}
-      style={[styles.scholarCard, { backgroundColor: Colors[theme].primary }]}
+      style={styles.quickAccessItem}
       accessibilityRole="button"
-      accessibilityLabel={`${title} ${name}`}
+      accessibilityLabel={label}
     >
-      {/* Gold accent bar on top */}
-      <View style={[styles.scholarTopBar, { backgroundColor: Colors[theme].goldBar }]} />
-      {/* Scholar title (e.g. الشيخ) */}
+      <View style={[styles.quickAccessCircle, { backgroundColor: Colors[theme].surfaceAlt }]}>
+        <Ionicons name={icon as any} size={24} color={Colors[theme].primary} />
+      </View>
       <Text
         style={{
-          fontSize: 10,
-          color: 'rgba(255,255,255,0.55)',
+          fontSize: 11,
+          color: Colors[theme].text,
           textAlign: 'center',
+          marginTop: 8,
           writingDirection: 'rtl',
         }}
+        numberOfLines={2}
       >
-        {title}
-      </Text>
-      {/* Scholar name */}
-      <Text
-        style={{
-          fontSize: 14,
-          fontWeight: '700',
-          color: Colors[theme].textOnPrimary,
-          textAlign: 'center',
-          writingDirection: 'rtl',
-        }}
-      >
-        {name}
+        {label}
       </Text>
     </TouchableOpacity>
   );
 }
 
-// ─── Book Card (Figma: 185-192px wide, 80-81px tall, beige bg, blue bar top) ───
+// ─── Scholar Card ───
+
+function ScholarCard({ name, title }: { name: string; title: string }) {
+  const theme = useColorScheme();
+  
+  return (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      style={[styles.scholarCard, { backgroundColor: Colors[theme].bannerBlue }]}
+      accessibilityRole="button"
+      accessibilityLabel={`${title} ${name}`}
+    >
+      {/* Gold accent bar */}
+      <View style={[styles.scholarBar, { backgroundColor: Colors[theme].goldBar }]} />
+      
+      {/* Title text (faded) */}
+      <Text style={styles.scholarTitle}>{title}</Text>
+      
+      {/* Name in calligraphy style */}
+      <Text style={styles.scholarName}>{name}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Book Card ───
 
 function BookCard({ title }: { title: string }) {
   const theme = useColorScheme();
+  
   return (
     <TouchableOpacity
-      activeOpacity={0.8}
-      style={[styles.bookCard, { backgroundColor: Colors[theme].bookCardBg }]}
+      activeOpacity={0.85}
+      style={[styles.bookCard, { backgroundColor: Colors[theme].surfaceAlt }]}
       accessibilityRole="button"
       accessibilityLabel={title}
     >
-      {/* Navy accent bar on top */}
-      <View style={[styles.bookTopBar, { backgroundColor: Colors[theme].blueBar }]} />
+      {/* Blue accent bar */}
+      <View style={[styles.bookBar, { backgroundColor: Colors[theme].primary }]} />
+      
       {/* Book title */}
       <Text
-        style={{
-          fontSize: 13,
-          fontWeight: '700',
-          color: Colors[theme].primary,
-          textAlign: 'center',
-          writingDirection: 'rtl',
-        }}
+        style={[styles.bookTitle, { color: Colors[theme].primary }]}
         numberOfLines={2}
       >
         {title}
@@ -225,149 +415,42 @@ function BookCard({ title }: { title: string }) {
   );
 }
 
-// ─── Quick Access Card ───
+// ─── Design Card ───
 
-function QuickAccessCard({ label, icon }: { label: string; icon: string }) {
+function DesignCard({ title, index }: { title: string; index: number }) {
   const theme = useColorScheme();
+  const isFirst = index === 0;
+  
   return (
     <TouchableOpacity
-      activeOpacity={0.8}
-      style={[styles.quickCard, { backgroundColor: Colors[theme].surfaceAlt }]}
+      activeOpacity={0.9}
+      style={[
+        styles.designCard,
+        { backgroundColor: isFirst ? Colors[theme].bannerBlue : Colors[theme].surfaceAlt },
+      ]}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={title}
     >
-      {/* Accent bar on top */}
-      <View style={[styles.quickCardBar, { backgroundColor: Colors[theme].goldBar }]} />
-      <View style={styles.quickCardContent}>
-        <Ionicons name={icon as any} size={20} color={Colors[theme].primary} />
+      <View style={styles.designCardContent}>
+        <Ionicons
+          name="image-outline"
+          size={28}
+          color={isFirst ? 'rgba(255,255,255,0.5)' : Colors[theme].textMuted}
+        />
         <Text
           style={{
             fontSize: 12,
             fontWeight: '600',
-            color: Colors[theme].primary,
+            color: isFirst ? '#FFFFFF' : Colors[theme].text,
             textAlign: 'center',
-            writingDirection: 'rtl',
+            marginTop: 8,
           }}
+          numberOfLines={2}
         >
-          {label}
+          {title}
         </Text>
       </View>
     </TouchableOpacity>
-  );
-}
-
-// ─── أنتِ ملكة Section (Figma: warm bg, text + decorative image) ───
-
-function QueenSection() {
-  const theme = useColorScheme();
-  return (
-    <View style={[styles.queenSection, { backgroundColor: Colors[theme].queenBg }]}>
-      {/* Decorative area (left side) */}
-      <View style={styles.queenImageArea}>
-        <View style={[styles.queenImagePlaceholder, { backgroundColor: Colors[theme].primary + '12' }]}>
-          <Ionicons name="flower" size={40} color={Colors[theme].secondary} />
-        </View>
-      </View>
-      {/* Text content (right side) */}
-      <View style={styles.queenTextArea}>
-        <View style={styles.bannerTitleRow}>
-          <Text variant="xl" weight="bold" color={Colors[theme].primary}>
-            أنتِ ملكة
-          </Text>
-          <View style={[styles.bannerTitleBar, { backgroundColor: Colors[theme].secondary }]} />
-        </View>
-        <Text
-          variant="xs"
-          color={Colors[theme].textSecondary}
-          align="right"
-          style={{ marginTop: 8, lineHeight: 20 }}
-        >
-          مَلِكةٌ أنتِ لا سِواكِ وفي قُربك من ربك: هُداكِ{'\n'}
-          فأعدَدنا لكِ هذا المحتوى النَّدِي لتَصنعي جِيلًا{'\n'}
-          على هَدي النبي ﷺ
-        </Text>
-        <TouchableOpacity
-          style={[styles.moreButton, { backgroundColor: Colors[theme].primary }]}
-          accessibilityRole="button"
-          accessibilityLabel="المزيد عن أنتِ ملكة"
-        >
-          <Ionicons name="arrow-back" size={10} color={Colors[theme].textOnPrimaryFaint} />
-          <Text variant="xs" weight="semiBold" color={Colors[theme].textOnPrimaryFaint}>
-            المزيد
-          </Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  );
-}
-
-// ─── Design Card (Figma: single wide card, ~full width, ~149px tall) ───
-
-function DesignCard() {
-  const theme = useColorScheme();
-  return (
-    <View style={styles.designCardContainer}>
-      <TouchableOpacity
-        activeOpacity={0.9}
-        accessibilityRole="button"
-        accessibilityLabel="تصميمات دعوية"
-        style={[
-          styles.designCard,
-          {
-            backgroundColor: Colors[theme].surfaceAlt,
-          },
-        ]}
-      >
-        {/* Placeholder for design card content */}
-        <View style={styles.designCardInner}>
-          <Ionicons
-            name="image-outline"
-            size={32}
-            color={Colors[theme].secondary}
-          />
-          <Text
-            style={{
-              fontSize: 14,
-              fontWeight: '600',
-              color: Colors[theme].primary,
-              textAlign: 'center',
-              writingDirection: 'rtl',
-              marginTop: 8,
-            }}
-          >
-            تصميمات دعوية
-          </Text>
-          <Text
-            style={{
-              fontSize: 11,
-              color: Colors[theme].textSecondary,
-              textAlign: 'center',
-              writingDirection: 'rtl',
-              marginTop: 4,
-            }}
-          >
-            تصميمات إسلامية جاهزة للنشر
-          </Text>
-        </View>
-      </TouchableOpacity>
-      {/* Dot indicators */}
-      <View style={styles.dotIndicators}>
-        {[0, 1, 2].map((i) => (
-          <View
-            key={i}
-            style={[
-              styles.dot,
-              {
-                backgroundColor:
-                  i === 0
-                    ? Colors[theme].primary
-                    : Colors[theme].border,
-              },
-            ]}
-          />
-        ))}
-      </View>
-    </View>
   );
 }
 
@@ -443,71 +526,46 @@ export default function HomeScreen() {
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[theme].background }]}>
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
-        <View style={styles.header}>
-          {/* Left: search icon */}
-          <TouchableOpacity
-            onPress={() => router.push('/(tabs)/search')}
-            style={[styles.searchIcon, { backgroundColor: Colors[theme].surface }]}
-            accessibilityRole="button"
-            accessibilityLabel="البحث"
-          >
-            <Ionicons name="search" size={18} color={Colors[theme].primary} />
-          </TouchableOpacity>
-          {/* Right: title + logo */}
-          <View style={styles.headerRight}>
-            <View style={styles.headerTitleBlock}>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: '700',
-                  color: Colors[theme].primary,
-                  textAlign: 'right',
-                  writingDirection: 'rtl',
-                }}
-              >
-                خزائن الرحمن
-              </Text>
-              <Text
-                style={{
-                  fontSize: 10,
-                  color: Colors[theme].secondary,
-                  textAlign: 'right',
-                  writingDirection: 'rtl',
-                  marginTop: 1,
-                }}
-              >
-                تأخذ بيدك إلى الجنة
-              </Text>
-            </View>
-            <View style={[styles.logoSmall, { backgroundColor: Colors[theme].primary }]}>
-              <Ionicons name="book" size={18} color={Colors[theme].textOnPrimary} />
-            </View>
-          </View>
+        <Header onProfilePress={() => router.push('/(tabs)/settings')} />
+        
+        {/* Search Bar */}
+        <View style={styles.searchSection}>
+          <SearchBar onPress={() => router.push('/(tabs)/search')} />
         </View>
-
-        {/* Hero decorative separator */}
-        <View style={styles.heroSeparator}>
-          <View style={[styles.heroSeparatorLine, { backgroundColor: Colors[theme].goldBar }]} />
-          <View style={[styles.heroSeparatorDiamond, { backgroundColor: Colors[theme].goldBar }]} />
-          <View style={[styles.heroSeparatorLine, { backgroundColor: Colors[theme].goldBar }]} />
-        </View>
-
-        {/* 1. القرآن حياة Banner */}
+        
+        {/* 1. Quran Banner */}
         <View style={styles.bannerSection}>
           <QuranBanner />
         </View>
-
-        {/* 2. محمد رسول الله Banner */}
+        
+        {/* 2. Prophet Banner */}
         <View style={styles.bannerSection}>
           <ProphetBanner />
         </View>
-
-        {/* 3. العلماء والمشايخ - Scholars */}
+        
+        {/* 3. Books Banner */}
+        <View style={styles.bannerSection}>
+          <BooksBanner />
+        </View>
+        
+        {/* 4. Queen Section */}
+        <View style={styles.bannerSection}>
+          <QueenSection />
+        </View>
+        
+        {/* 5. Quick Access */}
+        <View style={styles.quickAccessSection}>
+          <View style={styles.quickAccessRow}>
+            <QuickAccessCard label="كتب صوتية" icon="headset" />
+            <QuickAccessCard label="برامج إذاعية" icon="radio" />
+            <QuickAccessCard label="حصريات خزائن الرحمن" icon="diamond" />
+          </View>
+        </View>
+        
+        {/* 6. Scholars Section */}
         <View style={styles.section}>
           <SectionHeader
             title="العلماء والمشايخ"
-            titleColor={Colors[theme].primary}
-            barColor={Colors[theme].goldBar}
             onSeeAll={() => {}}
           />
           <ScrollView
@@ -524,13 +582,11 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
         </View>
-
-        {/* 4. الكتب العلمية - Books */}
+        
+        {/* 7. Books Section */}
         <View style={styles.section}>
           <SectionHeader
             title="الكتب العلمية"
-            titleColor={Colors[theme].primary}
-            barColor={Colors[theme].goldBar}
             onSeeAll={() => {}}
           />
           <ScrollView
@@ -543,36 +599,20 @@ export default function HomeScreen() {
             ))}
           </ScrollView>
         </View>
-
-        {/* 5. أنتِ ملكة */}
-        <View style={styles.section}>
-          <QueenSection />
-        </View>
-
-        {/* 6. تصميمات دعوية - Dawah Designs */}
-        <View style={styles.section}>
+        
+        {/* 8. Dawah Designs Section */}
+        <View style={[styles.section, { marginBottom: Spacing.xxxl }]}>
           <SectionHeader
             title="تصميمات دعوية"
-            titleColor={Colors[theme].primary}
-            barColor={Colors[theme].goldBar}
             onSeeAll={() => {}}
           />
-          <DesignCard />
-        </View>
-
-        {/* 7. Quick Access */}
-        <View style={[styles.section, { marginBottom: Spacing.xxxl }]}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.horizontalList}
           >
-            {MOCK_QUICK_ACCESS.map((item) => (
-              <QuickAccessCard
-                key={item.id}
-                label={item.label}
-                icon={item.icon}
-              />
+            {MOCK_DESIGNS.map((design, index) => (
+              <DesignCard key={design.id} title={design.title} index={index} />
             ))}
           </ScrollView>
         </View>
@@ -592,66 +632,68 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-
+  
   // Header
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 12,
-    paddingBottom: 8,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.sm,
+  },
+  profileButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerRight: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
   },
   headerTitleBlock: {
     alignItems: 'flex-end',
   },
-  logoSmall: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
+  logoContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...Shadows.sm,
+  },
+  logoInner: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  searchIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
+  
+  // Search
+  searchSection: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
-
-  // Hero separator (decorative gold line + diamond)
-  heroSeparator: {
+  searchBar: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    gap: 6,
+    height: 44,
+    borderRadius: Border.radius.lg,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.md,
   },
-  heroSeparatorLine: {
-    height: 1.5,
-    width: 70,
-    borderRadius: 1,
+  searchIcon: {
+    marginRight: Spacing.sm,
   },
-  heroSeparatorDiamond: {
-    width: 7,
-    height: 7,
-    borderRadius: 1.5,
-    transform: [{ rotate: '45deg' }],
-  },
-
-  // Section header (Figma: row with title+bar right, "عرض الكل" left)
+  
+  // Section Header
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    marginBottom: 14,
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -659,238 +701,291 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionBar: {
-    width: 5,
-    height: 21,
-    borderRadius: 4,
+    width: 4,
+    height: 20,
+    borderRadius: 2,
   },
   seeAllButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 2,
   },
-
+  
   // Sections
   section: {
-    marginBottom: 28,
+    marginBottom: Spacing.xl,
   },
   bannerSection: {
-    paddingHorizontal: 16,
-    marginBottom: 14,
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   horizontalList: {
-    paddingHorizontal: 16,
-    gap: 10,
+    paddingHorizontal: Spacing.lg,
+    gap: Spacing.md,
   },
-
-  // Featured Banner (القرآن حياة)
-  featuredBanner: {
-    height: 160,
-    borderRadius: 12,
+  
+  // Quran Banner
+  quranBanner: {
+    borderRadius: Border.radius.xl,
     overflow: 'hidden',
     flexDirection: 'row',
+    minHeight: 160,
   },
-  bannerImageArea: {
-    width: 100,
+  quranBannerLeft: {
+    width: 110,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  bannerImagePlaceholder: {
-    width: 72,
-    height: 82,
-    borderRadius: 8,
+  quranImagePlaceholder: {
+    width: 80,
+    height: 90,
+    borderRadius: Border.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.08)',
   },
-  bannerTextArea: {
+  quranBannerRight: {
     flex: 1,
-    paddingVertical: 18,
-    paddingEnd: 18,
+    paddingVertical: Spacing.lg,
+    paddingRight: Spacing.lg,
     alignItems: 'flex-end',
   },
   bannerTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
   bannerTitleBar: {
     width: 4,
-    height: 24,
+    height: 20,
     borderRadius: 2,
   },
-  moreButton: {
+  quranBannerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  quranLogoText: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: 'rgba(255,255,255,0.15)',
+    marginTop: 4,
+  },
+  quranBannerDesc: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.8)',
+    textAlign: 'right',
+    marginTop: 8,
+    lineHeight: 20,
+  },
+  bannerButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5,
-    paddingHorizontal: 16,
-    borderRadius: 4,
     gap: 4,
-    marginTop: 10,
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: Border.radius.sm,
+    marginTop: Spacing.md,
   },
-
-  // Prophet Banner (محمد رسول الله)
+  
+  // Prophet Banner
   prophetBanner: {
-    height: 155,
-    borderRadius: 12,
-    overflow: 'hidden',
-    flexDirection: 'row',
-  },
-  prophetImageArea: {
-    width: 95,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  prophetImagePlaceholder: {
-    width: 65,
-    height: 78,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  prophetTextArea: {
-    flex: 1,
-    paddingVertical: 16,
-    paddingEnd: 18,
-    alignItems: 'flex-end',
-  },
-
-  // Scholar Card (Figma: ~200px wide, ~84px tall, navy bg, gold top bar)
-  scholarCard: {
-    width: 200,
-    height: 84,
-    borderRadius: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 8,
-    gap: 4,
-    // Shadow from Figma: 2.85px 0.71px 11.41px rgba(20, 64, 100, 0.24)
-    shadowColor: '#144064',
-    shadowOffset: { width: 2.85, height: 0.71 },
-    shadowOpacity: 0.24,
-    shadowRadius: 11.41,
-    elevation: 4,
-  },
-  scholarTopBar: {
-    position: 'absolute',
-    top: -2.5,
-    width: 140,
-    height: 4.5,
-    borderRadius: 3,
-    alignSelf: 'center',
-  },
-
-  // Book Card (Figma: ~190px wide, ~80px tall, beige bg, blue top bar)
-  bookCard: {
-    width: 190,
-    height: 80,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    // Shadow from Figma: 2.67px 0.67px 10.66px rgba(20, 64, 100, 0.24)
-    shadowColor: '#144064',
-    shadowOffset: { width: 2.67, height: 0.67 },
-    shadowOpacity: 0.24,
-    shadowRadius: 10.66,
-    elevation: 4,
-  },
-  bookTopBar: {
-    position: 'absolute',
-    top: -2,
-    width: 114,
-    height: 4,
-    borderRadius: 3,
-    alignSelf: 'center',
-  },
-
-  // Quick Access Cards
-  quickCard: {
-    width: 180,
-    height: 90,
-    borderRadius: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 12,
-    // Shadow
-    shadowColor: '#144064',
-    shadowOffset: { width: 2, height: 1 },
-    shadowOpacity: 0.18,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  quickCardBar: {
-    position: 'absolute',
-    top: -2.5,
-    width: 100,
-    height: 5,
-    borderRadius: 3,
-    alignSelf: 'center',
-  },
-  quickCardContent: {
-    alignItems: 'center',
-    gap: 6,
-  },
-
-  // أنتِ ملكة Section
-  queenSection: {
-    marginHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: Border.radius.xl,
     overflow: 'hidden',
     flexDirection: 'row',
     minHeight: 180,
   },
-  queenImageArea: {
+  prophetBannerLeft: {
+    width: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prophetImagePlaceholder: {
+    width: 70,
+    height: 85,
+    borderRadius: Border.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  prophetBannerRight: {
+    flex: 1,
+    paddingVertical: Spacing.lg,
+    paddingRight: Spacing.lg,
+    alignItems: 'flex-end',
+  },
+  prophetCalligraphy: {
+    fontSize: 20,
+    fontWeight: '700',
+    textAlign: 'right',
+  },
+  prophetDesc: {
+    fontSize: 11,
+    textAlign: 'right',
+    marginTop: 8,
+    lineHeight: 18,
+  },
+  
+  // Books Banner
+  booksBanner: {
+    borderRadius: Border.radius.xl,
+    overflow: 'hidden',
+    minHeight: 100,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: Spacing.lg,
+  },
+  booksBannerContent: {
+    alignItems: 'center',
+  },
+  scrollDecoration: {
+    borderWidth: 2,
+    borderRadius: Border.radius.lg,
+    paddingVertical: Spacing.lg,
+    paddingHorizontal: Spacing.xl,
+  },
+  scrollText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  
+  // Queen Section
+  queenSection: {
+    borderRadius: Border.radius.xl,
+    overflow: 'hidden',
+    flexDirection: 'row',
+    minHeight: 180,
+  },
+  queenLeft: {
     width: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },
   queenImagePlaceholder: {
-    width: 72,
-    height: 90,
-    borderRadius: 10,
+    width: 70,
+    height: 85,
+    borderRadius: Border.radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  queenTextArea: {
+  queenRight: {
     flex: 1,
-    paddingVertical: 18,
-    paddingEnd: 18,
+    paddingVertical: Spacing.lg,
+    paddingRight: Spacing.lg,
     alignItems: 'flex-end',
   },
-
-  // Design Card
-  designCardContainer: {
+  queenTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+  },
+  queenSubtitle: {
+    fontSize: 12,
+    fontWeight: '600',
+    marginTop: 4,
+  },
+  queenDesc: {
+    fontSize: 11,
+    textAlign: 'right',
+    marginTop: 8,
+    lineHeight: 18,
+  },
+  queenButton: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
     paddingHorizontal: 16,
+    borderRadius: Border.radius.sm,
+    marginTop: Spacing.md,
   },
+  
+  // Quick Access
+  quickAccessSection: {
+    paddingHorizontal: Spacing.lg,
+    marginBottom: Spacing.xl,
+  },
+  quickAccessRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  quickAccessItem: {
+    alignItems: 'center',
+    width: (SCREEN_WIDTH - 64) / 3,
+  },
+  quickAccessCircle: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  
+  // Scholar Card
+  scholarCard: {
+    width: 180,
+    height: 80,
+    borderRadius: Border.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+    ...Shadows.sm,
+  },
+  scholarBar: {
+    position: 'absolute',
+    top: 0,
+    width: 100,
+    height: 4,
+    borderRadius: 2,
+  },
+  scholarTitle: {
+    fontSize: 10,
+    color: 'rgba(255,255,255,0.5)',
+    textAlign: 'center',
+  },
+  scholarName: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  
+  // Book Card
+  bookCard: {
+    width: 160,
+    height: 75,
+    borderRadius: Border.radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: Spacing.md,
+    ...Shadows.sm,
+  },
+  bookBar: {
+    position: 'absolute',
+    top: 0,
+    width: 80,
+    height: 4,
+    borderRadius: 2,
+  },
+  bookTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  
+  // Design Card
   designCard: {
-    width: '100%',
-    height: 149,
-    borderRadius: 12,
+    width: 140,
+    height: 160,
+    borderRadius: Border.radius.lg,
     overflow: 'hidden',
-    // Shadow
-    shadowColor: '#144064',
-    shadowOffset: { width: 2, height: 1 },
-    shadowOpacity: 0.18,
-    shadowRadius: 10,
-    elevation: 4,
+    ...Shadows.sm,
   },
-  designCardInner: {
+  designCardContent: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    padding: 16,
-  },
-  dotIndicators: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginTop: 12,
-  },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    padding: Spacing.md,
   },
 });
