@@ -446,12 +446,207 @@ function SmartReminders() {
   );
 }
 
+// ─── Add Note Modal ───
+
+function AddNoteModal({
+  visible,
+  onClose,
+  onSave,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  onSave: (note: string) => void;
+}) {
+  const theme = useColorScheme();
+  const [noteText, setNoteText] = useState('');
+
+  const handleSave = () => {
+    if (noteText.trim()) {
+      onSave(noteText);
+      setNoteText('');
+      onClose();
+    }
+  };
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, { backgroundColor: Colors[theme].surface }]}>
+          <Text style={[styles.modalTitle, { color: Colors[theme].text }]}>إضافة ملاحظة</Text>
+          
+          <View style={[styles.modalInput, { backgroundColor: Colors[theme].surfaceAlt, borderColor: Colors[theme].border }]}>
+            <TextInput
+              style={[styles.modalTextInput, { color: Colors[theme].text }]}
+              placeholder="اكتب ملاحظتك هنا..."
+              placeholderTextColor={Colors[theme].textMuted}
+              value={noteText}
+              onChangeText={setNoteText}
+              textAlign="right"
+              multiline
+              numberOfLines={4}
+            />
+          </View>
+
+          <View style={styles.modalActions}>
+            <TouchableOpacity
+              style={[styles.modalButton, { backgroundColor: Colors[theme].primary }]}
+              onPress={handleSave}
+            >
+              <Text style={styles.modalButtonText}>حفظ</Text>
+            </TouchableOpacity>
+            <View style={styles.modalIcons}>
+              <TouchableOpacity style={styles.modalIconBtn}>
+                <Ionicons name="list-outline" size={20} color={Colors[theme].textMuted} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalIconBtn}>
+                <Ionicons name="image-outline" size={20} color={Colors[theme].textMuted} />
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalIconBtn}>
+                <Ionicons name="trash-outline" size={20} color={Colors[theme].textMuted} />
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.modalClose} onPress={onClose}>
+            <Ionicons name="close" size={24} color={Colors[theme].textMuted} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── View Notes Modal ───
+
+function ViewNotesModal({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const theme = useColorScheme();
+
+  const notesData = [
+    { id: '1', text: 'تأملات في سورة الفاتحة', category: 'حفظ ساخوطي' },
+    { id: '2', text: 'فوائد من درس الأخلاق', category: 'أمس' },
+    { id: '3', text: 'فوائد من درس الأخلاق', category: 'أمس' },
+  ];
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <View style={styles.modalOverlay}>
+        <View style={[styles.modalContent, styles.notesModalContent, { backgroundColor: Colors[theme].surface }]}>
+          <Text style={[styles.modalTitle, { color: Colors[theme].text }]}>عرض الملاحظات</Text>
+
+          {/* Table Header */}
+          <View style={[styles.tableHeader, { backgroundColor: Colors[theme].surfaceAlt }]}>
+            <Text style={[styles.tableHeaderText, { color: Colors[theme].textSecondary, flex: 1 }]}>آخر الملاحظات</Text>
+            <Text style={[styles.tableHeaderText, { color: Colors[theme].textSecondary, flex: 2, textAlign: 'right' }]}>تأملات في سورة الفاتحة</Text>
+          </View>
+
+          {/* Table Rows */}
+          {notesData.map((note, index) => (
+            <View
+              key={note.id}
+              style={[
+                styles.tableRow,
+                { borderBottomColor: Colors[theme].borderLight },
+                index % 2 === 0 && { backgroundColor: Colors[theme].surfaceAlt + '50' },
+              ]}
+            >
+              <Text style={[styles.tableCell, { color: Colors[theme].textMuted, flex: 1 }]}>{note.category}</Text>
+              <Text style={[styles.tableCell, { color: Colors[theme].text, flex: 2, textAlign: 'right' }]}>{note.text}</Text>
+            </View>
+          ))}
+
+          {/* Underline accent */}
+          <View style={[styles.tableAccent, { backgroundColor: Colors[theme].primary }]} />
+
+          <TouchableOpacity style={styles.modalClose} onPress={onClose}>
+            <Ionicons name="close" size={24} color={Colors[theme].textMuted} />
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+// ─── Audio Player Modal ───
+
+function AudioPlayerModal({
+  visible,
+  onClose,
+  book,
+}: {
+  visible: boolean;
+  onClose: () => void;
+  book: { title: string; author: string } | null;
+}) {
+  const theme = useColorScheme();
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  if (!book) return null;
+
+  return (
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={styles.playerModalOverlay}>
+        <View style={[styles.playerModalContent, { backgroundColor: Colors[theme].surface }]}>
+          {/* Handle bar */}
+          <View style={[styles.playerHandle, { backgroundColor: Colors[theme].border }]} />
+
+          {/* Book Cover Placeholder */}
+          <View style={[styles.playerCover, { backgroundColor: Colors[theme].surfaceAlt }]}>
+            <Ionicons name="book" size={40} color={Colors[theme].primary} />
+          </View>
+
+          {/* Book Info */}
+          <Text style={[styles.playerTitle, { color: Colors[theme].text }]}>{book.title}</Text>
+          <Text style={[styles.playerAuthor, { color: Colors[theme].textMuted }]}>{book.author}</Text>
+
+          {/* Progress Bar */}
+          <View style={styles.playerProgressContainer}>
+            <View style={[styles.playerProgressBar, { backgroundColor: Colors[theme].progressBg }]}>
+              <View style={[styles.playerProgressFill, { backgroundColor: Colors[theme].primary, width: '35%' }]} />
+            </View>
+          </View>
+
+          {/* Playback Controls */}
+          <View style={styles.playerControls}>
+            <TouchableOpacity style={styles.playerControlBtn}>
+              <Ionicons name="play-skip-forward" size={28} color={Colors[theme].text} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.playerPlayBtn, { backgroundColor: Colors[theme].primary }]}
+              onPress={() => setIsPlaying(!isPlaying)}
+            >
+              <Ionicons name={isPlaying ? 'pause' : 'play'} size={32} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.playerControlBtn}>
+              <Ionicons name="play-skip-back" size={28} color={Colors[theme].text} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 // ─── Main Library Screen ───
 
 export default function SavedScreen() {
   const router = useRouter();
   const theme = useColorScheme();
   const [searchText, setSearchText] = useState('');
+  const [showAddNoteModal, setShowAddNoteModal] = useState(false);
+  const [showViewNotesModal, setShowViewNotesModal] = useState(false);
+  const [showAudioPlayerModal, setShowAudioPlayerModal] = useState(false);
+  const [selectedBook, setSelectedBook] = useState<{ title: string; author: string } | null>(null);
+
+  const handleOpenPlayer = (book: { title: string; author: string }) => {
+    setSelectedBook(book);
+    setShowAudioPlayerModal(true);
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[theme].background }]}>
@@ -490,7 +685,12 @@ export default function SavedScreen() {
         <View style={styles.statsRow}>
           <QuickStatCard icon="alarm-outline" label="تذكيراتي" value="+٣ تذكيرات نشطة" />
           <QuickStatCard icon="book-outline" label="ورد القرآن" value="٧ أيام متتالية" />
-          <QuickStatCard icon="pencil-outline" label="ملاحظاتي" value="٢٣ ملاحظة" />
+          <QuickStatCard 
+            icon="pencil-outline" 
+            label="ملاحظاتي" 
+            value="٢٣ ملاحظة" 
+            onPress={() => setShowViewNotesModal(true)}
+          />
         </View>
         
         {/* Daily Wird Card */}
@@ -509,6 +709,22 @@ export default function SavedScreen() {
           <SmartReminders />
         </View>
       </ScrollView>
+
+      {/* Modals */}
+      <AddNoteModal
+        visible={showAddNoteModal}
+        onClose={() => setShowAddNoteModal(false)}
+        onSave={(note) => console.log('Note saved:', note)}
+      />
+      <ViewNotesModal
+        visible={showViewNotesModal}
+        onClose={() => setShowViewNotesModal(false)}
+      />
+      <AudioPlayerModal
+        visible={showAudioPlayerModal}
+        onClose={() => setShowAudioPlayerModal(false)}
+        book={selectedBook}
+      />
     </SafeAreaView>
   );
 }
@@ -863,5 +1079,169 @@ const styles = StyleSheet.create({
   reminderSubtitle: {
     fontSize: 10,
     textAlign: 'right',
+  },
+
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: Spacing.xl,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 340,
+    borderRadius: Border.radius.lg,
+    padding: Spacing.xl,
+    ...Shadows.lg,
+  },
+  notesModalContent: {
+    maxWidth: 380,
+  },
+  modalTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  modalInput: {
+    borderRadius: Border.radius.md,
+    borderWidth: 1,
+    padding: Spacing.md,
+    minHeight: 100,
+    marginBottom: Spacing.md,
+  },
+  modalTextInput: {
+    fontSize: 14,
+    writingDirection: 'rtl',
+    textAlignVertical: 'top',
+    minHeight: 80,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  modalButton: {
+    paddingVertical: 8,
+    paddingHorizontal: Spacing.xl,
+    borderRadius: Border.radius.sm,
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  modalIcons: {
+    flexDirection: 'row',
+    gap: Spacing.md,
+  },
+  modalIconBtn: {
+    padding: 4,
+  },
+  modalClose: {
+    position: 'absolute',
+    top: Spacing.sm,
+    left: Spacing.sm,
+    padding: 4,
+  },
+
+  // Table Styles
+  tableHeader: {
+    flexDirection: 'row',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderRadius: Border.radius.sm,
+    marginBottom: 2,
+  },
+  tableHeaderText: {
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: Spacing.sm,
+    paddingHorizontal: Spacing.md,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  tableCell: {
+    fontSize: 12,
+  },
+  tableAccent: {
+    height: 3,
+    width: 60,
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginTop: Spacing.md,
+  },
+
+  // Audio Player Modal
+  playerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  playerModalContent: {
+    borderTopLeftRadius: Border.radius.xl,
+    borderTopRightRadius: Border.radius.xl,
+    padding: Spacing.xl,
+    paddingBottom: Spacing.xxxl,
+    alignItems: 'center',
+    ...Shadows.lg,
+  },
+  playerHandle: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    marginBottom: Spacing.xl,
+  },
+  playerCover: {
+    width: 100,
+    height: 100,
+    borderRadius: Border.radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.lg,
+  },
+  playerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: Spacing.xs,
+  },
+  playerAuthor: {
+    fontSize: 12,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  playerProgressContainer: {
+    width: '100%',
+    marginBottom: Spacing.lg,
+  },
+  playerProgressBar: {
+    height: 4,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  playerProgressFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  playerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: Spacing.xl,
+  },
+  playerControlBtn: {
+    padding: Spacing.sm,
+  },
+  playerPlayBtn: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
