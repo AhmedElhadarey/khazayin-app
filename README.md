@@ -1,50 +1,38 @@
-# Welcome to your Expo app 👋
+# مكتبة خزائن الرحمن - React Native App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This repository contains the MVP mobile application for "مكتبة خزائن الرحمن" built with React Native and Expo Router. The goal of this application is to provide a smooth, natively optimized, and visually calm experience for parsing the Nextcloud instance of the library.
 
-## Get started
+## Architecture
+- **Framework:** React Native / Expo (Managed Workflow)
+- **Routing:** Expo Router (`app/` directory)
+- **Language:** TypeScript
+- **State Management:** Zustand (for settings, downloads, favorites) with `AsyncStorage` persistence.
+- **Data Layer:** A centralized `apiService` handles retrieving structure. Today it serves mock JSON data mirroring the library, but is designed to drop in Nextcloud WebDAV APIs natively.
+- **Styling:** Context-sensitive Design Tokens (`constants/Theme.ts`) via standard `StyleSheet` for robust performance across low-end and high-end Android/iOS devices.
 
-1. Install dependencies
+## Features
+- **RTL-First Design:** Fully forced Right-to-Left orientation for the native feel of Arabic.
+- **Onboarding:** A clean introduction.
+- **Home:** Featured resources and quick category drops.
+- **Search:** Instant query for books and authors.
+- **Offline Readiness:** Offline stores for favorites and mock downloads.
 
-   ```bash
-   npm install
-   ```
+## Setup Steps
+1. Make sure you have Node and `npm` installed.
+2. Run `npm install`
+3. Start the project with `npx expo start`
+4. Use the Expo Go app on your physical device, or press `a` to open Android emulator, `i` to open iOS simulator.
 
-2. Start the app
+## Integration Assumptions
+Currently, the source URL provided (Nextcloud public link) acts as a file browser. Without an explicit App Password or structured JSON endpoint provided by the server admin, bridging directly to a public share `WebDAV` involves some CORS and Authentication workarounds:
+1. `services/api.ts` implements a mock adapter. 
+2. Real data would require Nextcloud's WebDAV API hitting `{host}/public.php/webdav/` using basic auth with username `2HTwmJTyPLT6mLN` and password empty.
+3. The React Native app is structured such that `api.ts` is the single point of failure/swap for these network calls.
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
-```
-
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
-
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## Future Enhancements
+- **Scholar Pages:** Dedicated screens grouping resources by specific authors or scholars.
+- **Audio Lectures:** Build a fixed audio player at the bottom tab level to persist playback across screens.
+- **Reading Lists:** Allow users to create custom folders inside 'Saved'.
+- **Personalized Recommendations:** Based on viewed features.
+- **Continue Reading:** Local SQLite storage of page numbers for PDFs to resume reading seamlessly.
+- **Notifications:** Push notifications when the library team uploads a new resource collection.

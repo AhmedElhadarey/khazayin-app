@@ -1,21 +1,22 @@
 import { useEffect, useState } from 'react';
 import { useColorScheme as useRNColorScheme } from 'react-native';
+import { useAppStore } from '@/store/useAppStore';
 
 /**
- * To support static rendering, this value needs to be re-calculated on the client side for web
+ * Web version: waits for hydration, then respects in-app dark mode toggle.
  */
-export function useColorScheme() {
+export function useColorScheme(): 'light' | 'dark' {
   const [hasHydrated, setHasHydrated] = useState(false);
+  const systemScheme = useRNColorScheme();
+  const isDarkMode = useAppStore((state) => state.isDarkMode);
 
   useEffect(() => {
     setHasHydrated(true);
   }, []);
 
-  const colorScheme = useRNColorScheme();
-
-  if (hasHydrated) {
-    return colorScheme;
+  if (!hasHydrated) {
+    return 'light';
   }
 
-  return 'light';
+  return isDarkMode ? 'dark' : (systemScheme ?? 'light');
 }
