@@ -152,3 +152,128 @@ export const Shadows = {
     elevation: 6,
   },
 };
+
+// =====================================================================
+// Khazain Al-Rahman design tokens — verbatim from handoff.md §5
+// These are the canonical tokens for the new design system.
+// Use Khazain* exports in components under components/khazain/.
+// The legacy Colors/Shadows exports above remain for existing screens.
+// =====================================================================
+
+export const KhazainColors = {
+  // Surfaces
+  pageBg: '#F8F2ED',
+  cardBg: '#FCFAF8',
+  cardBorder: '#D9D6D3',
+  iconChipBg: 'rgba(215, 185, 149, 0.16)',
+
+  // Cream scale
+  cream50: '#FCFAF8',
+  cream100: '#F8F2ED',
+  cream200: '#EFE4D0',
+  cream300: '#E6D8BF',
+  cream400: '#D9C6A3',
+  heroCream: '#EDE0D1',
+  heroHeaderBg: '#ECDED0',
+
+  // Navy (primary brand)
+  navy: '#184B76',
+  navy900: '#0F3C61',
+  navy800: '#184B76',
+  navy700: '#22557F',
+  navy600: '#2F6999',
+
+  // Gold accents
+  gold600: '#8E6630',
+  gold500: '#A67C3F',
+  gold400: '#B8864A',
+  gold300: '#D2A55F',
+  gold200: '#E8C78A',
+  goldAccent: '#A88051',
+  goldBar: '#C1A584',
+  navPill: '#C1A584',
+  navPillBg: 'rgba(215, 185, 149, 0.16)',
+  navLabel: '#F1E7DD',
+
+  // Ink (text)
+  inkTitle: '#281E13',
+  ink900: '#281E13',
+  ink700: '#3D2E1D',
+  inkSubtle: '#5F5345',
+  ink500: '#5F5345',
+  inkPlaceholder: '#988671',
+  ink400: '#988671',
+  inkCount: '#184B76',
+  inkArrow: '#281E13',
+
+  // Accent
+  teal600: '#2E6B6B',
+} as const;
+
+export const KhazainFonts = {
+  ui: 'NotoSansArabic',
+  body: 'NotoSansArabic',
+  display: 'Amiri',
+  naskh: 'NotoNaskhArabic',
+} as const;
+
+export const KhazainWeights = {
+  light: '300',
+  regular: '400',
+  medium: '500',
+  semibold: '600', // TheSansArabic 530 → NotoSansArabic 600
+  bold: '700',
+} as const;
+
+export const KhazainRadius = {
+  pill: 999,
+  lg: 16,
+  md: 12,
+  sm: 8,
+  xs: 4,
+} as const;
+
+export const KhazainShadows = {
+  card: {
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 2,
+  },
+  input: {
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  press: {
+    shadowColor: '#34240C',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 1,
+  },
+  hero: {
+    shadowColor: '#103350',
+    shadowOpacity: 0.24,
+    shadowRadius: 17,
+    shadowOffset: { width: 5, height: 1 },
+    elevation: 4,
+  },
+} as const;
+
+// Spacing steps per handoff: 4, 8, 12, 16, 20, 24, 32
+export const KhazainSpacing = {
+  x1: 4,
+  x2: 8,
+  x3: 12,
+  x4: 16,
+  x5: 20,
+  x6: 24,
+  x8: 32,
+} as const;
+
+export type KhazainColorKey = keyof typeof KhazainColors;
+export type KhazainFontKey = keyof typeof KhazainFonts;

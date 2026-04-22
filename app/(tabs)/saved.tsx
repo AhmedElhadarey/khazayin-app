@@ -5,7 +5,6 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
-  Platform,
   Switch,
   Modal,
 } from 'react-native';
@@ -15,38 +14,86 @@ import { Colors, Spacing, Border, Shadows } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppStore } from '@/store/useAppStore';
-import { useRouter } from 'expo-router';
-import { MOCK_RESOURCES} from '@/data/mockData';
 
-type AudioFilter = 'all' | 'playlists' | 'collections';
+type LibraryFilter = 'all' | 'favorites' | 'playlists';
 
-// ─── Quick Stats Card ───
+// ─── Quick Action Card ───
 
-function QuickStatCard({
+function QuickActionCard({
   icon,
   label,
-  value,
+  subtitle,
   onPress,
 }: {
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  value: string;
+  subtitle: string;
   onPress?: () => void;
 }) {
   const theme = useColorScheme();
-  
+
   return (
     <TouchableOpacity
-      style={[styles.statCard, { backgroundColor: Colors[theme].surface }]}
+      style={[styles.actionCard, { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].borderLight }]}
       activeOpacity={0.8}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${label}: ${value}`}
+      accessibilityLabel={`${label}: ${subtitle}`}
     >
-      <Ionicons name={icon as any} size={24} color={Colors[theme].primary} />
-      <Text style={[styles.statLabel, { color: Colors[theme].textSecondary }]}>{label}</Text>
-      <Text style={[styles.statValue, { color: Colors[theme].textMuted }]}>{value}</Text>
+      <View style={[styles.actionCardIcon, { backgroundColor: Colors[theme].surfaceAlt }]}>
+        <Ionicons name={icon} size={20} color={Colors[theme].primary} />
+      </View>
+      <Text
+        style={[styles.actionCardLabel, { color: Colors[theme].text }]}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+      <Text
+        style={[styles.actionCardSubtitle, { color: Colors[theme].textMuted }]}
+        numberOfLines={1}
+      >
+        {subtitle}
+      </Text>
     </TouchableOpacity>
+  );
+}
+
+// ─── Section Header ───
+
+function SectionHeader({
+  title,
+  onSeeAll,
+}: {
+  title: string;
+  onSeeAll?: () => void;
+}) {
+  const theme = useColorScheme();
+
+  return (
+    <View style={styles.sectionHeader}>
+      {onSeeAll ? (
+        <TouchableOpacity
+          onPress={onSeeAll}
+          style={styles.seeAllButton}
+          accessibilityRole="button"
+          accessibilityLabel={`عرض الكل - ${title}`}
+        >
+          <Ionicons name="chevron-back" size={16} color={Colors[theme].textMuted} />
+          <Text style={{ fontSize: 12, color: Colors[theme].textMuted }}>
+            عرض الكل
+          </Text>
+        </TouchableOpacity>
+      ) : (
+        <View />
+      )}
+      <View style={styles.sectionTitleRow}>
+        <Text style={[styles.sectionTitle, { color: Colors[theme].text }]}>
+          {title}
+        </Text>
+        <View style={[styles.sectionBar, { backgroundColor: Colors[theme].goldBar }]} />
+      </View>
+    </View>
   );
 }
 
@@ -55,15 +102,20 @@ function QuickStatCard({
 function DailyWirdCard() {
   const theme = useColorScheme();
   const { dailyQuranPage } = useAppStore();
-  
-  // Calculate progress (604 total pages in Quran)
+  const [reminderEnabled, setReminderEnabled] = useState(true);
+
   const totalPages = 604;
   const progressPercent = Math.round((dailyQuranPage / totalPages) * 100);
-  
+
   return (
-    <View style={[styles.wirdCard, { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].border }]}>
-      {/* Header */}
+    <View style={[styles.wirdCard, { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].borderLight }]}>
+      {/* Header Row */}
       <View style={styles.wirdHeader}>
+        <View style={[styles.progressBadge, { backgroundColor: Colors[theme].surfaceAlt }]}>
+          <Text style={[styles.progressBadgeText, { color: Colors[theme].textMuted }]}>
+            {progressPercent}%
+          </Text>
+        </View>
         <View style={styles.wirdTitleRow}>
           <Text style={[styles.wirdTitle, { color: Colors[theme].text }]}>
             ورد القرآن اليومي
@@ -72,16 +124,24 @@ function DailyWirdCard() {
             <Ionicons name="book" size={20} color={Colors[theme].primary} />
           </View>
         </View>
-        {/* Progress Badge */}
-        <View style={[styles.progressBadge, { backgroundColor: Colors[theme].surfaceAlt }]}>
-          <Text style={[styles.progressBadgeText, { color: Colors[theme].textMuted }]}>
-            {progressPercent}%
-          </Text>
-        </View>
       </View>
-      
+
       {/* Info Row */}
       <View style={styles.wirdInfoRow}>
+        <View style={styles.wirdInfoItem}>
+          <Text style={[styles.wirdInfoLabel, { color: Colors[theme].textMuted }]}>
+            التذكير اليومي
+          </Text>
+          <View style={styles.reminderToggle}>
+            <Switch
+              value={reminderEnabled}
+              onValueChange={setReminderEnabled}
+              trackColor={{ false: Colors[theme].switchTrack, true: Colors[theme].switchTrackActive }}
+              thumbColor="#FFFFFF"
+              style={{ transform: [{ scale: 0.75 }] }}
+            />
+          </View>
+        </View>
         <View style={styles.wirdInfoItem}>
           <Text style={[styles.wirdInfoLabel, { color: Colors[theme].textMuted }]}>
             آخر قراءة اليوم
@@ -90,21 +150,8 @@ function DailyWirdCard() {
             سورة البقرة - الآية ٢٨٤
           </Text>
         </View>
-        <View style={styles.wirdInfoItem}>
-          <Text style={[styles.wirdInfoLabel, { color: Colors[theme].textMuted }]}>
-            التذكير اليومي
-          </Text>
-          <View style={styles.reminderToggle}>
-            <Switch
-              value={true}
-              trackColor={{ false: Colors[theme].border, true: Colors[theme].primary }}
-              thumbColor="#FFFFFF"
-              style={{ transform: [{ scale: 0.8 }] }}
-            />
-          </View>
-        </View>
       </View>
-      
+
       {/* Start Button */}
       <TouchableOpacity
         style={[styles.wirdButton, { backgroundColor: Colors[theme].primary }]}
@@ -118,7 +165,7 @@ function DailyWirdCard() {
   );
 }
 
-// ─── Quick Note Input ───
+// ─── Quick Note Section ───
 
 function QuickNoteSection() {
   const theme = useColorScheme();
@@ -128,22 +175,18 @@ function QuickNoteSection() {
     { id: '2', text: 'فوائد من درس الأخلاق', category: 'أمس' },
     { id: '3', text: 'فوائد من درس الأخلاق', category: 'أمس' },
   ]);
-  
+
   return (
     <View style={styles.noteSection}>
-      {/* Section Header */}
-      <View style={styles.sectionHeader}>
-        <View />
-        <View style={styles.sectionTitleRow}>
-          <Text style={[styles.sectionTitle, { color: Colors[theme].text }]}>
-            ملاحظة سريعة
-          </Text>
-          <View style={[styles.sectionBar, { backgroundColor: Colors[theme].goldBar }]} />
-        </View>
-      </View>
-      
+      <SectionHeader title="ملاحظة سريعة" />
+
       {/* Note Input */}
-      <View style={[styles.noteInputContainer, { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].border }]}>
+      <View
+        style={[
+          styles.noteInputContainer,
+          { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].borderLight },
+        ]}
+      >
         <TextInput
           style={[styles.noteInput, { color: Colors[theme].text }]}
           placeholder="اكتب ملاحظتك هنا..."
@@ -154,7 +197,7 @@ function QuickNoteSection() {
           multiline
         />
       </View>
-      
+
       {/* Note Actions */}
       <View style={styles.noteActionsRow}>
         <TouchableOpacity
@@ -176,14 +219,14 @@ function QuickNoteSection() {
           </TouchableOpacity>
         </View>
       </View>
-      
-      {/* Recent Notes List */}
+
+      {/* Recent Notes */}
       <View style={styles.recentNotesHeader}>
         <Text style={[styles.recentNotesTitle, { color: Colors[theme].textSecondary }]}>
           آخر الملاحظات
         </Text>
       </View>
-      
+
       {recentNotes.map((note) => (
         <TouchableOpacity
           key={note.id}
@@ -207,14 +250,14 @@ function QuickNoteSection() {
 
 function AudioBookProgress() {
   const theme = useColorScheme();
-  const [activeFilter, setActiveFilter] = useState<AudioFilter>('all');
-  
-  const filters: { key: AudioFilter; label: string }[] = [
-    { key: 'playlists', label: 'قوائم التشغيل' },
-    { key: 'collections', label: 'المجموعات' },
-    { key: 'all', label: 'الكل' },
+  const [activeFilter, setActiveFilter] = useState<LibraryFilter>('all');
+
+  const filters: { key: LibraryFilter; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+    { key: 'playlists', label: 'قوائم التشغيل', icon: 'list-outline' },
+    { key: 'favorites', label: 'المفضلات', icon: 'heart-outline' },
+    { key: 'all', label: 'الكل', icon: 'grid-outline' },
   ];
-  
+
   const audioBooks = [
     {
       id: '1',
@@ -233,20 +276,11 @@ function AudioBookProgress() {
       duration: '',
     },
   ];
-  
+
   return (
     <View style={styles.audioSection}>
-      {/* Section Header */}
-      <View style={styles.sectionHeader}>
-        <View />
-        <View style={styles.sectionTitleRow}>
-          <Text style={[styles.sectionTitle, { color: Colors[theme].text }]}>
-            تقدم الكتب المسموعة
-          </Text>
-          <View style={[styles.sectionBar, { backgroundColor: Colors[theme].goldBar }]} />
-        </View>
-      </View>
-      
+      <SectionHeader title="تقدم الكتب المسموعة" />
+
       {/* Filter Chips */}
       <View style={styles.filterChipsRow}>
         {filters.map((filter) => {
@@ -257,14 +291,21 @@ function AudioBookProgress() {
               style={[
                 styles.filterChip,
                 {
-                  backgroundColor: isActive ? Colors[theme].primary : Colors[theme].surface,
-                  borderColor: isActive ? Colors[theme].primary : Colors[theme].border,
+                  backgroundColor: isActive ? Colors[theme].chipBgActive : Colors[theme].surface,
+                  borderColor: isActive ? Colors[theme].chipBgActive : Colors[theme].border,
                 },
               ]}
               onPress={() => setActiveFilter(filter.key)}
               accessibilityRole="button"
               accessibilityLabel={filter.label}
+              accessibilityState={{ selected: isActive }}
             >
+              <Ionicons
+                name={filter.icon}
+                size={12}
+                color={isActive ? '#FFFFFF' : Colors[theme].textSecondary}
+                style={{ marginLeft: 4 }}
+              />
               <Text
                 style={{
                   fontSize: 11,
@@ -278,12 +319,12 @@ function AudioBookProgress() {
           );
         })}
       </View>
-      
+
       {/* Audio Book Cards */}
       {audioBooks.map((book) => (
         <View
           key={book.id}
-          style={[styles.audioCard, { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].border }]}
+          style={[styles.audioCard, { backgroundColor: Colors[theme].surface, borderColor: Colors[theme].borderLight }]}
         >
           <View style={styles.audioCardHeader}>
             <View style={styles.audioCardInfo}>
@@ -298,7 +339,7 @@ function AudioBookProgress() {
               <Ionicons name="headset" size={20} color={Colors[theme].primary} />
             </View>
           </View>
-          
+
           {book.progress < 100 && (
             <View style={styles.audioProgressRow}>
               <Text style={[styles.audioProgressText, { color: Colors[theme].textMuted }]}>
@@ -309,20 +350,20 @@ function AudioBookProgress() {
               </Text>
             </View>
           )}
-          
+
           {/* Progress Bar */}
           <View style={[styles.audioProgressBar, { backgroundColor: Colors[theme].progressBg }]}>
             <View
               style={[
                 styles.audioProgressFill,
                 {
-                  backgroundColor: book.progress === 100 ? Colors[theme].success : Colors[theme].primary,
-                  width: `${book.progress}%`,
+                  backgroundColor: book.progress === 100 ? Colors[theme].success : Colors[theme].progressFill,
+                  width: `${book.progress}%` as `${number}%`,
                 },
               ]}
             />
           </View>
-          
+
           {/* Action Buttons */}
           <View style={styles.audioActions}>
             {book.progress === 100 ? (
@@ -359,89 +400,89 @@ function AudioBookProgress() {
 
 function SmartReminders() {
   const theme = useColorScheme();
-  
+  const [reminderStates, setReminderStates] = useState<Record<string, boolean>>({
+    '1': true,
+    '2': true,
+    '3': false,
+  });
+
   const reminders = [
     {
       id: '1',
-      icon: 'book',
+      icon: 'book' as keyof typeof Ionicons.glyphMap,
       title: 'تذكير ورد القرآن',
       description: 'حان وقت ورد "تأملات سورة البقرة" هل وجدنا الخشوع يوم؟ وشعب للعقول!',
       subtitle: 'التذكير القادم: غدًا الساعة ٦:٠٠ م',
-      enabled: true,
       color: Colors[theme].primary,
     },
     {
       id: '2',
-      icon: 'headset',
+      icon: 'headset' as keyof typeof Ionicons.glyphMap,
       title: 'متابعة الاستماع',
       description: 'حان وقت متابعة "تفسير سورة البقرة"',
       subtitle: 'التذكير القادم: اليوم الساعة ٩:٠٠ م',
-      enabled: true,
       color: Colors[theme].secondary,
     },
     {
       id: '3',
-      icon: 'flag',
+      icon: 'flag' as keyof typeof Ionicons.glyphMap,
       title: 'مراجعة الأهداف',
       description: 'راجع أهدافك من الأهداف الأسبوعية',
       subtitle: 'التذكير القادم: بعد الساعة ١٠:٠٠ م',
-      enabled: false,
       color: Colors[theme].textMuted,
     },
   ];
-  
+
+  const toggleReminder = (id: string) => {
+    setReminderStates((prev) => ({ ...prev, [id]: !prev[id] }));
+  };
+
   return (
     <View style={styles.remindersSection}>
-      {/* Section Header */}
-      <View style={styles.sectionHeader}>
-        <View />
-        <View style={styles.sectionTitleRow}>
-          <Text style={[styles.sectionTitle, { color: Colors[theme].text }]}>
-            التذكيرات الذكية
-          </Text>
-          <View style={[styles.sectionBar, { backgroundColor: Colors[theme].goldBar }]} />
-        </View>
-      </View>
-      
-      {/* Reminder Cards */}
-      {reminders.map((reminder) => (
-        <View
-          key={reminder.id}
-          style={[
-            styles.reminderCard,
-            {
-              backgroundColor: Colors[theme].surface,
-              borderColor: Colors[theme].border,
-              opacity: reminder.enabled ? 1 : 0.6,
-            },
-          ]}
-        >
-          <View style={styles.reminderHeader}>
-            <Switch
-              value={reminder.enabled}
-              trackColor={{ false: Colors[theme].border, true: Colors[theme].primary }}
-              thumbColor="#FFFFFF"
-              style={{ transform: [{ scale: 0.75 }] }}
-            />
-            <View style={styles.reminderInfo}>
-              <Text style={[styles.reminderTitle, { color: Colors[theme].text }]}>
-                {reminder.title}
-              </Text>
+      <SectionHeader title="التذكيرات الذكية" />
+
+      {reminders.map((reminder) => {
+        const enabled = reminderStates[reminder.id] ?? false;
+        return (
+          <View
+            key={reminder.id}
+            style={[
+              styles.reminderCard,
+              {
+                backgroundColor: Colors[theme].surface,
+                borderColor: Colors[theme].borderLight,
+                opacity: enabled ? 1 : 0.6,
+              },
+            ]}
+          >
+            <View style={styles.reminderHeader}>
+              <Switch
+                value={enabled}
+                onValueChange={() => toggleReminder(reminder.id)}
+                trackColor={{ false: Colors[theme].switchTrack, true: Colors[theme].switchTrackActive }}
+                thumbColor="#FFFFFF"
+                style={{ transform: [{ scale: 0.75 }] }}
+              />
+              <View style={styles.reminderInfo}>
+                <Text style={[styles.reminderTitle, { color: Colors[theme].text }]}>
+                  {reminder.title}
+                </Text>
+              </View>
+              <View style={[styles.reminderIcon, { backgroundColor: reminder.color + '15' }]}>
+                <Ionicons name={reminder.icon} size={18} color={reminder.color} />
+              </View>
             </View>
-            <View style={[styles.reminderIcon, { backgroundColor: reminder.color + '15' }]}>
-              <Ionicons name={reminder.icon as any} size={18} color={reminder.color} />
-            </View>
+
+            <Text style={[styles.reminderDesc, { color: Colors[theme].textSecondary }]}>
+              {reminder.description}
+            </Text>
+
+            <Text style={[styles.reminderSubtitle, { color: Colors[theme].textMuted }]}>
+              {reminder.subtitle}
+            </Text>
           </View>
-          
-          <Text style={[styles.reminderDesc, { color: Colors[theme].textSecondary }]}>
-            {reminder.description}
-          </Text>
-          
-          <Text style={[styles.reminderSubtitle, { color: Colors[theme].textMuted }]}>
-            {reminder.subtitle}
-          </Text>
-        </View>
-      ))}
+        );
+      })}
     </View>
   );
 }
@@ -473,7 +514,7 @@ function AddNoteModal({
       <View style={styles.modalOverlay}>
         <View style={[styles.modalContent, { backgroundColor: Colors[theme].surface }]}>
           <Text style={[styles.modalTitle, { color: Colors[theme].text }]}>إضافة ملاحظة</Text>
-          
+
           <View style={[styles.modalInput, { backgroundColor: Colors[theme].surfaceAlt, borderColor: Colors[theme].border }]}>
             <TextInput
               style={[styles.modalTextInput, { color: Colors[theme].text }]}
@@ -607,7 +648,7 @@ function AudioPlayerModal({
           {/* Progress Bar */}
           <View style={styles.playerProgressContainer}>
             <View style={[styles.playerProgressBar, { backgroundColor: Colors[theme].progressBg }]}>
-              <View style={[styles.playerProgressFill, { backgroundColor: Colors[theme].primary, width: '35%' }]} />
+              <View style={[styles.playerProgressFill, { backgroundColor: Colors[theme].progressFill, width: '35%' }]} />
             </View>
           </View>
 
@@ -635,18 +676,12 @@ function AudioPlayerModal({
 // ─── Main Library Screen ───
 
 export default function SavedScreen() {
-  const router = useRouter();
   const theme = useColorScheme();
   const [searchText, setSearchText] = useState('');
   const [showAddNoteModal, setShowAddNoteModal] = useState(false);
   const [showViewNotesModal, setShowViewNotesModal] = useState(false);
   const [showAudioPlayerModal, setShowAudioPlayerModal] = useState(false);
   const [selectedBook, setSelectedBook] = useState<{ title: string; author: string } | null>(null);
-
-  const handleOpenPlayer = (book: { title: string; author: string }) => {
-    setSelectedBook(book);
-    setShowAudioPlayerModal(true);
-  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: Colors[theme].background }]}>
@@ -657,7 +692,7 @@ export default function SavedScreen() {
             مكتبتي
           </Text>
         </View>
-        
+
         {/* Search Bar */}
         <View style={styles.searchSection}>
           <View
@@ -665,13 +700,13 @@ export default function SavedScreen() {
               styles.searchBar,
               {
                 backgroundColor: Colors[theme].surface,
-                borderColor: Colors[theme].border,
+                borderColor: Colors[theme].borderLight,
               },
             ]}
           >
             <TextInput
               style={[styles.searchInput, { color: Colors[theme].text }]}
-              placeholder="بحث..."
+              placeholder="ابحث..."
               placeholderTextColor={Colors[theme].textMuted}
               value={searchText}
               onChangeText={setSearchText}
@@ -680,30 +715,38 @@ export default function SavedScreen() {
             <Ionicons name="search-outline" size={18} color={Colors[theme].textMuted} />
           </View>
         </View>
-        
-        {/* Quick Stats Row */}
-        <View style={styles.statsRow}>
-          <QuickStatCard icon="alarm-outline" label="تذكيراتي" value="+٣ تذكيرات نشطة" />
-          <QuickStatCard icon="book-outline" label="ورد القرآن" value="٧ أيام متتالية" />
-          <QuickStatCard 
-            icon="pencil-outline" 
-            label="ملاحظاتي" 
-            value="٢٣ ملاحظة" 
+
+        {/* Quick Action Cards */}
+        <View style={styles.actionCardsRow}>
+          <QuickActionCard
+            icon="mic-outline"
+            label="بودكاستاتي"
+            subtitle="+٣ تذكيرات نشطة"
+          />
+          <QuickActionCard
+            icon="book-outline"
+            label="ورد القرآن"
+            subtitle="٧ أيام متتالية"
+          />
+          <QuickActionCard
+            icon="pencil-outline"
+            label="ملاحظاتي"
+            subtitle="٢٣ ملاحظة"
             onPress={() => setShowViewNotesModal(true)}
           />
         </View>
-        
+
         {/* Daily Wird Card */}
         <View style={styles.cardSection}>
           <DailyWirdCard />
         </View>
-        
+
         {/* Quick Notes Section */}
         <QuickNoteSection />
-        
+
         {/* Audio Book Progress */}
         <AudioBookProgress />
-        
+
         {/* Smart Reminders */}
         <View style={{ marginBottom: Spacing.xxxl }}>
           <SmartReminders />
@@ -714,7 +757,7 @@ export default function SavedScreen() {
       <AddNoteModal
         visible={showAddNoteModal}
         onClose={() => setShowAddNoteModal(false)}
-        onSave={(note) => console.log('Note saved:', note)}
+        onSave={(note: string) => { /* Note saved */ }}
       />
       <ViewNotesModal
         visible={showViewNotesModal}
@@ -735,20 +778,21 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  
+
   // Page Header
   pageHeader: {
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.lg,
     paddingBottom: Spacing.sm,
-    alignItems: 'flex-end',
+    alignItems: 'center',
   },
   pageTitle: {
     fontSize: 20,
     fontWeight: '700',
     writingDirection: 'rtl',
+    textAlign: 'center',
   },
-  
+
   // Search
   searchSection: {
     paddingHorizontal: Spacing.lg,
@@ -758,7 +802,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     height: 44,
-    borderRadius: Border.radius.lg,
+    borderRadius: Border.radius.xxl,
     borderWidth: 1,
     paddingHorizontal: Spacing.md,
     gap: Spacing.sm,
@@ -768,39 +812,50 @@ const styles = StyleSheet.create({
     fontSize: 14,
     writingDirection: 'rtl',
   },
-  
-  // Stats Row
-  statsRow: {
+
+  // Quick Action Cards
+  actionCardsRow: {
     flexDirection: 'row',
     paddingHorizontal: Spacing.lg,
     gap: Spacing.sm,
     marginBottom: Spacing.lg,
   },
-  statCard: {
+  actionCard: {
     flex: 1,
     alignItems: 'center',
     paddingVertical: Spacing.md,
-    paddingHorizontal: Spacing.sm,
-    borderRadius: Border.radius.md,
+    paddingHorizontal: Spacing.xs,
+    borderRadius: Border.radius.lg,
+    borderWidth: 1,
     ...Shadows.sm,
   },
-  statLabel: {
+  actionCardIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: Spacing.xs,
+  },
+  actionCardLabel: {
     fontSize: 11,
-    marginTop: Spacing.xs,
+    fontWeight: '600',
     textAlign: 'center',
+    writingDirection: 'rtl',
   },
-  statValue: {
+  actionCardSubtitle: {
     fontSize: 9,
-    marginTop: 2,
     textAlign: 'center',
+    marginTop: 2,
+    writingDirection: 'rtl',
   },
-  
+
   // Card Section
   cardSection: {
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.lg,
   },
-  
+
   // Wird Card
   wirdCard: {
     borderRadius: Border.radius.lg,
@@ -822,6 +877,7 @@ const styles = StyleSheet.create({
   wirdTitle: {
     fontSize: 16,
     fontWeight: '600',
+    writingDirection: 'rtl',
   },
   wirdIcon: {
     width: 36,
@@ -850,9 +906,11 @@ const styles = StyleSheet.create({
   wirdInfoLabel: {
     fontSize: 10,
     marginBottom: 4,
+    writingDirection: 'rtl',
   },
   wirdInfoValue: {
     fontSize: 12,
+    writingDirection: 'rtl',
   },
   reminderToggle: {
     flexDirection: 'row',
@@ -868,7 +926,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
   },
-  
+
   // Section Header
   sectionHeader: {
     flexDirection: 'row',
@@ -885,13 +943,19 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
+    writingDirection: 'rtl',
   },
   sectionBar: {
     width: 4,
     height: 18,
     borderRadius: 2,
   },
-  
+  seeAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+
   // Note Section
   noteSection: {
     marginBottom: Spacing.xl,
@@ -935,6 +999,7 @@ const styles = StyleSheet.create({
   recentNotesTitle: {
     fontSize: 12,
     textAlign: 'right',
+    writingDirection: 'rtl',
   },
   noteItem: {
     flexDirection: 'row',
@@ -946,14 +1011,16 @@ const styles = StyleSheet.create({
   },
   noteCategory: {
     fontSize: 10,
+    writingDirection: 'rtl',
   },
   noteText: {
     fontSize: 13,
     flex: 1,
     textAlign: 'right',
     marginLeft: Spacing.md,
+    writingDirection: 'rtl',
   },
-  
+
   // Audio Section
   audioSection: {
     marginBottom: Spacing.xl,
@@ -966,10 +1033,13 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.md,
   },
   filterChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 6,
     paddingHorizontal: Spacing.md,
     borderRadius: Border.radius.xl,
     borderWidth: 1,
+    gap: 4,
   },
   audioCard: {
     marginHorizontal: Spacing.lg,
@@ -993,10 +1063,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     textAlign: 'right',
+    writingDirection: 'rtl',
   },
   audioCardAuthor: {
     fontSize: 11,
     marginTop: 2,
+    writingDirection: 'rtl',
   },
   audioIcon: {
     width: 36,
@@ -1012,9 +1084,11 @@ const styles = StyleSheet.create({
   },
   audioProgressText: {
     fontSize: 10,
+    writingDirection: 'rtl',
   },
   audioDuration: {
     fontSize: 10,
+    writingDirection: 'rtl',
   },
   audioProgressBar: {
     height: 4,
@@ -1036,7 +1110,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.md,
     borderRadius: Border.radius.sm,
   },
-  
+
   // Reminders Section
   remindersSection: {
     marginBottom: Spacing.lg,
@@ -1062,6 +1136,7 @@ const styles = StyleSheet.create({
   reminderTitle: {
     fontSize: 14,
     fontWeight: '600',
+    writingDirection: 'rtl',
   },
   reminderIcon: {
     width: 32,
@@ -1075,10 +1150,12 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     lineHeight: 18,
     marginBottom: Spacing.xs,
+    writingDirection: 'rtl',
   },
   reminderSubtitle: {
     fontSize: 10,
     textAlign: 'right',
+    writingDirection: 'rtl',
   },
 
   // Modal Styles
@@ -1104,6 +1181,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: Spacing.lg,
+    writingDirection: 'rtl',
   },
   modalInput: {
     borderRadius: Border.radius.md,
@@ -1158,6 +1236,7 @@ const styles = StyleSheet.create({
   tableHeaderText: {
     fontSize: 11,
     fontWeight: '600',
+    writingDirection: 'rtl',
   },
   tableRow: {
     flexDirection: 'row',
@@ -1167,6 +1246,7 @@ const styles = StyleSheet.create({
   },
   tableCell: {
     fontSize: 12,
+    writingDirection: 'rtl',
   },
   tableAccent: {
     height: 3,
@@ -1209,11 +1289,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
     marginBottom: Spacing.xs,
+    writingDirection: 'rtl',
   },
   playerAuthor: {
     fontSize: 12,
     textAlign: 'center',
     marginBottom: Spacing.lg,
+    writingDirection: 'rtl',
   },
   playerProgressContainer: {
     width: '100%',

@@ -41,3 +41,8 @@ app-example
 # generated native folders
 /ios
 /android
+
+.expo/*
+conductor/*
+design_source/*
+handoff.md
