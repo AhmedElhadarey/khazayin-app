@@ -10,3 +10,4 @@ export { QuickChip } from './QuickChip';
 export { QueenCard } from './QueenCard';
 export { DawahPoster, DAWAH_QUOTES } from './DawahPoster';
 export type { DawahQuote } from './DawahPoster';
+export { DawahCarousel } from './DawahCarousel';

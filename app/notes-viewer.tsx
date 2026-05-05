@@ -1,62 +1,58 @@
-import { ChevronIcon, CloseIcon, PillButton } from '@/components/khazain';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { formatRelativeAr, Note, useNotesStore } from '@/store/notesStore';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// Bottom-sheet styled notes viewer (Figma page-08).
+// Visual contract:
+//   - Top: grey handle pill, then centered title "عرض الملاحظات"
+//   - Vertical list of one-line note rows: title (right) + relative time (left)
+//   - Tapping a row opens it in the editor
+//   - No FAB / no close button — backdrop tap or handle drag (visual cue only) dismisses
 export default function NotesViewer() {
   const router = useRouter();
   const notes = useNotesStore((s) => s.notes);
 
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
-  const openNew = () => router.push('/note-editor' as any);
   const openExisting = (id: string) =>
     router.push({ pathname: '/note-editor' as any, params: { id } });
 
+  const close = () => router.back();
+
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <View style={styles.headerRow}>
-        <Pressable
-          onPress={() => router.back()}
-          hitSlop={8}
-          accessibilityLabel="إغلاق"
-          style={({ pressed }) => [styles.closeBtn, { opacity: pressed ? 0.7 : 1 }]}
-        >
-          <CloseIcon size={20} color={KhazainColors.navy800} />
-        </Pressable>
-        <Text style={styles.screenTitle}>ملاحظاتي</Text>
-        <View style={{ width: 36 }} />
-      </View>
+    <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
+      <Pressable onPress={() => {}} style={styles.sheetOuter}>
+        <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
+          <View style={styles.handleWrap}>
+            <View style={styles.handle} />
+          </View>
+          <Text style={styles.sheetTitle}>عرض الملاحظات</Text>
 
-      {notes.length === 0 ? (
-        <View style={styles.empty}>
-          <Text style={styles.emptyTitle}>لا توجد ملاحظات بعد</Text>
-          <Text style={styles.emptyBody}>
-            ابدأ بتدوين خواطرك وأفكارك. ملاحظاتك تُحفظ محلياً على جهازك.
-          </Text>
-          <PillButton label="ملاحظة جديدة" variant="navy" size="lg" onPress={openNew} />
-        </View>
-      ) : (
-        <FlatList
-          data={notes}
-          keyExtractor={(n) => n.id}
-          renderItem={({ item }) => (
-            <NoteRow note={item} onPress={() => openExisting(item.id)} />
+          {notes.length === 0 ? (
+            <View style={styles.empty}>
+              <Text style={styles.emptyTitle}>لا توجد ملاحظات بعد</Text>
+              <Text style={styles.emptyBody}>
+                ابدأ بتدوين خواطرك وأفكارك. ملاحظاتك تُحفظ محلياً على جهازك.
+              </Text>
+            </View>
+          ) : (
+            <FlatList
+              data={notes}
+              keyExtractor={(n) => n.id}
+              renderItem={({ item }) => (
+                <NoteRow note={item} onPress={() => openExisting(item.id)} />
+              )}
+              contentContainerStyle={styles.listContent}
+              ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
+              ListFooterComponent={<View style={{ height: 12 }} />}
+              showsVerticalScrollIndicator={false}
+            />
           )}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
-          ListFooterComponent={<View style={{ height: 20 }} />}
-        />
-      )}
-
-      {notes.length > 0 ? (
-        <View style={styles.fab}>
-          <PillButton label="ملاحظة جديدة" variant="navy" size="lg" onPress={openNew} />
-        </View>
-      ) : null}
-    </SafeAreaView>
+        </SafeAreaView>
+      </Pressable>
+    </Pressable>
   );
 }
 
@@ -70,65 +66,72 @@ function NoteRow({ note, onPress }: { note: Note; onPress: () => void }) {
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <View style={{ flex: 1, minWidth: 0, gap: 2 }}>
-        <Text style={styles.rowTitle} numberOfLines={1}>
-          {note.title || 'ملاحظة بلا عنوان'}
-        </Text>
-        {note.body ? (
-          <Text style={styles.rowPreview} numberOfLines={2}>
-            {note.body}
-          </Text>
-        ) : null}
-        <Text style={styles.rowTime}>{formatRelativeAr(note.updatedAt)}</Text>
-      </View>
-      <ChevronIcon size={14} color={KhazainColors.ink400} direction="start" />
+      {/*
+        JSX-first → visual RIGHT under forceRTL+row. Figma shows title on the RIGHT,
+        relative time on the LEFT — so title goes first.
+      */}
+      <Text style={styles.rowTitle} numberOfLines={1}>
+        {note.title || 'ملاحظة بلا عنوان'}
+      </Text>
+      <Text style={styles.rowTime} numberOfLines={1}>
+        {formatRelativeAr(note.updatedAt)}
+      </Text>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  headerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    gap: 10,
-  },
-  closeBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: KhazainColors.cream50,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.12)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  screenTitle: {
+  backdrop: {
     flex: 1,
+    backgroundColor: 'rgba(20,30,30,0.35)',
+    justifyContent: 'flex-end',
+  },
+  sheetOuter: {
+    backgroundColor: KhazainColors.pageBg,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    maxHeight: '88%',
+    minHeight: '50%',
+    overflow: 'hidden',
+  },
+  handleWrap: {
+    paddingTop: 8,
+    paddingBottom: 4,
+    alignItems: 'center',
+  },
+  handle: {
+    width: 48,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(120,100,80,0.25)',
+  },
+  sheetTitle: {
     fontFamily: 'Amiri-Bold',
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '700',
-    color: KhazainColors.navy800,
+    color: KhazainColors.ink900,
     textAlign: 'center',
     writingDirection: 'rtl',
+    paddingTop: 4,
+    paddingBottom: 16,
   },
   listContent: {
-    padding: 14,
-    paddingBottom: 90,
+    paddingHorizontal: 18,
+    paddingBottom: 12,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: KhazainColors.cardBg,
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderRadius: KhazainRadius.lg,
+    backgroundColor: KhazainColors.cream50,
     borderWidth: 1,
     borderColor: KhazainColors.cardBorder,
   },
   rowTitle: {
+    flex: 1,
     fontFamily: 'TheSansArabic',
     fontSize: 15,
     fontWeight: '700',
@@ -136,28 +139,17 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
-  rowPreview: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    color: KhazainColors.ink500,
-    lineHeight: 18,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
   rowTime: {
     fontFamily: 'TheSansArabic',
-    fontSize: 11,
+    fontSize: 12,
     color: KhazainColors.ink400,
-    marginTop: 2,
     writingDirection: 'rtl',
-    textAlign: 'right',
   },
   empty: {
-    flex: 1,
     alignItems: 'center',
-    justifyContent: 'center',
     paddingHorizontal: 24,
-    gap: 12,
+    paddingVertical: 32,
+    gap: 8,
   },
   emptyTitle: {
     fontFamily: 'Amiri-Bold',
@@ -173,12 +165,5 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     textAlign: 'center',
     writingDirection: 'rtl',
-    marginBottom: 10,
-  },
-  fab: {
-    position: 'absolute',
-    left: 16,
-    right: 16,
-    bottom: 16,
   },
 });

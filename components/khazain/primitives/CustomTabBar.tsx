@@ -1,34 +1,39 @@
-import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
-    BookmarkIcon,
-    GridIcon,
-    HouseIcon,
-    IconProps,
-    MenuLinesIcon,
+  BookmarkIcon,
+  GridIcon,
+  HouseIcon,
+  IconProps,
+  MenuLinesIcon,
 } from '../icons';
-import { GeoNavyPattern } from '../patterns';
 import { MiniPlayer } from './MiniPlayer';
 
 // "index" is the home tab (expo-router's default route name within the (tabs) group).
-type TabKey = 'index' | 'sections' | 'library' | 'more';
+type TabKey = 'index' | 'library' | 'sections' | 'more';
 
 const TAB_META: Record<
   TabKey,
-  { label: string; Icon: React.ComponentType<IconProps & { filled?: boolean }> }
+  { label: string; Icon: React.ComponentType<IconProps> }
 > = {
-  index: { label: 'الرئيسية', Icon: HouseIcon as React.ComponentType<IconProps & { filled?: boolean }> },
-  sections: { label: 'الأقسام', Icon: GridIcon as React.ComponentType<IconProps & { filled?: boolean }> },
-  library: { label: 'مكتبتي', Icon: BookmarkIcon as React.ComponentType<IconProps & { filled?: boolean }> },
-  more: { label: 'المزيد', Icon: MenuLinesIcon as React.ComponentType<IconProps & { filled?: boolean }> },
+  index: { label: 'الرئيسية', Icon: HouseIcon },
+  library: { label: 'مكتبتي', Icon: BookmarkIcon },
+  sections: { label: 'الأقسام', Icon: GridIcon },
+  more: { label: 'المزيد', Icon: MenuLinesIcon },
 };
 
-const TAB_ORDER: TabKey[] = ['index', 'sections', 'library', 'more'];
+// Visual RTL order (right → left): home, library, sections, more.
+// With forceRTL auto-flip + flexDirection:'row', the first JSX child lands on the right.
+const TAB_ORDER: TabKey[] = ['more', 'sections', 'library', 'index'];
 
-const BAR_HEIGHT = 72;
+// Colors pulled from the new spec.
+const BAR_BG = '#184B76'; // KhazainColors.navy
+const INACTIVE = 'rgba(241, 231, 221, 0.85)'; // #F1E7DD at 85%
+const ACTIVE_INK = '#281E13';
+const ACTIVE_CHIP_BG = '#F1E7DD';
+const GOLD_BAR = '#C1A584';
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -41,9 +46,11 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       <View style={styles.miniPlayerWrap}>
         <MiniPlayer />
       </View>
-      <GeoNavyPattern
-        style={[styles.bar, { height: BAR_HEIGHT + insets.bottom, paddingBottom: insets.bottom }]}
-        opacity={0.14}
+      <View
+        style={[
+          styles.bar,
+          { paddingBottom: insets.bottom },
+        ]}
       >
         <View style={styles.row}>
           {TAB_ORDER.map((key) => {
@@ -70,18 +77,22 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityRole="button"
                 accessibilityState={active ? { selected: true } : {}}
                 accessibilityLabel={label}
-                style={styles.tab}
+                style={styles.tabWrap}
               >
                 {active ? (
-                  <View style={styles.activePill}>
-                    <Icon size={18} color={KhazainColors.navy900} filled />
+                  // Active: cream chip with gold top bar + drop shadow.
+                  // Branched render so shadow/gold bar can't leak onto inactive tabs.
+                  <View style={styles.activeChip}>
+                    <View style={styles.goldBar} />
+                    <Icon size={20} color={ACTIVE_INK} strokeWidth={1.6} />
                     <Text style={styles.activeLabel} numberOfLines={1}>
                       {label}
                     </Text>
                   </View>
                 ) : (
-                  <View style={styles.inactiveCol}>
-                    <Icon size={20} color={KhazainColors.navLabel} />
+                  // Inactive: glyph + label sit directly on navy.
+                  <View style={styles.inactive}>
+                    <Icon size={20} color={INACTIVE} strokeWidth={1.6} />
                     <Text style={styles.inactiveLabel} numberOfLines={1}>
                       {label}
                     </Text>
@@ -91,64 +102,82 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
             );
           })}
         </View>
-      </GeoNavyPattern>
+      </View>
     </View>
   );
 }
 
-// Expose a hook helper for future use (e.g., Mushaf screen hiding the player).
-// Kept here colocated so consumers import { setMiniPlayerVisible } alongside <CustomTabBar />.
+// Keep a helper re-export for screens that hide the MiniPlayer (e.g., Mushaf).
 export { usePlayerStore } from '@/store/playerStore';
 
 const styles = StyleSheet.create({
-  bar: {
-    width: '100%',
-  },
   miniPlayerWrap: {
     marginHorizontal: 10,
     marginBottom: 8,
   },
-  row: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingHorizontal: 12,
-    paddingTop: 10,
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  activePill: {
-    minWidth: 56,
-    height: 34,
-    borderRadius: KhazainRadius.pill,
-    backgroundColor: KhazainColors.navPill,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+  bar: {
+    backgroundColor: BAR_BG,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    paddingTop: 14,
     paddingHorizontal: 10,
+    // paddingBottom: 22 + safe-area, injected at call site
+  },
+  row: {
+    flexDirection: 'row',
     gap: 6,
   },
-  activeLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    fontWeight: '600',
-    color: KhazainColors.navy900,
-    writingDirection: 'rtl',
+  tabWrap: {
+    flex: 1,
   },
-  inactiveCol: {
+  inactive: {
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 2,
+    gap: 4,
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingHorizontal: 6,
   },
   inactiveLabel: {
     fontFamily: 'TheSansArabic',
     fontSize: 11,
     fontWeight: '500',
-    color: KhazainColors.navLabel,
+    color: INACTIVE,
+    writingDirection: 'rtl',
+  },
+  activeChip: {
+    backgroundColor: ACTIVE_CHIP_BG,
+    borderRadius: 14,
+    paddingTop: 10,
+    paddingBottom: 10,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 4,
+    overflow: 'hidden', // clips gold bar to match chip's rounded top corners
+    // Drop shadow per spec: 0 2 6 rgba(0,0,0,0.18)
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.18,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  goldBar: {
+    position: 'absolute',
+    top: 0,
+    left: '18%',
+    right: '18%',
+    height: 4,
+    backgroundColor: GOLD_BAR,
+    // Bottom corners rounded only — top stays square/flush with the chip's top edge.
+    borderBottomLeftRadius: 2,
+    borderBottomRightRadius: 2,
+  },
+  activeLabel: {
+    fontFamily: 'TheSansArabic',
+    fontSize: 11,
+    fontWeight: '700',
+    color: ACTIVE_INK,
     writingDirection: 'rtl',
   },
 });

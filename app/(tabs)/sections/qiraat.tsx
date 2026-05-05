@@ -1,17 +1,23 @@
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { ReciterRow } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
-import { ChevronIcon, DetailHeader, PlayIcon } from '@/components/khazain';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+// Page 16: آختر القراءة — 10 qira'at rows (bottom-sheet style).
+// Each row uses ReciterRow without subtitle.
 const QIRAAT = [
   'قراءة حفص عن عاصم',
   'قراءة ورش عن نافع',
   'قراءة قالون عن نافع',
-  'قراءة الدوري عن أبي عمرو',
-  'قراءة شعبة عن عاصم',
-  'قراءة خلف عن حمزة',
+  'الدوري عن أبي عمرو',
+  'السوسي عن أبي عمرو',
+  'شعبة عن عاصم',
+  'البزي عن ابن كثير',
+  'نبل عن ابن كثير',
+  'الدوري عن الكسائي',
+  'خلف عن حمزة',
 ];
 
 export default function QiraatScreen() {
@@ -19,28 +25,17 @@ export default function QiraatScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <DetailHeader title="اختر القراءة" onBack={() => router.back()} />
+      {/* sheet-like handle + centered title */}
+      <View style={styles.handleWrap}>
+        <View style={styles.handle} />
+      </View>
+      <Text style={styles.title}>آختر القراءة</Text>
       <ScrollView
-        contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 32 }]}
         showsVerticalScrollIndicator={false}
       >
         {QIRAAT.map((q, i) => (
-          <Pressable
-            key={i}
-            onPress={() => {}}
-            style={({ pressed }) => [
-              styles.row,
-              { transform: [{ scale: pressed ? 0.98 : 1 }] },
-            ]}
-          >
-            <View style={styles.playBtn}>
-              <PlayIcon size={11} color={KhazainColors.gold300} />
-            </View>
-            <Text style={styles.label} numberOfLines={1}>
-              {q}
-            </Text>
-            <ChevronIcon size={12} color={KhazainColors.ink400} direction="start" />
-          </Pressable>
+          <ReciterRow key={i} title={q} onPress={() => router.back()} />
         ))}
       </ScrollView>
     </SafeAreaView>
@@ -49,37 +44,29 @@ export default function QiraatScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  list: {
-    paddingHorizontal: 14,
-    paddingTop: 4,
-    gap: 8,
-  },
-  row: {
-    flexDirection: 'row',
+  handleWrap: {
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    backgroundColor: KhazainColors.cream50,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.08)',
+    paddingTop: 8,
+    paddingBottom: 4,
   },
-  playBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 999,
-    backgroundColor: KhazainColors.navy800,
-    alignItems: 'center',
-    justifyContent: 'center',
+  handle: {
+    width: 44,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(40,30,19,0.18)',
   },
-  label: {
-    flex: 1,
+  title: {
     fontFamily: 'Amiri-Bold',
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '700',
     color: KhazainColors.ink900,
+    textAlign: 'center',
+    paddingTop: 6,
+    paddingBottom: 12,
     writingDirection: 'rtl',
-    textAlign: 'right',
+  },
+  list: {
+    paddingHorizontal: 16,
+    gap: 8,
   },
 });

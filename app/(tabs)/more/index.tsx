@@ -1,10 +1,11 @@
 import React from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { KhazainColors } from '@/constants/theme';
-import { ListRowCard, Wordmark } from '@/components/khazain';
+import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { Wordmark } from '@/components/khazain';
+import { ChevronIcon } from '@/components/khazain/icons';
 import { OrnamentPattern } from '@/components/khazain/patterns';
 
 type RowId =
@@ -37,15 +38,18 @@ const EXTERNAL_URLS: Partial<Record<RowId, string>> = {
 export default function MoreScreen() {
   const router = useRouter();
 
-  const handle = (id: RowId) => {
+  const handle = async (id: RowId) => {
     const url = EXTERNAL_URLS[id];
     if (url) {
-      Linking.openURL(url).catch(() =>
-        Alert.alert('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.'),
-      );
+      try {
+        const can = await Linking.canOpenURL(url);
+        if (!can) throw new Error('cannot open');
+        await Linking.openURL(url);
+      } catch {
+        Alert.alert('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
+      }
       return;
     }
-    // Intra-app routes
     const routes: Partial<Record<RowId, string>> = {
       archive: '/more/archive',
       contact: '/more/contact',
@@ -61,7 +65,10 @@ export default function MoreScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 24 }}
+        // The floating MiniPlayer + tab bar covers ~140 of the bottom — leave
+        // room so the wordmark sits comfortably above the bar instead of being
+        // hidden under it.
+        contentContainerStyle={{ paddingBottom: 160 }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerBlock}>
@@ -69,17 +76,9 @@ export default function MoreScreen() {
         </View>
         <View style={styles.list}>
           {ROWS.map((r) => (
-            <ListRowCard
-              key={r.id}
-              title={r.t}
-              subtitle={r.s}
-              onPress={() => handle(r.id)}
-              icon={
-                <View style={styles.innerIcon}>
-                  <RowGlyph id={r.id} />
-                </View>
-              }
-            />
+            <MoreRow key={r.id} title={r.t} subtitle={r.s} onPress={() => handle(r.id)}>
+              <RowGlyph id={r.id} />
+            </MoreRow>
           ))}
         </View>
         <View style={styles.footer}>
@@ -87,6 +86,45 @@ export default function MoreScreen() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+// Compact More row: cream card, 16 radius, subtle shadow. Right-anchored 40×40
+// cream icon disc with a thin navy stroke; small chevron on the LEFT edge
+// (visual end side in RTL).
+function MoreRow({
+  title,
+  subtitle,
+  onPress,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  onPress: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.row,
+        KhazainShadows.card,
+        { transform: [{ scale: pressed ? 0.98 : 1 }] },
+      ]}
+    >
+      <View style={styles.rowDisc}>{children}</View>
+      <View style={styles.rowText}>
+        <Text style={styles.rowTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        <Text style={styles.rowSubtitle} numberOfLines={1}>
+          {subtitle}
+        </Text>
+      </View>
+      <View style={styles.rowChevron}>
+        <ChevronIcon size={14} color={KhazainColors.ink400} direction="start" />
+      </View>
+    </Pressable>
   );
 }
 
@@ -184,7 +222,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop: 14,
     paddingBottom: 6,
-    alignItems: 'center',
+    alignItems: 'flex-end',
   },
   h1: {
     fontFamily: 'Amiri-Bold',
@@ -192,13 +230,32 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: KhazainColors.navy800,
     writingDirection: 'rtl',
+    textAlign: 'right',
   },
   list: {
     paddingHorizontal: 14,
     paddingTop: 8,
     gap: 10,
   },
-  innerIcon: {
+  // Row container: cream card with the icon disc anchored to the right side
+  // (RTL start) via absolute positioning, the text block taking the remaining
+  // horizontal space, and the chevron pinned to the left edge.
+  row: {
+    position: 'relative',
+    backgroundColor: KhazainColors.cream50,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(141,107,52,0.10)',
+    minHeight: 64,
+    paddingVertical: 12,
+    paddingLeft: 36, // chevron column
+    paddingRight: 60, // disc 40 + 8 margin + 12 inset
+    justifyContent: 'center',
+  },
+  rowDisc: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -207,11 +264,40 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cream100,
     alignItems: 'center',
     justifyContent: 'center',
+    transform: [{ translateY: -20 }],
+  },
+  rowText: {
+    gap: 2,
+  },
+  rowTitle: {
+    fontFamily: 'TheSansArabic',
+    fontSize: 15,
+    fontWeight: '700',
+    color: KhazainColors.ink900,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
+  rowSubtitle: {
+    fontFamily: 'TheSansArabic',
+    fontSize: 12,
+    color: KhazainColors.ink500,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
+  rowChevron: {
+    position: 'absolute',
+    left: 12,
+    top: '50%',
+    width: 18,
+    height: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ translateY: -9 }],
   },
   footer: {
     paddingHorizontal: 18,
-    paddingTop: 10,
-    paddingBottom: 10,
+    paddingTop: 18,
+    paddingBottom: 8,
     alignItems: 'center',
   },
 });

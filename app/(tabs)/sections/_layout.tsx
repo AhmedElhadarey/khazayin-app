@@ -10,7 +10,13 @@ export default function SectionsLayout() {
       <Stack.Screen name="mushaf" />
       <Stack.Screen name="qiraat" />
       <Stack.Screen name="scholar" />
+      <Stack.Screen name="scholar/[id]" />
       <Stack.Screen name="dawah" />
+      <Stack.Screen name="dawah/[month]" />
+      <Stack.Screen name="prophet" />
+      <Stack.Screen name="queen" />
+      <Stack.Screen name="books" />
+      <Stack.Screen name="radio" />
     </Stack>
   );
 }

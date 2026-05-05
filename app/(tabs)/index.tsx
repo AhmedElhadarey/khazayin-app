@@ -1,13 +1,7 @@
-import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import Svg, { Path, Rect } from 'react-native-svg';
-import { KhazainColors } from '@/constants/theme';
 import {
   BookCard,
   DAWAH_QUOTES,
-  DawahPoster,
+  DawahCarousel,
   HeroProphet,
   HeroQuran,
   HomeHeader,
@@ -16,6 +10,13 @@ import {
   QuickChip,
   ScholarCard,
 } from '@/components/khazain';
+import { RtlCarousel } from '@/components/khazain/primitives';
+import { KhazainColors } from '@/constants/theme';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path, Rect } from 'react-native-svg';
 
 const SCHOLARS = [
   'عبد العزيز بن عبد الله بن باز',
@@ -55,33 +56,25 @@ export default function HomeScreen() {
         {/* Scholars */}
         <View style={{ marginTop: 24 }}>
           <HomeSectionHeader title="العلماء والمشايخ" onViewAll={goToSections} />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.scrollerPad}
-          >
+          <RtlCarousel contentContainerStyle={styles.scrollerPad}>
             {SCHOLARS.map((name) => (
               <View key={name} style={styles.scrollerItem}>
                 <ScholarCard name={name} />
               </View>
             ))}
-          </ScrollView>
+          </RtlCarousel>
         </View>
 
         {/* Books */}
         <View style={{ marginTop: 24 }}>
           <HomeSectionHeader title="الكتب العلمية" onViewAll={goToSections} />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.scrollerPad}
-          >
+          <RtlCarousel contentContainerStyle={styles.scrollerPad}>
             {BOOKS.map((name) => (
               <View key={name} style={styles.scrollerItem}>
                 <BookCard name={name} />
               </View>
             ))}
-          </ScrollView>
+          </RtlCarousel>
         </View>
 
         {/* أنتِ ملكة */}
@@ -102,28 +95,18 @@ export default function HomeScreen() {
           </QuickChip>
         </View>
 
-        {/* Dawah posters */}
+        {/* Dawah posters — Twitch-style focused carousel */}
         <View style={{ marginTop: 24 }}>
           <HomeSectionHeader title="تصميمات دعوية" onViewAll={goToSections} />
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.scrollerPad}
-          >
-            {DAWAH_QUOTES.map((q, i) => (
-              <View key={i} style={styles.scrollerItem}>
-                <DawahPoster
-                  quote={q}
-                  onPress={() =>
-                    router.push({
-                      pathname: '/share-sheet' as any,
-                      params: { tone: q.tone, title: q.t, body: q.b },
-                    })
-                  }
-                />
-              </View>
-            ))}
-          </ScrollView>
+          <DawahCarousel
+            items={DAWAH_QUOTES}
+            onItemPress={(q) =>
+              router.push({
+                pathname: '/share-sheet' as any,
+                params: { tone: q.tone, title: q.t, body: q.b },
+              })
+            }
+          />
         </View>
       </ScrollView>
     </SafeAreaView>

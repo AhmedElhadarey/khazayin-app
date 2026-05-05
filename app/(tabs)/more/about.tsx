@@ -1,4 +1,5 @@
-import { DetailHeader, LogoBadge, Wordmark } from '@/components/khazain';
+import { DetailHeader } from '@/components/khazain';
+import { OrnamentPattern } from '@/components/khazain/patterns';
 import { KhazainColors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -10,28 +11,31 @@ export default function AboutScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <DetailHeader title="نبذة عن المؤسسة" onBack={() => router.back()} />
+      <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
+      <DetailHeader title="مؤسسة خزائن الرحمن" onBack={() => router.back()} />
       <ScrollView
-        contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
+        contentContainerStyle={[styles.container, { paddingBottom: 160 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.brand}>
-          <LogoBadge size={54} />
-          <View style={{ marginTop: 10 }}>
-            <Wordmark size={16} />
-          </View>
-        </View>
         <Text style={styles.body}>
-          مؤسسة خزائن الرحمن العالمية مؤسسة دعوية علمية تُعنى بنشر العلم الشرعي الصافي من مصادره الأصلية، وتقديمه للمسلمين بأسلوب معاصر يجمع بين أصالة العلم وحسن العرض.
+          مؤسسة خزائن الرحمن هي مؤسسة دعوية تهدف إلى نشر العلم الشرعي والمحتوى الإسلامي الهادف من خلال منصات متعددة.
         </Text>
-        <InfoCard
-          title="رؤيتنا"
-          body="أن نكون مرجعاً رقمياً موثوقاً يصل بالعلم الشرعي إلى كل بيت مسلم، باللغة التي يفهمها ويحبها."
-        />
-        <InfoCard
-          title="رسالتنا"
-          body="أن نُتيح تراث العلماء المعتبَرين في صورة رقمية متاحة للجميع، وأن نُعين الدعاة على إيصال الخير بلغة العصر."
-        />
+        <Text style={styles.body}>
+          نسعى لخدمة الدين الإسلامي من خلال توفير محتوى عالي الجودة يشمل المحاضرات والدروس والبرامج الدينية.
+        </Text>
+        <Text style={styles.body}>
+          تضم المؤسسة أكثر من ٦٥ قناة يوتيوب متخصصة في المحتوى الديني والدعوي، بالإضافة إلى قنوات التليجرام الرسمية.
+        </Text>
+        <View style={styles.cardsBlock}>
+          <InfoCard
+            title="رؤيتنا"
+            body="أن نكون المرجع الأول في نشر المحتوى الإسلامي الأصيل والموثوق عبر المنصات الرقمية."
+          />
+          <InfoCard
+            title="رسالتنا"
+            body="نشر العلم الشرعي والقيم الإسلامية من خلال وسائل التقنية الحديثة لنصل إلى أكبر عدد من المسلمين حول العالم."
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -50,28 +54,27 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   container: {
     paddingHorizontal: 18,
-    paddingTop: 4,
-    gap: 12,
-  },
-  brand: {
-    alignItems: 'center',
-    paddingVertical: 14,
+    paddingTop: 14,
+    gap: 14,
   },
   body: {
     fontSize: 13,
-    lineHeight: 23,
+    lineHeight: 24,
     color: KhazainColors.ink700,
     fontFamily: 'TheSansArabic',
     writingDirection: 'rtl',
     textAlign: 'right',
+  },
+  cardsBlock: {
+    marginTop: 8,
+    gap: 12,
   },
   card: {
     padding: 14,
     backgroundColor: KhazainColors.cream50,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.1)',
-    marginTop: 8,
+    borderColor: 'rgba(141,107,52,0.10)',
   },
   cardTitle: {
     fontFamily: 'Amiri-Bold',

@@ -1,96 +1,107 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { KhazainColors, KhazainRadius } from '@/constants/theme';
-import { MosqueSilhouette } from '../art';
+import { Image, ImageSourcePropType, Pressable, StyleSheet, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { KhazainRadius } from '@/constants/theme';
 
-export type DawahQuote = { tone: string; t: string; b: string };
+export type DawahQuote = {
+  tone: string;
+  t: string;
+  b: string;
+  source?: ImageSourcePropType;
+};
 
+const DAWAH_LAYLAT = require('@/assets/khazain/home/dawah-laylat-alqadr.png');
+const DAWAH_HELAL = require('@/assets/khazain/home/dawah-helal.png');
+const DAWAH_MAWIZA = require('@/assets/khazain/home/dawah-mawiza-sabah.png');
+
+// Real Figma poster art rendered as images. Tone is kept on each entry
+// for share-sheet wiring; quote text is preserved for accessibility/share.
 export const DAWAH_QUOTES: DawahQuote[] = [
-  { tone: '#E8DDD0', t: 'دعاء ليلة القدر', b: 'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي' },
-  { tone: '#E1D4BE', t: 'من هدي النبي ﷺ', b: 'خيركم من تعلّم\nالقرآن وعلّمه' },
-  { tone: '#DBC9B0', t: 'ذكر المساء', b: 'أمسينا وأمسى الملكُ\nلله رب العالمين' },
-  { tone: '#E8DDD0', t: 'تدبّر', b: 'ألا بذكر الله\nتطمئنّ القلوب' },
+  { tone: '#1A3F62', t: 'دعاء ليلة القدر', b: 'اللهم إنك عفوٌّ كريم تحب العفو فاعفُ عنّي', source: DAWAH_LAYLAT },
+  { tone: '#3F2A1B', t: 'موعظة الصباح', b: 'فاجعل لها قِسطًا من دعائك', source: DAWAH_MAWIZA },
+  { tone: '#1A3F62', t: 'هلال', b: 'كلُّ الحياة', source: DAWAH_HELAL },
 ];
 
-// 154×149 dawah poster card: tinted cream bg, mosque silhouette at bottom, gold double-stroke frame, centered quote.
-export function DawahPoster({ quote, onPress }: { quote: DawahQuote; onPress?: () => void }) {
+// 3D dawah poster card — full-bleed Figma poster image with layered depth.
+// Width/height are configurable so the focused carousel can render larger
+// poster art while other surfaces (e.g. a row primitive) keep the default.
+export function DawahPoster({
+  quote,
+  onPress,
+  width = 178,
+  height = 188,
+}: {
+  quote: DawahQuote;
+  onPress?: () => void;
+  width?: number;
+  height?: number;
+}) {
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
-        { backgroundColor: quote.tone, transform: [{ scale: pressed ? 0.97 : 1 }] },
+        {
+          width,
+          height,
+          backgroundColor: quote.tone,
+          transform: [
+            { perspective: 1200 },
+            { scale: pressed ? 0.96 : 1 },
+          ],
+          shadowOpacity: pressed ? 0.18 : 0.32,
+        },
       ]}
     >
-      <View style={styles.mosque}>
-        <MosqueSilhouette />
-      </View>
-      <View style={styles.goldFrame} />
-      <View style={styles.content}>
-        <Text style={styles.headline}>{quote.t}</Text>
-        <Text style={styles.body}>{quote.b}</Text>
-      </View>
+      {quote.source ? (
+        <Image source={quote.source} style={styles.image} resizeMode="cover" />
+      ) : null}
+
+      {/* Top edge sheen — simulates a raised bevel catching light */}
+      <LinearGradient
+        colors={['rgba(255,255,255,0.22)', 'rgba(255,255,255,0)']}
+        locations={[0, 0.45]}
+        style={styles.sheen}
+        pointerEvents="none"
+      />
+
+      {/* Hairline highlight stroke around the perimeter for depth */}
+      <View style={styles.bevel} pointerEvents="none" />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    width: 154,
-    height: 149,
     borderRadius: KhazainRadius.md,
     overflow: 'hidden',
     position: 'relative',
-    borderWidth: 1,
-    borderColor: 'rgba(184,134,74,0.3)',
+    // Soft anchored shadow with slight horizontal offset = lifted-tile feel.
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1.22 },
-    shadowOpacity: 0.25,
-    shadowRadius: 1.22,
-    elevation: 2,
+    shadowOffset: { width: 3, height: 8 },
+    shadowOpacity: 0.32,
+    shadowRadius: 14,
+    elevation: 10,
   },
-  mosque: {
+  image: {
+    width: '100%',
+    height: '100%',
+  },
+  sheen: {
     position: 'absolute',
-    bottom: 0,
+    top: 0,
     left: 0,
-    width: 154,
-    height: 54,
+    right: 0,
+    height: 28,
   },
-  goldFrame: {
+  bevel: {
     position: 'absolute',
-    top: 6,
-    left: 6,
-    right: 6,
-    bottom: 6,
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    borderRadius: KhazainRadius.md,
     borderWidth: 1,
-    borderColor: KhazainColors.gold400,
-    borderRadius: 8,
-    opacity: 0.45,
-  },
-  content: {
-    position: 'absolute',
-    top: 14,
-    left: 14,
-    right: 14,
-    bottom: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-  },
-  headline: {
-    fontFamily: 'Amiri',
-    fontSize: 9,
-    color: KhazainColors.gold600,
-    fontWeight: '600',
-    writingDirection: 'rtl',
-  },
-  body: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 11,
-    fontWeight: '700',
-    color: KhazainColors.navy,
-    textAlign: 'center',
-    lineHeight: 15.4,
-    writingDirection: 'rtl',
+    borderColor: 'rgba(255,255,255,0.18)',
   },
 });

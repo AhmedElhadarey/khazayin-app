@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { I18nManager, LogBox, Platform } from 'react-native';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import { I18nManager, LogBox, Platform } from 'react-native';
 import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
@@ -16,8 +18,7 @@ SplashScreen.preventAutoHideAsync().catch(() => {
   // Ignore — splash may already have been hidden in dev reloads.
 });
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -143,14 +144,16 @@ export default function RootLayout() {
           name="note-editor"
           options={{
             headerShown: false,
-            presentation: 'modal',
+            presentation: 'transparentModal',
+            animation: 'fade',
           }}
         />
         <Stack.Screen
           name="notes-viewer"
           options={{
             headerShown: false,
-            presentation: 'modal',
+            presentation: 'transparentModal',
+            animation: 'fade',
           }}
         />
         <Stack.Screen

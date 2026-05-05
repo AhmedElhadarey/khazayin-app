@@ -34,20 +34,26 @@ export function ReminderCard({
           : { borderWidth: 1, borderColor: 'rgba(141,107,52,0.1)' },
       ]}
     >
-      <View style={{ marginTop: 2 }}>
-        <Toggle on={on} onChange={onToggle} />
-      </View>
+      {/*
+        Visual RTL: [icon][title] on the RIGHT, body & next under that, [toggle] on the LEFT.
+        Under forceRTL + flexDirection:'row' auto-flip, the JSX-first child lands visually
+        on the RIGHT. So content is JSX-first, toggle is JSX-last.
+      */}
       <View style={{ flex: 1, minWidth: 0 }}>
         <View style={styles.titleRow}>
+          {/* JSX-first → visual right under working forceRTL: icon badge sits at right edge, title to its left. */}
+          <View style={styles.iconBadge}>{icon}</View>
           <View style={styles.titleLeftCol}>
             <Text style={styles.title} numberOfLines={1}>
               {title}
             </Text>
           </View>
-          <View style={styles.iconBadge}>{icon}</View>
         </View>
         <Text style={styles.body}>{body}</Text>
         <Text style={styles.next}>{next}</Text>
+      </View>
+      <View style={{ marginTop: 2 }}>
+        <Toggle on={on} onChange={onToggle} />
       </View>
     </View>
   );

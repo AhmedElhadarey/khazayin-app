@@ -1,7 +1,7 @@
+import { KhazainColors } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { KhazainColors } from '@/constants/theme';
 import { SearchPill } from '../primitives';
 import { FoundationMark } from './FoundationMark';
 
@@ -18,9 +18,19 @@ export function HomeHeader({
   onBellPress?: () => void;
   onSearchFocus?: () => void;
 }) {
+  // RTL visual layout (right → left): [FoundationMark][greeting block]   [bell]
+  // We use absolute positioning so we don't depend on flex auto-flip
+  // (which is unreliable on web / stale dev reloads — see CLAUDE.md).
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
+        <View style={styles.greetBlock}>
+          <FoundationMark />
+          <View style={styles.greetText}>
+            <Text style={styles.greeting}>{greeting}</Text>
+            <Text style={styles.hijri}>{hijriDate}</Text>
+          </View>
+        </View>
         <Pressable
           onPress={onBellPress}
           hitSlop={6}
@@ -29,13 +39,6 @@ export function HomeHeader({
         >
           <BellGlyph />
         </Pressable>
-        <View style={styles.greetBlock}>
-          <View style={styles.greetText}>
-            <Text style={styles.greeting}>{greeting}</Text>
-            <Text style={styles.hijri}>{hijriDate}</Text>
-          </View>
-          <FoundationMark />
-        </View>
       </View>
       <View style={{ marginTop: 8 }}>
         <SearchPill placeholder="بحث.." onFocus={onSearchFocus} />
@@ -72,13 +75,15 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     height: 54,
-    gap: 12,
+    position: 'relative',
+    justifyContent: 'center',
   },
   bell: {
+    position: 'absolute',
+    left: 0,
+    top: '50%',
+    marginTop: -16,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -86,9 +91,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 4,
-    flexShrink: 0,
   },
+  // RTL visual order: [FoundationMark][greetText] anchored to the right edge.
+  // JSX order matches: FoundationMark first → renders on the right under forceRTL.
   greetBlock: {
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
@@ -97,17 +107,15 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   greeting: {
-    fontFamily: 'Amiri',
+    fontFamily: 'TheMixArab',
     fontSize: 16,
-    lineHeight: 17,
     color: KhazainColors.ink900,
     fontWeight: '600',
     writingDirection: 'rtl',
   },
   hijri: {
-    fontFamily: 'Amiri',
+    fontFamily: 'TheMixArab',
     fontSize: 14,
-    lineHeight: 15,
     color: KhazainColors.inkSubtle,
     marginTop: 4,
     writingDirection: 'rtl',

@@ -1,17 +1,30 @@
-import { DetailHeader } from '@/components/khazain';
+import { InlineHeader, SearchPill, SurahRow } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
 import { usePlayerStore } from '@/store/playerStore';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 const MUSHAF_BG = '#FBF3DF';
 const FOOTER_BG = '#F3E4BE';
 
-// First five ayat of Al-Baqarah for the demo mushaf page.
+// All 9 surahs visible in Figma page 21 (قراءة القرآن).
+const SURAHS = [
+  { id: '٠١', name: 'سورة الفاتحة', meta: 'مكية · ٧ آيات' },
+  { id: '٠٢', name: 'سورة البقرة', meta: 'مدنية · ٢٨٦ آية' },
+  { id: '٠٣', name: 'سورة آل عمران', meta: 'مدنية · ٢٠٠ آية' },
+  { id: '٠٤', name: 'سورة النساء', meta: 'مدنية · ١٧٦ آية' },
+  { id: '٠٥', name: 'سورة المائدة', meta: 'مدنية · ١٢٠ آية' },
+  { id: '٠٦', name: 'سورة الأنعام', meta: 'مكية · ١٥٤ آية' },
+  { id: '٠٧', name: 'سورة الأعراف', meta: 'مكية · ٢٠٤ آية' },
+  { id: '٠٨', name: 'سورة الأنفال', meta: 'مدنية · ٧٥ آية' },
+  { id: '٠٩', name: 'سورة التوبة', meta: 'مدنية · ١٢٩ آية' },
+];
+
+// First five ayat of Al-Baqarah for the demo mushaf reading page.
 const AYAT = [
   { n: '١', text: 'الٓمٓ' },
   { n: '٢', text: 'ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ' },
@@ -25,6 +38,7 @@ const AYAT = [
 
 export default function MushafScreen() {
   const router = useRouter();
+  const params = useLocalSearchParams<{ surah?: string }>();
   const setVisible = usePlayerStore((s) => s.setVisible);
 
   // Hide MiniPlayer while mushaf is mounted. Restore on unmount.
@@ -33,14 +47,53 @@ export default function MushafScreen() {
     return () => setVisible(true);
   }, [setVisible]);
 
+  // Reading view (page 22/23) when a surah is selected, otherwise list (page 21).
+  if (params.surah) {
+    return <ReadingView onBack={() => router.back()} />;
+  }
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
-      <DetailHeader title="سورة البقرة" onBack={() => router.back()} bg={MUSHAF_BG} />
+    <ListView
+      onBack={() => router.back()}
+      onPick={(id) => router.push(`/sections/mushaf?surah=${id}` as any)}
+    />
+  );
+}
+
+function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string) => void }) {
+  return (
+    <SafeAreaView style={styles.listScreen} edges={['top']}>
+      <InlineHeader title="قراءة القرآن" onBack={onBack} />
+      <View style={styles.searchBlock}>
+        <SearchPill placeholder="بحث.." />
+      </View>
       <ScrollView
-        contentContainerStyle={styles.pageContent}
+        contentContainerStyle={[styles.surahList, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Surah ornament header */}
+        {SURAHS.map((s) => (
+          <SurahRow
+            key={s.id}
+            index={s.id}
+            name={s.name}
+            meta={s.meta}
+            showChevron={false}
+            onPress={() => onPick(s.id)}
+          />
+        ))}
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+function ReadingView({ onBack }: { onBack: () => void }) {
+  return (
+    <SafeAreaView style={styles.screen} edges={['top']}>
+      {/* Page 23 header: title + small ▶ disclosure with subtitle line below. */}
+      <View style={[styles.headerBg, { backgroundColor: MUSHAF_BG }]}>
+        <InlineHeader title="سورة البقرة" onBack={onBack} />
+        <Text style={styles.subtitle}>مكية  ·  ٧ آيات  ·  صفحة ١ من ٦٠٤</Text>
+      </View>
+      <ScrollView contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator={false}>
         <View style={styles.ornamentWrap}>
           <LinearGradient
             colors={['#F3E0B6', '#EAD19A']}
@@ -52,7 +105,6 @@ export default function MushafScreen() {
           <Text style={styles.basmala}>﷽</Text>
           <Text style={styles.surahMeta}>سورة البقرة · مدنية · ٢٨٦ آية</Text>
         </View>
-        {/* Ayat flow */}
         <Text style={styles.ayatBody}>
           {AYAT.map((a, i) => (
             <React.Fragment key={a.n}>
@@ -63,12 +115,11 @@ export default function MushafScreen() {
           ))}
         </Text>
       </ScrollView>
-
-      {/* Footer controls */}
+      {/* Footer order RTL: حفظ علامة (right), الانتقال للعلامة (center), الفهرس (left). */}
       <View style={styles.footer}>
-        <MushafBtn label="حفظ علامة" icon={<BookmarkGlyph />} />
         <MushafBtn label="الفهرس" icon={<MenuGlyph />} />
-        <MushafBtn label="الإعدادات" icon={<ClockGlyph />} />
+        <MushafBtn label="الانتقال للعلامة" icon={<BookmarkFilledGlyph />} />
+        <MushafBtn label="حفظ علامة" icon={<BookmarkGlyph />} />
       </View>
     </SafeAreaView>
   );
@@ -86,9 +137,7 @@ function AyahNum({ n }: { n: string }) {
 
 function MushafBtn({ label, icon }: { label: string; icon: React.ReactNode }) {
   return (
-    <Pressable
-      style={({ pressed }) => [styles.footerBtn, { opacity: pressed ? 0.7 : 1 }]}
-    >
+    <Pressable style={({ pressed }) => [styles.footerBtn, { opacity: pressed ? 0.7 : 1 }]}>
       {icon}
       <Text style={styles.footerBtnLabel}>{label}</Text>
     </Pressable>
@@ -97,7 +146,7 @@ function MushafBtn({ label, icon }: { label: string; icon: React.ReactNode }) {
 
 function BookmarkGlyph() {
   return (
-    <Svg width={16} height={16} viewBox="0 0 20 20" fill="none">
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
       <Path
         d="M5 3v14l5-4 5 4V3H5z"
         stroke={KhazainColors.navy800}
@@ -108,27 +157,33 @@ function BookmarkGlyph() {
   );
 }
 
-function MenuGlyph() {
+function BookmarkFilledGlyph() {
   return (
-    <Svg width={16} height={16} viewBox="0 0 20 20" fill="none">
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
       <Path
-        d="M3 4h14M3 10h14M3 16h14"
+        d="M5 3v14l5-4 5 4V3H5z"
+        fill={KhazainColors.navy800}
         stroke={KhazainColors.navy800}
         strokeWidth={1.5}
-        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </Svg>
   );
 }
 
-function ClockGlyph() {
+function MenuGlyph() {
   return (
-    <Svg width={16} height={16} viewBox="0 0 20 20" fill="none">
-      <Circle cx={10} cy={10} r={7} stroke={KhazainColors.navy800} strokeWidth={1.5} />
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
       <Path
-        d="M10 6v4l3 2"
+        d="M4 5h12M4 10h12M4 15h12"
         stroke={KhazainColors.navy800}
-        strokeWidth={1.5}
+        strokeWidth={1.7}
+        strokeLinecap="round"
+      />
+      <Path
+        d="M2 5h0.5M2 10h0.5M2 15h0.5"
+        stroke={KhazainColors.navy800}
+        strokeWidth={1.7}
         strokeLinecap="round"
       />
     </Svg>
@@ -137,6 +192,25 @@ function ClockGlyph() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: MUSHAF_BG },
+  listScreen: { flex: 1, backgroundColor: KhazainColors.pageBg },
+  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  surahList: {
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    gap: 8,
+  },
+  headerBg: {
+    paddingBottom: 8,
+  },
+  subtitle: {
+    fontFamily: 'TheSansArabic',
+    fontSize: 13,
+    color: KhazainColors.gold600,
+    textAlign: 'right',
+    paddingHorizontal: 16,
+    paddingTop: 6,
+    writingDirection: 'rtl',
+  },
   pageContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 16 },
   ornamentWrap: {
     borderWidth: 2,

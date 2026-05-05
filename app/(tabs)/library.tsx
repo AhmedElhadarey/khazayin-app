@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 const FILTERS: { id: string; label: string; count: string }[] = [
-  { id: 'all', label: 'الكل', count: '٤٢' },
+  { id: 'all', label: 'الكل', count: '١٢' },
   { id: 'saved', label: 'المحفوظات', count: '١٨' },
   { id: 'playlist', label: 'قوائم التشغيل', count: '٥' },
 ];
@@ -75,6 +75,8 @@ export default function LibraryScreen() {
               </View>
               <CircularProgress pct={70} />
             </View>
+            {/* Actions row: "بدء الورد" navy pill on RIGHT (first), toggle row on LEFT.
+                Under forceRTL+row, JSX-first lands visually on the right. */}
             <View style={styles.wirdActions}>
               <Pressable
                 onPress={() => {}}
@@ -82,6 +84,7 @@ export default function LibraryScreen() {
               >
                 <Text style={styles.startBtnLabel}>بدء الورد</Text>
               </Pressable>
+              <View style={{ flex: 1 }} />
               <View style={styles.reminderInline}>
                 <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
                 <Toggle on={reminderOn} onChange={setReminderOn} />
@@ -100,19 +103,21 @@ export default function LibraryScreen() {
             >
               <Text style={styles.noteBodyPlaceholder}>اكتب ملاحظتك هنا...</Text>
             </Pressable>
+            {/* Toolbar: format buttons on the RIGHT (RTL leading), save pill on the LEFT.
+                JSX order is right→left under forceRTL+row, so format btns come first. */}
             <View style={styles.noteToolbar}>
+              <FormatBtn bold>B</FormatBtn>
+              <FormatBtn italic>I</FormatBtn>
+              <FormatBtn>
+                <ListGlyph />
+              </FormatBtn>
+              <View style={{ flex: 1 }} />
               <Pressable
                 onPress={() => openNewNote()}
                 style={({ pressed }) => [styles.noteSaveBtn, { opacity: pressed ? 0.85 : 1 }]}
               >
                 <Text style={styles.noteSaveLabel}>حفظ</Text>
               </Pressable>
-              <View style={{ flex: 1 }} />
-              <FormatBtn>
-                <ListGlyph />
-              </FormatBtn>
-              <FormatBtn italic>I</FormatBtn>
-              <FormatBtn bold>B</FormatBtn>
             </View>
             <View style={styles.recentBlock}>
               <Text style={styles.recentHeader}>آخر الملاحظات</Text>
@@ -391,10 +396,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   startBtn: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 12,
+    paddingVertical: 9,
+    paddingHorizontal: 18,
+    borderRadius: 10,
     backgroundColor: KhazainColors.navy800,
     alignItems: 'center',
     justifyContent: 'center',

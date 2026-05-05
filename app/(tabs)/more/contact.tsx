@@ -1,20 +1,27 @@
 import { DetailHeader } from '@/components/khazain';
+import { OrnamentPattern } from '@/components/khazain/patterns';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  KeyboardAvoidingView,
+  Linking,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
+
+// Real phone / email values to be supplied by the foundation. Defaults match
+// the Figma mock.
+const CONTACT_PHONE = '01228888888';
+const CONTACT_EMAIL = 'khazayin@email.com';
 
 export default function ContactScreen() {
   const router = useRouter();
@@ -22,6 +29,19 @@ export default function ContactScreen() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
+
+  const open = async (url: string, label: string) => {
+    try {
+      const can = await Linking.canOpenURL(url);
+      if (!can) throw new Error('cannot open');
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert(label, 'تعذّر فتح التطبيق على هذا الجهاز.');
+    }
+  };
+
+  const onWhatsApp = () => open(`https://wa.me/${CONTACT_PHONE}`, 'واتساب');
+  const onEmail = () => open(`mailto:${CONTACT_EMAIL}`, 'البريد');
 
   const submit = () => {
     if (!name.trim() || !email.trim() || !message.trim()) {
@@ -35,52 +55,63 @@ export default function ContactScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
+      <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
       <DetailHeader title="تواصل معنا" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: 24 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: 160 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
           <ActionCard
             title="إرسال رسالة"
-            value="+966 11 XXX XXXX"
-            icon={<PhoneGlyph />}
+            value={CONTACT_PHONE}
+            icon={<WhatsappGlyph />}
+            onPress={onWhatsApp}
           />
           <ActionCard
-            title="إرسال بريد إلكتروني"
-            value="info@khazain.org"
+            title="إرسال بريد اليكتروني"
+            value={CONTACT_EMAIL}
             icon={<MailGlyph />}
+            onPress={onEmail}
           />
-          <Text style={styles.sectionLabel}>تواصل معنا</Text>
-          <Field label="الاسم" value={name} onChangeText={setName} placeholder="اسمك الكامل" />
-          <Field
-            label="البريد الإلكتروني"
-            value={email}
-            onChangeText={setEmail}
-            placeholder="example@mail.com"
-            keyboardType="email-address"
-            autoCapitalize="none"
-          />
-          <Field
-            label="الرسالة"
-            value={message}
-            onChangeText={setMessage}
-            placeholder="اكتب رسالتك..."
-            multi
-          />
-          <Pressable
-            onPress={submit}
-            style={({ pressed }) => [
-              styles.submitBtn,
-              { opacity: pressed ? 0.85 : 1 },
-            ]}
-          >
-            <Text style={styles.submitLabel}>إرسال الرسالة</Text>
-          </Pressable>
+          {/* Form is wrapped in a single large card per Figma. */}
+          <View style={styles.formCard}>
+            <Text style={styles.formTitle}>تواصل معنا</Text>
+            <Field
+              label="الاسم"
+              value={name}
+              onChangeText={setName}
+              placeholder="اكتب اسمك"
+            />
+            <Field
+              label="البريد الإلكتروني"
+              value={email}
+              onChangeText={setEmail}
+              placeholder="example@email.com"
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
+            <Field
+              label="الرسالة"
+              value={message}
+              onChangeText={setMessage}
+              placeholder="اكتب رسالتك هنا..."
+              multi
+            />
+            <Pressable
+              onPress={submit}
+              style={({ pressed }) => [
+                styles.submitBtn,
+                { opacity: pressed ? 0.85 : 1 },
+              ]}
+            >
+              <Text style={styles.submitLabel}>إرسال الرسالة</Text>
+            </Pressable>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -91,19 +122,31 @@ function ActionCard({
   title,
   value,
   icon,
+  onPress,
 }: {
   title: string;
   value: string;
   icon: React.ReactNode;
+  onPress?: () => void;
 }) {
   return (
-    <View style={[styles.actionCard, KhazainShadows.card]}>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.actionCard,
+        KhazainShadows.card,
+        { transform: [{ scale: pressed ? 0.99 : 1 }] },
+      ]}
+    >
+      {/* Light cream disc, anchored to the right (RTL start) so the visual
+          order is deterministic across platforms regardless of flexDirection
+          flipping. */}
       <View style={styles.actionTile}>{icon}</View>
-      <View style={{ flex: 1 }}>
+      <View style={styles.actionTextCol}>
         <Text style={styles.actionTitle}>{title}</Text>
         <Text style={styles.actionValue}>{value}</Text>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
@@ -125,7 +168,7 @@ function Field({
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }) {
   return (
-    <View>
+    <View style={styles.fieldGroup}>
       <Text style={styles.fieldLabel}>{label}</Text>
       <TextInput
         value={value}
@@ -138,21 +181,23 @@ function Field({
         autoCapitalize={autoCapitalize}
         style={[
           styles.fieldInput,
-          multi && { minHeight: 100, textAlignVertical: 'top', paddingTop: 12 },
+          multi && {
+            minHeight: 110,
+            textAlignVertical: 'top',
+            paddingTop: 14,
+          },
         ]}
       />
     </View>
   );
 }
 
-function PhoneGlyph() {
+function WhatsappGlyph() {
   return (
-    <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
       <Path
-        d="M3 4c0 8 5 13 13 13l2-3-4-2-2 2c-2-1-4-3-5-5l2-2-2-4-4 1z"
-        stroke={KhazainColors.gold300}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
+        d="M10 2.5a7.5 7.5 0 00-6.5 11.2L2.5 17.5l3.9-1a7.5 7.5 0 103.6-14zm-2.7 4.7c.3 0 .6.3.9.7l.4 1.4-.8.8c.4 1 1.4 2 2.4 2.4l.8-.8 1.4.4c.4.3.7.6.7 1 0 .9-.9 1.7-1.8 1.7-2.7 0-5.4-2.7-5.4-5.4 0-1 .8-1.8 1.7-1.8z"
+        fill={KhazainColors.navy800}
       />
     </Svg>
   );
@@ -160,9 +205,17 @@ function PhoneGlyph() {
 
 function MailGlyph() {
   return (
-    <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
-      <Rect x={2} y={4} width={16} height={12} rx={2} stroke={KhazainColors.gold300} strokeWidth={1.5} />
-      <Path d="M2 6l8 5 8-5" stroke={KhazainColors.gold300} strokeWidth={1.5} />
+    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+      <Rect
+        x={2.5}
+        y={4.5}
+        width={15}
+        height={11}
+        rx={2}
+        stroke={KhazainColors.navy800}
+        strokeWidth={1.5}
+      />
+      <Path d="M3 6.5l7 4.5 7-4.5" stroke={KhazainColors.navy800} strokeWidth={1.5} />
     </Svg>
   );
 }
@@ -171,29 +224,42 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   body: {
     paddingHorizontal: 14,
-    paddingTop: 4,
-    gap: 10,
+    paddingTop: 6,
+    gap: 12,
   },
+  // Action cards: cream card with a cream-tinted disc on the RTL-start side
+  // (right edge) and a two-line text block to its left.
   actionCard: {
-    padding: 14,
+    position: 'relative',
     backgroundColor: KhazainColors.cream50,
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.1)',
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  actionTile: {
-    width: 42,
-    height: 42,
-    borderRadius: 12,
-    backgroundColor: KhazainColors.navy800,
-    alignItems: 'center',
+    borderColor: 'rgba(141,107,52,0.10)',
+    minHeight: 70,
+    paddingVertical: 14,
+    paddingLeft: 16,
+    paddingRight: 70, // disc 46 + 12 inset + 12 gap
     justifyContent: 'center',
   },
+  actionTile: {
+    position: 'absolute',
+    right: 12,
+    top: '50%',
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: KhazainColors.iconChipBg,
+    borderWidth: 1,
+    borderColor: 'rgba(26,53,87,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    transform: [{ translateY: -23 }],
+  },
+  actionTextCol: {
+    gap: 2,
+  },
   actionTitle: {
-    fontSize: 13,
+    fontSize: 14,
     fontWeight: '700',
     color: KhazainColors.ink900,
     fontFamily: 'TheSansArabic',
@@ -201,55 +267,69 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   actionValue: {
-    fontSize: 11,
+    fontSize: 12,
     color: KhazainColors.ink500,
     marginTop: 2,
     writingDirection: 'ltr',
     textAlign: 'right',
     fontFamily: 'TheSansArabic',
   },
-  sectionLabel: {
+  // Single form card containing the title, three fields and the submit btn.
+  formCard: {
     marginTop: 6,
-    fontSize: 14,
+    padding: 16,
+    paddingTop: 18,
+    backgroundColor: KhazainColors.cream50,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: 'rgba(141,107,52,0.10)',
+    gap: 12,
+  },
+  formTitle: {
+    fontFamily: 'Amiri-Bold',
+    fontSize: 22,
     fontWeight: '700',
     color: KhazainColors.ink900,
-    fontFamily: 'TheSansArabic',
-    paddingHorizontal: 4,
+    textAlign: 'center',
     writingDirection: 'rtl',
-    textAlign: 'right',
+    marginBottom: 4,
+  },
+  fieldGroup: {
+    gap: 6,
   },
   fieldLabel: {
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    marginBottom: 6,
+    fontSize: 12,
+    color: KhazainColors.ink700,
     fontFamily: 'TheSansArabic',
+    fontWeight: '600',
     writingDirection: 'rtl',
     textAlign: 'right',
   },
   fieldInput: {
-    backgroundColor: KhazainColors.cream50,
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
+    backgroundColor: KhazainColors.cream100,
+    borderRadius: 14,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.1)',
+    borderColor: 'rgba(141,107,52,0.08)',
     fontSize: 13,
     color: KhazainColors.ink900,
     fontFamily: 'TheSansArabic',
     writingDirection: 'rtl',
   },
   submitBtn: {
-    marginTop: 6,
-    paddingVertical: 14,
+    marginTop: 4,
+    paddingVertical: 16,
     borderRadius: 14,
     backgroundColor: KhazainColors.navy800,
     alignItems: 'center',
     justifyContent: 'center',
   },
   submitLabel: {
-    fontSize: 14,
+    fontSize: 15,
     fontWeight: '700',
     color: '#fff',
     fontFamily: 'TheSansArabic',
+    writingDirection: 'rtl',
   },
 });

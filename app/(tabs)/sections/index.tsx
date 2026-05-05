@@ -17,13 +17,13 @@ type Section = {
 
 const SECTIONS: Section[] = [
   { id: 'quran', route: '/sections/reciter', title: 'القرآن حياة', subtitle: 'تلاوات وتفسير وتدبّر القرآن الكريم', count: '١٥١ حلقة', icon: 'quran' },
-  { id: 'prophet', route: null, title: 'رسول الله ﷺ', subtitle: 'السيرة النبوية والشمائل المحمدية', count: '٢٥٣ حلقة', icon: 'prophet' },
+  { id: 'prophet', route: '/sections/prophet', title: 'رسول الله ﷺ', subtitle: 'السيرة النبوية والشمائل المحمدية', count: '٢٥٣ حلقة', icon: 'prophet' },
   { id: 'scholars', route: '/sections/scholar', title: 'العلماء والمشايخ', subtitle: 'محاضرات ودروس كبار العلماء', count: '٢٥٣ حلقة', icon: 'scholar' },
-  { id: 'books', route: null, title: 'الكتب العلمية', subtitle: 'شروحات الكتب الإسلامية المهمة', count: '٨٩ حلقة', icon: 'book' },
-  { id: 'queen', route: null, title: 'أنتِ ملكة', subtitle: 'ملكةٌ أنتِ لا سواكِ', count: null, icon: 'crown' },
+  { id: 'books', route: '/sections/books', title: 'الكتب العلمية', subtitle: 'شروحات الكتب الإسلامية المهمة', count: '٨٩ حلقة', icon: 'book' },
+  { id: 'queen', route: '/sections/queen', title: 'أنتِ ملكة', subtitle: 'ملكةٌ أنتِ لا سواكِ', count: null, icon: 'crown' },
   { id: 'audiobooks', route: null, title: 'كتب صوتية', subtitle: 'كتب إسلامية مقروءة بصوت عذب', count: '١٧ كتاباً', icon: 'headphones' },
   { id: 'exclusive', route: null, title: 'حصريات خزائن الرحمن', subtitle: 'محتوى حصري ومميّز', count: '٣١ حلقة', icon: 'sparkle' },
-  { id: 'radio', route: null, title: 'برامج إذاعية', subtitle: 'برامج إذاعية إسلامية متنوعة', count: '٢٣٨ برنامج', icon: 'mic' },
+  { id: 'radio', route: '/sections/radio', title: 'برامج إذاعية', subtitle: 'برامج إذاعية إسلامية متنوعة', count: '٢٣٨ برنامج', icon: 'mic' },
   { id: 'dawah', route: '/sections/dawah', title: 'تصميمات دعوية', subtitle: 'محتوى دعوي ومرئي للدعوة', count: '١٢٥ تصميم', icon: 'design' },
 ];
 
