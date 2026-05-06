@@ -1,4 +1,5 @@
 import { KhazainColors } from '@/constants/theme';
+import { todayHijriArabic } from '@/lib/hijriDate';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -9,7 +10,7 @@ import { FoundationMark } from './FoundationMark';
 // then SearchPill below. Matches design_source/app/home.jsx HomeHeader.
 export function HomeHeader({
   greeting = 'سبحان الله',
-  hijriDate = '٤ جمادى الآخرة ١٤٤٧ هـ',
+  hijriDate = todayHijriArabic(),
   onBellPress,
   onSearchFocus,
 }: {
@@ -33,7 +34,7 @@ export function HomeHeader({
         </View>
         <Pressable
           onPress={onBellPress}
-          hitSlop={6}
+          hitSlop={10}
           accessibilityLabel="الإشعارات"
           style={({ pressed }) => [styles.bell, { opacity: pressed ? 0.8 : 1 }]}
         >
@@ -72,7 +73,9 @@ function BellGlyph() {
 const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: 16,
-    paddingBottom: 8,
+    // Note: bottom gap to HeroQuran is owned by `heroPad.marginTop: 8` in
+    // app/(tabs)/index.tsx so the search pill→hero gap is exactly 8px (G4).
+    paddingBottom: 0,
   },
   row: {
     height: 54,

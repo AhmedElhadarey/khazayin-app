@@ -1,5 +1,5 @@
 import React, { useEffect, useRef } from 'react';
-import { I18nManager, ScrollView, StyleProp, ViewStyle } from 'react-native';
+import { I18nManager, Platform, ScrollView, StyleProp, ViewStyle } from 'react-native';
 
 // Horizontal scroller that always reads right-to-left:
 // - first child sits at the visual right edge
@@ -29,8 +29,10 @@ export function RtlCarousel({
   };
 
   useEffect(() => {
-    if (!I18nManager.isRTL) {
-      // small delay so initial layout settles on web
+    // On web, forceRTL is unreliable, so scroll-to-end every time.
+    // On Android cold-install, forceRTL may not have propagated to first
+    // paint — re-anchor to the visual right edge to avoid landing scrolled-left (G11).
+    if (!I18nManager.isRTL || Platform.OS === 'android') {
       const t = setTimeout(() => ref.current?.scrollToEnd({ animated: false }), 0);
       return () => clearTimeout(t);
     }

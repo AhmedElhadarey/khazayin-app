@@ -1,8 +1,13 @@
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { KhazainColors } from '@/constants/theme';
+import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
+import { KhazainColors, KhazainRadius } from '@/constants/theme';
 
-// 192×81 cream card with navy stripe top and centered Amiri navy title.
+// Width scales with screen so the carousel always shows ~1.8 cards regardless
+// of device (iPhone SE → Pro Max). 16px horizontal page padding + 12px gap.
+const { width: SCREEN_W } = Dimensions.get('window');
+const CARD_W = (SCREEN_W - 16 * 2 - 12) / 1.8;
+
+// Cream card with navy stripe top and centered Amiri navy title.
 // Port of design_source/app/home.jsx BookCard.
 export function BookCard({ name, onPress }: { name: string; onPress?: () => void }) {
   return (
@@ -20,10 +25,10 @@ export function BookCard({ name, onPress }: { name: string; onPress?: () => void
 
 const styles = StyleSheet.create({
   card: {
-    width: 192,
+    width: CARD_W,
     height: 81,
     backgroundColor: KhazainColors.heroCream,
-    borderRadius: 8,
+    borderRadius: KhazainRadius.sm,
     padding: 22,
     alignItems: 'center',
     justifyContent: 'center',

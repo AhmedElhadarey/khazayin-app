@@ -11,6 +11,8 @@ export function QueenCard({ onPress, onMore }: { onPress?: () => void; onMore?: 
   return (
     <Pressable
       onPress={handle}
+      accessibilityRole="button"
+      accessibilityLabel="أنتِ ملكة، اضغط للمزيد"
       style={({ pressed }) => [
         styles.card,
         KhazainShadows.hero,

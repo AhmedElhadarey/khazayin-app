@@ -39,7 +39,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    marginTop: 11, // accommodate the floating badge without clipping
+    // Breathing room for the floating badge (top:-11) and navy stripe (bottom:-2)
+    // is owned by the parent quickChipsRow paddingTop/Bottom in app/(tabs)/index.tsx (G8).
   },
   badge: {
     position: 'absolute',

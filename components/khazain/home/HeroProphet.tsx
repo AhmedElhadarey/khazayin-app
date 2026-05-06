@@ -14,6 +14,8 @@ export function HeroProphet({ onPress, onMore }: { onPress?: () => void; onMore?
   return (
     <Pressable
       onPress={handle}
+      accessibilityRole="button"
+      accessibilityLabel="محمد رسول الله، اضغط للمزيد"
       style={({ pressed }) => [
         styles.card,
         KhazainShadows.hero,

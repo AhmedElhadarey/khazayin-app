@@ -12,6 +12,8 @@ export function HeroQuran({ onPress, onMore }: { onPress?: () => void; onMore?: 
   return (
     <Pressable
       onPress={handle}
+      accessibilityRole="button"
+      accessibilityLabel="القرآن حياة، اضغط للمزيد"
       style={({ pressed }) => [
         styles.card,
         KhazainShadows.hero,
