@@ -1,9 +1,10 @@
 import { ShareIcon } from '@/components/khazain/icons';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { DawahPoster, DawahQuote } from '../home/DawahPoster';
+import { DawahPoster } from '../home/DawahPoster';
 
 // Page 30 (تصميمات دعوية → month detail) — list row composed of:
 //   [poster thumb (gold double-frame) — RIGHT]
@@ -20,7 +21,7 @@ export function DawahPosterRow({
   onDownload,
 }: {
   title: string;
-  quote: DawahQuote;
+  quote: DawahPosterModel;
   onPress?: () => void;
   onShare?: () => void;
   onDownload?: () => void;

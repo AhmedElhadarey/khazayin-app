@@ -1,36 +1,22 @@
-import { ListRowCard, SearchPill } from '@/components/khazain';
+import { AsyncContent, ListRowCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
 import { SECTION_ICONS, SectionIconKey } from '@/components/khazain/icons/sections';
 import { KhazainColors } from '@/constants/theme';
+import { useSectionsStore } from '@/store';
+import type { SectionEntry } from '@/types/content';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-type Section = {
-  id: string;
-  route: string | null; // null → not yet implemented
-  title: string;
-  subtitle: string;
-  count: string | null;
-  icon: SectionIconKey;
-};
-
-const SECTIONS: Section[] = [
-  { id: 'quran', route: '/sections/reciter', title: 'القرآن حياة', subtitle: 'تلاوات وتفسير وتدبّر القرآن الكريم', count: '١٥١ حلقة', icon: 'quran' },
-  { id: 'prophet', route: '/sections/prophet', title: 'رسول الله ﷺ', subtitle: 'السيرة النبوية والشمائل المحمدية', count: '٢٥٣ حلقة', icon: 'prophet' },
-  { id: 'scholars', route: '/sections/scholar', title: 'العلماء والمشايخ', subtitle: 'محاضرات ودروس كبار العلماء', count: '٢٥٣ حلقة', icon: 'scholar' },
-  { id: 'books', route: '/sections/books', title: 'الكتب العلمية', subtitle: 'شروحات الكتب الإسلامية المهمة', count: '٨٩ حلقة', icon: 'book' },
-  { id: 'queen', route: '/sections/queen', title: 'أنتِ ملكة', subtitle: 'ملكةٌ أنتِ لا سواكِ', count: null, icon: 'crown' },
-  { id: 'audiobooks', route: null, title: 'كتب صوتية', subtitle: 'كتب إسلامية مقروءة بصوت عذب', count: '١٧ كتاباً', icon: 'headphones' },
-  { id: 'exclusive', route: null, title: 'حصريات خزائن الرحمن', subtitle: 'محتوى حصري ومميّز', count: '٣١ حلقة', icon: 'sparkle' },
-  { id: 'radio', route: '/sections/radio', title: 'برامج إذاعية', subtitle: 'برامج إذاعية إسلامية متنوعة', count: '٢٣٨ برنامج', icon: 'mic' },
-  { id: 'dawah', route: '/sections/dawah', title: 'تصميمات دعوية', subtitle: 'محتوى دعوي ومرئي للدعوة', count: '١٢٥ تصميم', icon: 'design' },
-];
-
 export default function SectionsScreen() {
   const router = useRouter();
+  const { data, status, error, fetch, refresh } = useSectionsStore();
 
-  const open = (s: Section) => {
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  const open = (s: SectionEntry) => {
     if (s.route) {
       router.push(s.route as any);
     } else {
@@ -50,21 +36,29 @@ export default function SectionsScreen() {
         <View style={styles.searchBlock}>
           <SearchPill placeholder="ابحث في الأقسام.." />
         </View>
-        <View style={styles.list}>
-          {SECTIONS.map((s) => {
-            const Icon = SECTION_ICONS[s.icon];
-            return (
-              <ListRowCard
-                key={s.id}
-                title={s.title}
-                subtitle={s.subtitle}
-                count={s.count ?? undefined}
-                onPress={() => open(s)}
-                icon={<Icon size={34} />}
-              />
-            );
-          })}
-        </View>
+        <AsyncContent
+          status={status}
+          error={error}
+          onRetry={refresh}
+          skeleton={<SkeletonRibbonList count={9} />}
+          emptyMessage="لا يوجد أقسام متاحة"
+        >
+          <View style={styles.list}>
+            {data.map((s) => {
+              const Icon = SECTION_ICONS[s.iconKey as SectionIconKey];
+              return (
+                <ListRowCard
+                  key={s.id}
+                  title={s.title}
+                  subtitle={s.subtitle}
+                  count={s.count ?? undefined}
+                  onPress={() => open(s)}
+                  icon={<Icon size={34} />}
+                />
+              );
+            })}
+          </View>
+        </AsyncContent>
       </ScrollView>
     </SafeAreaView>
   );

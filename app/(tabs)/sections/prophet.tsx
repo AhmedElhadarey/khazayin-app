@@ -1,30 +1,30 @@
 import {
+  AsyncContent,
   InlineHeader,
   LectureCard,
   ProphetMedallionBadge,
   SearchPill,
+  SkeletonRibbonList,
 } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { useProphetLecturesStore } from '@/store';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 25: رسول الله ﷺ — list of lecture cards (no letter index).
 // Each row uses the medallion badge with calligraphic ﷺ glyph on the right,
 // title + scholar in the middle, duration chip on the far left.
-const LECTURES = [
-  { id: 'p1', title: 'السيرة النبوية', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'p2', title: 'قصص الأنبياء', scholar: 'الشيخ سعد البريك', duration: '٥٠ دقيقة' },
-  { id: 'p3', title: 'فقه العبادات', scholar: 'الشيخ صالح الفوزان', duration: '٢٠ دقيقة' },
-  { id: 'p4', title: 'تفسير القرآن الكريم', scholar: 'الشيخ محمد العريفي', duration: '٤٥ دقيقة' },
-  { id: 'p5', title: 'السيرة النبوية', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'p6', title: 'غزوة بدر', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'p7', title: 'غزوة بدر', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-];
 
 export default function ProphetScreen() {
   const router = useRouter();
+  const { data, status, error, fetch, refresh } = useProphetLecturesStore();
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <InlineHeader title="رسول الله ﷺ" onBack={() => router.back()} />
@@ -35,16 +35,24 @@ export default function ProphetScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {LECTURES.map((l) => (
-          <LectureCard
-            key={l.id}
-            iconNode={<ProphetMedallionBadge size={48} />}
-            title={l.title}
-            scholar={l.scholar}
-            duration={l.duration}
-            onPress={() => Alert.alert(l.title, 'سيتم تشغيل الحلقة قريباً')}
-          />
-        ))}
+        <AsyncContent
+          status={status}
+          error={error}
+          onRetry={refresh}
+          skeleton={<SkeletonRibbonList count={7} />}
+          emptyMessage="لا توجد محاضرات في السيرة"
+        >
+          {data.map((l) => (
+            <LectureCard
+              key={l.id}
+              iconNode={<ProphetMedallionBadge size={48} />}
+              title={l.title}
+              scholar={l.scholar}
+              duration={l.duration}
+              onPress={() => Alert.alert(l.title, 'سيتم تشغيل الحلقة قريباً')}
+            />
+          ))}
+        </AsyncContent>
       </ScrollView>
     </SafeAreaView>
   );

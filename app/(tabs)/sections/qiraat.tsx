@@ -1,27 +1,22 @@
-import { ReciterRow } from '@/components/khazain';
+import { AsyncContent, ReciterRow, SkeletonRibbonList } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { useQiratStore } from '@/store';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 16: آختر القراءة — 10 qira'at rows (bottom-sheet style).
 // Each row uses ReciterRow without subtitle.
-const QIRAAT = [
-  'قراءة حفص عن عاصم',
-  'قراءة ورش عن نافع',
-  'قراءة قالون عن نافع',
-  'الدوري عن أبي عمرو',
-  'السوسي عن أبي عمرو',
-  'شعبة عن عاصم',
-  'البزي عن ابن كثير',
-  'نبل عن ابن كثير',
-  'الدوري عن الكسائي',
-  'خلف عن حمزة',
-];
+// Data sourced from useQiratStore (content service layer).
 
 export default function QiraatScreen() {
   const router = useRouter();
+  const { data, status, error, fetch, refresh } = useQiratStore();
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -34,9 +29,17 @@ export default function QiraatScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 32 }]}
         showsVerticalScrollIndicator={false}
       >
-        {QIRAAT.map((q, i) => (
-          <ReciterRow key={i} title={q} onPress={() => router.back()} />
-        ))}
+        <AsyncContent
+          status={status}
+          error={error}
+          onRetry={refresh}
+          skeleton={<SkeletonRibbonList count={10} />}
+          emptyMessage="لا توجد قراءات متاحة"
+        >
+          {data.map((q) => (
+            <ReciterRow key={q.id} title={q.name} onPress={() => router.back()} />
+          ))}
+        </AsyncContent>
       </ScrollView>
     </SafeAreaView>
   );

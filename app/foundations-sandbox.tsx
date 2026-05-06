@@ -1,4 +1,5 @@
 import {
+    AsyncContent,
     BellIcon,
     BookmarkIcon,
     CheckIcon,
@@ -6,6 +7,8 @@ import {
     CloseIcon,
     CopyIcon,
     DownloadIcon,
+    EmptyState,
+    ErrorState,
     GeoNavyPattern,
     GridIcon,
     HeroPattern,
@@ -22,6 +25,13 @@ import {
     SearchPill,
     SectionHeader,
     ShareIcon,
+    SkeletonCard,
+    SkeletonCardList,
+    SkeletonPoster,
+    SkeletonRibbon,
+    SkeletonRibbonList,
+    SkeletonRow,
+    SkeletonRowList,
     Star8Pattern,
     TelegramIcon,
     Toggle,
@@ -29,8 +39,9 @@ import {
     Wordmark,
     YouTubeIcon,
 } from '@/components/khazain';
+import type { LoadState } from '@/types/content';
 import { KhazainColors } from '@/constants/theme';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -38,6 +49,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Open /foundations-sandbox in Expo Go. Delete this file once Track 1 is accepted.
 export default function FoundationsSandbox() {
   const [on, setOn] = useState(false);
+  const [devState, setDevState] = useState<LoadState>('loading');
+  const [errorFlip, setErrorFlip] = useState(false);
+  const handleRetry = useCallback(() => setErrorFlip((f) => !f), []);
 
   const allIcons = [
     { name: 'Bell', node: <BellIcon /> },
@@ -143,6 +157,77 @@ export default function FoundationsSandbox() {
             </View>
           ))}
         </View>
+
+        {/* ----------------------------------------------------------------
+            State primitives — visual QA panel for Phase 3.
+            C3 RTL shimmer direction must be verified on a real device.
+            The shimmer light must travel right-to-left.
+        ---------------------------------------------------------------- */}
+        <SectionHeader title="State primitives — مكونات الحالة" />
+
+        <Text style={[styles.p, { marginBottom: 4 }]}>SkeletonRow</Text>
+        <SkeletonRow />
+
+        <Text style={[styles.p, { marginBottom: 4 }]}>SkeletonRowList (count=2)</Text>
+        <SkeletonRowList count={2} />
+
+        <Text style={[styles.p, { marginBottom: 4 }]}>SkeletonCard (count=3)</Text>
+        <SkeletonCardList count={3} />
+
+        <Text style={[styles.p, { marginBottom: 4 }]}>SkeletonRibbon</Text>
+        <SkeletonRibbon />
+
+        <Text style={[styles.p, { marginBottom: 4 }]}>SkeletonRibbonList (count=2)</Text>
+        <SkeletonRibbonList count={2} />
+
+        <Text style={[styles.p, { marginBottom: 4 }]}>SkeletonPoster</Text>
+        <SkeletonPoster />
+
+        <Text style={[styles.p, { marginBottom: 4 }]}>EmptyState</Text>
+        <EmptyState message="لا يوجد علماء" />
+
+        <Text style={[styles.p, { marginBottom: 4 }]}>ErrorState</Text>
+        <ErrorState
+          message="تعذر تحميل المحتوى. حاول مجدداً."
+          onRetry={handleRetry}
+        />
+
+        <Text style={[styles.p, { marginBottom: 4 }]}>
+          AsyncContent — حدد الحالة
+        </Text>
+        <View style={[styles.rowGap, { marginBottom: 8, flexWrap: 'wrap' }]}>
+          {(['idle', 'loading', 'empty', 'error', 'success'] as const).map((s) => (
+            <PillButton
+              key={s}
+              label={s}
+              variant={devState === s ? 'navy' : 'cream'}
+              size="sm"
+              onPress={() => setDevState(s)}
+            />
+          ))}
+        </View>
+        <AsyncContent
+          status={devState}
+          error={errorFlip ? new Error('خطأ تجريبي') : null}
+          onRetry={handleRetry}
+          emptyMessage="لا يوجد محتوى (تجريبي)"
+        >
+          <View
+            style={{
+              padding: 16,
+              backgroundColor: KhazainColors.cardBg,
+              borderRadius: 12,
+              borderWidth: 1,
+              borderColor: KhazainColors.cardBorder,
+            }}
+          >
+            <Text
+              style={[styles.p, { textAlign: 'right', writingDirection: 'rtl' }]}
+            >
+              النجاح! تم تحميل المحتوى بنجاح.
+            </Text>
+          </View>
+        </AsyncContent>
 
         <View style={{ height: 48 }} />
       </ScrollView>

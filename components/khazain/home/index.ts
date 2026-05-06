@@ -8,6 +8,5 @@ export { ScholarCard } from './ScholarCard';
 export { BookCard } from './BookCard';
 export { QuickChip } from './QuickChip';
 export { QueenCard } from './QueenCard';
-export { DawahPoster, DAWAH_QUOTES } from './DawahPoster';
-export type { DawahQuote } from './DawahPoster';
+export { DawahPoster } from './DawahPoster';
 export { DawahCarousel } from './DawahCarousel';

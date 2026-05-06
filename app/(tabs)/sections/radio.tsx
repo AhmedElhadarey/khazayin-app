@@ -1,29 +1,28 @@
 import {
+  AsyncContent,
   InlineHeader,
   LectureCard,
   MicBadge,
   SearchPill,
+  SkeletonRibbonList,
 } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { useRadioProgramsStore } from '@/store';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 35: برامج إذاعية — denser radio program cards (compact LectureCard variant).
-const PROGRAMS = [
-  { id: 'r1', title: 'الإعجاز العلمي في السنة النبوية', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'r2', title: 'الإعجاز العلمي في السنة النبوية', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'r3', title: 'الإعجاز العلمي في السنة النبوية', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'r4', title: 'الإعجاز العلمي في السنة النبوية', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'r5', title: 'الإعجاز العلمي في السنة النبوية', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'r6', title: 'الإعجاز العلمي في السنة النبوية', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'r7', title: 'الإعجاز العلمي في السنة النبوية', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'r8', title: 'تاريخ العلوم الإسلامية', scholar: 'الشيخ إسماعيل الديوبي', duration: '٢٧ دقيقة' },
-];
 
 export default function RadioScreen() {
   const router = useRouter();
+  const { data, status, error, fetch, refresh } = useRadioProgramsStore();
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <InlineHeader title="برامج إذاعية" onBack={() => router.back()} />
@@ -34,17 +33,25 @@ export default function RadioScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {PROGRAMS.map((p) => (
-          <LectureCard
-            key={p.id}
-            compact
-            iconNode={<MicBadge size={40} />}
-            title={p.title}
-            scholar={p.scholar}
-            duration={p.duration}
-            onPress={() => Alert.alert(p.title, 'سيتم تشغيل البرنامج قريباً')}
-          />
-        ))}
+        <AsyncContent
+          status={status}
+          error={error}
+          onRetry={refresh}
+          skeleton={<SkeletonRibbonList count={6} />}
+          emptyMessage="لا توجد برامج إذاعية متاحة"
+        >
+          {data.map((p) => (
+            <LectureCard
+              key={p.id}
+              compact
+              iconNode={<MicBadge size={40} />}
+              title={p.title}
+              scholar={p.scholar}
+              duration={p.duration}
+              onPress={() => Alert.alert(p.title, 'سيتم تشغيل البرنامج قريباً')}
+            />
+          ))}
+        </AsyncContent>
       </ScrollView>
     </SafeAreaView>
   );

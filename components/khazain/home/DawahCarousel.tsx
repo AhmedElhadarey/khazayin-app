@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from 'react';
-import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView } from 'react-native';
+import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView, View } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -8,7 +8,9 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
 } from 'react-native-reanimated';
-import { DawahPoster, DawahQuote } from './DawahPoster';
+import { KhazainSpacing } from '@/constants/theme';
+import type { DawahPoster as DawahPosterModel } from '@/types/content';
+import { DawahPoster } from './DawahPoster';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -19,20 +21,18 @@ const CARD_H = 232;
 const SLOT = 165;
 const SIDE_PAD = (SCREEN_W - SLOT) / 2;
 
-type WrappedEntry = { item: DawahQuote; realIndex: number };
+type WrappedEntry = { item: DawahPosterModel; realIndex: number };
 
 export function DawahCarousel({
   items,
   onItemPress,
 }: {
-  items: DawahQuote[];
-  onItemPress?: (item: DawahQuote, index: number) => void;
+  items: DawahPosterModel[];
+  onItemPress?: (item: DawahPosterModel, index: number) => void;
 }) {
-  // Wrap with a clone of the last item at the start and the first item at
-  // the end so the FIRST real card opens centred with both neighbours
-  // already peeking. Tap callbacks resolve back to the real index.
+  // All hooks must be called unconditionally — guards (G10) live below.
   const wrapped = useMemo<WrappedEntry[]>(() => {
-    if (items.length === 0) return [];
+    if (!items || items.length < 2) return [];
     return [
       { item: items[items.length - 1], realIndex: items.length - 1 },
       ...items.map((item, i) => ({ item, realIndex: i })),
@@ -41,7 +41,7 @@ export function DawahCarousel({
   }, [items]);
 
   const FIRST_REAL = 1;
-  const LAST_REAL = items.length;
+  const LAST_REAL = items?.length ?? 0;
 
   const scrollX = useSharedValue(FIRST_REAL * SLOT);
   const onScroll = useAnimatedScrollHandler({
@@ -49,12 +49,34 @@ export function DawahCarousel({
       scrollX.value = e.contentOffset.x;
     },
   });
+  const ref = useRef<ScrollView>(null);
+
+  // Guard: with 0 items render nothing; with 1 item the wrap-around clones
+  // would overlap the only real card and onMomentumEnd math breaks (G10).
+  if (!items || items.length === 0) return null;
+  if (items.length === 1) {
+    const only = items[0];
+    return (
+      <View
+        style={{
+          paddingTop: KhazainSpacing.x3,
+          paddingBottom: KhazainSpacing.x6,
+          alignItems: 'center',
+        }}
+      >
+        <DawahPoster
+          quote={only}
+          onPress={() => onItemPress?.(only, 0)}
+          width={CARD_W}
+          height={CARD_H}
+        />
+      </View>
+    );
+  }
 
   // When momentum lands on a clone, silently jump to its real twin so the
   // carousel feels infinite without seams.
-  const ref = useRef<ScrollView>(null);
   const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (items.length === 0) return;
     const x = e.nativeEvent.contentOffset.x;
     if (x <= 0) {
       ref.current?.scrollTo({ x: LAST_REAL * SLOT, animated: false });
@@ -76,14 +98,15 @@ export function DawahCarousel({
       scrollEventThrottle={16}
       contentOffset={{ x: FIRST_REAL * SLOT, y: 0 }}
       contentContainerStyle={{
+        paddingTop: KhazainSpacing.x3,
+        paddingBottom: KhazainSpacing.x6,
         paddingHorizontal: SIDE_PAD,
-        paddingVertical: 16,
         alignItems: 'center',
       }}
     >
       {wrapped.map((entry, i) => (
         <Slot
-          key={i}
+          key={`${entry.realIndex}-${i}`}
           entry={entry}
           index={i}
           scrollX={scrollX}

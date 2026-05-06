@@ -1,26 +1,8 @@
 import React from 'react';
-import { Image, ImageSourcePropType, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { KhazainRadius } from '@/constants/theme';
-
-export type DawahQuote = {
-  tone: string;
-  t: string;
-  b: string;
-  source?: ImageSourcePropType;
-};
-
-const DAWAH_LAYLAT = require('@/assets/khazain/home/dawah-laylat-alqadr.png');
-const DAWAH_HELAL = require('@/assets/khazain/home/dawah-helal.png');
-const DAWAH_MAWIZA = require('@/assets/khazain/home/dawah-mawiza-sabah.png');
-
-// Real Figma poster art rendered as images. Tone is kept on each entry
-// for share-sheet wiring; quote text is preserved for accessibility/share.
-export const DAWAH_QUOTES: DawahQuote[] = [
-  { tone: '#1A3F62', t: 'دعاء ليلة القدر', b: 'اللهم إنك عفوٌّ كريم تحب العفو فاعفُ عنّي', source: DAWAH_LAYLAT },
-  { tone: '#3F2A1B', t: 'موعظة الصباح', b: 'فاجعل لها قِسطًا من دعائك', source: DAWAH_MAWIZA },
-  { tone: '#1A3F62', t: 'هلال', b: 'كلُّ الحياة', source: DAWAH_HELAL },
-];
+import type { DawahPoster as DawahPosterModel } from '@/types/content';
 
 // 3D dawah poster card — full-bleed Figma poster image with layered depth.
 // Width/height are configurable so the focused carousel can render larger
@@ -31,7 +13,7 @@ export function DawahPoster({
   width = 178,
   height = 188,
 }: {
-  quote: DawahQuote;
+  quote: DawahPosterModel;
   onPress?: () => void;
   width?: number;
   height?: number;
@@ -44,7 +26,7 @@ export function DawahPoster({
         {
           width,
           height,
-          backgroundColor: quote.tone,
+          backgroundColor: quote.tone ?? '#1A3F62',
           transform: [
             { perspective: 1200 },
             { scale: pressed ? 0.96 : 1 },
@@ -53,8 +35,8 @@ export function DawahPoster({
         },
       ]}
     >
-      {quote.source ? (
-        <Image source={quote.source} style={styles.image} resizeMode="cover" />
+      {quote.imageSource ? (
+        <Image source={quote.imageSource} style={styles.image} resizeMode="cover" />
       ) : null}
 
       {/* Top edge sheen — simulates a raised bevel catching light */}

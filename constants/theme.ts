@@ -191,6 +191,7 @@ export const KhazainColors = {
   gold200: '#E8C78A',
   goldAccent: '#A88051',
   goldBar: '#C1A584',
+  goldCalligraphy: '#D7B995', // calligraphy stroke colour on navy ribbon cards (ScholarCard / BookCard)
   navPill: '#C1A584',
   navPillBg: 'rgba(215, 185, 149, 0.16)',
   navLabel: '#F1E7DD',
@@ -208,6 +209,9 @@ export const KhazainColors = {
 
   // Accent
   teal600: '#2E6B6B',
+
+  // Skeleton placeholder (navy at ~8% opacity on cream pageBg)
+  skeleton: 'rgba(24,75,118,0.08)',
 } as const;
 
 export const KhazainFonts = {

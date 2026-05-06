@@ -1,26 +1,28 @@
 import {
+  AsyncContent,
   InlineHeader,
   LectureCard,
   SearchPill,
+  SkeletonRibbonList,
   TulipBadge,
 } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { useQueenLecturesStore } from '@/store';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 33: أنتِ ملكة — list of lecture cards with a tulip-glyph cream disc.
-// Title repeats "أنتِ ملكة" in the Figma mock; this is intentional.
-const LECTURES = Array.from({ length: 10 }).map((_, i) => ({
-  id: `q${i}`,
-  title: 'أنتِ ملكة',
-  scholar: 'الشيخ عبد المحسن العباد',
-  duration: '٣٢ دقيقة',
-}));
 
 export default function QueenScreen() {
   const router = useRouter();
+  const { data, status, error, fetch, refresh } = useQueenLecturesStore();
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <InlineHeader title="أنتِ ملكة" onBack={() => router.back()} />
@@ -31,16 +33,24 @@ export default function QueenScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {LECTURES.map((l) => (
-          <LectureCard
-            key={l.id}
-            iconNode={<TulipBadge size={48} />}
-            title={l.title}
-            scholar={l.scholar}
-            duration={l.duration}
-            onPress={() => Alert.alert(l.title, 'سيتم تشغيل الحلقة قريباً')}
-          />
-        ))}
+        <AsyncContent
+          status={status}
+          error={error}
+          onRetry={refresh}
+          skeleton={<SkeletonRibbonList count={10} />}
+          emptyMessage="لا توجد محاضرات متاحة"
+        >
+          {data.map((l) => (
+            <LectureCard
+              key={l.id}
+              iconNode={<TulipBadge size={48} />}
+              title={l.title}
+              scholar={l.scholar}
+              duration={l.duration}
+              onPress={() => Alert.alert(l.title, 'سيتم تشغيل الحلقة قريباً')}
+            />
+          ))}
+        </AsyncContent>
       </ScrollView>
     </SafeAreaView>
   );

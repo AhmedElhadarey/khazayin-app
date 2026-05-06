@@ -1,34 +1,36 @@
 import {
+  AsyncContent,
   AudioProgressCard,
   CircularProgress,
   ReminderCard,
   SearchPill,
+  SkeletonRowList,
   StatCard,
   Toggle,
 } from '@/components/khazain';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { useLibraryFiltersStore } from '@/store';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-const FILTERS: { id: string; label: string; count: string }[] = [
-  { id: 'all', label: 'الكل', count: '١٢' },
-  { id: 'saved', label: 'المحفوظات', count: '١٨' },
-  { id: 'playlist', label: 'قوائم التشغيل', count: '٥' },
-];
-
 export default function LibraryScreen() {
   const router = useRouter();
   const notes = useNotesStore((s) => s.notes);
+  const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
 
   const [reminderOn, setReminderOn] = useState(true);
   const [smart1, setSmart1] = useState(true);
   const [smart2, setSmart2] = useState(true);
   const [smart3, setSmart3] = useState(false);
   const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    fetchFilters();
+  }, [fetchFilters]);
 
   const recentNotes = notes.slice(0, 2);
 
@@ -68,26 +70,28 @@ export default function LibraryScreen() {
         <View style={styles.block}>
           <View style={[styles.card, KhazainShadows.card]}>
             <View style={styles.wirdTop}>
+              <CircularProgress pct={70} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.wirdTitle}>وردُ القرآن اليومي</Text>
                 <Text style={styles.wirdMeta}>آخر قراءة: اليوم</Text>
                 <Text style={styles.wirdHighlight}>سورة البقرة · الآية ١٤٢</Text>
               </View>
-              <CircularProgress pct={70} />
+
             </View>
             {/* Actions row: "بدء الورد" navy pill on RIGHT (first), toggle row on LEFT.
                 Under forceRTL+row, JSX-first lands visually on the right. */}
             <View style={styles.wirdActions}>
               <Pressable
-                onPress={() => {}}
+                onPress={() => { }}
                 style={({ pressed }) => [styles.startBtn, { opacity: pressed ? 0.85 : 1 }]}
               >
                 <Text style={styles.startBtnLabel}>بدء الورد</Text>
               </Pressable>
               <View style={{ flex: 1 }} />
               <View style={styles.reminderInline}>
-                <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
                 <Toggle on={reminderOn} onChange={setReminderOn} />
+
+                <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
               </View>
             </View>
           </View>
@@ -143,24 +147,32 @@ export default function LibraryScreen() {
 
         {/* Filter pills */}
         <View style={styles.filtersRow}>
-          {FILTERS.map((f) => {
-            const active = filter === f.id;
-            return (
-              <Pressable
-                key={f.id}
-                onPress={() => setFilter(f.id)}
-                style={({ pressed }) => [
-                  styles.filterPill,
-                  active ? styles.filterPillActive : styles.filterPillInactive,
-                  { opacity: pressed ? 0.85 : 1 },
-                ]}
-              >
-                <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
-                  {f.label} {f.count}
-                </Text>
-              </Pressable>
-            );
-          })}
+          <AsyncContent
+            status={filtersStatus}
+            error={filtersError}
+            onRetry={refreshFilters}
+            skeleton={<SkeletonRowList count={3} />}
+            emptyMessage="لا توجد تصنيفات"
+          >
+            {filters.map((f) => {
+              const active = filter === f.id;
+              return (
+                <Pressable
+                  key={f.id}
+                  onPress={() => setFilter(f.id)}
+                  style={({ pressed }) => [
+                    styles.filterPill,
+                    active ? styles.filterPillActive : styles.filterPillInactive,
+                    { opacity: pressed ? 0.85 : 1 },
+                  ]}
+                >
+                  <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
+                    {f.label} {f.count}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </AsyncContent>
         </View>
 
         {/* Audio progress */}

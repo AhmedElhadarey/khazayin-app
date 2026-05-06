@@ -1,6 +1,9 @@
 import { InlineHeader, SearchPill, SurahRow } from '@/components/khazain';
+import { AsyncContent, SkeletonRibbonList, SkeletonRowList } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { useSurahsStore, useAyatStore } from '@/store';
 import { usePlayerStore } from '@/store/playerStore';
+import type { Ayah } from '@/types/content';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -11,30 +14,10 @@ import Svg, { Path } from 'react-native-svg';
 const MUSHAF_BG = '#FBF3DF';
 const FOOTER_BG = '#F3E4BE';
 
-// All 9 surahs visible in Figma page 21 (قراءة القرآن).
-const SURAHS = [
-  { id: '٠١', name: 'سورة الفاتحة', meta: 'مكية · ٧ آيات' },
-  { id: '٠٢', name: 'سورة البقرة', meta: 'مدنية · ٢٨٦ آية' },
-  { id: '٠٣', name: 'سورة آل عمران', meta: 'مدنية · ٢٠٠ آية' },
-  { id: '٠٤', name: 'سورة النساء', meta: 'مدنية · ١٧٦ آية' },
-  { id: '٠٥', name: 'سورة المائدة', meta: 'مدنية · ١٢٠ آية' },
-  { id: '٠٦', name: 'سورة الأنعام', meta: 'مكية · ١٥٤ آية' },
-  { id: '٠٧', name: 'سورة الأعراف', meta: 'مكية · ٢٠٤ آية' },
-  { id: '٠٨', name: 'سورة الأنفال', meta: 'مدنية · ٧٥ آية' },
-  { id: '٠٩', name: 'سورة التوبة', meta: 'مدنية · ١٢٩ آية' },
-];
-
-// First five ayat of Al-Baqarah for the demo mushaf reading page.
-const AYAT = [
-  { n: '١', text: 'الٓمٓ' },
-  { n: '٢', text: 'ذَٰلِكَ ٱلْكِتَٰبُ لَا رَيْبَ ۛ فِيهِ ۛ هُدًى لِّلْمُتَّقِينَ' },
-  { n: '٣', text: 'ٱلَّذِينَ يُؤْمِنُونَ بِٱلْغَيْبِ وَيُقِيمُونَ ٱلصَّلَوٰةَ وَمِمَّا رَزَقْنَٰهُمْ يُنفِقُونَ' },
-  {
-    n: '٤',
-    text: 'وَٱلَّذِينَ يُؤْمِنُونَ بِمَآ أُنزِلَ إِلَيْكَ وَمَآ أُنزِلَ مِن قَبْلِكَ وَبِٱلْءَاخِرَةِ هُمْ يُوقِنُونَ',
-  },
-  { n: '٥', text: 'أُو۟لَٰٓئِكَ عَلَىٰ هُدًى مِّن رَّبِّهِمْ ۖ وَأُو۟لَٰٓئِكَ هُمُ ٱلْمُفْلِحُونَ' },
-];
+// Module-scope: resolve the ayat-002 store once so it is stable across renders.
+// useAyatStore is a factory; calling it outside a component is valid because
+// it returns a Zustand store hook (not a React hook itself).
+const _useAyat002 = useAyatStore('002');
 
 export default function MushafScreen() {
   const router = useRouter();
@@ -60,32 +43,52 @@ export default function MushafScreen() {
 }
 
 function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string) => void }) {
+  const { data: surahs, status: surahsStatus, error: surahsError, fetch: fetchSurahs, refresh: refreshSurahs } = useSurahsStore();
+
+  useEffect(() => {
+    fetchSurahs();
+  }, [fetchSurahs]);
+
   return (
     <SafeAreaView style={styles.listScreen} edges={['top']}>
       <InlineHeader title="قراءة القرآن" onBack={onBack} />
       <View style={styles.searchBlock}>
         <SearchPill placeholder="بحث.." />
       </View>
-      <ScrollView
-        contentContainerStyle={[styles.surahList, { paddingBottom: 24 }]}
-        showsVerticalScrollIndicator={false}
+      <AsyncContent
+        status={surahsStatus}
+        error={surahsError}
+        onRetry={refreshSurahs}
+        skeleton={<SkeletonRibbonList count={9} />}
+        emptyMessage="لا يوجد سور متاحة"
       >
-        {SURAHS.map((s) => (
-          <SurahRow
-            key={s.id}
-            index={s.id}
-            name={s.name}
-            meta={s.meta}
-            showChevron={false}
-            onPress={() => onPick(s.id)}
-          />
-        ))}
-      </ScrollView>
+        <ScrollView
+          contentContainerStyle={[styles.surahList, { paddingBottom: 24 }]}
+          showsVerticalScrollIndicator={false}
+        >
+          {surahs.map((s) => (
+            <SurahRow
+              key={s.id}
+              index={s.displayNumber}
+              name={s.name}
+              meta={s.meta}
+              showChevron={false}
+              onPress={() => onPick(s.id)}
+            />
+          ))}
+        </ScrollView>
+      </AsyncContent>
     </SafeAreaView>
   );
 }
 
 function ReadingView({ onBack }: { onBack: () => void }) {
+  const { data: ayat, status: ayatStatus, error: ayatError, fetch: fetchAyat, refresh: refreshAyat } = _useAyat002();
+
+  useEffect(() => {
+    fetchAyat();
+  }, [fetchAyat]);
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       {/* Page 23 header: title + small ▶ disclosure with subtitle line below. */}
@@ -105,15 +108,23 @@ function ReadingView({ onBack }: { onBack: () => void }) {
           <Text style={styles.basmala}>﷽</Text>
           <Text style={styles.surahMeta}>سورة البقرة · مدنية · ٢٨٦ آية</Text>
         </View>
-        <Text style={styles.ayatBody}>
-          {AYAT.map((a, i) => (
-            <React.Fragment key={a.n}>
-              {a.text}
-              <AyahNum n={a.n} />
-              {i < AYAT.length - 1 ? ' ' : ''}
-            </React.Fragment>
-          ))}
-        </Text>
+        <AsyncContent
+          status={ayatStatus}
+          error={ayatError}
+          onRetry={refreshAyat}
+          skeleton={<SkeletonRowList count={5} />}
+          emptyMessage="لا توجد آيات لهذه السورة"
+        >
+          <Text style={styles.ayatBody}>
+            {ayat.map((a, i) => (
+              <React.Fragment key={a.number}>
+                {a.text}
+                <AyahNum n={String(a.number)} />
+                {i < ayat.length - 1 ? ' ' : ''}
+              </React.Fragment>
+            ))}
+          </Text>
+        </AsyncContent>
       </ScrollView>
       {/* Footer order RTL: حفظ علامة (right), الانتقال للعلامة (center), الفهرس (left). */}
       <View style={styles.footer}>

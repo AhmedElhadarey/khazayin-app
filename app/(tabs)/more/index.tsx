@@ -1,63 +1,48 @@
-import React from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { Wordmark } from '@/components/khazain';
+import { AsyncContent, SkeletonRowList, Wordmark } from '@/components/khazain';
 import { ChevronIcon } from '@/components/khazain/icons';
 import { OrnamentPattern } from '@/components/khazain/patterns';
-
-type RowId =
-  | 'web'
-  | 'youtube'
-  | 'telegram'
-  | 'whatsapp'
-  | 'soundcloud'
-  | 'archive'
-  | 'contact'
-  | 'about';
-
-const ROWS: { id: RowId; t: string; s: string }[] = [
-  { id: 'web', t: 'الموقع الإلكتروني', s: 'زيارة الموقع الرسمي للمؤسسة' },
-  { id: 'youtube', t: 'قنوات اليوتيوب', s: '٦٥ قناة للأعمال والمشايخ' },
-  { id: 'telegram', t: 'قنوات التليجرام', s: 'القنوات الأصلية للمؤسسة' },
-  { id: 'whatsapp', t: 'قنوات الواتساب', s: 'القنوات الأصلية للمؤسسة' },
-  { id: 'soundcloud', t: 'ساوند كلاود', s: 'القنوات الأصلية للمؤسسة' },
-  { id: 'archive', t: 'الأرشيف', s: 'أرشيف المؤسسة' },
-  { id: 'contact', t: 'تواصل معنا', s: 'راسلنا أو اتصل بنا مباشرة' },
-  { id: 'about', t: 'نبذة عن المؤسسة', s: 'تعرّف على رؤيتنا وأهدافنا' },
-];
-
-const EXTERNAL_URLS: Partial<Record<RowId, string>> = {
-  web: 'https://khazain.org',
-  whatsapp: 'https://wa.me/',
-  soundcloud: 'https://soundcloud.com/khazain',
-};
+import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
+import { useMoreRowsStore } from '@/store';
+import type { MoreRow as MoreRowData } from '@/types/content';
+import { useRouter } from 'expo-router';
+import React, { useEffect } from 'react';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 export default function MoreScreen() {
   const router = useRouter();
+  const { data, status, error, fetch, refresh } = useMoreRowsStore();
 
-  const handle = async (id: RowId) => {
-    const url = EXTERNAL_URLS[id];
-    if (url) {
-      try {
-        const can = await Linking.canOpenURL(url);
-        if (!can) throw new Error('cannot open');
-        await Linking.openURL(url);
-      } catch {
-        Alert.alert('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
+
+  // Routes map is render logic (in-app navigation targets), kept inline per spec.
+  const routes: Record<string, string> = {
+    archive: '/more/archive',
+    contact: '/more/contact',
+    about: '/more/about',
+    telegram: '/telegram-sheet',
+    youtube: '/youtube-sheet',
+  };
+
+  const handle = async (row: MoreRowData) => {
+    if (row.isExternal && row.externalKey) {
+      const url = MORE_EXTERNAL_URLS[row.externalKey];
+      if (url) {
+        try {
+          const can = await Linking.canOpenURL(url);
+          if (!can) throw new Error('cannot open');
+          await Linking.openURL(url);
+        } catch {
+          Alert.alert('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
+        }
+        return;
       }
-      return;
     }
-    const routes: Partial<Record<RowId, string>> = {
-      archive: '/more/archive',
-      contact: '/more/contact',
-      about: '/more/about',
-      telegram: '/telegram-sheet',
-      youtube: '/youtube-sheet',
-    };
-    const target = routes[id];
+    const target = row.route ?? routes[row.id];
     if (target) router.push(target as any);
   };
 
@@ -75,11 +60,19 @@ export default function MoreScreen() {
           <Text style={styles.h1}>المزيد</Text>
         </View>
         <View style={styles.list}>
-          {ROWS.map((r) => (
-            <MoreRow key={r.id} title={r.t} subtitle={r.s} onPress={() => handle(r.id)}>
-              <RowGlyph id={r.id} />
-            </MoreRow>
-          ))}
+          <AsyncContent
+            status={status}
+            error={error}
+            onRetry={refresh}
+            skeleton={<SkeletonRowList count={8} />}
+            emptyMessage="لا توجد عناصر"
+          >
+            {data.map((r) => (
+              <MoreRow key={r.id} title={r.title} subtitle={r.subtitle ?? ''} onPress={() => handle(r)}>
+                <RowGlyph id={r.id} />
+              </MoreRow>
+            ))}
+          </AsyncContent>
         </View>
         <View style={styles.footer}>
           <Wordmark size={16} />
@@ -128,7 +121,7 @@ function MoreRow({
   );
 }
 
-function RowGlyph({ id }: { id: RowId }) {
+function RowGlyph({ id }: { id: string }) {
   const c = KhazainColors.navy800;
   switch (id) {
     case 'web':

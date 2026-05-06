@@ -1,7 +1,8 @@
-import { InlineHeader, RibbonCard, SearchPill } from '@/components/khazain';
+import { AsyncContent, InlineHeader, RibbonCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { useScholarLecturesStore, useScholarsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -9,27 +10,29 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Header shows the scholar name in big Naskh display + "فضيلة الشيخ" pretitle,
 // then a vertical stack of gold-ribbon cards (reusing the existing RibbonCard
 // primitive from العلماء والمشايخ).
-
-// Map scholar id (slug) → display name. Keep mock for now; will be replaced
-// by real data when wired to a backend.
-const SCHOLAR_NAMES: Record<string, string> = {
-  's1': 'عبد المحسن العباد',
-  's2': 'عبد المحسن العباد',
-  's3': 'عبد المحسن العباد',
-};
-
-const LECTURES = [
-  { id: 'l1', title: 'آداب الدعاء', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'l2', title: 'آداب الدعاء', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'l3', title: 'آداب الدعاء', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'l4', title: 'آداب الدعاء', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-  { id: 'l5', title: 'آداب الدعاء', scholar: 'الشيخ عبد المحسن العباد', duration: '٣٢ دقيقة' },
-];
+// Data sourced from useScholarLecturesStore (content service layer).
 
 export default function ScholarDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const name = (id && SCHOLAR_NAMES[id]) || 'عبد المحسن العباد';
+
+  // Scholars store — for the display name lookup.
+  const { data: scholars, fetch: fetchScholars } = useScholarsStore();
+
+  // Param-driven factory hook: stable reference per id via useMemo.
+  const useLectures = useMemo(
+    () => useScholarLecturesStore(id ?? ''),
+    [id]
+  );
+  const { data: lectures, status, error, fetch, refresh } = useLectures();
+
+  useEffect(() => {
+    fetchScholars();
+    fetch();
+  }, [fetchScholars, fetch, id]);
+
+  const name =
+    scholars.find((s) => s.id === id)?.name ?? 'عبد المحسن العباد';
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -45,15 +48,23 @@ export default function ScholarDetailScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {LECTURES.map((l) => (
-          <RibbonCard
-            key={l.id}
-            title={l.title}
-            meta={l.scholar}
-            duration={l.duration}
-            onPress={() => Alert.alert(l.title, 'سيتم تشغيل الحلقة قريباً')}
-          />
-        ))}
+        <AsyncContent
+          status={status}
+          error={error}
+          onRetry={refresh}
+          skeleton={<SkeletonRibbonList count={5} />}
+          emptyMessage="لا يوجد محاضرات لهذا الشيخ"
+        >
+          {lectures.map((l) => (
+            <RibbonCard
+              key={l.id}
+              title={l.title}
+              meta={l.scholar}
+              duration={l.duration}
+              onPress={() => Alert.alert(l.title, 'سيتم تشغيل الحلقة قريباً')}
+            />
+          ))}
+        </AsyncContent>
       </ScrollView>
     </SafeAreaView>
   );

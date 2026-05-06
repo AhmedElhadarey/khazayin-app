@@ -1,26 +1,30 @@
 import {
+  AsyncContent,
   InlineHeader,
   LetterIndex,
   RibbonCard,
   SearchPill,
+  SkeletonRibbonList,
 } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { useScholarsStore } from '@/store';
 import { useRouter } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 26: العلماء والمشايخ list of scholars with right-rail letter index.
 // Each scholar = RibbonCard (gold-bar on right edge) with pretitle "فضيلة الشيخ"
 // and the scholar's name in big Naskh.
-const SCHOLARS = [
-  { id: 's1', name: 'عبد المحسن العباد' },
-  { id: 's2', name: 'عبد المحسن العباد' },
-  { id: 's3', name: 'عبد المحسن العباد' },
-];
+// Data sourced from useScholarsStore (content service layer).
 
 export default function ScholarScreen() {
   const router = useRouter();
+  const { data, status, error, fetch, refresh } = useScholarsStore();
+
+  useEffect(() => {
+    fetch();
+  }, [fetch]);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -34,14 +38,22 @@ export default function ScholarScreen() {
           showsVerticalScrollIndicator={false}
           style={styles.list}
         >
-          {SCHOLARS.map((s) => (
-            <RibbonCard
-              key={s.id}
-              pretitle="فضيلة الشيخ"
-              title={s.name}
-              onPress={() => router.push(`/sections/scholar/${s.id}` as any)}
-            />
-          ))}
+          <AsyncContent
+            status={status}
+            error={error}
+            onRetry={refresh}
+            skeleton={<SkeletonRibbonList count={5} />}
+            emptyMessage="لا يوجد علماء"
+          >
+            {data.map((s) => (
+              <RibbonCard
+                key={s.id}
+                pretitle="فضيلة الشيخ"
+                title={s.name}
+                onPress={() => router.push(`/sections/scholar/${s.id}` as any)}
+              />
+            ))}
+          </AsyncContent>
         </ScrollView>
         <View style={styles.rail} pointerEvents="box-none">
           <LetterIndex active="م" />
