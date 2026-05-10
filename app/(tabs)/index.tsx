@@ -47,7 +47,7 @@ export default function HomeScreen() {
 
   // ── Async stores ────────────────────────────────────────────────────────────
   const { data: scholarsData, status: scholarsStatus, error: scholarsError, fetch: fetchScholars, refresh: refreshScholars } = useScholarsStore();
-  const { data: bookLectures, status: booksStatus, error: booksError, fetch: fetchBooks, refresh: refreshBooks } = useBookLecturesStore();
+  const { items: bookLectures, status: booksStatus, error: booksError, fetch: fetchBooks, refresh: refreshBooks } = useBookLecturesStore();
   const { data: dawahData, status: dawahStatus, error: dawahError, fetch: fetchDawah, refresh: refreshDawah } = useFeaturedDawahStore();
 
   // Single effect — fetch all three on mount (C6: one useEffect, deps = fetch refs)

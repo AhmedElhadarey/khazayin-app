@@ -10,18 +10,25 @@ import { KhazainColors } from '@/constants/theme';
 import { useQueenLecturesStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Page 33: أنتِ ملكة — list of lecture cards with a tulip-glyph cream disc.
+// Page 33: أنتِ ملكة — paginated list of lecture cards with a tulip-glyph cream disc.
+// FlatList for virtualisation + onEndReached infinite scroll.
+// onEndReachedThreshold = 0.4: trigger fetchMore when 40% of viewport remains
+// scrolled past the last rendered item. Tuned for finger-flick momentum on
+// long Arabic lecture lists; tighter values cause double-fires under fast
+// scroll because the prefetched page can land before the previous fetch
+// debounce releases.
 
 export default function QueenScreen() {
   const router = useRouter();
-  const { data, status, error, fetch, refresh } = useQueenLecturesStore();
+  const {
+    items, status, error, fetchingMore, hasMore,
+    fetch, fetchMore, refresh,
+  } = useQueenLecturesStore();
 
-  useEffect(() => {
-    fetch();
-  }, [fetch]);
+  useEffect(() => { fetch(); }, [fetch]);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -29,29 +36,35 @@ export default function QueenScreen() {
       <View style={styles.searchBlock}>
         <SearchPill placeholder="بحث.." />
       </View>
-      <ScrollView
+      <FlatList
+        data={items}
+        keyExtractor={(l) => l.id}
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
+        renderItem={({ item }) => (
+          <LectureCard
+            iconNode={<TulipBadge size={48} />}
+            title={item.title}
+            scholar={item.scholar}
+            duration={item.duration}
+            onPress={() => Alert.alert(item.title, 'سيتم تشغيل الحلقة قريباً')}
+          />
+        )}
+        onEndReached={() => { if (hasMore && !fetchingMore) fetchMore(); }}
+        onEndReachedThreshold={0.4}
+        ListEmptyComponent={
+          <AsyncContent
+            status={status}
+            error={error}
+            onRetry={refresh}
+            skeleton={<SkeletonRibbonList count={10} />}
+            emptyMessage="لا توجد محاضرات متاحة"
+          >
+            <View />
+          </AsyncContent>
+        }
+        ListFooterComponent={fetchingMore ? <SkeletonRibbonList count={2} /> : null}
         showsVerticalScrollIndicator={false}
-      >
-        <AsyncContent
-          status={status}
-          error={error}
-          onRetry={refresh}
-          skeleton={<SkeletonRibbonList count={10} />}
-          emptyMessage="لا توجد محاضرات متاحة"
-        >
-          {data.map((l) => (
-            <LectureCard
-              key={l.id}
-              iconNode={<TulipBadge size={48} />}
-              title={l.title}
-              scholar={l.scholar}
-              duration={l.duration}
-              onPress={() => Alert.alert(l.title, 'سيتم تشغيل الحلقة قريباً')}
-            />
-          ))}
-        </AsyncContent>
-      </ScrollView>
+      />
     </SafeAreaView>
   );
 }

@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { I18nManager, LogBox, Platform } from 'react-native';
+import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
@@ -77,6 +78,7 @@ function useOnboardingRedirect() {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   useOnboardingRedirect();
+  useBackgroundRefresh();
 
   const [fontsLoaded, fontError] = useFonts({
     Amiri: require('../assets/fonts/Amiri-Regular.ttf'),
@@ -90,6 +92,17 @@ export default function RootLayout() {
       SplashScreen.hideAsync().catch(() => undefined);
     }
   }, [fontsLoaded, fontError]);
+
+  // Env preflight — warn once at root mount if the API base URL is not
+  // configured. The app will run on mockAdapter silently; this log reminds
+  // developers to set EXPO_PUBLIC_API_BASE in .env.local when testing HTTP mode.
+  useEffect(() => {
+    if (!process.env.EXPO_PUBLIC_API_BASE) {
+      console.warn(
+        '[khazayin] EXPO_PUBLIC_API_BASE not set — running on mockAdapter. Set the env var to activate HTTP mode.',
+      );
+    }
+  }, []);
 
   if (!fontsLoaded && !fontError) {
     return null;

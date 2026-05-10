@@ -9,6 +9,8 @@
  * Track: khazain-content-service_20260506  Phase 0 / T0.1
  */
 
+import type { ImageSourcePropType } from 'react-native';
+
 // ---------------------------------------------------------------------------
 // Generic async helpers
 // ---------------------------------------------------------------------------
@@ -108,7 +110,7 @@ export interface DawahPoster {
   tone: string;         // hex colour driving card background
   title: string;        // short headline (was `t` in legacy inline shape)
   body: string;         // longer supporting line (was `b`)
-  imageSource?: number; // require()'d asset id (was `source`)
+  imageSource?: ImageSourcePropType; // bundled require()'d number OR { uri: string } from a CDN URL — see docs/api-contract.md §9.1
   month?: string;       // slug for grouping in dawah/[month].tsx
 }
 
