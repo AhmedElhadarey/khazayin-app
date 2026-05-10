@@ -34,7 +34,7 @@ export default function BooksScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <InlineHeader title="الكتب العلمية" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." />
+        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>
       <FlatList
         data={items}

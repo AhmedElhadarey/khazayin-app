@@ -30,7 +30,7 @@ export default function ScholarScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <InlineHeader title="العلماء والمشايخ" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." />
+        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>
       <View style={styles.body}>
         <ScrollView

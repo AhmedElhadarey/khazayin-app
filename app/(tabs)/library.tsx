@@ -52,7 +52,7 @@ export default function LibraryScreen() {
           <Text style={styles.h1}>مكتبتي</Text>
         </View>
         <View style={styles.searchBlock}>
-          <SearchPill placeholder="ابحث في مكتبتك..." />
+          <SearchPill placeholder="ابحث في مكتبتك..." onPress={() => router.push('/search' as any)} />
         </View>
 
         {/* Stats row */}

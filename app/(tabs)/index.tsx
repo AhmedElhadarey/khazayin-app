@@ -67,7 +67,7 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.container, { paddingBottom: SCREEN_BOTTOM_BREATHING }]}
         showsVerticalScrollIndicator={false}
       >
-        <HomeHeader />
+        <HomeHeader onSearchOpen={() => router.push('/search' as any)} />
 
         {/* Hero 1 — القرآن حياة */}
         <View style={styles.heroPad}>

@@ -34,7 +34,7 @@ export default function SectionsScreen() {
           <Text style={styles.h1}>الأقسام</Text>
         </View>
         <View style={styles.searchBlock}>
-          <SearchPill placeholder="ابحث في الأقسام.." />
+          <SearchPill placeholder="ابحث في الأقسام.." onPress={() => router.push('/search' as any)} />
         </View>
         <AsyncContent
           status={status}
