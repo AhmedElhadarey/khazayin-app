@@ -4,7 +4,7 @@ import {
   CircularProgress,
   ReminderCard,
   SearchPill,
-  SkeletonRowList,
+  SkeletonPillList,
   StatCard,
   Toggle,
 } from '@/components/khazain';
@@ -151,7 +151,7 @@ export default function LibraryScreen() {
             status={filtersStatus}
             error={filtersError}
             onRetry={refreshFilters}
-            skeleton={<SkeletonRowList count={3} />}
+            skeleton={<SkeletonPillList count={3} />}
             emptyMessage="لا توجد تصنيفات"
           >
             {filters.map((f) => {

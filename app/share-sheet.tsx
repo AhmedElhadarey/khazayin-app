@@ -20,7 +20,7 @@ export default function ShareSheet() {
   const router = useRouter();
   const close = () => router.back();
 
-  const SHARE_URL = 'https://khazain.org';
+  const SHARE_URL = 'https://khazayin.com';
   const SHARE_TEXT = 'مؤسسة خزائن الرحمن العالمية';
 
   const openExternal = async (url: string, platformName: string) => {

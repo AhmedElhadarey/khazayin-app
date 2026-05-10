@@ -23,6 +23,70 @@ Dev scripts: `npm start` / `android` / `ios` / `web` / `lint`. Reset project hel
 
 ---
 
+# Development Workflow
+
+### 1. Brainstorm before writing code
+- Use the brainstorming skill if available, otherwise: ask questions one at a time until you understand purpose, constraints, and success criteria.
+- Propose 2–3 approaches with trade-offs. Pick one with the user.
+- Save the validated design to `docs/plans/YYYY-MM-DD-<feature>-design.md`.
+
+### 2. Re-review the design before any code
+- Run a CTO/architect review against the design.
+- Run a multi-perspective board review (Architect, Product, Security, Ops, UX).
+- Iterate the design (v2, v3) until reviewers agree. Address every "convergent" condition (raised by 2+ reviewers).
+
+### 3. Convert design to a bite-sized implementation plan
+- Save to `docs/plans/YYYY-MM-DD-<feature>-implementation-plan.md`.
+- Each task is one focused unit (~30 min – 2 hours).
+- Each task has explicit: files to touch, test code, expected commands/output, commit message.
+- Order tasks by dependency (foundation first, integration last).
+
+### 4. Execute one task at a time with this pattern (NON-NEGOTIABLE)
+For every task in the plan:
+
+   a. **Mark the task `in_progress`** in the task list before starting.
+
+   b. **Dispatch a fresh implementer subagent.** Give them the FULL task text + project context. Do not let them re-read the plan; provide it inline.
+
+   c. **TDD cycle inside the implementer:**
+      1. Write the failing test
+      2. Run it — verify it FAILS for the expected reason
+      3. Implement the minimum to pass
+      4. Run it — verify it PASSES
+      5. Run the broader test suite — no new regressions
+      6. Commit (conventional commit format)
+
+   d. **Dispatch a SPEC COMPLIANCE reviewer.** Question: does the code match the spec exactly — no more, no less? Cite design-doc sections.
+
+   e. **If spec gaps:** dispatch the same implementer to fix, then re-run spec review. Loop until ✅.
+
+   f. **Then dispatch a CODE QUALITY reviewer.** Question: types tight? naming idiomatic? error handling sane? tests meaningful? Compare to existing codebase patterns.
+
+   g. **If quality issues:** dispatch the same implementer to fix, then re-run quality review. Loop until ✅. Skip "nice-to-haves" that would diverge from the validated design (those need their own design refresh).
+
+   h. **Mark the task `completed`** only when both reviews are ✅.
+
+### 5. Workflow rules that prevent the most common failures
+- **Never skip the spec review.** Implementers reliably over-build OR under-build.
+- **Never run code quality review before spec compliance is ✅.** Wrong order — you'll waste time on quality of code that's solving the wrong problem.
+- **Never let the implementer self-review replace the dual review.** Self-review is necessary but not sufficient.
+- **Never accept "close enough."** Reviewer found issues = not done.
+- **Never make the subagent read the plan file.** Provide full task text inline. Saves tokens, prevents drift.
+- **Never start implementation on `main`/`master`** without explicit user consent.
+- **Trust but verify implementer reports.** Briefly check `git log` after each task — confirm the commit exists with the claimed SHA.
+
+### 6. When to deviate from this pattern (with user consent)
+- **Trivial changes** (typo, single config tweak, doc update): skip brainstorm + design phases, go directly to a small TDD cycle. Still do at least one review.
+- **Pure refactors with no behaviour change:** spec review can be lightweight (verify no functional drift); code quality review still required.
+- **Exploratory spikes:** flag as "throwaway" up front; relax TDD; commit to a spike branch you'll discard.
+
+### 7. Standing rules for this repo
+- Commits must NOT include `Co-Authored-By` trailers.
+- Each microservice has its own `npm run test` and `npm run build` — verify both before reporting a task done.
+- TypeORM migrations must be EMC (expand → backfill → contract) when changing live tables; never single-shot rename on live data.
+- Match existing conventions in the touched directory before introducing new ones.
+
+
 ## RTL is the non-negotiable
 
 - RTL is forced at module load in `app/_layout.tsx`:

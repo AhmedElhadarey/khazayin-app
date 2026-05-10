@@ -4,7 +4,7 @@
     "slug": "khazayin-app",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/icon-khazain.png",
     "scheme": "khazayinapp",
     "userInterfaceStyle": "automatic",
     "extra": {
@@ -16,17 +16,16 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#F5F0E8",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#0F3C61",
+        "foregroundImage": "./assets/images/android-icon-foreground-khazain.png",
+        "backgroundImage": "./assets/images/android-icon-background-khazain.png"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/favicon-khazain.png"
     },
     "plugins": [
       "expo-router",

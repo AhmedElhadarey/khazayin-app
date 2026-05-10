@@ -1,13 +1,12 @@
-import { AsyncContent, SkeletonRowList, Wordmark } from '@/components/khazain';
-import { ChevronIcon } from '@/components/khazain/icons';
+import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
 import { OrnamentPattern } from '@/components/khazain/patterns';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
 import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
 import { useMoreRowsStore } from '@/store';
 import type { MoreRow as MoreRowData } from '@/types/content';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
@@ -64,13 +63,17 @@ export default function MoreScreen() {
             status={status}
             error={error}
             onRetry={refresh}
-            skeleton={<SkeletonRowList count={8} />}
+            skeleton={<SkeletonRibbonList count={8} />}
             emptyMessage="لا توجد عناصر"
           >
             {data.map((r) => (
-              <MoreRow key={r.id} title={r.title} subtitle={r.subtitle ?? ''} onPress={() => handle(r)}>
-                <RowGlyph id={r.id} />
-              </MoreRow>
+              <ListRowCard
+                key={r.id}
+                title={r.title}
+                subtitle={r.subtitle}
+                icon={<RowGlyph id={r.id} />}
+                onPress={() => handle(r)}
+              />
             ))}
           </AsyncContent>
         </View>
@@ -82,51 +85,15 @@ export default function MoreScreen() {
   );
 }
 
-// Compact More row: cream card, 16 radius, subtle shadow. Right-anchored 40×40
-// cream icon disc with a thin navy stroke; small chevron on the LEFT edge
-// (visual end side in RTL).
-function MoreRow({
-  title,
-  subtitle,
-  onPress,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  onPress: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        KhazainShadows.card,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      <View style={styles.rowDisc}>{children}</View>
-      <View style={styles.rowText}>
-        <Text style={styles.rowTitle} numberOfLines={1}>
-          {title}
-        </Text>
-        <Text style={styles.rowSubtitle} numberOfLines={1}>
-          {subtitle}
-        </Text>
-      </View>
-      <View style={styles.rowChevron}>
-        <ChevronIcon size={14} color={KhazainColors.ink400} direction="start" />
-      </View>
-    </Pressable>
-  );
-}
-
+// Icon glyph for the More-row chip. Sized to fill the 64×64 ListRowCard
+// chip proportionally (matches the section icons via SECTION_ICONS).
 function RowGlyph({ id }: { id: string }) {
   const c = KhazainColors.navy800;
+  const size = 32;
   switch (id) {
     case 'web':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
           <Circle cx={10} cy={10} r={7} stroke={c} strokeWidth={1.5} />
           <Path
             d="M3 10h14M10 3c2.5 3 2.5 11 0 14M10 3c-2.5 3-2.5 11 0 14"
@@ -137,14 +104,14 @@ function RowGlyph({ id }: { id: string }) {
       );
     case 'youtube':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
           <Rect x={2} y={5} width={16} height={10} rx={2} stroke={c} strokeWidth={1.5} />
           <Path d="M9 8l3 2-3 2V8z" fill={c} />
         </Svg>
       );
     case 'telegram':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
           <Path
             d="M3 10L17 3l-3 14-4-6-7-1z"
             stroke={c}
@@ -155,7 +122,7 @@ function RowGlyph({ id }: { id: string }) {
       );
     case 'whatsapp':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
           <Path
             d="M3 9a6 6 0 0112 0 6 6 0 01-9 5l-3 1 1-3a6 6 0 01-1-3z"
             stroke={c}
@@ -166,7 +133,7 @@ function RowGlyph({ id }: { id: string }) {
       );
     case 'soundcloud':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
           <Path
             d="M6 14h9a3 3 0 000-6 4 4 0 00-7.7-1A3 3 0 006 14z"
             stroke={c}
@@ -177,7 +144,7 @@ function RowGlyph({ id }: { id: string }) {
       );
     case 'archive':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
           <Rect x={3} y={3} width={14} height={4} rx={1} stroke={c} strokeWidth={1.5} />
           <Path
             d="M4 7v9a1 1 0 001 1h10a1 1 0 001-1V7M8 11h4"
@@ -189,7 +156,7 @@ function RowGlyph({ id }: { id: string }) {
       );
     case 'contact':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
           <Path
             d="M4 11v-1a6 6 0 0112 0v1M4 11v3a2 2 0 002 2v-5H4zm12 0v5a2 2 0 002-2v-3h-2z"
             stroke={c}
@@ -199,7 +166,7 @@ function RowGlyph({ id }: { id: string }) {
       );
     case 'about':
       return (
-        <Svg width={18} height={18} viewBox="0 0 20 20" fill="none">
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
           <Circle cx={10} cy={10} r={7} stroke={c} strokeWidth={1.5} />
           <Path d="M10 9v5M10 6v.5" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
         </Svg>
@@ -225,67 +192,11 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
+  // Match sections/index.tsx list spacing so the two screens read identically.
   list: {
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingTop: 8,
-    gap: 10,
-  },
-  // Row container: cream card with the icon disc anchored to the right side
-  // (RTL start) via absolute positioning, the text block taking the remaining
-  // horizontal space, and the chevron pinned to the left edge.
-  row: {
-    position: 'relative',
-    backgroundColor: KhazainColors.cream50,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.10)',
-    minHeight: 64,
-    paddingVertical: 12,
-    paddingLeft: 36, // chevron column
-    paddingRight: 60, // disc 40 + 8 margin + 12 inset
-    justifyContent: 'center',
-  },
-  rowDisc: {
-    position: 'absolute',
-    right: 12,
-    top: '50%',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: 'rgba(26,53,87,0.25)',
-    backgroundColor: KhazainColors.cream100,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateY: -20 }],
-  },
-  rowText: {
-    gap: 2,
-  },
-  rowTitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  rowSubtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  rowChevron: {
-    position: 'absolute',
-    left: 12,
-    top: '50%',
-    width: 18,
-    height: 18,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateY: -9 }],
+    gap: 8,
   },
   footer: {
     paddingHorizontal: 18,

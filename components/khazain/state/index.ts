@@ -13,6 +13,7 @@ export * from './AsyncContent';
 export * from './EmptyState';
 export * from './ErrorState';
 export * from './SkeletonCard';
+export * from './SkeletonPill';
 export * from './SkeletonPoster';
 export * from './SkeletonRibbon';
 export * from './SkeletonRow';
