@@ -70,6 +70,26 @@ export {
 } from './navigationStore';
 
 // ---------------------------------------------------------------------------
+// Books domain (T4 — search)
+// ---------------------------------------------------------------------------
+
+export { useBooksStore } from './booksStore';
+
+// ---------------------------------------------------------------------------
+// Search (T4 — search)
+// ---------------------------------------------------------------------------
+
+export { useSearchStore } from './searchStore';
+export type { SearchState, SearchStatus } from './searchStore';
+
+// ---------------------------------------------------------------------------
+// Recent searches (T4 — search)
+// ---------------------------------------------------------------------------
+
+export { useRecentSearchesStore } from './recentSearchesStore';
+export type { RecentSearchesState } from './recentSearchesStore';
+
+// ---------------------------------------------------------------------------
 // Player + Notes (pre-existing; barreled for unified import path)
 // ---------------------------------------------------------------------------
 
