@@ -193,6 +193,14 @@ export default function RootLayout() {
             animation: 'fade',
           }}
         />
+        <Stack.Screen
+          name="search"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: Platform.OS === 'android' ? 'slide_from_left' : 'default',
+          }}
+        />
       </Stack>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
