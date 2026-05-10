@@ -1,14 +1,18 @@
 /**
  * services/contentService.ts
  * --------------------------
- * Single swap-point for all content data. Currently backed by the mockAdapter
- * (reads from data/content/*.ts). To switch to a real backend, implement
- * the ContentService interface and reassign the export:
+ * Single swap-point for all content data. Auto-picks the active adapter at
+ * module load based on the EXPO_PUBLIC_API_BASE environment variable:
  *
- * ```ts
- * import { httpAdapter } from './httpAdapter';      // your new file
- * export const contentService: ContentService = httpAdapter;
- * ```
+ *   - httpAdapter  when EXPO_PUBLIC_API_BASE is set (production, staging,
+ *                  or dev-against-real-API)
+ *   - mockAdapter  when not set (default dev experience; deterministic
+ *                  in-memory data)
+ *
+ * The swap is intentionally NOT runtime-toggleable. Switching adapters
+ * mid-session would create race conditions between in-flight fetches and
+ * partially-cached data. To switch modes, set/unset the env var and reload
+ * the app.
  *
  * Zero call-site changes required — every store imports `contentService` and
  * calls its methods; they are unaware of whether they're talking to mocks or
@@ -22,7 +26,10 @@
  *   mockAdapter.mockDelay     = 0;     // disable latency in unit tests
  *   mockAdapter.simulateError = true;  // exercise error paths in UI
  *
- * Track: khazain-content-service_20260506  Phase 2 / T2.0
+ * `throwingAdapter` stays exported as both swap-point documentation and a
+ * smoke-test stub (verified in T5.2 / Phase 7 V3).
+ *
+ * Track: khazain-backend-integration_20260506  Phase 6 / T6.1
  */
 
 import type {
@@ -38,7 +45,13 @@ import type {
   MoreRow,
   LibraryFilter,
 } from '../types/content';
+import type {
+  ContentResult,
+  CacheOpts,
+  Paged,
+} from './api/types';
 
+import { httpAdapter } from './api/httpAdapter';
 import { SURAHS, AYAT_BY_SURAH, QIRAAT, RECITERS } from '../data/content/quran';
 import { SCHOLARS, LECTURES_BY_SCHOLAR } from '../data/content/scholars';
 import { PROPHET_LECTURES, BOOK_LECTURES, QUEEN_LECTURES, RADIO_PROGRAMS } from '../data/content/lectures';
@@ -47,55 +60,69 @@ import { SECTIONS, MORE_ROWS, LIBRARY_FILTERS } from '../data/content/sections';
 import { BOOKS } from '../data/content/books';
 
 // ---------------------------------------------------------------------------
-// ContentService interface — the contract every adapter must satisfy
+// ContentService interface — every method returns the cacheable envelope
 // ---------------------------------------------------------------------------
 
 export interface ContentService {
   /**
    * @devOnly Simulated network delay in milliseconds. Only meaningful on the
-   * mockAdapter. The HTTP adapter omits these fields entirely. Consumers who
-   * need to mutate them must reference `mockAdapter` directly — do NOT write
-   * `contentService.mockDelay` (will break when the HTTP adapter is wired).
+   * mockAdapter. The HTTP adapter omits these fields entirely.
    */
   mockDelay?: number;
 
-  /**
-   * @devOnly When true the mock adapter throws a simulated error on every
-   * method call, exercising the error-state UI path. HTTP adapter omits this.
-   */
+  /** @devOnly Mock-only error simulation. */
   simulateError?: boolean;
 
   quran: {
-    listSurahs(): Promise<Surah[]>;
-    listAyahs(surahId: string): Promise<Ayah[]>;
-    listQiraat(): Promise<Qiraat[]>;
-    listReciters(style?: string): Promise<Reciter[]>;
+    listSurahs(opts?: CacheOpts): Promise<ContentResult<Surah[]>>;
+    listAyahs(surahId: string, opts?: CacheOpts): Promise<ContentResult<Ayah[]>>;
+    listQiraat(opts?: CacheOpts): Promise<ContentResult<Qiraat[]>>;
+    listReciters(style?: string, opts?: CacheOpts): Promise<ContentResult<Reciter[]>>;
   };
 
   scholars: {
-    list(): Promise<Scholar[]>;
-    getById(id: string): Promise<Scholar | null>;
-    listLectures(scholarId: string): Promise<Lecture[]>;
+    list(opts?: CacheOpts): Promise<ContentResult<Scholar[]>>;
+    getById(id: string, opts?: CacheOpts): Promise<ContentResult<Scholar | null>>;
+    listLectures(scholarId: string, opts?: CacheOpts): Promise<ContentResult<Lecture[]>>;
   };
 
   lectures: {
-    listByCategory(category: Lecture['category']): Promise<Lecture[]>;
+    /**
+     * @deprecated Prefer `pageByCategory()` for new callers. Retained for any
+     * non-paginated drain-page-1 usage; will be removed once all callers have
+     * migrated to the paginated variant.
+     */
+    listByCategory(
+      category: Lecture['category'],
+      opts?: CacheOpts,
+    ): Promise<ContentResult<Lecture[]>>;
+
+    /**
+     * Cursor-paginated. Used by createPaginatedStore for the 4 lecture-category
+     * screens. `cursor === null` requests the first page; `nextCursor === null`
+     * in the response signals the last page.
+     */
+    pageByCategory(
+      category: Lecture['category'],
+      cursor: string | null,
+      opts?: CacheOpts,
+    ): Promise<ContentResult<Paged<Lecture>>>;
   };
 
   dawah: {
-    listFeatured(): Promise<DawahPoster[]>;
-    listByMonth(month: string): Promise<DawahPoster[]>;
-    listMonths(): Promise<{ id: string; title: string; count: string }[]>;
+    listFeatured(opts?: CacheOpts): Promise<ContentResult<DawahPoster[]>>;
+    listByMonth(month: string, opts?: CacheOpts): Promise<ContentResult<DawahPoster[]>>;
+    listMonths(opts?: CacheOpts): Promise<ContentResult<{ id: string; title: string; count: string }[]>>;
   };
 
   navigation: {
-    listSections(): Promise<SectionEntry[]>;
-    listMoreRows(): Promise<MoreRow[]>;
-    listLibraryFilters(): Promise<LibraryFilter[]>;
+    listSections(opts?: CacheOpts): Promise<ContentResult<SectionEntry[]>>;
+    listMoreRows(opts?: CacheOpts): Promise<ContentResult<MoreRow[]>>;
+    listLibraryFilters(opts?: CacheOpts): Promise<ContentResult<LibraryFilter[]>>;
   };
 
   books: {
-    list(): Promise<Book[]>;
+    list(opts?: CacheOpts): Promise<ContentResult<Book[]>>;
   };
 }
 
@@ -116,6 +143,77 @@ function maybeError(): void {
 }
 
 // ---------------------------------------------------------------------------
+// Mock cursor encoding — base64(JSON({ offset, salt }))
+// Salt prevents callers from depending on cursor format. Length-validated.
+// ---------------------------------------------------------------------------
+
+function encodeMockCursor(offset: number): string {
+  const payload = JSON.stringify({ offset, salt: Math.random().toString(36).slice(2, 10) });
+  return typeof btoa === 'function'
+    ? btoa(payload)
+    : Buffer.from(payload, 'utf-8').toString('base64');
+}
+
+function decodeMockCursor(cursor: string | null): number {
+  if (cursor === null) return 0;
+  if (cursor.length > 2048) {
+    throw new Error('mock cursor too long');
+  }
+  let raw: string;
+  try {
+    raw = typeof atob === 'function'
+      ? atob(cursor)
+      : Buffer.from(cursor, 'base64').toString('utf-8');
+  } catch {
+    throw new Error('mock cursor decode failed');
+  }
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    throw new Error('mock cursor parse failed');
+  }
+  if (
+    typeof parsed !== 'object' ||
+    parsed === null ||
+    typeof (parsed as { offset?: unknown }).offset !== 'number' ||
+    (parsed as { offset: number }).offset < 0
+  ) {
+    throw new Error('mock cursor malformed');
+  }
+  return (parsed as { offset: number }).offset;
+}
+
+// ---------------------------------------------------------------------------
+// Mock lecture-category lookup
+// ---------------------------------------------------------------------------
+
+/** Fixed page size for mock paginated lecture lists; matches default backend
+ *  per-category limit (api-contract §7 → /v1/lectures default limit 20). */
+const MOCK_LECTURE_PAGE_SIZE = 20;
+
+/**
+ * Maps a typed Lecture category to the corresponding in-memory mock array.
+ * The `never` default flags an exhaustiveness gap if Lecture['category'] is
+ * ever extended (e.g. with new lecture types) — TypeScript will surface a
+ * compile error in CI before the silently-empty default ships.
+ */
+function getMockLectureSource(category: Lecture['category']): Lecture[] {
+  switch (category) {
+    case 'prophet': return PROPHET_LECTURES;
+    case 'book':    return BOOK_LECTURES;
+    case 'queen':   return QUEEN_LECTURES;
+    case 'radio':   return RADIO_PROGRAMS;
+    case 'scholar': return [];   // not currently sourced from a category-keyed array
+    case 'general': return [];
+    default: {
+      const _exhaustive: never = category;
+      return _exhaustive;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
 // mockAdapter — wired to data/content/* (Phase 2 / T2.0)
 // ---------------------------------------------------------------------------
 
@@ -124,7 +222,7 @@ function maybeError(): void {
  * and apply the dev-knob pattern:
  *   await delay();        // respects mockDelay
  *   maybeError();         // throws if simulateError
- *   return DATA;
+ *   return { data, etag: null };
  *
  * To disable latency in tests:
  *   import { mockAdapter } from 'services/contentService';
@@ -137,113 +235,114 @@ export const mockAdapter: ContentService = {
   simulateError: false,
 
   quran: {
-    async listSurahs(): Promise<Surah[]> {
+    async listSurahs(_opts?: CacheOpts) {
       await delay();
       maybeError();
-      return SURAHS;
+      return { data: SURAHS, etag: null };
     },
-
-    async listAyahs(surahId: string): Promise<Ayah[]> {
+    async listAyahs(surahId: string, _opts?: CacheOpts) {
       await delay();
       maybeError();
-      return AYAT_BY_SURAH[surahId] ?? [];
+      return { data: AYAT_BY_SURAH[surahId] ?? [], etag: null };
     },
-
-    async listQiraat(): Promise<Qiraat[]> {
+    async listQiraat(_opts?: CacheOpts) {
       await delay();
       maybeError();
-      return QIRAAT;
+      return { data: QIRAAT, etag: null };
     },
-
-    async listReciters(style?: string): Promise<Reciter[]> {
+    async listReciters(style?: string, _opts?: CacheOpts) {
       await delay();
       maybeError();
-      if (style) {
-        return RECITERS.filter((r) => r.style === style);
-      }
-      return RECITERS;
+      const data = style ? RECITERS.filter((r) => r.style === style) : RECITERS;
+      return { data, etag: null };
     },
   },
 
   scholars: {
-    async list(): Promise<Scholar[]> {
+    async list(_opts?: CacheOpts) {
       await delay();
       maybeError();
-      return SCHOLARS;
+      return { data: SCHOLARS, etag: null };
     },
-
-    async getById(id: string): Promise<Scholar | null> {
+    async getById(id: string, _opts?: CacheOpts) {
       await delay();
       maybeError();
-      return SCHOLARS.find((s) => s.id === id) ?? null;
+      return { data: SCHOLARS.find((s) => s.id === id) ?? null, etag: null };
     },
-
-    async listLectures(scholarId: string): Promise<Lecture[]> {
+    async listLectures(scholarId: string, _opts?: CacheOpts) {
       await delay();
       maybeError();
-      return LECTURES_BY_SCHOLAR[scholarId] ?? [];
+      return { data: LECTURES_BY_SCHOLAR[scholarId] ?? [], etag: null };
     },
   },
 
   lectures: {
-    async listByCategory(category: Lecture['category']): Promise<Lecture[]> {
+    async listByCategory(category, _opts?: CacheOpts) {
       await delay();
       maybeError();
-      switch (category) {
-        case 'prophet': return PROPHET_LECTURES;
-        case 'book':    return BOOK_LECTURES;
-        case 'queen':   return QUEEN_LECTURES;
-        case 'radio':   return RADIO_PROGRAMS;
-        default:        return [];
-      }
+      return { data: getMockLectureSource(category), etag: null };
+    },
+
+    async pageByCategory(category, cursor, _opts?: CacheOpts) {
+      await delay();
+      maybeError();
+      const all = getMockLectureSource(category);
+      const offset = decodeMockCursor(cursor);
+      const pageItems = all.slice(offset, offset + MOCK_LECTURE_PAGE_SIZE);
+      const next = offset + MOCK_LECTURE_PAGE_SIZE < all.length
+        ? encodeMockCursor(offset + MOCK_LECTURE_PAGE_SIZE)
+        : null;
+      return {
+        data: { items: pageItems, nextCursor: next },
+        etag: null,
+      };
     },
   },
 
   dawah: {
-    async listFeatured(): Promise<DawahPoster[]> {
+    async listFeatured(_opts?: CacheOpts) {
       await delay();
       maybeError();
-      return FEATURED_DAWAH;
+      return { data: FEATURED_DAWAH, etag: null };
     },
-
-    async listByMonth(month: string): Promise<DawahPoster[]> {
+    async listByMonth(month: string, _opts?: CacheOpts) {
       await delay();
       maybeError();
-      return DAWAH_POSTERS.filter((p) => p.month === month);
+      return {
+        data: DAWAH_POSTERS.filter((p) => p.month === month),
+        etag: null,
+      };
     },
-
-    async listMonths(): Promise<{ id: string; title: string; count: string }[]> {
+    async listMonths(_opts?: CacheOpts) {
       await delay();
       maybeError();
-      return DAWAH_MONTHS;
+      return { data: DAWAH_MONTHS, etag: null };
     },
   },
 
   navigation: {
-    async listSections(): Promise<SectionEntry[]> {
+    async listSections(_opts?: CacheOpts) {
       await delay();
       maybeError();
-      return SECTIONS;
+      return { data: SECTIONS, etag: null };
     },
-
-    async listMoreRows(): Promise<MoreRow[]> {
+    async listMoreRows(_opts?: CacheOpts) {
       await delay();
       maybeError();
-      return MORE_ROWS;
+      return { data: MORE_ROWS, etag: null };
     },
-
-    async listLibraryFilters(): Promise<LibraryFilter[]> {
+    async listLibraryFilters(_opts?: CacheOpts) {
       await delay();
       maybeError();
-      return LIBRARY_FILTERS;
+      return { data: LIBRARY_FILTERS, etag: null };
     },
   },
 
   books: {
-    async list(): Promise<Book[]> {
+    async list(_opts?: CacheOpts) {
       await delay();
       maybeError();
-      return BOOKS;
+      return { data: BOOKS, etag: null };
     },
   },
 };
@@ -259,50 +358,52 @@ export const mockAdapter: ContentService = {
 // Then `npx tsc --noEmit` must be 0 errors.
 export const throwingAdapter: ContentService = {
   quran: {
-    async listSurahs()              { throw new Error('not impl'); },
-    async listAyahs(_id)            { throw new Error('not impl'); },
-    async listQiraat()              { throw new Error('not impl'); },
-    async listReciters(_style?)     { throw new Error('not impl'); },
+    async listSurahs(_opts?)              { throw new Error('not impl'); },
+    async listAyahs(_id, _opts?)          { throw new Error('not impl'); },
+    async listQiraat(_opts?)              { throw new Error('not impl'); },
+    async listReciters(_style?, _opts?)   { throw new Error('not impl'); },
   },
   scholars: {
-    async list()                    { throw new Error('not impl'); },
-    async getById(_id)              { throw new Error('not impl'); },
-    async listLectures(_scholarId)  { throw new Error('not impl'); },
+    async list(_opts?)                    { throw new Error('not impl'); },
+    async getById(_id, _opts?)            { throw new Error('not impl'); },
+    async listLectures(_id, _opts?)       { throw new Error('not impl'); },
   },
   lectures: {
-    async listByCategory(_cat)      { throw new Error('not impl'); },
+    async listByCategory(_cat, _opts?)        { throw new Error('not impl'); },
+    async pageByCategory(_cat, _cur, _opts?)  { throw new Error('not impl'); },
   },
   dawah: {
-    async listFeatured()            { throw new Error('not impl'); },
-    async listByMonth(_month)       { throw new Error('not impl'); },
-    async listMonths()              { throw new Error('not impl'); },
+    async listFeatured(_opts?)            { throw new Error('not impl'); },
+    async listByMonth(_m, _opts?)         { throw new Error('not impl'); },
+    async listMonths(_opts?)              { throw new Error('not impl'); },
   },
   navigation: {
-    async listSections()            { throw new Error('not impl'); },
-    async listMoreRows()            { throw new Error('not impl'); },
-    async listLibraryFilters()      { throw new Error('not impl'); },
+    async listSections(_opts?)            { throw new Error('not impl'); },
+    async listMoreRows(_opts?)            { throw new Error('not impl'); },
+    async listLibraryFilters(_opts?)      { throw new Error('not impl'); },
   },
   books: {
-    async list()                    { throw new Error('not impl'); },
+    async list(_opts?)                    { throw new Error('not impl'); },
   },
 };
 
 // ---------------------------------------------------------------------------
-// Export — single swap-point
+// Export — auto-switching swap-point
 // ---------------------------------------------------------------------------
 
+const apiBase = process.env.EXPO_PUBLIC_API_BASE;
+const useHttp = typeof apiBase === 'string' && apiBase.length > 0;
+
 /**
- * The live content service. All stores import this.
+ * Auto-picks the active adapter at module load:
+ *   - httpAdapter  when EXPO_PUBLIC_API_BASE is set (production, staging, dev-against-real-API)
+ *   - mockAdapter  when not set (default dev experience; deterministic in-memory data)
  *
- * To replace with an HTTP implementation:
- * 1. Create `services/httpAdapter.ts` implementing `ContentService`.
- * 2. Change the line below to: `export const contentService = httpAdapter;`
- * 3. Zero other files change.
+ * The swap is intentionally NOT runtime-toggleable. Switching adapters mid-session
+ * would create race conditions between in-flight fetches and partially-cached data.
+ * To switch modes, set/unset the env var and reload the app.
  *
- * NOTE: `mockDelay` and `simulateError` are @devOnly and marked optional on
- * the interface. The HTTP adapter does not implement them. If you need to
- * mutate these knobs, import `mockAdapter` directly — do NOT use
- * `contentService.mockDelay` (TypeScript will accept it now but will break
- * once the adapter is swapped).
+ * `throwingAdapter` stays exported as both swap-point documentation and a
+ * smoke-test stub (verified in T5.2 / Phase 7 V3).
  */
-export const contentService: ContentService = mockAdapter;
+export const contentService: ContentService = useHttp ? httpAdapter : mockAdapter;
