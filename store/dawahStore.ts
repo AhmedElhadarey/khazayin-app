@@ -1,50 +1,33 @@
 /**
  * store/dawahStore.ts
  * -------------------
- * Zustand stores for the dawah (Islamic outreach design) domain.
- * Backed by contentService.dawah.* (mock adapter in dev; HTTP adapter in prod).
+ * SWR-enabled dawah stores.
  *
- * Exports:
- *   useFeaturedDawahStore          — featured home-screen posters (3 items)
- *   useDawahMonthsStore            — list of all dawah month groups
- *   useDawahByMonthStore(month)    — parameterised; one store per month slug
- *
- * Track: khazain-content-service_20260506  Phase 2 / T2.4
+ * Track: khazain-backend-integration_20260506  Phase 6 / T10 (activation v2)
  */
 
 import { createAsyncStore } from './createAsyncStore';
 import { contentService } from '../services/contentService';
 import type { DawahPoster } from '../types/content';
 
-// ---------------------------------------------------------------------------
-// useFeaturedDawahStore
-// ---------------------------------------------------------------------------
-
 export const useFeaturedDawahStore = createAsyncStore<DawahPoster[]>({
   name: 'featured-dawah',
   initialData: [],
-  fetcher: () => contentService.dawah.listFeatured(),
+  swr: { domain: 'dawah-featured' },
+  fetcher: (opts) => contentService.dawah.listFeatured(opts),
   isEmpty: (data) => data.length === 0,
 });
-
-// ---------------------------------------------------------------------------
-// useDawahMonthsStore
-// ---------------------------------------------------------------------------
 
 export const useDawahMonthsStore = createAsyncStore<
   { id: string; title: string; count: string }[]
 >({
   name: 'dawah-months',
   initialData: [],
-  fetcher: () => contentService.dawah.listMonths(),
+  swr: { domain: 'dawah-months' },
+  fetcher: (opts) => contentService.dawah.listMonths(opts),
   isEmpty: (data) => data.length === 0,
 });
 
-// ---------------------------------------------------------------------------
-// useDawahByMonthStore — parameterised (one store per month slug)
-// ---------------------------------------------------------------------------
-
-/** Cache: month slug → bound store hook. Created lazily on first call. */
 const _dawahByMonthCache = new Map<
   string,
   ReturnType<typeof createAsyncStore<DawahPoster[]>>
@@ -52,22 +35,19 @@ const _dawahByMonthCache = new Map<
 
 /**
  * Returns the Zustand store hook for the given month's dawah posters.
- *
- * Usage:
- * ```tsx
- * const useDawah = useDawahByMonthStore(month);
- * const { data: posters, status, fetch } = useDawah();
- * ```
+ * Each month gets its own SWR-cached store; cache key includes the
+ * month slug via `swr.sub`.
  */
 export function useDawahByMonthStore(
-  month: string
+  month: string,
 ): ReturnType<typeof createAsyncStore<DawahPoster[]>> {
   let store = _dawahByMonthCache.get(month);
   if (!store) {
     store = createAsyncStore<DawahPoster[]>({
       name: `dawah-${month}`,
       initialData: [],
-      fetcher: () => contentService.dawah.listByMonth(month),
+      swr: { domain: 'dawah-by-month', sub: month },
+      fetcher: (opts) => contentService.dawah.listByMonth(month, opts),
       isEmpty: (data) => data.length === 0,
     });
     _dawahByMonthCache.set(month, store);

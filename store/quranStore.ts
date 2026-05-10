@@ -1,82 +1,56 @@
 /**
  * store/quranStore.ts
  * -------------------
- * Zustand stores for the Quran domain.
- * Backed by contentService.quran.* (mock adapter in dev; HTTP adapter in prod).
+ * SWR-enabled Zustand stores for the Quran domain.
  *
- * Exports:
- *   useSurahsStore    — list of all Surahs
- *   useQiratStore     — list of all Qiraat
- *   useRecitersStore  — list of all Reciters
- *   useAyatStore(id)  — parameterised hook; each surah gets its own store instance
- *
- * Track: khazain-content-service_20260506  Phase 2 / T2.1
+ * Track: khazain-backend-integration_20260506  Phase 6 / T10 (activation v2)
  */
 
 import { createAsyncStore } from './createAsyncStore';
 import { contentService } from '../services/contentService';
 import type { Ayah, Qiraat, Reciter, Surah } from '../types/content';
 
-// ---------------------------------------------------------------------------
-// useSurahsStore
-// ---------------------------------------------------------------------------
-
 export const useSurahsStore = createAsyncStore<Surah[]>({
   name: 'surahs',
   initialData: [],
-  fetcher: () => contentService.quran.listSurahs(),
+  swr: { domain: 'surahs' },
+  fetcher: (opts) => contentService.quran.listSurahs(opts),
   isEmpty: (data) => data.length === 0,
 });
-
-// ---------------------------------------------------------------------------
-// useQiratStore
-// ---------------------------------------------------------------------------
 
 export const useQiratStore = createAsyncStore<Qiraat[]>({
   name: 'qiraat',
   initialData: [],
-  fetcher: () => contentService.quran.listQiraat(),
+  swr: { domain: 'qiraat' },
+  fetcher: (opts) => contentService.quran.listQiraat(opts),
   isEmpty: (data) => data.length === 0,
 });
-
-// ---------------------------------------------------------------------------
-// useRecitersStore
-// ---------------------------------------------------------------------------
 
 export const useRecitersStore = createAsyncStore<Reciter[]>({
   name: 'reciters',
   initialData: [],
-  fetcher: () => contentService.quran.listReciters(),
+  swr: { domain: 'reciters' },
+  fetcher: (opts) => contentService.quran.listReciters(undefined, opts),
   isEmpty: (data) => data.length === 0,
 });
 
-// ---------------------------------------------------------------------------
-// useAyatStore — parameterised (one store instance per surahId)
-// ---------------------------------------------------------------------------
-
-/** Cache: surahId → bound store hook. Created lazily on first call. */
 const _ayatStoreCache = new Map<string, ReturnType<typeof createAsyncStore<Ayah[]>>>();
 
 /**
  * Returns the Zustand store hook for the given surah's ayat.
- * The store is created once and cached; subsequent calls with the same id
- * return the same store instance (React-stable across re-renders).
- *
- * Usage:
- * ```tsx
- * const useAyat = useAyatStore(surahId);
- * const { data: ayat, status, fetch } = useAyat();
- * ```
+ * Each surah gets its own SWR-cached store; cache key includes the surahId
+ * via `swr.sub`.
  */
 export function useAyatStore(
-  surahId: string
+  surahId: string,
 ): ReturnType<typeof createAsyncStore<Ayah[]>> {
   let store = _ayatStoreCache.get(surahId);
   if (!store) {
     store = createAsyncStore<Ayah[]>({
       name: `ayat-${surahId}`,
       initialData: [],
-      fetcher: () => contentService.quran.listAyahs(surahId),
+      swr: { domain: 'ayat', sub: surahId },
+      fetcher: (opts) => contentService.quran.listAyahs(surahId, opts),
       isEmpty: (data) => data.length === 0,
     });
     _ayatStoreCache.set(surahId, store);
