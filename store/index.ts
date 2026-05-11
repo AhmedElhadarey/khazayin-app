@@ -90,6 +90,20 @@ export { useRecentSearchesStore } from './recentSearchesStore';
 export type { RecentSearchesState } from './recentSearchesStore';
 
 // ---------------------------------------------------------------------------
+// Saved items (T4 — savedStore track)
+// ---------------------------------------------------------------------------
+
+export { useSavedStore } from './savedStore';
+export type { SavedState } from './savedStore';
+
+// ---------------------------------------------------------------------------
+// Toast (T4 — savedStore track)
+// ---------------------------------------------------------------------------
+
+export { useToastStore } from './toastStore';
+export type { ToastState, ToastConfig, ToastAction } from './toastStore';
+
+// ---------------------------------------------------------------------------
 // Player + Notes (pre-existing; barreled for unified import path)
 // ---------------------------------------------------------------------------
 

@@ -150,3 +150,31 @@ export interface LibraryFilter {
    *  Optional — screens that don't render a count can ignore it. */
   count?: string;
 }
+
+// ---------------------------------------------------------------------------
+// Saved items (added 2026-05-11 — savedStore track)
+// ---------------------------------------------------------------------------
+
+/** Content types that can be saved. Mirrors content domains except Ayah
+ *  (deferred to v2). */
+export type SavedType = 'surah' | 'scholar' | 'book' | 'lecture' | 'dawah';
+
+/** Per-type minimum display snapshot. Captured at save time so the Library
+ *  list renders correctly without the source domain store being loaded. */
+export type SavedSnapshot =
+  | { type: 'surah';   name: string; displayNumber: string; meta: string }
+  | { type: 'scholar'; name: string }
+  | { type: 'book';    title: string }
+  | { type: 'lecture'; title: string; scholar: string; duration: string;
+                       category: Lecture['category'] }
+  | { type: 'dawah';   title: string; body: string; tone: string;
+                       imageSource?: ImageSourcePropType };
+
+/** Persisted shape. The `id` is the composite `${type}:${entityId}`. */
+export interface SavedItem {
+  id: string;
+  type: SavedType;
+  entityId: string;       // domain id: surah '001', scholar 's4', etc.
+  savedAt: number;        // Date.now() at save
+  snapshot: SavedSnapshot;
+}
