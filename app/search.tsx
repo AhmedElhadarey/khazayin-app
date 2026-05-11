@@ -1,11 +1,4 @@
-import {
-  InlineHeader,
-  MicBadge,
-  OpenBookBadge,
-  ProphetMedallionBadge,
-  SearchPill,
-  TulipBadge,
-} from '@/components/khazain';
+import { InlineHeader, SearchPill } from '@/components/khazain';
 import {
   RecentSearchRow,
   SearchGroupHeader,
@@ -13,6 +6,7 @@ import {
   SuggestionChips,
 } from '@/components/khazain/search';
 import { KhazainColors } from '@/constants/theme';
+import { rowPropsForSearchResult } from '@/services/search';
 import {
   useBookLecturesStore,
   useBooksStore,
@@ -229,7 +223,7 @@ function ResultsList({
           {group.items.map((it) => {
             // Each group's items render through SearchResultRow with a real
             // type-specific badge (Board condition #2: no stubs in v1).
-            const { iconNode, title, subtitle, meta, route } = renderRowProps(group, it);
+            const { iconNode, title, subtitle, meta, route } = rowPropsForSearchResult(group, it);
             return (
               <SearchResultRow
                 key={(it as { id: string }).id}
@@ -245,91 +239,6 @@ function ResultsList({
       )}
       ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
     />
-  );
-}
-
-// renderRowProps maps each group/item to the props SearchResultRow needs.
-// Each branch renders a REAL badge component (Board condition #2). Routes
-// per design §6.2 — the surah / book / lecture destinations land on list
-// pages because no detail routes exist yet (3 follow-up tracks named).
-function renderRowProps(
-  group: ResultGroup,
-  item: { id: string },
-): { iconNode: React.ReactNode; title: string; subtitle?: string; meta?: string; route: string } {
-  if (group.type === 'surah') {
-    const s = item as unknown as { id: string; name: string; meta: string; displayNumber: string };
-    return {
-      iconNode: <SurahNumberBadge displayNumber={s.displayNumber} />,
-      title: s.name,
-      subtitle: s.meta,
-      route: '/sections/mushaf',
-    };
-  }
-  if (group.type === 'scholar') {
-    const s = item as unknown as { id: string; name: string };
-    return {
-      iconNode: <ScholarMedallion />,
-      title: s.name,
-      route: `/sections/scholar/${s.id}`,
-    };
-  }
-  if (group.type === 'book') {
-    const b = item as unknown as { id: string; title: string };
-    return {
-      iconNode: <OpenBookBadge size={40} />,
-      title: b.title,
-      route: '/sections/books',
-    };
-  }
-  // lecture — switch on category for the right badge AND the right route.
-  const l = item as unknown as {
-    id: string;
-    title: string;
-    scholar: string;
-    duration: string;
-    category: 'prophet' | 'book' | 'queen' | 'radio' | 'scholar' | 'general';
-  };
-  const lectureIcon =
-    l.category === 'prophet' ? <ProphetMedallionBadge size={40} /> :
-    l.category === 'queen'   ? <TulipBadge size={40} /> :
-    l.category === 'radio'   ? <MicBadge size={40} /> :
-    l.category === 'book'    ? <OpenBookBadge size={40} /> :
-    /* scholar | general */    <OpenBookBadge size={40} />;
-  const lectureRoute =
-    l.category === 'prophet' ? '/sections/prophet' :
-    l.category === 'book'    ? '/sections/books' :
-    l.category === 'queen'   ? '/sections/queen' :
-    l.category === 'radio'   ? '/sections/radio' :
-    /* scholar | general */    '/(tabs)/sections';
-  return {
-    iconNode: lectureIcon,
-    title: l.title,
-    subtitle: l.scholar,
-    meta: l.duration,
-    route: lectureRoute,
-  };
-}
-
-// Surah index circle: cream background, gold border, gold Arabic-Indic numeral.
-// Sized 40 to match the lecture badges so all 4 row types align visually.
-function SurahNumberBadge({ displayNumber }: { displayNumber: string }) {
-  return (
-    <View style={styles.surahBadge}>
-      <Text style={styles.surahBadgeText} numberOfLines={1}>
-        {displayNumber}
-      </Text>
-    </View>
-  );
-}
-
-// Scholar medallion: 40px gold disc with the Arabic letter "ع" — conventional
-// honorific abbreviation for "Sheikh". Generic across all scholars until
-// per-scholar avatars are wired into search rows.
-function ScholarMedallion() {
-  return (
-    <View style={styles.scholarBadge}>
-      <Text style={styles.scholarBadgeText}>ع</Text>
-    </View>
   );
 }
 
@@ -387,37 +296,6 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
     textAlign: 'right',
     writingDirection: 'rtl',
-  },
-
-  surahBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: KhazainColors.cream100,
-    borderWidth: 1,
-    borderColor: KhazainColors.gold200,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  surahBadgeText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '700',
-    color: KhazainColors.gold200,
-  },
-  scholarBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: KhazainColors.gold200,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  scholarBadgeText: {
-    fontFamily: 'TheMixArab',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.cream50,
   },
 
   noResultsWrap: {

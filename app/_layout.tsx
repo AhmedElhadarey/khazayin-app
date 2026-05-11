@@ -9,6 +9,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { I18nManager, LogBox, Platform } from 'react-native';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
+import { ToastOverlay } from '@/components/khazain';
 import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
@@ -202,6 +203,7 @@ export default function RootLayout() {
           }}
         />
       </Stack>
+      <ToastOverlay />
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
   );
