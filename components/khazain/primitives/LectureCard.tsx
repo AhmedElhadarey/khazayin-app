@@ -1,10 +1,12 @@
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import type { Lecture } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { BookmarkButton } from './BookmarkButton';
 
 // Cream rounded card used across pages 25 / 33 / 34 / 35.
 // Visual layout (RTL):
-//   [icon disc — flush RIGHT]  [title (bold) + scholar (muted)]   ...   [duration chip — flush LEFT]
+//   [icon disc — flush RIGHT]  [title (bold) + scholar (muted)]   ...   [duration chip + bookmark — flush LEFT]
 //
 // All inner pieces use absolute positioning to survive `forceRTL` quirks
 // across native + web (per CLAUDE.md).
@@ -13,6 +15,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 // `pretitleSmall` renders an optional pretitle line above the title (e.g. "فضيلة الشيخ").
 // `iconNode` lets each section slot a different glyph badge.
 export function LectureCard({
+  id,
+  category,
   iconNode,
   title,
   scholar,
@@ -21,6 +25,8 @@ export function LectureCard({
   compact,
   onPress,
 }: {
+  id: string;
+  category: Lecture['category'];
   iconNode: React.ReactNode;
   title: string;
   scholar?: string;
@@ -64,12 +70,16 @@ export function LectureCard({
         ) : null}
       </View>
 
-      {/* Left-edge: duration chip. */}
-      {duration ? (
-        <View style={styles.durationBlock}>
-          <Text style={styles.duration}>{duration}</Text>
-        </View>
-      ) : null}
+      {/* Left-edge: duration chip + bookmark cluster. */}
+      <View style={styles.endCluster}>
+        {duration ? <Text style={styles.duration}>{duration}</Text> : null}
+        <BookmarkButton
+          type="lecture"
+          entityId={id}
+          snapshot={{ type: 'lecture', title, scholar: scholar ?? '', duration: duration ?? '', category }}
+          variant="light"
+        />
+      </View>
     </Pressable>
   );
 }
@@ -112,13 +122,13 @@ const styles = StyleSheet.create({
   },
   textBlock: {
     paddingRight: 70, // leave room for icon disc on the right
-    paddingLeft: 86, // leave room for the duration chip on the left
+    paddingLeft: 120, // leave room for duration chip + bookmark on the left
     alignItems: 'flex-end',
     gap: 4,
   },
   textBlockCompact: {
     paddingRight: 56,
-    paddingLeft: 76,
+    paddingLeft: 110,
     gap: 2,
   },
   pretitle: {
@@ -161,12 +171,14 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
-  durationBlock: {
+  endCluster: {
     position: 'absolute',
-    left: 14,
+    left: 10,
     top: 0,
     bottom: 0,
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   duration: {
     fontFamily: 'TheSansArabic',

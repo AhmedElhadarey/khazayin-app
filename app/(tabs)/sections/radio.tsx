@@ -42,6 +42,8 @@ export default function RadioScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
         renderItem={({ item }) => (
           <LectureCard
+            id={item.id}
+            category={item.category}
             compact
             iconNode={<MicBadge size={40} />}
             title={item.title}

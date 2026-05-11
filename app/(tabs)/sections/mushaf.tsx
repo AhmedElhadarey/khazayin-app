@@ -70,10 +70,7 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
           {surahs.map((s) => (
             <SurahRow
               key={s.id}
-              index={s.displayNumber}
-              name={s.name}
-              meta={s.meta}
-              showChevron={false}
+              surah={s}
               onPress={() => onPick(s.id)}
             />
           ))}

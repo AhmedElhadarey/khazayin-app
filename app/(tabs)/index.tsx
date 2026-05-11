@@ -92,7 +92,7 @@ export default function HomeScreen() {
             <RtlCarousel contentContainerStyle={styles.scrollerPad}>
               {featuredScholars.map((s) => (
                 <View key={s.id} style={styles.scrollerItem}>
-                  <ScholarCard svg={SVG_BY_ID[s.id]} name={s.name} />
+                  <ScholarCard id={s.id} svg={SVG_BY_ID[s.id]} name={s.name} />
                 </View>
               ))}
             </RtlCarousel>
@@ -112,7 +112,7 @@ export default function HomeScreen() {
             <RtlCarousel contentContainerStyle={styles.scrollerPad}>
               {bookLectures.slice(0, 3).map((b) => (
                 <View key={b.id} style={styles.scrollerItem}>
-                  <BookCard name={b.title} />
+                  <BookCard id={b.id} name={b.title} />
                 </View>
               ))}
             </RtlCarousel>

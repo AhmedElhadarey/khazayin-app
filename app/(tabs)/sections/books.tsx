@@ -42,6 +42,8 @@ export default function BooksScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
         renderItem={({ item }) => (
           <LectureCard
+            id={item.id}
+            category={item.category}
             iconNode={<OpenBookBadge size={48} />}
             title={item.title}
             scholar={item.scholar}
