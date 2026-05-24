@@ -34,7 +34,7 @@ export default function RadioScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <InlineHeader title="برامج إذاعية" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." />
+        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>
       <FlatList
         data={items}
@@ -42,6 +42,8 @@ export default function RadioScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
         renderItem={({ item }) => (
           <LectureCard
+            id={item.id}
+            category={item.category}
             compact
             iconNode={<MicBadge size={40} />}
             title={item.title}

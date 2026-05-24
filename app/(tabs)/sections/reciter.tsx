@@ -41,7 +41,7 @@ export default function ReciterScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <InlineHeader title="القرآن حياة" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." />
+        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>
       <SegmentTabs<string> tabs={RECITER_TABS} active={active} onChange={setActive} />
       {/* Body: scrollable list + absolute-positioned right-rail letter index. */}

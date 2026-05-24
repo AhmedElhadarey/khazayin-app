@@ -12,12 +12,12 @@ export function HomeHeader({
   greeting = 'سبحان الله',
   hijriDate = todayHijriArabic(),
   onBellPress,
-  onSearchFocus,
+  onSearchOpen,
 }: {
   greeting?: string;
   hijriDate?: string;
   onBellPress?: () => void;
-  onSearchFocus?: () => void;
+  onSearchOpen?: () => void;
 }) {
   // RTL visual layout (right → left): [FoundationMark][greeting block]   [bell]
   // We use absolute positioning so we don't depend on flex auto-flip
@@ -42,7 +42,7 @@ export function HomeHeader({
         </Pressable>
       </View>
       <View style={{ marginTop: 8 }}>
-        <SearchPill placeholder="بحث.." onFocus={onSearchFocus} />
+        <SearchPill placeholder="بحث.." onPress={onSearchOpen} />
       </View>
     </View>
   );

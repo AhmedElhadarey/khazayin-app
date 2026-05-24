@@ -43,6 +43,7 @@ export default function MushafScreen() {
 }
 
 function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string) => void }) {
+  const router = useRouter();
   const { data: surahs, status: surahsStatus, error: surahsError, fetch: fetchSurahs, refresh: refreshSurahs } = useSurahsStore();
 
   useEffect(() => {
@@ -53,7 +54,7 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
     <SafeAreaView style={styles.listScreen} edges={['top']}>
       <InlineHeader title="قراءة القرآن" onBack={onBack} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." />
+        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>
       <AsyncContent
         status={surahsStatus}
@@ -69,10 +70,7 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
           {surahs.map((s) => (
             <SurahRow
               key={s.id}
-              index={s.displayNumber}
-              name={s.name}
-              meta={s.meta}
-              showChevron={false}
+              surah={s}
               onPress={() => onPick(s.id)}
             />
           ))}

@@ -2,6 +2,7 @@ import React from 'react';
 import { Dimensions, Pressable, StyleSheet, View } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { KhazainColors } from '@/constants/theme';
+import { BookmarkButton } from '../primitives';
 
 // Width scales with screen so the carousel always shows ~1.8 cards regardless
 // of device (iPhone SE → Pro Max). 16px horizontal page padding + 12px gap.
@@ -35,10 +36,12 @@ const SVG_H = INNER_W * SVG_RATIO;
 // scholar name baked together). The gold stripe is a separate <View> so
 // its width can scale with the card; matches Figma's auto-layout export.
 export function ScholarCard({
+  id,
   svg,
   name,
   onPress,
 }: {
+  id: string;
   svg: string;
   name?: string;
   onPress?: () => void;
@@ -52,6 +55,14 @@ export function ScholarCard({
     >
       <View style={styles.goldStripe} />
       <SvgXml xml={svg} width={INNER_W} height={SVG_H} />
+      <View style={styles.bookmarkSlot} pointerEvents="box-none">
+        <BookmarkButton
+          type="scholar"
+          entityId={id}
+          snapshot={{ type: 'scholar', name: name ?? '' }}
+          variant="dark"
+        />
+      </View>
     </Pressable>
   );
 }
@@ -79,5 +90,10 @@ const styles = StyleSheet.create({
     height: STRIPE_H,
     alignSelf: 'center',
     backgroundColor: KhazainColors.goldBar,
+  },
+  bookmarkSlot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
   },
 });

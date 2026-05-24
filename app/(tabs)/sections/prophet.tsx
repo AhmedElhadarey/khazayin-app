@@ -34,7 +34,7 @@ export default function ProphetScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <InlineHeader title="رسول الله ﷺ" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." />
+        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>
       <FlatList
         data={items}
@@ -42,6 +42,8 @@ export default function ProphetScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
         renderItem={({ item }) => (
           <LectureCard
+            id={item.id}
+            category={item.category}
             iconNode={<ProphetMedallionBadge size={48} />}
             title={item.title}
             scholar={item.scholar}

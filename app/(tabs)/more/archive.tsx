@@ -44,7 +44,7 @@ export default function ArchiveScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.searchBlock}>
-          <SearchPill placeholder="بحث.." />
+          <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
         </View>
         <View style={styles.list}>
           {ITEMS.map((it) => (

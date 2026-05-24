@@ -42,7 +42,7 @@ export default function ScholarDetailScreen() {
         <Text style={styles.name}>{name}</Text>
       </View>
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." />
+        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>
       <ScrollView
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}

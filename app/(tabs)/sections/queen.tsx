@@ -34,7 +34,7 @@ export default function QueenScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <InlineHeader title="أنتِ ملكة" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." />
+        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>
       <FlatList
         data={items}
@@ -42,6 +42,8 @@ export default function QueenScreen() {
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
         renderItem={({ item }) => (
           <LectureCard
+            id={item.id}
+            category={item.category}
             iconNode={<TulipBadge size={48} />}
             title={item.title}
             scholar={item.scholar}

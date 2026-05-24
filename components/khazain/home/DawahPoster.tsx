@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { KhazainRadius } from '@/constants/theme';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
+import { BookmarkButton } from '../primitives';
 
 // 3D dawah poster card — full-bleed Figma poster image with layered depth.
 // Width/height are configurable so the focused carousel can render larger
@@ -49,6 +50,21 @@ export function DawahPoster({
 
       {/* Hairline highlight stroke around the perimeter for depth */}
       <View style={styles.bevel} pointerEvents="none" />
+
+      <View style={styles.bookmarkSlot} pointerEvents="box-none">
+        <BookmarkButton
+          type="dawah"
+          entityId={quote.id}
+          snapshot={{
+            type: 'dawah',
+            title: quote.title,
+            body: quote.body,
+            tone: quote.tone,
+            imageSource: quote.imageSource,
+          }}
+          variant="floating"
+        />
+      </View>
     </Pressable>
   );
 }
@@ -85,5 +101,10 @@ const styles = StyleSheet.create({
     borderRadius: KhazainRadius.md,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
+  },
+  bookmarkSlot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
   },
 });

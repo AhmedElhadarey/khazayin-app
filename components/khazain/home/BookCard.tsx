@@ -1,6 +1,7 @@
 import React from 'react';
 import { Dimensions, Pressable, StyleSheet, Text, View } from 'react-native';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
+import { BookmarkButton } from '../primitives';
 
 // Width scales with screen so the carousel always shows ~1.8 cards regardless
 // of device (iPhone SE → Pro Max). 16px horizontal page padding + 12px gap.
@@ -9,7 +10,15 @@ const CARD_W = (SCREEN_W - 16 * 2 - 12) / 1.8;
 
 // Cream card with navy stripe top and centered Amiri navy title.
 // Port of design_source/app/home.jsx BookCard.
-export function BookCard({ name, onPress }: { name: string; onPress?: () => void }) {
+export function BookCard({
+  id,
+  name,
+  onPress,
+}: {
+  id: string;
+  name: string;
+  onPress?: () => void;
+}) {
   return (
     <Pressable
       onPress={onPress}
@@ -19,6 +28,14 @@ export function BookCard({ name, onPress }: { name: string; onPress?: () => void
       <Text style={styles.name} numberOfLines={2}>
         {name}
       </Text>
+      <View style={styles.bookmarkSlot} pointerEvents="box-none">
+        <BookmarkButton
+          type="book"
+          entityId={id}
+          snapshot={{ type: 'book', title: name }}
+          variant="light"
+        />
+      </View>
     </Pressable>
   );
 }
@@ -55,5 +72,10 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18.5,
     writingDirection: 'rtl',
+  },
+  bookmarkSlot: {
+    position: 'absolute',
+    top: 6,
+    right: 6,
   },
 });

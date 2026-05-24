@@ -8,8 +8,9 @@ import {
   StatCard,
   Toggle,
 } from '@/components/khazain';
+import { MySavedSection } from '@/components/khazain/library';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { useLibraryFiltersStore } from '@/store';
+import { useLibraryFiltersStore, useSavedStore } from '@/store';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -34,6 +35,24 @@ export default function LibraryScreen() {
 
   const recentNotes = notes.slice(0, 2);
 
+  const savedCount = useSavedStore((s) => s.items.length);
+
+  // Board condition #9: hide 'history' pill until feature exists.
+  // Override mock counts with real values from savedStore + notesStore.
+  const realFilters = filters
+    .filter((f) => f.id !== 'history')
+    .map((f) => ({
+      ...f,
+      count:
+        f.id === 'all' ? toArNum(savedCount + notes.length) :
+        f.id === 'saved' ? toArNum(savedCount) :
+        f.id === 'notes' ? toArNum(notes.length) :
+        f.count,
+    }));
+
+  const showSaved = filter === 'all' || filter === 'saved';
+  const showNotes = filter === 'all' || filter === 'notes';
+
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
   const openNewNote = (seedTitle?: string) =>
     router.push({ pathname: '/note-editor' as any, params: seedTitle ? { title: seedTitle } : {} });
@@ -52,7 +71,7 @@ export default function LibraryScreen() {
           <Text style={styles.h1}>مكتبتي</Text>
         </View>
         <View style={styles.searchBlock}>
-          <SearchPill placeholder="ابحث في مكتبتك..." />
+          <SearchPill placeholder="ابحث في مكتبتك..." onPress={() => router.push('/search' as any)} />
         </View>
 
         {/* Stats row */}
@@ -98,6 +117,7 @@ export default function LibraryScreen() {
         </View>
 
         {/* Quick note */}
+        {showNotes ? (
         <View style={styles.block}>
           <View style={[styles.card, KhazainShadows.card]}>
             <Text style={styles.quickNoteTitle}>ملاحظة سريعة</Text>
@@ -144,6 +164,7 @@ export default function LibraryScreen() {
             </View>
           </View>
         </View>
+        ) : null}
 
         {/* Filter pills */}
         <View style={styles.filtersRow}>
@@ -154,7 +175,7 @@ export default function LibraryScreen() {
             skeleton={<SkeletonPillList count={3} />}
             emptyMessage="لا توجد تصنيفات"
           >
-            {filters.map((f) => {
+            {realFilters.map((f) => {
               const active = filter === f.id;
               return (
                 <Pressable
@@ -174,6 +195,8 @@ export default function LibraryScreen() {
             })}
           </AsyncContent>
         </View>
+
+        {showSaved ? <MySavedSection /> : null}
 
         {/* Audio progress */}
         <Text style={styles.sectionTitle}>تقدّم الكتب المسموعة</Text>
