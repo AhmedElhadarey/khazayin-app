@@ -13,7 +13,6 @@ export { ListRowCard } from './ListRowCard';
 export { LetterIndex } from './LetterIndex';
 export { InlineHeader } from './InlineHeader';
 export { SurahStar } from './SurahStar';
-export { SurahRow } from './SurahRow';
 export { ReciterRow } from './ReciterRow';
 export { QuranBadge } from './QuranBadge';
 export { MoonMountainBadge } from './MoonMountainBadge';
