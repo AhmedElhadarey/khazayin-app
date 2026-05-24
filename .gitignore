@@ -41,3 +41,23 @@ app-example
 # generated native folders
 /ios
 /android
+
+.expo/*
+conductor/*
+design_source/*
+handoff.md
+
+# Auto Claude data directory
+.auto-claude/
+
+# Auto Claude generated files
+.auto-claude-security.json
+.auto-claude-status
+.claude_settings.json
+.worktrees/
+.security-key
+logs/security/
+.message-bus/*
+docs/*
+scripts/*
+CLAUDE.md

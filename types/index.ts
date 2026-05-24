@@ -6,6 +6,8 @@ export interface Category {
   coverImage?: string;
   childrenCount?: number;
   icon?: string;
+  count?: number;
+  type?: string;
 }
 
 export interface Resource {

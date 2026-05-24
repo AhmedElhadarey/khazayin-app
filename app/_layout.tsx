@@ -1,17 +1,25 @@
-import { useEffect, useState } from 'react';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import { I18nManager, LogBox, Platform } from 'react-native';
+import { Colors } from '@/constants/theme';
+import { useColorScheme } from '@/hooks/use-color-scheme';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
+import { useFonts } from 'expo-font';
+import { Stack, useRouter, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
+import { useEffect, useState } from 'react';
+import { I18nManager, LogBox, Platform } from 'react-native';
+import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
 LogBox.ignoreLogs(['Require cycle:']);
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-import { Colors } from '@/constants/theme';
+SplashScreen.preventAutoHideAsync().catch(() => {
+  // Ignore — splash may already have been hidden in dev reloads.
+});
+
+
 
 export const unstable_settings = {
   anchor: '(tabs)',
@@ -70,6 +78,35 @@ function useOnboardingRedirect() {
 export default function RootLayout() {
   const colorScheme = useColorScheme();
   useOnboardingRedirect();
+  useBackgroundRefresh();
+
+  const [fontsLoaded, fontError] = useFonts({
+    Amiri: require('../assets/fonts/Amiri-Regular.ttf'),
+    'Amiri-Bold': require('../assets/fonts/Amiri-Bold.ttf'),
+    NotoSansArabic: require('../assets/fonts/NotoSansArabic-VF.ttf'),
+    NotoNaskhArabic: require('../assets/fonts/NotoNaskhArabic-VF.ttf'),
+  });
+
+  useEffect(() => {
+    if (fontsLoaded || fontError) {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [fontsLoaded, fontError]);
+
+  // Env preflight — warn once at root mount if the API base URL is not
+  // configured. The app will run on mockAdapter silently; this log reminds
+  // developers to set EXPO_PUBLIC_API_BASE in .env.local when testing HTTP mode.
+  useEffect(() => {
+    if (!process.env.EXPO_PUBLIC_API_BASE) {
+      console.warn(
+        '[khazayin] EXPO_PUBLIC_API_BASE not set — running on mockAdapter. Set the env var to activate HTTP mode.',
+      );
+    }
+  }, []);
+
+  if (!fontsLoaded && !fontError) {
+    return null;
+  }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? KhazayinDarkTheme : KhazayinLightTheme}>
@@ -94,7 +131,68 @@ export default function RootLayout() {
             presentation: 'card',
           }}
         />
+        <Stack.Screen
+          name="category/[id]"
+          options={{
+            headerShown: false,
+            presentation: 'card',
+          }}
+        />
         <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen
+          name="contact"
+          options={{
+            headerShown: false,
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="about"
+          options={{
+            headerShown: false,
+            presentation: 'card',
+          }}
+        />
+        <Stack.Screen
+          name="note-editor"
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            animation: 'fade',
+          }}
+        />
+        <Stack.Screen
+          name="notes-viewer"
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            animation: 'fade',
+          }}
+        />
+        <Stack.Screen
+          name="telegram-sheet"
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            animation: 'fade',
+          }}
+        />
+        <Stack.Screen
+          name="youtube-sheet"
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            animation: 'fade',
+          }}
+        />
+        <Stack.Screen
+          name="share-sheet"
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            animation: 'fade',
+          }}
+        />
       </Stack>
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>

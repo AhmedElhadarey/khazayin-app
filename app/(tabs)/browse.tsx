@@ -11,7 +11,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { Colors, Spacing, Border, Shadows } from '@/constants/theme';
 import { Text } from '@/components/ui/Text';
-import { apiService } from '@/services/api';
 import { Category } from '@/types';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -114,6 +113,61 @@ function BooksIcon({ color }: { color: string }) {
   );
 }
 
+function HadithIcon({ color }: { color: string }) {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Rect
+        x={4}
+        y={3}
+        width={16}
+        height={18}
+        rx={2}
+        stroke={color}
+        strokeWidth={1.5}
+      />
+      <Path
+        d="M8 7h8M8 11h8M8 15h5"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+function AqeedahIcon({ color }: { color: string }) {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 2l3 6h7l-5.5 4.5L18 20l-6-4-6 4 1.5-7.5L2 8h7l3-6z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function AdabIcon({ color }: { color: string }) {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"
+        stroke={color}
+        strokeWidth={1.5}
+      />
+      <Path
+        d="M12 6v6l4 2"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
 function QueenIcon({ color }: { color: string }) {
   return (
     <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
@@ -137,6 +191,25 @@ function QueenIcon({ color }: { color: string }) {
 function AudioBookIcon({ color }: { color: string }) {
   return (
     <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3 18V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"
+        stroke={color}
+        strokeWidth={1.5}
+      />
+      <Circle cx={12} cy={12} r={3} stroke={color} strokeWidth={1.5} />
+      <Path
+        d="M12 9V4M12 20v-5"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
+
+function MiscBooksIcon({ color }: { color: string }) {
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
       <Rect
         x={4}
         y={4}
@@ -148,44 +221,6 @@ function AudioBookIcon({ color }: { color: string }) {
       />
       <Path
         d="M9 8h6M9 12h6M9 16h4"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function ExclusivesIcon({ color }: { color: string }) {
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={9} stroke={color} strokeWidth={1.5} />
-      <Path
-        d="M12 7v5l3 3"
-        stroke={color}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function RadioIcon({ color }: { color: string }) {
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Rect
-        x={3}
-        y={8}
-        width={18}
-        height={12}
-        rx={2}
-        stroke={color}
-        strokeWidth={1.5}
-      />
-      <Circle cx={8} cy={14} r={2} stroke={color} strokeWidth={1.5} />
-      <Path
-        d="M14 11h4M14 14h4M14 17h4M3 8l6-4"
         stroke={color}
         strokeWidth={1.5}
         strokeLinecap="round"
@@ -218,21 +253,23 @@ function DesignsIcon({ color }: { color: string }) {
 
 // Map category IDs to icons
 const getCategoryIcon = (categoryId: string, color: string) => {
-  const iconMap: { [key: string]: JSX.Element } = {
+  const iconMap: { [key: string]: React.ReactElement } = {
     'quran': <QuranIcon color={color} />,
     'prophet': <ProphetIcon color={color} />,
     'scholars': <ScholarsIcon color={color} />,
     'books': <BooksIcon color={color} />,
-    'queen': <QueenIcon color={color} />,
+    'hadith': <HadithIcon color={color} />,
+    'aqeedah': <AqeedahIcon color={color} />,
+    'adab': <AdabIcon color={color} />,
     'audiobooks': <AudioBookIcon color={color} />,
-    'exclusives': <ExclusivesIcon color={color} />,
-    'radio': <RadioIcon color={color} />,
+    'misc-books': <MiscBooksIcon color={color} />,
     'designs': <DesignsIcon color={color} />,
+    'queen': <QueenIcon color={color} />,
   };
   return iconMap[categoryId] || <BooksIcon color={color} />;
 };
 
-// ─── Category Card (Matching Figma design) ───
+// ─── Category Card (Matching design) ───
 
 function CategoryCard({
   category,
@@ -242,8 +279,7 @@ function CategoryCard({
   onPress: () => void;
 }) {
   const theme = useColorScheme();
-  
-  // Get episode count text
+
   const getCountText = (count: number, type?: string) => {
     if (type === 'books') return `${count} كتاب`;
     if (type === 'designs') return `${count} تصميم`;
@@ -265,26 +301,26 @@ function CategoryCard({
       accessibilityLabel={category.name}
     >
       {/* Left Arrow */}
-      <Ionicons 
-        name="chevron-back" 
-        size={20} 
-        color={Colors[theme].textMuted} 
+      <Ionicons
+        name="chevron-back"
+        size={20}
+        color={Colors[theme].textMuted}
       />
 
       {/* Content */}
       <View style={styles.cardContent}>
         {/* Title */}
-        <Text 
-          variant="md" 
-          weight="bold" 
+        <Text
+          variant="md"
+          weight="bold"
           color={Colors[theme].text}
           style={styles.cardTitle}
         >
           {category.name}
         </Text>
-        
+
         {/* Description */}
-        {category.description && (
+        {category.description ? (
           <Text
             variant="sm"
             color={Colors[theme].textSecondary}
@@ -293,8 +329,8 @@ function CategoryCard({
           >
             {category.description}
           </Text>
-        )}
-        
+        ) : null}
+
         {/* Count */}
         <Text
           variant="sm"
@@ -302,7 +338,7 @@ function CategoryCard({
           color={Colors[theme].secondary}
           style={styles.cardCount}
         >
-          {getCountText(category.count || Math.floor(Math.random() * 200) + 50, category.type)}
+          {getCountText(category.count || category.childrenCount || 0, category.type)}
         </Text>
       </View>
 
@@ -321,6 +357,109 @@ function CategoryCard({
 
 // ─── Main Browse Screen ───
 
+// Design categories - the 11 categories shown in the الأقسام design
+const BROWSE_CATEGORIES: Category[] = [
+  {
+    id: 'quran',
+    name: 'القرآن حياة',
+    description: 'تلاوات وتفسير وتدبر القرآن الكريم',
+    parentId: null,
+    count: 156,
+    type: 'episodes',
+    icon: 'book',
+  },
+  {
+    id: 'prophet',
+    name: 'محمد رسول الله',
+    description: 'السيرة النبوية والشمائل المحمدية',
+    parentId: null,
+    count: 98,
+    type: 'episodes',
+    icon: 'star',
+  },
+  {
+    id: 'scholars',
+    name: 'العلماء والمشايخ',
+    description: 'محاضرات ودروس كبار العلماء',
+    parentId: null,
+    count: 243,
+    type: 'episodes',
+    icon: 'school',
+  },
+  {
+    id: 'books',
+    name: 'الكتب العلمية',
+    description: 'شروحات الكتب الإسلامية المهمة',
+    parentId: null,
+    count: 89,
+    type: 'books',
+    icon: 'library',
+  },
+  {
+    id: 'hadith',
+    name: 'الحديث والسنّة',
+    description: 'كتب الحديث النبوي الشريف وشروحاته',
+    parentId: null,
+    count: 72,
+    type: 'episodes',
+    icon: 'document-text',
+  },
+  {
+    id: 'aqeedah',
+    name: 'العقيدة',
+    description: 'كتب التوحيد والعقيدة الإسلامية',
+    parentId: null,
+    count: 45,
+    type: 'episodes',
+    icon: 'shield-checkmark',
+  },
+  {
+    id: 'adab',
+    name: 'أدب طالب العلم',
+    description: 'كتب الآداب الشرعية والتزكية',
+    parentId: null,
+    count: 38,
+    type: 'episodes',
+    icon: 'school',
+  },
+  {
+    id: 'audiobooks',
+    name: 'كتب مسموعة',
+    description: 'كتب إسلامية مقروءة بصوت عذب',
+    parentId: null,
+    count: 67,
+    type: 'books',
+    icon: 'headset',
+  },
+  {
+    id: 'misc-books',
+    name: 'كتب متنوعة',
+    description: 'كتب متنوعة في مواضيع إسلامية مختلفة',
+    parentId: null,
+    count: 54,
+    type: 'books',
+    icon: 'library',
+  },
+  {
+    id: 'designs',
+    name: 'تصميمات دعوية',
+    description: 'محتوى بصري ومرئي للدعوة',
+    parentId: null,
+    count: 45,
+    type: 'designs',
+    icon: 'image',
+  },
+  {
+    id: 'queen',
+    name: 'أنتِ ملكة',
+    description: 'مَلِكةٌ أنتِ لا سِواكِ',
+    parentId: null,
+    count: 128,
+    type: 'episodes',
+    icon: 'diamond',
+  },
+];
+
 export default function BrowseScreen() {
   const theme = useColorScheme();
   const router = useRouter();
@@ -329,89 +468,13 @@ export default function BrowseScreen() {
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Extended categories matching the design
-  const designCategories: Category[] = [
-    {
-      id: 'quran',
-      name: 'القرآن حياة',
-      description: 'تلاوات وتفسير وتدبر القرآن الكريم',
-      icon: 'book',
-      count: 156,
-      type: 'episodes',
-    },
-    {
-      id: 'prophet',
-      name: 'رسول الله ﷺ',
-      description: 'محاضرات ودروس كبار العلماء',
-      icon: 'person',
-      count: 243,
-      type: 'episodes',
-    },
-    {
-      id: 'scholars',
-      name: 'العلماء والمشايخ',
-      description: 'محاضرات ودروس كبار العلماء',
-      icon: 'school',
-      count: 243,
-      type: 'episodes',
-    },
-    {
-      id: 'books',
-      name: 'الكتب العلمية',
-      description: 'شروحات الكتب الإسلامية المهمة',
-      icon: 'library',
-      count: 89,
-      type: 'episodes',
-    },
-    {
-      id: 'queen',
-      name: 'أنتِ ملكة',
-      description: 'فلكة أنتِ لا سواكِ',
-      icon: 'star',
-      count: 128,
-      type: 'episodes',
-    },
-    {
-      id: 'audiobooks',
-      name: 'كتب صوتية',
-      description: 'كتب إسلامية مقروءة بصوت عذب',
-      icon: 'headset',
-      count: 67,
-      type: 'books',
-    },
-    {
-      id: 'exclusives',
-      name: 'حصريات خزائن الرحمن',
-      description: 'محتوى حصري ومميز',
-      icon: 'diamond',
-      count: 34,
-      type: 'episodes',
-    },
-    {
-      id: 'radio',
-      name: 'برامج إذاعية',
-      description: 'برامج إذاعية إسلامية متنوعة',
-      icon: 'radio',
-      count: 128,
-      type: 'episodes',
-    },
-    {
-      id: 'designs',
-      name: 'تصميمات دعوية',
-      description: 'محتوى بصري ومرئي للدعوة',
-      icon: 'image',
-      count: 45,
-      type: 'designs',
-    },
-  ];
-
   const loadData = async () => {
     setError(null);
     setLoading(true);
     try {
-      // Use design categories instead of API for now
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setCategories(designCategories);
+      // Use design categories
+      await new Promise(resolve => setTimeout(resolve, 300));
+      setCategories(BROWSE_CATEGORIES);
     } catch (err) {
       console.error(err);
       setError('حدث خطأ في تحميل الأقسام');
@@ -488,16 +551,21 @@ export default function BrowseScreen() {
           >
             <TextInput
               style={[styles.input, { color: Colors[theme].text }]}
-              placeholder="بحث.."
+              placeholder="بحث في الأقسام.."
               placeholderTextColor={Colors[theme].textMuted}
               value={searchQuery}
               onChangeText={setSearchQuery}
             />
-            <View style={styles.searchIconContainer}>
-              <Ionicons 
-                name="search" 
-                size={18} 
-                color={Colors[theme].secondary} 
+            <View
+              style={[
+                styles.searchIconContainer,
+                { backgroundColor: Colors[theme].iconBg },
+              ]}
+            >
+              <Ionicons
+                name="search"
+                size={18}
+                color={Colors[theme].secondary}
               />
             </View>
           </View>
@@ -509,10 +577,33 @@ export default function BrowseScreen() {
             <CategoryCard
               key={cat.id}
               category={cat}
-              onPress={() => {}}
+              onPress={() =>
+                router.push({
+                  pathname: '/category/[id]' as any,
+                  params: { id: cat.id },
+                })
+              }
             />
           ))}
         </View>
+
+        {/* Empty search state */}
+        {filteredCategories.length === 0 && searchQuery.length > 0 && (
+          <View style={styles.emptySearch}>
+            <Ionicons
+              name="search-outline"
+              size={48}
+              color={Colors[theme].border}
+            />
+            <Text
+              variant="md"
+              color={Colors[theme].textMuted}
+              style={{ marginTop: Spacing.md, textAlign: 'center' }}
+            >
+              لا توجد نتائج لـ "{searchQuery}"
+            </Text>
+          </View>
+        )}
 
         <View style={{ height: Spacing.xxxl }} />
       </ScrollView>
@@ -600,5 +691,13 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+
+  // Empty search
+  emptySearch: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: 60,
+    paddingHorizontal: Spacing.xl,
   },
 });

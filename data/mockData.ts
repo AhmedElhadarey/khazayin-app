@@ -1,6 +1,190 @@
 import { Category, Resource, Banner, Channel, Scholar, BookItem, DawahDesign, QuickAccessItem } from '../types';
 
 export const MOCK_CATEGORIES: Category[] = [
+  // ─── Root Categories (matching design) ───
+  {
+    id: 'quran',
+    name: 'القرآن حياة',
+    description: 'تلاوات وتفسير وتدبر القرآن الكريم',
+    parentId: null,
+    childrenCount: 8,
+    count: 156,
+    type: 'episodes',
+    icon: 'book',
+  },
+  {
+    id: 'prophet',
+    name: 'محمد رسول الله',
+    description: 'السيرة النبوية والشمائل المحمدية',
+    parentId: null,
+    childrenCount: 5,
+    count: 98,
+    type: 'episodes',
+    icon: 'star',
+  },
+  {
+    id: 'scholars',
+    name: 'العلماء والمشايخ',
+    description: 'محاضرات ودروس كبار العلماء',
+    parentId: null,
+    childrenCount: 6,
+    count: 243,
+    type: 'episodes',
+    icon: 'school',
+  },
+  {
+    id: 'books',
+    name: 'الكتب العلمية',
+    description: 'شروحات الكتب الإسلامية المهمة',
+    parentId: null,
+    childrenCount: 4,
+    count: 89,
+    type: 'books',
+    icon: 'library',
+  },
+  {
+    id: 'hadith',
+    name: 'الحديث والسنّة',
+    description: 'كتب الحديث النبوي الشريف وشروحاته',
+    parentId: null,
+    childrenCount: 5,
+    count: 72,
+    type: 'episodes',
+    icon: 'document-text',
+  },
+  {
+    id: 'aqeedah',
+    name: 'العقيدة',
+    description: 'كتب التوحيد والعقيدة الإسلامية',
+    parentId: null,
+    childrenCount: 4,
+    count: 45,
+    type: 'episodes',
+    icon: 'shield-checkmark',
+  },
+  {
+    id: 'adab',
+    name: 'أدب طالب العلم',
+    description: 'كتب الآداب الشرعية والتزكية',
+    parentId: null,
+    childrenCount: 3,
+    count: 38,
+    type: 'episodes',
+    icon: 'school',
+  },
+  {
+    id: 'audiobooks',
+    name: 'كتب مسموعة',
+    description: 'كتب إسلامية مقروءة بصوت عذب',
+    parentId: null,
+    childrenCount: 4,
+    count: 67,
+    type: 'books',
+    icon: 'headset',
+  },
+  {
+    id: 'misc-books',
+    name: 'كتب متنوعة',
+    description: 'كتب متنوعة في مواضيع إسلامية مختلفة',
+    parentId: null,
+    childrenCount: 3,
+    count: 54,
+    type: 'books',
+    icon: 'library',
+  },
+  {
+    id: 'designs',
+    name: 'تصميمات دعوية',
+    description: 'محتوى بصري ومرئي للدعوة',
+    parentId: null,
+    childrenCount: 3,
+    count: 45,
+    type: 'designs',
+    icon: 'image',
+  },
+  {
+    id: 'queen',
+    name: 'أنتِ ملكة',
+    description: 'مَلِكةٌ أنتِ لا سِواكِ',
+    parentId: null,
+    childrenCount: 4,
+    count: 128,
+    type: 'episodes',
+    icon: 'diamond',
+  },
+
+  // ─── Sub-categories: القرآن حياة ───
+  { id: 'quran-1', name: 'تفسير ابن كثير', description: 'تفسير القرآن العظيم', parentId: 'quran', childrenCount: 4, count: 30, type: 'episodes' },
+  { id: 'quran-2', name: 'تفسير السعدي', description: 'تيسير الكريم الرحمن', parentId: 'quran', childrenCount: 1, count: 24, type: 'episodes' },
+  { id: 'quran-3', name: 'التجويد وأحكام التلاوة', description: 'أحكام تلاوة القرآن الكريم', parentId: 'quran', childrenCount: 0, count: 18, type: 'episodes' },
+  { id: 'quran-4', name: 'تدبر القرآن', description: 'وقفات تدبرية مع آيات القرآن', parentId: 'quran', childrenCount: 0, count: 22, type: 'episodes' },
+  { id: 'quran-5', name: 'علوم القرآن', description: 'مباحث في علوم القرآن الكريم', parentId: 'quran', childrenCount: 0, count: 15, type: 'episodes' },
+  { id: 'quran-6', name: 'إعراب القرآن', description: 'إعراب آيات القرآن الكريم', parentId: 'quran', childrenCount: 0, count: 12, type: 'episodes' },
+  { id: 'quran-7', name: 'أسباب النزول', description: 'أسباب نزول آيات القرآن', parentId: 'quran', childrenCount: 0, count: 20, type: 'episodes' },
+  { id: 'quran-8', name: 'فضائل السور', description: 'فضائل سور القرآن الكريم', parentId: 'quran', childrenCount: 0, count: 15, type: 'episodes' },
+
+  // ─── Sub-categories: محمد رسول الله ───
+  { id: 'prophet-1', name: 'السيرة النبوية', description: 'سيرة النبي صلى الله عليه وسلم', parentId: 'prophet', childrenCount: 0, count: 35, type: 'episodes' },
+  { id: 'prophet-2', name: 'الشمائل المحمدية', description: 'صفات النبي وأخلاقه', parentId: 'prophet', childrenCount: 0, count: 20, type: 'episodes' },
+  { id: 'prophet-3', name: 'غزوات النبي', description: 'غزوات ومعارك النبي', parentId: 'prophet', childrenCount: 0, count: 18, type: 'episodes' },
+  { id: 'prophet-4', name: 'أزواج النبي', description: 'أمهات المؤمنين', parentId: 'prophet', childrenCount: 0, count: 12, type: 'episodes' },
+  { id: 'prophet-5', name: 'الصحابة الكرام', description: 'سير أصحاب رسول الله', parentId: 'prophet', childrenCount: 0, count: 13, type: 'episodes' },
+
+  // ─── Sub-categories: العلماء والمشايخ ───
+  { id: 'scholars-1', name: 'الشيخ ابن باز', description: 'دروس ومحاضرات الشيخ ابن باز', parentId: 'scholars', childrenCount: 0, count: 45, type: 'episodes' },
+  { id: 'scholars-2', name: 'الشيخ ابن عثيمين', description: 'دروس ومحاضرات الشيخ ابن عثيمين', parentId: 'scholars', childrenCount: 0, count: 52, type: 'episodes' },
+  { id: 'scholars-3', name: 'الشيخ الألباني', description: 'دروس ومحاضرات الشيخ الألباني', parentId: 'scholars', childrenCount: 0, count: 38, type: 'episodes' },
+  { id: 'scholars-4', name: 'الشيخ صالح الفوزان', description: 'دروس ومحاضرات الشيخ الفوزان', parentId: 'scholars', childrenCount: 0, count: 40, type: 'episodes' },
+  { id: 'scholars-5', name: 'الشيخ عبد المحسن العباد', description: 'دروس ومحاضرات الشيخ العباد', parentId: 'scholars', childrenCount: 0, count: 35, type: 'episodes' },
+  { id: 'scholars-6', name: 'علماء آخرون', description: 'دروس علماء ومشايخ متنوعين', parentId: 'scholars', childrenCount: 0, count: 33, type: 'episodes' },
+
+  // ─── Sub-categories: الكتب العلمية ───
+  { id: 'books-1', name: 'شروحات الكتب', description: 'شروحات الكتب الإسلامية', parentId: 'books', childrenCount: 0, count: 28, type: 'books' },
+  { id: 'books-2', name: 'المتون العلمية', description: 'متون في العلوم الشرعية', parentId: 'books', childrenCount: 0, count: 22, type: 'books' },
+  { id: 'books-3', name: 'الفقه الإسلامي', description: 'كتب الفقه وأحكامه', parentId: 'books', childrenCount: 0, count: 20, type: 'books' },
+  { id: 'books-4', name: 'أصول الفقه', description: 'كتب أصول الفقه', parentId: 'books', childrenCount: 0, count: 19, type: 'books' },
+
+  // ─── Sub-categories: الحديث والسنّة ───
+  { id: 'hadith-1', name: 'شروح الحديث', description: 'شروحات أحاديث النبي', parentId: 'hadith', childrenCount: 0, count: 20, type: 'episodes' },
+  { id: 'hadith-2', name: 'المتون', description: 'متون الحديث النبوي', parentId: 'hadith', childrenCount: 0, count: 18, type: 'episodes' },
+  { id: 'hadith-3', name: 'مصطلح الحديث', description: 'علم مصطلح الحديث', parentId: 'hadith', childrenCount: 0, count: 12, type: 'episodes' },
+  { id: 'hadith-4', name: 'الأربعون النووية', description: 'شرح الأربعين النووية', parentId: 'hadith', childrenCount: 0, count: 10, type: 'episodes' },
+  { id: 'hadith-5', name: 'رياض الصالحين', description: 'شرح رياض الصالحين', parentId: 'hadith', childrenCount: 0, count: 12, type: 'episodes' },
+
+  // ─── Sub-categories: العقيدة ───
+  { id: 'aqeedah-1', name: 'كتاب التوحيد', description: 'شرح كتاب التوحيد', parentId: 'aqeedah', childrenCount: 0, count: 15, type: 'episodes' },
+  { id: 'aqeedah-2', name: 'العقيدة الواسطية', description: 'شرح العقيدة الواسطية', parentId: 'aqeedah', childrenCount: 0, count: 12, type: 'episodes' },
+  { id: 'aqeedah-3', name: 'أصول الإيمان', description: 'أركان الإيمان وشروحاتها', parentId: 'aqeedah', childrenCount: 0, count: 10, type: 'episodes' },
+  { id: 'aqeedah-4', name: 'نواقض الإسلام', description: 'شرح نواقض الإسلام', parentId: 'aqeedah', childrenCount: 0, count: 8, type: 'episodes' },
+
+  // ─── Sub-categories: أدب طالب العلم ───
+  { id: 'adab-1', name: 'آداب المتعلم', description: 'آداب طالب العلم وأخلاقه', parentId: 'adab', childrenCount: 0, count: 15, type: 'episodes' },
+  { id: 'adab-2', name: 'حلية طالب العلم', description: 'شرح حلية طالب العلم', parentId: 'adab', childrenCount: 0, count: 12, type: 'episodes' },
+  { id: 'adab-3', name: 'التزكية والرقائق', description: 'كتب التزكية وتهذيب النفس', parentId: 'adab', childrenCount: 0, count: 11, type: 'episodes' },
+
+  // ─── Sub-categories: كتب مسموعة ───
+  { id: 'audiobooks-1', name: 'كتب العقيدة المسموعة', description: 'كتب صوتية في العقيدة', parentId: 'audiobooks', childrenCount: 0, count: 18, type: 'books' },
+  { id: 'audiobooks-2', name: 'كتب الفقه المسموعة', description: 'كتب صوتية في الفقه', parentId: 'audiobooks', childrenCount: 0, count: 16, type: 'books' },
+  { id: 'audiobooks-3', name: 'كتب السيرة المسموعة', description: 'كتب صوتية في السيرة', parentId: 'audiobooks', childrenCount: 0, count: 20, type: 'books' },
+  { id: 'audiobooks-4', name: 'كتب التزكية المسموعة', description: 'كتب صوتية في التزكية', parentId: 'audiobooks', childrenCount: 0, count: 13, type: 'books' },
+
+  // ─── Sub-categories: كتب متنوعة ───
+  { id: 'misc-books-1', name: 'كتب عامة', description: 'كتب إسلامية متنوعة', parentId: 'misc-books', childrenCount: 0, count: 22, type: 'books' },
+  { id: 'misc-books-2', name: 'كتب معاصرة', description: 'مؤلفات إسلامية حديثة', parentId: 'misc-books', childrenCount: 0, count: 18, type: 'books' },
+  { id: 'misc-books-3', name: 'كتب تراثية', description: 'من التراث الإسلامي', parentId: 'misc-books', childrenCount: 0, count: 14, type: 'books' },
+
+  // ─── Sub-categories: تصميمات دعوية ───
+  { id: 'designs-1', name: 'بطاقات دعوية', description: 'تصميمات للمشاركة', parentId: 'designs', childrenCount: 0, count: 20, type: 'designs' },
+  { id: 'designs-2', name: 'أذكار مصورة', description: 'أذكار بتصاميم جميلة', parentId: 'designs', childrenCount: 0, count: 15, type: 'designs' },
+  { id: 'designs-3', name: 'مناسبات إسلامية', description: 'تصاميم المناسبات', parentId: 'designs', childrenCount: 0, count: 10, type: 'designs' },
+
+  // ─── Sub-categories: أنتِ ملكة ───
+  { id: 'queen-1', name: 'تربية الأبناء', description: 'نصائح في تربية الأبناء على منهج النبي', parentId: 'queen', childrenCount: 0, count: 35, type: 'episodes' },
+  { id: 'queen-2', name: 'فقه المرأة', description: 'أحكام فقهية تخص المرأة المسلمة', parentId: 'queen', childrenCount: 0, count: 30, type: 'episodes' },
+  { id: 'queen-3', name: 'قصص ملهمة', description: 'قصص نساء خالدات في الإسلام', parentId: 'queen', childrenCount: 0, count: 28, type: 'episodes' },
+  { id: 'queen-4', name: 'نصائح للمسلمة', description: 'إرشادات ونصائح للمرأة المسلمة', parentId: 'queen', childrenCount: 0, count: 35, type: 'episodes' },
+
+  // ─── Legacy aliases for backward compatibility ───
   {
     id: 'cat-8',
     name: 'القرآن حياة',
@@ -57,7 +241,7 @@ export const MOCK_CATEGORIES: Category[] = [
     childrenCount: 25,
     icon: 'library',
   },
-  // Sub-categories
+  // Legacy sub-categories
   { id: 'cat-3-1', name: 'شروح الحديث', parentId: 'cat-3', childrenCount: 5 },
   { id: 'cat-3-2', name: 'المتون', parentId: 'cat-3', childrenCount: 8 },
   { id: 'cat-3-3', name: 'مصطلح الحديث', parentId: 'cat-3', childrenCount: 3 },
