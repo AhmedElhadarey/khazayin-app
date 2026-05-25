@@ -232,6 +232,22 @@ export default function RootLayout() {
             animation: Platform.OS === 'android' ? 'slide_from_left' : 'default',
           }}
         />
+        <Stack.Screen
+          name="settings-qiraa"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="settings-reciter"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
       </Stack>
       <ToastOverlay />
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />

@@ -8,7 +8,8 @@ import {
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
-import { useRecitersStore } from '@/store';
+import { DEFAULT_SETTINGS } from '@/constants/settings';
+import { useRecitersStore, useSettingsStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -21,10 +22,21 @@ export default function ReciterScreen() {
   const router = useRouter();
   const [active, setActive] = useState<string>('tajweed');
   const { data, status, error, fetch, refresh } = useRecitersStore();
+  const preferredReciterId = useSettingsStore((s) => s.preferredReciterId);
+  const setPreferredReciter = useSettingsStore((s) => s.setPreferredReciter);
 
   useEffect(() => {
     fetch();
   }, [fetch]);
+
+  // Stale-id fallback (track 002): if the persisted preferred reciter no
+  // longer exists in the current list, revert to the foundation default.
+  useEffect(() => {
+    if (data.length === 0) return;
+    if (!data.some((r) => r.id === preferredReciterId)) {
+      setPreferredReciter(DEFAULT_SETTINGS.preferredReciterId);
+    }
+  }, [data, preferredReciterId, setPreferredReciter]);
 
   // Filter by active tab — local UI state, store doesn't know about tabs
   const filtered = data.filter((r) => r.style === active);
@@ -63,6 +75,7 @@ export default function ReciterScreen() {
                 key={r.id}
                 title={r.name}
                 subtitle={r.styleLabel}
+                isDefault={r.id === preferredReciterId}
                 onPress={onPickReciter}
               />
             ))}

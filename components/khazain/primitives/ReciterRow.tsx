@@ -15,10 +15,12 @@ export function ReciterRow({
   title,
   subtitle,
   onPress,
+  isDefault,
 }: {
   title: string;
   subtitle?: string;
   onPress?: () => void;
+  isDefault?: boolean;
 }) {
   return (
     <Pressable
@@ -26,6 +28,7 @@ export function ReciterRow({
       style={({ pressed }) => [
         styles.row,
         KhazainShadows.card,
+        isDefault ? styles.rowDefault : null,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
@@ -39,6 +42,7 @@ export function ReciterRow({
               {subtitle}
             </Text>
           ) : null}
+          {isDefault ? <Text style={styles.defaultBadge}>الافتراضي</Text> : null}
         </View>
         <QuranBadge size={44} />
       </View>
@@ -69,6 +73,19 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(141,107,52,0.08)',
     position: 'relative',
     justifyContent: 'center',
+  },
+  rowDefault: {
+    borderColor: KhazainColors.goldAccent,
+    borderWidth: 1.5,
+  },
+  defaultBadge: {
+    fontFamily: 'TheSansArabic',
+    fontSize: 11,
+    fontWeight: '600',
+    color: KhazainColors.goldAccent,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+    marginTop: 2,
   },
   headBlock: {
     position: 'absolute',

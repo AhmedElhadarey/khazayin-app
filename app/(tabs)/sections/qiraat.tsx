@@ -1,6 +1,6 @@
 import { AsyncContent, ReciterRow, SkeletonRibbonList } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
-import { useQiratStore } from '@/store';
+import { useQiratStore, useSettingsStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -13,10 +13,22 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function QiraatScreen() {
   const router = useRouter();
   const { data, status, error, fetch, refresh } = useQiratStore();
+  const defaultQiraaId = useSettingsStore((s) => s.defaultQiraaId);
+  const setDefaultQiraa = useSettingsStore((s) => s.setDefaultQiraa);
 
   useEffect(() => {
     fetch();
   }, [fetch]);
+
+  // Stale-id fallback (track 002): if the persisted default no longer exists
+  // in the current qiraat list (e.g., content service removed it), silently
+  // revert to the foundation default so the highlight stays consistent.
+  useEffect(() => {
+    if (data.length === 0) return;
+    if (!data.some((q) => q.id === defaultQiraaId)) {
+      setDefaultQiraa('hafs-asim');
+    }
+  }, [data, defaultQiraaId, setDefaultQiraa]);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -37,7 +49,12 @@ export default function QiraatScreen() {
           emptyMessage="لا توجد قراءات متاحة"
         >
           {data.map((q) => (
-            <ReciterRow key={q.id} title={q.name} onPress={() => router.back()} />
+            <ReciterRow
+              key={q.id}
+              title={q.name}
+              isDefault={q.id === defaultQiraaId}
+              onPress={() => router.back()}
+            />
           ))}
         </AsyncContent>
       </ScrollView>
