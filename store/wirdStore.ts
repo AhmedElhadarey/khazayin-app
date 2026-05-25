@@ -7,7 +7,21 @@ import { create } from 'zustand';
 import { getRepos, progressRepo, wirdRepo } from '@/db';
 import type { SuggestionDecision } from '@/db/types';
 import { BEGINNER_WIRD } from '@/constants/progress';
+import { WIRD_REMINDER_DEFAULT_TIME } from '@/constants/settings';
 import { wirdPercent } from '@/db/helpers/wirdMath';
+import { isCategoryEnabled } from '@/services/notificationRegistry';
+import {
+  cancelWirdReminderAsync,
+  scheduleWirdReminderAsync,
+} from '@/services/notificationScheduler';
+
+async function reconcileWirdSchedule(): Promise<void> {
+  if (isCategoryEnabled('wird-daily')) {
+    await scheduleWirdReminderAsync({ ...WIRD_REMINDER_DEFAULT_TIME });
+  } else {
+    await cancelWirdReminderAsync();
+  }
+}
 
 export type WirdSnapshot = {
   target: number;
@@ -22,6 +36,7 @@ export type WirdStoreActions = {
   reevaluateSuggestion(): Promise<void>;
   acceptSuggestion(): Promise<void>;
   dismissSuggestion(): Promise<void>;
+  setWirdEnabledFromSettings(enabled: boolean): Promise<void>;
 };
 
 export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) => ({
@@ -41,6 +56,9 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
       todayPct: wirdPercent(pagesToday, target),
       pendingSuggestion: suggestion.shouldSuggest ? suggestion : null,
     });
+    // Reconcile the OS-scheduled wird reminder with the user's current setting.
+    // Idempotent and safe to fail silently — scheduler swallows OS errors.
+    await reconcileWirdSchedule();
   },
 
   async setTarget(newTarget) {
@@ -83,5 +101,13 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
   async dismissSuggestion() {
     await wirdRepo.recordSuggestionInteraction(Date.now());
     set({ pendingSuggestion: null });
+  },
+
+  async setWirdEnabledFromSettings(enabled) {
+    if (enabled) {
+      await scheduleWirdReminderAsync({ ...WIRD_REMINDER_DEFAULT_TIME });
+    } else {
+      await cancelWirdReminderAsync();
+    }
   },
 }));

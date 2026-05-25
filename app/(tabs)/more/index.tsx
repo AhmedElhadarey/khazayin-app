@@ -60,6 +60,12 @@ export default function MoreScreen() {
         </View>
         <View style={styles.list}>
           <ListRowCard
+            title="الإعدادات"
+            subtitle="التلاوة · القراءة · الإشعارات · البيانات"
+            icon={<RowGlyph id="settings" />}
+            onPress={() => router.push('/(tabs)/more/settings' as any)}
+          />
+          <ListRowCard
             title="إعدادات التقدّم"
             subtitle="هدف الورد اليومي · إعادة تعيين"
             icon={<RowGlyph id="progress" />}
@@ -187,6 +193,22 @@ function RowGlyph({ id }: { id: string }) {
             strokeLinecap="round"
           />
           <Path d="M10 7v3l2 1" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
+        </Svg>
+      );
+    case 'settings':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+          <Path
+            d="M10 13a3 3 0 100-6 3 3 0 000 6z"
+            stroke={c}
+            strokeWidth={1.5}
+          />
+          <Path
+            d="M16 11.6l1.4.7-.9 2-1.5-.5a6 6 0 01-1.4.8l-.3 1.5h-2.2l-.3-1.5a6 6 0 01-1.4-.8l-1.5.5-.9-2 1.4-.7a6 6 0 010-1.6L3 9.3l.9-2 1.5.5a6 6 0 011.4-.8l.3-1.5h2.2l.3 1.5a6 6 0 011.4.8l1.5-.5.9 2-1.4.7a6 6 0 010 1.6z"
+            stroke={c}
+            strokeWidth={1.3}
+            strokeLinejoin="round"
+          />
         </Svg>
       );
     default:

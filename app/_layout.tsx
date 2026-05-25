@@ -8,15 +8,30 @@ import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { I18nManager, LogBox, Platform } from 'react-native';
+import { Image as ExpoImage } from 'expo-image';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import { ToastOverlay } from '@/components/khazain';
 import { useProgressStore } from '@/store/progressStore';
 import { useWirdStore } from '@/store/wirdStore';
+import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
+import { registerCacheRoot } from '@/services/cacheFacade';
 import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
 LogBox.ignoreLogs(['Require cycle:']);
+
+// Register the image-cache root with the cacheFacade so the Settings "Clear
+// Cache" action knows what to clear. Idempotent (deduped by id).
+registerCacheRoot({
+  id: 'expo-image',
+  kind: 'image',
+  clear: async () => {
+    ExpoImage.clearMemoryCache();
+    await ExpoImage.clearDiskCache();
+    return 0;
+  },
+});
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Ignore — splash may already have been hidden in dev reloads.
@@ -100,6 +115,7 @@ export default function RootLayout() {
   // Library tab never crashes if the DB layer mis-initializes.
   useEffect(() => {
     if (!fontsLoaded) return;
+    bootstrapNotificationHandler();
     Promise.all([
       useProgressStore.getState().hydrate(),
       useWirdStore.getState().hydrate(),

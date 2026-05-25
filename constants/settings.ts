@@ -16,6 +16,8 @@ export const DEFAULT_NOTIFICATIONS: Record<NotificationCategoryId, boolean> = {
   'announcements-general': false,
 };
 
+export const WIRD_REMINDER_DEFAULT_TIME = { hour: 5, minute: 30 } as const;
+
 export const DEFAULT_SETTINGS: UserSettings = {
   schemaVersion: SETTINGS_SCHEMA_VERSION,
   defaultQiraaId: 'hafs-asim',
