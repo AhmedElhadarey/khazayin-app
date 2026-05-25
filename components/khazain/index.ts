@@ -7,3 +7,4 @@ export * from './library';
 export * from './sheets';
 export * from './state';
 export * from './sections';
+export * from './settings';

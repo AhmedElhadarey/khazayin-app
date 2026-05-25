@@ -112,3 +112,10 @@ export type { PlayerTrack } from './playerStore';
 
 export { useNotesStore, formatRelativeAr } from './notesStore';
 export type { Note } from './notesStore';
+
+// ---------------------------------------------------------------------------
+// Settings (track 002)
+// ---------------------------------------------------------------------------
+
+export { useSettingsStore } from './settingsStore';
+export type { SettingsState } from './settingsStore';
