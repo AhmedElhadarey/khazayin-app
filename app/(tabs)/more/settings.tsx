@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -14,6 +14,15 @@ export default function SettingsScreen() {
   const preferredReciterId = useSettingsStore((s) => s.preferredReciterId);
   const qiraat = useQiratStore((s) => s.data);
   const reciters = useRecitersStore((s) => s.data);
+  const fetchQiraat = useQiratStore((s) => s.fetch);
+  const fetchReciters = useRecitersStore((s) => s.fetch);
+
+  // Resolve labels on cold open: fetch qiraat/reciters lists so the row
+  // values show the Arabic name instead of a fallback dash.
+  useEffect(() => {
+    fetchQiraat();
+    fetchReciters();
+  }, [fetchQiraat, fetchReciters]);
 
   const qiraaName =
     qiraat.find((q) => q.id === defaultQiraaId)?.name ?? 'حفص عن عاصم';

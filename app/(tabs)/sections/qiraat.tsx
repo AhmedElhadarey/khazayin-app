@@ -1,5 +1,6 @@
 import { AsyncContent, ReciterRow, SkeletonRibbonList } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { DEFAULT_SETTINGS } from '@/constants/settings';
 import { useQiratStore, useSettingsStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -26,7 +27,7 @@ export default function QiraatScreen() {
   useEffect(() => {
     if (data.length === 0) return;
     if (!data.some((q) => q.id === defaultQiraaId)) {
-      setDefaultQiraa('hafs-asim');
+      setDefaultQiraa(DEFAULT_SETTINGS.defaultQiraaId);
     }
   }, [data, defaultQiraaId, setDefaultQiraa]);
 
