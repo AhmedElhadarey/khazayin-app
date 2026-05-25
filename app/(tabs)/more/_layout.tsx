@@ -8,6 +8,7 @@ export default function MoreLayout() {
       <Stack.Screen name="contact" />
       <Stack.Screen name="about" />
       <Stack.Screen name="archive" />
+      <Stack.Screen name="settings-progress" />
     </Stack>
   );
 }

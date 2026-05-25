@@ -59,6 +59,12 @@ export default function MoreScreen() {
           <Text style={styles.h1}>المزيد</Text>
         </View>
         <View style={styles.list}>
+          <ListRowCard
+            title="إعدادات التقدّم"
+            subtitle="هدف الورد اليومي · إعادة تعيين"
+            icon={<RowGlyph id="progress" />}
+            onPress={() => router.push('/(tabs)/more/settings-progress' as any)}
+          />
           <AsyncContent
             status={status}
             error={error}
@@ -169,6 +175,18 @@ function RowGlyph({ id }: { id: string }) {
         <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
           <Circle cx={10} cy={10} r={7} stroke={c} strokeWidth={1.5} />
           <Path d="M10 9v5M10 6v.5" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
+        </Svg>
+      );
+    case 'progress':
+      return (
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+          <Path
+            d="M10 3a7 7 0 11-7 7"
+            stroke={c}
+            strokeWidth={1.5}
+            strokeLinecap="round"
+          />
+          <Path d="M10 7v3l2 1" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
         </Svg>
       );
     default:

@@ -600,7 +600,7 @@ export default function BrowseScreen() {
               color={Colors[theme].textMuted}
               style={{ marginTop: Spacing.md, textAlign: 'center' }}
             >
-              لا توجد نتائج لـ "{searchQuery}"
+              {`لا توجد نتائج لـ "${searchQuery}"`}
             </Text>
           </View>
         )}

@@ -1,23 +1,37 @@
-import { InlineHeader, SearchPill, SurahRow } from '@/components/khazain';
-import { AsyncContent, SkeletonRibbonList, SkeletonRowList } from '@/components/khazain';
+import {
+  AsyncContent,
+  InlineHeader,
+  SearchPill,
+  SkeletonRibbonList,
+  SkeletonRowList,
+  SurahRow,
+} from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import {
+  SURAH_START_PAGES,
+  surahName,
+  surahStartPage,
+  toArabicDigits,
+} from '@/constants/progress';
 import { useSurahsStore, useAyatStore } from '@/store';
 import { usePlayerStore } from '@/store/playerStore';
-import type { Ayah } from '@/types/content';
+import { useProgressStore } from '@/store/progressStore';
+import { progressRepo } from '@/db';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
+// Once per app session: when the user opens the Mushaf index with no surah
+// param AND has a saved last_read_page > 1, route them to the matching surah.
+// Module-level flag — not a ref — so navigating back to the index does not
+// retrigger the auto-jump within the same app session.
+let _autoResumeFired = false;
+
 const MUSHAF_BG = '#FBF3DF';
 const FOOTER_BG = '#F3E4BE';
-
-// Module-scope: resolve the ayat-002 store once so it is stable across renders.
-// useAyatStore is a factory; calling it outside a component is valid because
-// it returns a Zustand store hook (not a React hook itself).
-const _useAyat002 = useAyatStore('002');
 
 export default function MushafScreen() {
   const router = useRouter();
@@ -30,9 +44,30 @@ export default function MushafScreen() {
     return () => setVisible(true);
   }, [setVisible]);
 
+  // FR-009 — auto-resume to the surah that owns the saved last_read_page.
+  // Only fires once per app session and only when no explicit surah was
+  // requested via deep link.
+  useEffect(() => {
+    if (params.surah || _autoResumeFired) return;
+    _autoResumeFired = true;
+    progressRepo
+      .getLastReadPage()
+      .then((page) => {
+        if (page <= 1) return;
+        const surahId = findSurahIdForPage(page);
+        if (surahId) {
+          router.replace(`/sections/mushaf?surah=${surahId}` as any);
+        }
+      })
+      .catch(() => undefined);
+  }, [params.surah, router]);
+
   // Reading view (page 22/23) when a surah is selected, otherwise list (page 21).
+  // `key={params.surah}` forces a remount when the user picks a different surah
+  // so the Zustand store hook resolved inside ReadingView stays stable for
+  // each surah session (Rules of Hooks).
   if (params.surah) {
-    return <ReadingView onBack={() => router.back()} />;
+    return <ReadingView key={params.surah} onBack={() => router.back()} surahParam={params.surah} />;
   }
   return (
     <ListView
@@ -40,6 +75,19 @@ export default function MushafScreen() {
       onPick={(id) => router.push(`/sections/mushaf?surah=${id}` as any)}
     />
   );
+}
+
+/**
+ * Reverse-lookup: which surah-id ('001'..'114') owns a given mushaf page.
+ * Linear scan — 114 entries, runs once per cold-start resume.
+ */
+function findSurahIdForPage(page: number): string | null {
+  for (let n = 114; n >= 1; n -= 1) {
+    if (SURAH_START_PAGES[n] <= page) {
+      return String(n).padStart(3, '0');
+    }
+  }
+  return null;
 }
 
 function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string) => void }) {
@@ -80,19 +128,52 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
   );
 }
 
-function ReadingView({ onBack }: { onBack: () => void }) {
-  const { data: ayat, status: ayatStatus, error: ayatError, fetch: fetchAyat, refresh: refreshAyat } = _useAyat002();
+function ReadingView({ onBack, surahParam }: { onBack: () => void; surahParam: string }) {
+  // Per-surah Zustand store hook. Parent keys this component by surahParam
+  // so the hook reference is stable across re-renders of the same surah.
+  const surahId = useMemo(() => surahParam.padStart(3, '0'), [surahParam]);
+  const useAyat = useAyatStore(surahId);
+  const { data: ayat, status: ayatStatus, error: ayatError, fetch: fetchAyat, refresh: refreshAyat } = useAyat();
+  const notePageRead = useProgressStore((s) => s.notePageRead);
+
+  // Each surah opening counts as a page read for the surah's first page
+  // (FR-001 — see CLAUDE.md note: a real page-swipe Mushaf will refine this later).
+  const surahNumber = useMemo(() => {
+    const n = Number(surahParam);
+    return Number.isInteger(n) && n >= 1 && n <= 114 ? n : 2;
+  }, [surahParam]);
+  const currentPage = useMemo(() => surahStartPage(surahNumber), [surahNumber]);
+  const displayName = useMemo(() => surahName(surahNumber), [surahNumber]);
 
   useEffect(() => {
     fetchAyat();
   }, [fetchAyat]);
 
+  // Debounced page-read recording (research R5 — 400 ms window).
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      notePageRead(currentPage).catch(() => undefined);
+    }, 400);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [currentPage, notePageRead]);
+
+  const ayahCountLabel = ayat.length > 0
+    ? `${toArabicDigits(ayat.length)} آية`
+    : '';
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      {/* Page 23 header: title + small ▶ disclosure with subtitle line below. */}
       <View style={[styles.headerBg, { backgroundColor: MUSHAF_BG }]}>
-        <InlineHeader title="سورة البقرة" onBack={onBack} />
-        <Text style={styles.subtitle}>مكية  ·  ٧ آيات  ·  صفحة ١ من ٦٠٤</Text>
+        <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
+        <Text style={styles.subtitle}>
+          {ayahCountLabel
+            ? `${ayahCountLabel}  ·  صفحة ${toArabicDigits(currentPage)} من ٦٠٤`
+            : `صفحة ${toArabicDigits(currentPage)} من ٦٠٤`}
+        </Text>
       </View>
       <ScrollView contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator={false}>
         <View style={styles.ornamentWrap}>
@@ -104,7 +185,11 @@ function ReadingView({ onBack }: { onBack: () => void }) {
           />
           <View style={styles.ornamentInnerFrame} />
           <Text style={styles.basmala}>﷽</Text>
-          <Text style={styles.surahMeta}>سورة البقرة · مدنية · ٢٨٦ آية</Text>
+          <Text style={styles.surahMeta}>
+            {ayahCountLabel
+              ? `سورة ${displayName} · ${ayahCountLabel}`
+              : `سورة ${displayName}`}
+          </Text>
         </View>
         <AsyncContent
           status={ayatStatus}

@@ -2,7 +2,7 @@ import { AsyncContent, DawahPosterRow, InlineHeader, SkeletonPosterList } from '
 import { KhazainColors } from '@/constants/theme';
 import { useDawahByMonthStore, useDawahMonthsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,11 +19,10 @@ export default function DawahMonthScreen() {
   // Months store — for the display title lookup.
   const { data: months, fetch: fetchMonths } = useDawahMonthsStore();
 
-  // Param-driven factory hook: stable reference per month via useMemo.
-  const usePosters = useMemo(
-    () => useDawahByMonthStore(month ?? ''),
-    [month]
-  );
+  // `useDawahByMonthStore` is a memoized factory (cache keyed by month),
+  // not a React hook — calling it directly returns a stable Zustand hook
+  // reference per month. Wrapping in useMemo would trip rules-of-hooks.
+  const usePosters = useDawahByMonthStore(month ?? '');
   const { data: posters, status, error, fetch, refresh } = usePosters();
 
   useEffect(() => {

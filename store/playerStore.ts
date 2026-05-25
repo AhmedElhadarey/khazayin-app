@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useProgressStore } from './progressStore';
 
 /**
  * AUDIO INTEGRATION BOUNDARY
@@ -18,19 +19,27 @@ import { create } from 'zustand';
  *     - On progress tick    → call `setProgress(played / duration)` every ~1s
  *     - On track ended      → either advance to next or `setTrack(null)`
  *
- *   What the UI calls into the engine (TODO):
- *     - `togglePlay` — currently a local toggle. Replace with `engine.play() / pause()`.
- *     - Seek / skip / queue — not modeled yet; add as needed when the first real
- *       play/pause controls ship.
+ *   PROGRESS-TRACKING INTEGRATION (added by 001-progress-tracking)
+ *     This store now forwards meaningful playback events to `progressStore`
+ *     so the SQLite-backed lecture-session row stays in sync with playback.
+ *     - `setProgress`     → computes forward-only delta vs prior progress,
+ *                            calls `progressStore.noteLectureTick(...)`.
+ *     - `togglePlay`      → on transition-to-paused, persists current position
+ *                            via `noteLectureTick` (don't wait for next tick —
+ *                            user could background the app).
+ *     - `setTrack(null)`  → flushes a final tick at progress=1 so the lecture
+ *                            session latches `completed=1` when finished.
+ *
+ *     The forwarding only runs when the track has a `durationSec`; mock
+ *     tracks without a duration don't generate progress events.
  *
  *   MiniPlayer visibility:
  *     `isVisible` is controlled entirely from UI (e.g. MushafScreen hides it
  *     on focus). The audio engine should NOT write to it.
  *
  *   Persistence:
- *     Intentionally none. Resume-on-relaunch requires persisting `{ trackId,
- *     progress }` to AsyncStorage and re-hydrating from the engine's native
- *     cache — defer until the engine choice is made.
+ *     Intentionally none for UI state. Position persistence is handled by
+ *     `progressStore` → SQLite (see above).
  */
 
 export type PlayerTrack = {
@@ -59,13 +68,74 @@ const MOCK_TRACK: PlayerTrack = {
   reciter: 'الشيخ عبد الباسط عبد الصمد',
 };
 
-export const usePlayerStore = create<PlayerState>((set) => ({
+function clampProgress(p: number): number {
+  if (!Number.isFinite(p)) return 0;
+  return Math.max(0, Math.min(1, p));
+}
+
+function emitLectureTick(
+  track: PlayerTrack,
+  newProgress: number,
+  prevProgress: number,
+): void {
+  if (typeof track.durationSec !== 'number' || track.durationSec <= 0) return;
+  const newPos = newProgress * track.durationSec;
+  const prevPos = prevProgress * track.durationSec;
+  const delta = newPos > prevPos ? newPos - prevPos : 0;
+  useProgressStore
+    .getState()
+    .noteLectureTick({
+      lectureId: track.id,
+      title: track.title,
+      author: track.reciter,
+      durationSec: track.durationSec,
+      positionSec: newPos,
+      forwardListenedDelta: delta,
+    })
+    .catch(() => undefined);
+}
+
+export const usePlayerStore = create<PlayerState>((set, get) => ({
   track: MOCK_TRACK,
   isPlaying: false,
   progress: 0.35,
   isVisible: true,
-  setTrack: (track) => set({ track }),
-  togglePlay: () => set((state) => ({ isPlaying: !state.isPlaying })),
-  setProgress: (p) => set({ progress: Math.max(0, Math.min(1, p)) }),
+  setTrack: (track) => {
+    const prev = get();
+    if (track === null && prev.track && typeof prev.track.durationSec === 'number') {
+      // Track-ended flush: emit a final tick at the end of the previous track
+      // so the session row latches `completed = 1`.
+      emitLectureTick(prev.track, 1, prev.progress);
+    }
+    set({ track, progress: 0 });
+  },
+  togglePlay: () =>
+    set((state) => {
+      const next = !state.isPlaying;
+      // Transition → paused: persist position immediately. The forward delta
+      // since the last tick was already emitted by the player's last
+      // `setProgress` call, so we pass 0 here to avoid double-counting.
+      if (!next && state.track && typeof state.track.durationSec === 'number') {
+        useProgressStore
+          .getState()
+          .noteLectureTick({
+            lectureId: state.track.id,
+            title: state.track.title,
+            author: state.track.reciter,
+            durationSec: state.track.durationSec,
+            positionSec: state.progress * state.track.durationSec,
+            forwardListenedDelta: 0,
+          })
+          .catch(() => undefined);
+      }
+      return { isPlaying: next };
+    }),
+  setProgress: (p) => {
+    const clamped = clampProgress(p);
+    set((state) => {
+      if (state.track) emitLectureTick(state.track, clamped, state.progress);
+      return { progress: clamped };
+    });
+  },
   setVisible: (v) => set({ isVisible: v }),
 }));

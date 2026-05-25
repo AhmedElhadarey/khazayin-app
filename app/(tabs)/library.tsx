@@ -8,15 +8,51 @@ import {
   StatCard,
   Toggle,
 } from '@/components/khazain';
-import { MySavedSection } from '@/components/khazain/library';
+import {
+  EmptyInProgressCard,
+  InsightRow,
+  MySavedSection,
+  TrendSparkline,
+  WirdSuggestionBanner,
+} from '@/components/khazain/library';
+import { usePlayerStore } from '@/store/playerStore';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import {
+  SURAH_NAMES_AR,
+  SURAH_START_PAGES,
+  toArabicDigits as toArNum,
+} from '@/constants/progress';
 import { useLibraryFiltersStore, useSavedStore } from '@/store';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
+import { useProgressStore } from '@/store/progressStore';
+import { useWirdStore } from '@/store/wirdStore';
+import { getRepos, progressRepo } from '@/db';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+
+function surahNameForPage(page: number): { name: string; surahNumber: number } | null {
+  if (!Number.isInteger(page) || page < 1 || page > 604) return null;
+  for (let n = 114; n >= 1; n -= 1) {
+    if (SURAH_START_PAGES[n] <= page) {
+      return { name: SURAH_NAMES_AR[n], surahNumber: n };
+    }
+  }
+  return null;
+}
+
+function lastReadingLabel(trend: { localDay: string; pagesRead: number }[]): string {
+  for (let i = trend.length - 1; i >= 0; i -= 1) {
+    if (trend[i].pagesRead > 0) {
+      if (i === trend.length - 1) return 'آخر قراءة: اليوم';
+      if (i === trend.length - 2) return 'آخر قراءة: أمس';
+      return `آخر قراءة: قبل ${toArNum(trend.length - 1 - i)} أيام`;
+    }
+  }
+  return 'لم تبدأ القراءة بعد';
+}
 
 export default function LibraryScreen() {
   const router = useRouter();
@@ -28,6 +64,7 @@ export default function LibraryScreen() {
   const [smart2, setSmart2] = useState(true);
   const [smart3, setSmart3] = useState(false);
   const [filter, setFilter] = useState('all');
+  const [lastReadPage, setLastReadPage] = useState<number>(1);
 
   useEffect(() => {
     fetchFilters();
@@ -36,6 +73,44 @@ export default function LibraryScreen() {
   const recentNotes = notes.slice(0, 2);
 
   const savedCount = useSavedStore((s) => s.items.length);
+
+  // Progress snapshot (SQLite-backed, hydrated at app boot).
+  const currentStreak = useProgressStore((s) => s.currentStreak);
+  const trendLast28 = useProgressStore((s) => s.trendLast28);
+  const longestStreak = useProgressStore((s) => s.longestStreakEver);
+  const bestDayPages = useProgressStore((s) => s.bestWirdDayPages);
+  const pagesThisMonth = useProgressStore((s) => s.pagesReadThisMonth);
+  const pagesLastMonth = useProgressStore((s) => s.pagesReadLastMonth);
+  const todayPct = useWirdStore((s) => s.todayPct);
+  const wirdTarget = useWirdStore((s) => s.target);
+  const inProgressLecture = useProgressStore((s) => s.inProgressLecture);
+  const completedLectureCount = useProgressStore((s) => s.completedLectureCount);
+  const pendingSuggestion = useWirdStore((s) => s.pendingSuggestion);
+  const acceptSuggestion = useWirdStore((s) => s.acceptSuggestion);
+  const dismissSuggestion = useWirdStore((s) => s.dismissSuggestion);
+
+  // last_read_page lives in settings — refresh whenever the wird ring nudges
+  // (proxy for "user just recorded a page"). Awaits `getRepos()` so the Proxy
+  // accessor never throws the pre-hydration error.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      await getRepos();
+      const p = await progressRepo.getLastReadPage();
+      if (!cancelled) setLastReadPage(p);
+    })().catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [todayPct]);
+
+  const lastSurah = surahNameForPage(lastReadPage);
+  const monthDeltaPct =
+    pagesLastMonth > 0
+      ? ((pagesThisMonth - pagesLastMonth) / pagesLastMonth) * 100
+      : pagesThisMonth > 0
+        ? 100
+        : 0;
 
   // Board condition #9: hide 'history' pill until feature exists.
   // Override mock counts with real values from savedStore + notesStore.
@@ -56,7 +131,6 @@ export default function LibraryScreen() {
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
   const openNewNote = (seedTitle?: string) =>
     router.push({ pathname: '/note-editor' as any, params: seedTitle ? { title: seedTitle } : {} });
-  const openNotesViewer = () => router.push('/notes-viewer' as any);
   const openExistingNote = (id: string) =>
     router.push({ pathname: '/note-editor' as any, params: { id } });
 
@@ -81,21 +155,67 @@ export default function LibraryScreen() {
             subtitle={`${toArNum(notes.length)} ملاحظة`}
             icon={<PencilGlyph />}
           />
-          <StatCard title="ورد القرآن" subtitle="٧ أيام متتالية" icon={<BookGlyph />} />
-          <StatCard title="تذكراتي" subtitle="٣ تذكيرات" icon={<BellGlyph />} />
+          <StatCard
+            title="ورد القرآن"
+            subtitle={
+              currentStreak === 0
+                ? 'لم تبدأ بعد'
+                : currentStreak === 1
+                  ? 'يوم واحد متتالي'
+                  : `${toArNum(currentStreak)} يوم متتالي`
+            }
+            icon={<BookGlyph />}
+          />
+          <StatCard
+            title="محاضرات مكتملة"
+            subtitle={
+              completedLectureCount === 0
+                ? 'لم تكتمل بعد'
+                : `${toArNum(completedLectureCount)} محاضرة`
+            }
+            icon={<HeadphonesGlyph />}
+          />
         </View>
+
+        {/* Insight row — longest streak / best wird day / month delta. */}
+        <InsightRow
+          longestStreak={longestStreak}
+          bestDayPages={bestDayPages}
+          monthDeltaPct={monthDeltaPct}
+        />
+
+        {/* Adaptive wird-target suggestion (research R7) */}
+        {pendingSuggestion?.shouldSuggest ? (
+          <WirdSuggestionBanner
+            suggestedTarget={pendingSuggestion.suggestedTarget}
+            onAccept={() => {
+              acceptSuggestion().catch(() => undefined);
+            }}
+            onDismiss={() => {
+              dismissSuggestion().catch(() => undefined);
+            }}
+          />
+        ) : null}
 
         {/* Daily Wird card */}
         <View style={styles.block}>
           <View style={[styles.card, KhazainShadows.card]}>
             <View style={styles.wirdTop}>
-              <CircularProgress pct={70} />
+              <CircularProgress pct={todayPct} />
               <View style={{ flex: 1 }}>
                 <Text style={styles.wirdTitle}>وردُ القرآن اليومي</Text>
-                <Text style={styles.wirdMeta}>آخر قراءة: اليوم</Text>
-                <Text style={styles.wirdHighlight}>سورة البقرة · الآية ١٤٢</Text>
+                <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
+                <Text style={styles.wirdHighlight}>
+                  {lastSurah
+                    ? `سورة ${lastSurah.name} · الصفحة ${toArNum(lastReadPage)}`
+                    : `الصفحة ${toArNum(lastReadPage)} من ٦٠٤`}
+                </Text>
               </View>
 
+            </View>
+            {/* 28-day pages-per-day sparkline below the ring. */}
+            <View style={styles.sparklineBlock}>
+              <TrendSparkline points={trendLast28} wirdTarget={wirdTarget} />
             </View>
             {/* Actions row: "بدء الورد" navy pill on RIGHT (first), toggle row on LEFT.
                 Under forceRTL+row, JSX-first lands visually on the right. */}
@@ -198,29 +318,45 @@ export default function LibraryScreen() {
 
         {showSaved ? <MySavedSection /> : null}
 
-        {/* Audio progress */}
+        {/* Audio progress — real in-progress lecture from progressStore. */}
         <Text style={styles.sectionTitle}>تقدّم الكتب المسموعة</Text>
         <View style={styles.block}>
-          <AudioProgressCard
-            title="تفسير سورة البقرة"
-            author="الشيخ محمد الشعراوي"
-            pct={15}
-            subtitle="١٥٪ مكتمل · الحلقة ١٣ من ٢٠"
-            primaryLabel="متابعة"
-            secondaryLabel="إضافة ملاحظة"
-            onSecondary={() => openNewNote('تفسير سورة البقرة')}
-          />
-          <View style={{ height: 10 }} />
-          <AudioProgressCard
-            title="شرح الأربعين النووية"
-            author="الشيخ صالح الفوزان"
-            pct={100}
-            subtitle="مكتمل · ٤٢ حلقة"
-            primaryLabel="مراجعة"
-            secondaryLabel="عرض الملاحظات"
-            gold
-            onSecondary={openNotesViewer}
-          />
+          {inProgressLecture ? (
+            (() => {
+              const lecture = inProgressLecture;
+              const pct = lecture.durationSec > 0
+                ? Math.min(100, Math.round((lecture.positionSec / lecture.durationSec) * 100))
+                : 0;
+              const resume = () => {
+                usePlayerStore.getState().setTrack({
+                  id: lecture.lectureId,
+                  title: lecture.title,
+                  reciter: lecture.author,
+                  durationSec: lecture.durationSec,
+                });
+                usePlayerStore.getState().setProgress(
+                  lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0,
+                );
+                usePlayerStore.getState().setVisible(true);
+              };
+              return (
+                <AudioProgressCard
+                  title={lecture.title}
+                  author={lecture.author}
+                  pct={pct}
+                  subtitle={`${toArNum(pct)}٪ مكتمل`}
+                  primaryLabel="متابعة"
+                  secondaryLabel="إضافة ملاحظة"
+                  onPrimary={resume}
+                  onSecondary={() => openNewNote(lecture.title)}
+                />
+              );
+            })()
+          ) : (
+            <EmptyInProgressCard
+              onBrowse={() => router.push('/(tabs)/sections/scholar' as any)}
+            />
+          )}
         </View>
 
         {/* Smart reminders */}
@@ -287,15 +423,6 @@ function FormatBtn({
   );
 }
 
-function toArNum(n: number): string {
-  const map = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
-  return n
-    .toString()
-    .split('')
-    .map((c) => map[Number(c)] ?? c)
-    .join('');
-}
-
 function PencilGlyph({ size = 16 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
@@ -316,19 +443,6 @@ function BookGlyph({ size = 16 }: { size?: number }) {
         d="M4 4h12v14H6a2 2 0 01-2-2V4z"
         stroke={KhazainColors.gold500}
         strokeWidth={1.5}
-      />
-    </Svg>
-  );
-}
-
-function BellGlyph({ size = 16 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M10 3a5 5 0 00-5 5v3L3 14h14l-2-3V8a5 5 0 00-5-5zM8 17a2 2 0 004 0"
-        stroke={KhazainColors.gold500}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
       />
     </Svg>
   );
@@ -390,6 +504,10 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   block: { paddingHorizontal: 14, marginBottom: 14 },
+  sparklineBlock: {
+    marginTop: 12,
+    alignItems: 'stretch',
+  },
   remindersBlock: { paddingHorizontal: 14, paddingBottom: 8, gap: 10 },
   card: {
     padding: 16,
