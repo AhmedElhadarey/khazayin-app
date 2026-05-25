@@ -17,6 +17,15 @@ jest.mock('react-native', () => ({
   },
 }));
 
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn(async () => null),
+    setItem: jest.fn(async () => undefined),
+    removeItem: jest.fn(async () => undefined),
+  },
+}));
+
 const mockShare = Share.share as jest.MockedFunction<typeof Share.share>;
 
 // 2026-05-25T12:00:00Z — used as both the "now" arg for the date line and as
@@ -119,7 +128,9 @@ describe('shareNotes', () => {
 
   // T-NE-8
   it('returns { shared: false } when Share rejects (error is swallowed)', async () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => undefined);
     mockShare.mockRejectedValueOnce(new Error('boom'));
     await expect(shareNotes([makeNote()])).resolves.toEqual({ shared: false });
+    warnSpy.mockRestore();
   });
 });
