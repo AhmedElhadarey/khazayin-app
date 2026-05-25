@@ -256,6 +256,14 @@ export default function RootLayout() {
             animation: 'slide_from_bottom',
           }}
         />
+        <Stack.Screen
+          name="settings-about"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
       </Stack>
       <ToastOverlay />
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />

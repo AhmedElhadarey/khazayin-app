@@ -1,9 +1,11 @@
 import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { KhazainColors } from '@/constants/theme';
+import { KhazainConfig } from '@/constants/config';
 import { OrnamentPattern } from '@/components/khazain/patterns';
 import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
 import type { FontSizeLevel } from '@/types/settings';
@@ -33,6 +35,19 @@ export default function SettingsScreen() {
     fetchQiraat();
     fetchReciters();
   }, [fetchQiraat, fetchReciters]);
+
+  const openPrivacyPolicy = async () => {
+    const url = KhazainConfig.privacyPolicyUrl;
+    if (!url) {
+      Alert.alert('سياسة الخصوصية', 'سياسة الخصوصية ستُضاف قريبًا.');
+      return;
+    }
+    try {
+      await WebBrowser.openBrowserAsync(url);
+    } catch {
+      Alert.alert('سياسة الخصوصية', 'تعذّر فتح سياسة الخصوصية. حاول مجددًا.');
+    }
+  };
 
   const qiraaName =
     qiraat.find((q) => q.id === defaultQiraaId)?.name ?? 'حفص عن عاصم';
@@ -72,9 +87,23 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
         <SettingsSection title="الإشعارات">{null}</SettingsSection>
-        <SettingsSection title="التطبيق">{null}</SettingsSection>
+        <SettingsSection title="التطبيق">
+          <SettingsValueRow
+            title="حول التطبيق"
+            value="الإصدار والمؤسسة"
+            icon={<AboutIcon />}
+            onPress={() => router.push('/settings-about' as any)}
+          />
+        </SettingsSection>
         <SettingsSection title="البيانات">{null}</SettingsSection>
-        <SettingsSection title="قانوني">{null}</SettingsSection>
+        <SettingsSection title="قانوني">
+          <SettingsValueRow
+            title="سياسة الخصوصية"
+            value=""
+            icon={<PrivacyIcon />}
+            onPress={openPrivacyPolicy}
+          />
+        </SettingsSection>
       </ScrollView>
     </SafeAreaView>
   );
@@ -119,6 +148,32 @@ function FontSizeIcon() {
       <Path d="M7 6v13M5 19h4" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
       <Rect x={14} y={10} width={7} height={1.6} fill={c} />
       <Path d="M17.5 11v8M16 19h3" stroke={c} strokeWidth={1.3} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function AboutIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke={c} strokeWidth={1.5} />
+      <Path d="M12 11v6M12 7v.5" stroke={c} strokeWidth={1.7} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function PrivacyIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3l8 3v5c0 4.5-3.4 8.5-8 10-4.6-1.5-8-5.5-8-10V6l8-3z"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+        fill="none"
+      />
+      <Path d="M8.5 12l2.5 2.5L15.5 10" stroke={c} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
