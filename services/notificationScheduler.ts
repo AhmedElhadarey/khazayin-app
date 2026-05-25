@@ -8,8 +8,16 @@
  */
 
 import * as Notifications from 'expo-notifications';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 import { isCategoryEnabled } from '@/services/notificationRegistry';
+
+// expo-notifications local scheduling is unreliable in Expo Go on SDK 53+
+// (remote-push was removed, and `setNotificationHandler` emits warnings).
+// Short-circuit cleanly so the scheduler is a no-op in Expo Go; full
+// behavior is exercised on development/standalone builds.
+const IS_EXPO_GO =
+  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -73,6 +81,10 @@ function isWirdDaily(notification: ScheduledNotificationLike): boolean {
 
 export function bootstrapNotificationHandler(): void {
   if (handlerRegistered) return;
+  if (IS_EXPO_GO) {
+    handlerRegistered = true;
+    return;
+  }
   try {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
@@ -92,6 +104,7 @@ export function bootstrapNotificationHandler(): void {
 }
 
 export async function requestPermissionAsync(): Promise<PermissionStatus> {
+  if (IS_EXPO_GO) return 'undetermined';
   try {
     const response = await Notifications.requestPermissionsAsync();
     return normalizeStatus(response?.status);
@@ -102,6 +115,7 @@ export async function requestPermissionAsync(): Promise<PermissionStatus> {
 }
 
 export async function getPermissionAsync(): Promise<PermissionStatus> {
+  if (IS_EXPO_GO) return 'undetermined';
   try {
     const response = await Notifications.getPermissionsAsync();
     return normalizeStatus(response?.status);
@@ -114,6 +128,7 @@ export async function getPermissionAsync(): Promise<PermissionStatus> {
 export async function scheduleWirdReminderAsync(
   cfg: WirdReminderConfig,
 ): Promise<ScheduledId | null> {
+  if (IS_EXPO_GO) return null;
   try {
     if (!isCategoryEnabled(WIRD_CATEGORY)) {
       return null;
@@ -148,6 +163,7 @@ export async function scheduleWirdReminderAsync(
 }
 
 export async function cancelWirdReminderAsync(): Promise<void> {
+  if (IS_EXPO_GO) return;
   try {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     const targets: ScheduledNotificationLike[] = (scheduled ?? []).filter(isWirdDaily);
