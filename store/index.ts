@@ -117,5 +117,5 @@ export type { Note } from './notesStore';
 // Settings (track 002)
 // ---------------------------------------------------------------------------
 
-export { useSettingsStore } from './settingsStore';
+export { useSettingsStore, useFontScale } from './settingsStore';
 export type { SettingsState } from './settingsStore';

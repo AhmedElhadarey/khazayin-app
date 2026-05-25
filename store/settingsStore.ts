@@ -5,6 +5,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import {
   DEFAULT_NOTIFICATIONS,
   DEFAULT_SETTINGS,
+  FONT_SIZE_SCALE,
   SETTINGS_SCHEMA_VERSION,
   SETTINGS_STORAGE_KEY,
 } from '@/constants/settings';
@@ -150,3 +151,14 @@ export const useSettingsStore = create<SettingsState>()(
     },
   ),
 );
+
+/**
+ * Convenience hook for components that render Quran text — returns the
+ * current `{ fontSize, lineHeight }` pair derived from the user's saved
+ * `fontSizeLevel`. Subscribes to the primitive level only, so re-renders
+ * are limited to actual level changes.
+ */
+export function useFontScale(): { fontSize: number; lineHeight: number } {
+  const level = useSettingsStore((s) => s.fontSizeLevel);
+  return FONT_SIZE_SCALE[level];
+}

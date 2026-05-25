@@ -2,16 +2,26 @@ import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 import { KhazainColors } from '@/constants/theme';
 import { OrnamentPattern } from '@/components/khazain/patterns';
 import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
+import type { FontSizeLevel } from '@/types/settings';
 import { useQiratStore, useRecitersStore, useSettingsStore } from '@/store';
+
+const FONT_LEVEL_LABELS: Record<FontSizeLevel, string> = {
+  1: 'صغير جدًا',
+  2: 'صغير',
+  3: 'متوسط',
+  4: 'كبير',
+  5: 'كبير جدًا',
+};
 
 export default function SettingsScreen() {
   const router = useRouter();
   const defaultQiraaId = useSettingsStore((s) => s.defaultQiraaId);
   const preferredReciterId = useSettingsStore((s) => s.preferredReciterId);
+  const fontSizeLevel = useSettingsStore((s) => s.fontSizeLevel);
   const qiraat = useQiratStore((s) => s.data);
   const reciters = useRecitersStore((s) => s.data);
   const fetchQiraat = useQiratStore((s) => s.fetch);
@@ -53,7 +63,14 @@ export default function SettingsScreen() {
             onPress={() => router.push('/settings-reciter' as any)}
           />
         </SettingsSection>
-        <SettingsSection title="القراءة">{null}</SettingsSection>
+        <SettingsSection title="القراءة">
+          <SettingsValueRow
+            title="حجم خط القرآن"
+            value={FONT_LEVEL_LABELS[fontSizeLevel]}
+            icon={<FontSizeIcon />}
+            onPress={() => router.push('/settings-font-size' as any)}
+          />
+        </SettingsSection>
         <SettingsSection title="الإشعارات">{null}</SettingsSection>
         <SettingsSection title="التطبيق">{null}</SettingsSection>
         <SettingsSection title="البيانات">{null}</SettingsSection>
@@ -90,6 +107,18 @@ function ReciterIcon() {
         strokeWidth={1.5}
         strokeLinecap="round"
       />
+    </Svg>
+  );
+}
+
+function FontSizeIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Rect x={3} y={5} width={9} height={2} fill={c} />
+      <Path d="M7 6v13M5 19h4" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
+      <Rect x={14} y={10} width={7} height={1.6} fill={c} />
+      <Path d="M17.5 11v8M16 19h3" stroke={c} strokeWidth={1.3} strokeLinecap="round" />
     </Svg>
   );
 }
