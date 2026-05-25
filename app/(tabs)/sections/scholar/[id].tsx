@@ -2,7 +2,7 @@ import { AsyncContent, InlineHeader, RibbonCard, SearchPill, SkeletonRibbonList 
 import { KhazainColors } from '@/constants/theme';
 import { useScholarLecturesStore, useScholarsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -19,11 +19,10 @@ export default function ScholarDetailScreen() {
   // Scholars store — for the display name lookup.
   const { data: scholars, fetch: fetchScholars } = useScholarsStore();
 
-  // Param-driven factory hook: stable reference per id via useMemo.
-  const useLectures = useMemo(
-    () => useScholarLecturesStore(id ?? ''),
-    [id]
-  );
+  // `useScholarLecturesStore` is a memoized factory (cache keyed by id),
+  // not a React hook — calling it directly returns a stable Zustand hook
+  // reference per id. Wrapping in useMemo would trip rules-of-hooks.
+  const useLectures = useScholarLecturesStore(id ?? '');
   const { data: lectures, status, error, fetch, refresh } = useLectures();
 
   useEffect(() => {
