@@ -66,6 +66,8 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
     await wirdRepo.setTarget(newTarget, { applyToday: true });
     const pagesToday = await progressRepo.pagesReadToday();
     set({ target: newTarget, todayPct: wirdPercent(pagesToday, newTarget) });
+    // Reschedule on every target change (track 002 spec).
+    await reconcileWirdSchedule();
   },
 
   async recomputeTodayPct() {
