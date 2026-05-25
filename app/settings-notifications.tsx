@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Alert,
   AppState,
@@ -24,6 +24,7 @@ import {
 } from '@/services/notificationScheduler';
 import { WIRD_REMINDER_DEFAULT_TIME } from '@/constants/settings';
 import { useSettingsStore } from '@/store';
+import { useWirdStore } from '@/store/wirdStore';
 
 function promptOpenOsSettings() {
   Alert.alert(
@@ -40,24 +41,44 @@ export default function SettingsNotificationsScreen() {
   const notifications = useSettingsStore((s) => s.notifications);
   const setNotificationEnabled = useSettingsStore((s) => s.setNotificationEnabled);
   const [permission, setPermission] = useState<PermissionStatus>('undetermined');
+  const isMounted = useRef(true);
 
   // Read OS permission on mount and whenever the app returns to foreground
   // (Phase 6 board carryforward C2) — keeps the wird toggle in sync if the
   // user revoked permission via system settings while we were backgrounded.
+  // `isMounted` guard prevents a setState-after-unmount warning if the modal
+  // closes mid-await (final-review Risk #4).
   const syncPermission = useCallback(async () => {
     const status = await getPermissionAsync();
-    setPermission(status);
+    if (isMounted.current) setPermission(status);
   }, []);
 
   useEffect(() => {
+    isMounted.current = true;
     syncPermission();
     const sub = AppState.addEventListener('change', (s: AppStateStatus) => {
       if (s === 'active') {
         syncPermission();
       }
     });
-    return () => sub.remove();
+    return () => {
+      isMounted.current = false;
+      sub.remove();
+    };
   }, [syncPermission]);
+
+  // Reconcile the OS schedule with the persisted wird preference on mount
+  // (final-review Risk #1). Handles fresh installs where settings says
+  // "wird-daily=true" but no OS schedule yet exists (idempotent in the
+  // scheduler — it cancels any prior wird before scheduling the next).
+  useEffect(() => {
+    if (notifications['wird-daily'] && permission === 'granted') {
+      void useWirdStore.getState().setWirdEnabledFromSettings(true);
+    }
+    // intentionally only runs when permission flips to 'granted' (and not on
+    // every toggle change — handleWirdToggle handles those).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [permission]);
 
   const handleWirdToggle = async (next: boolean) => {
     if (!next) {
