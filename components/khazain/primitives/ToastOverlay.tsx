@@ -3,6 +3,7 @@ import { usePlayerStore, useToastStore } from '@/store';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Path } from 'react-native-svg';
 
 /**
  * ToastOverlay — global toast surface. Mounted once in app/_layout.tsx as
@@ -65,6 +66,7 @@ export function ToastOverlay() {
 
   // Board condition #4: clear the MiniPlayer when visible.
   const bottomPad = playerVisible ? 80 : 16;
+  const isAchievement = current.variant === 'achievement';
 
   return (
     <SafeAreaView pointerEvents="box-none" style={styles.safeArea} edges={['bottom']}>
@@ -75,8 +77,18 @@ export function ToastOverlay() {
           { paddingBottom: bottomPad, opacity, transform: [{ translateY }] },
         ]}
       >
-        <View style={[styles.card, KhazainShadows.card]}>
-          <Text style={styles.message} numberOfLines={2}>
+        <View
+          style={[
+            styles.card,
+            isAchievement ? styles.cardAchievement : styles.cardDefault,
+            KhazainShadows.card,
+          ]}
+        >
+          {isAchievement ? <CheckmarkBadge /> : null}
+          <Text
+            style={[styles.message, isAchievement && styles.messageAchievement]}
+            numberOfLines={2}
+          >
             {current.message}
           </Text>
           {current.action ? (
@@ -97,6 +109,23 @@ export function ToastOverlay() {
   );
 }
 
+function CheckmarkBadge() {
+  return (
+    <View style={styles.badge}>
+      <Svg width={14} height={14} viewBox="0 0 16 16">
+        <Path
+          d="M3.5 8.5l3 3 6-6"
+          stroke={KhazainColors.gold500}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </Svg>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   safeArea: {
     position: 'absolute',
@@ -112,10 +141,27 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: KhazainRadius.lg,
-    backgroundColor: KhazainColors.navy800,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
+  },
+  cardDefault: {
+    backgroundColor: KhazainColors.navy800,
+  },
+  cardAchievement: {
+    backgroundColor: KhazainColors.cream50,
+    borderWidth: 1.5,
+    borderColor: KhazainColors.gold500,
+  },
+  badge: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: KhazainColors.cream100,
+    borderWidth: 1,
+    borderColor: KhazainColors.gold400,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   message: {
     flex: 1,
@@ -125,6 +171,10 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textAlign: 'right',
     writingDirection: 'rtl',
+  },
+  messageAchievement: {
+    color: KhazainColors.navy800,
+    fontWeight: '700',
   },
   actionBtn: {
     paddingHorizontal: 8,

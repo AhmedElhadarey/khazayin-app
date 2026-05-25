@@ -10,6 +10,8 @@ import { useEffect, useState } from 'react';
 import { I18nManager, LogBox, Platform } from 'react-native';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import { ToastOverlay } from '@/components/khazain';
+import { useProgressStore } from '@/store/progressStore';
+import { useWirdStore } from '@/store/wirdStore';
 import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
@@ -93,6 +95,18 @@ export default function RootLayout() {
       SplashScreen.hideAsync().catch(() => undefined);
     }
   }, [fontsLoaded, fontError]);
+
+  // Progress-tracking hydration. Failures fall back to zero values so the
+  // Library tab never crashes if the DB layer mis-initializes.
+  useEffect(() => {
+    if (!fontsLoaded) return;
+    Promise.all([
+      useProgressStore.getState().hydrate(),
+      useWirdStore.getState().hydrate(),
+    ]).catch((err) => {
+      console.warn('[khazayin] progress hydration failed', err);
+    });
+  }, [fontsLoaded]);
 
   // Env preflight — warn once at root mount if the API base URL is not
   // configured. The app will run on mockAdapter silently; this log reminds

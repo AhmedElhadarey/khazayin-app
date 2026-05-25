@@ -17,11 +17,14 @@ export interface ToastAction {
   onPress: () => void;
 }
 
+export type ToastVariant = 'default' | 'achievement';
+
 export interface ToastConfig {
   id: number;             // bumps on each show() — used by overlay to re-trigger animation
   message: string;        // Arabic copy shown in the toast
   action?: ToastAction;   // optional undo button
   durationMs?: number;    // default 5000 for unsave (Board condition #6); 3000 for save
+  variant?: ToastVariant; // 'achievement' → gold-bordered card with checkmark
 }
 
 export interface ToastState {
