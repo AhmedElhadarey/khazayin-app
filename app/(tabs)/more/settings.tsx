@@ -9,7 +9,15 @@ import { KhazainConfig } from '@/constants/config';
 import { OrnamentPattern } from '@/components/khazain/patterns';
 import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
 import type { FontSizeLevel } from '@/types/settings';
-import { useQiratStore, useRecitersStore, useSettingsStore } from '@/store';
+import {
+  useNotesStore,
+  useQiratStore,
+  useRecitersStore,
+  useSettingsStore,
+  useToastStore,
+} from '@/store';
+import { clearAppCache } from '@/services/cacheFacade';
+import { shareNotes } from '@/services/notesExporter';
 
 const FONT_LEVEL_LABELS: Record<FontSizeLevel, string> = {
   1: 'صغير جدًا',
@@ -47,6 +55,33 @@ export default function SettingsScreen() {
     } catch {
       Alert.alert('سياسة الخصوصية', 'تعذّر فتح سياسة الخصوصية. حاول مجددًا.');
     }
+  };
+
+  const onClearCache = () => {
+    Alert.alert(
+      'تفريغ الذاكرة المؤقتة',
+      'سيتم تفريغ ذاكرة الصور المؤقتة. لن يتم حذف الملاحظات أو القراءات أو الإعدادات.',
+      [
+        { text: 'إلغاء', style: 'cancel' },
+        {
+          text: 'تفريغ',
+          style: 'destructive',
+          onPress: async () => {
+            await clearAppCache();
+            useToastStore.getState().show({ message: 'تم تفريغ الذاكرة المؤقتة' });
+          },
+        },
+      ],
+    );
+  };
+
+  const onExportNotes = async () => {
+    const notes = useNotesStore.getState().notes;
+    if (notes.length === 0) {
+      Alert.alert('لا توجد ملاحظات', 'لا يوجد شيء للتصدير حاليًا.');
+      return;
+    }
+    await shareNotes(notes);
   };
 
   const qiraaName =
@@ -95,7 +130,20 @@ export default function SettingsScreen() {
             onPress={() => router.push('/settings-about' as any)}
           />
         </SettingsSection>
-        <SettingsSection title="البيانات">{null}</SettingsSection>
+        <SettingsSection title="البيانات">
+          <SettingsValueRow
+            title="تفريغ الذاكرة المؤقتة"
+            value=""
+            icon={<TrashIcon />}
+            onPress={onClearCache}
+          />
+          <SettingsValueRow
+            title="تصدير الملاحظات"
+            value=""
+            icon={<ExportIcon />}
+            onPress={onExportNotes}
+          />
+        </SettingsSection>
         <SettingsSection title="قانوني">
           <SettingsValueRow
             title="سياسة الخصوصية"
@@ -174,6 +222,43 @@ function PrivacyIcon() {
         fill="none"
       />
       <Path d="M8.5 12l2.5 2.5L15.5 10" stroke={c} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function TrashIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M5 7h14M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M7 7l1 12a2 2 0 002 2h4a2 2 0 002-2l1-12"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path d="M10 11v6M14 11v6" stroke={c} strokeWidth={1.3} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function ExportIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 4v12M8 8l4-4 4 4"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
     </Svg>
   );
 }
