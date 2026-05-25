@@ -279,5 +279,10 @@ export const KhazainSpacing = {
   x8: 32,
 } as const;
 
+// Re-export of the Quran-text font scale so it lives alongside the other
+// Khazain* design tokens. Source of truth remains `constants/settings.ts`
+// (settings track 002 owns the scale).
+export { FONT_SIZE_SCALE as KhazainFontSizeScale } from './settings';
+
 export type KhazainColorKey = keyof typeof KhazainColors;
 export type KhazainFontKey = keyof typeof KhazainFonts;
