@@ -132,6 +132,26 @@ export default function SettingsNotificationsScreen() {
                 />
               );
             }
+            // Only wird-daily has a real OS schedule today. Branching on
+            // `cat.id` keeps a future non-wird category from accidentally
+            // being wired to the wird scheduler (final-review fix).
+            if (cat.id === 'wird-daily') {
+              return (
+                <SettingsToggleRow
+                  key={cat.id}
+                  title={cat.labelAr}
+                  description={cat.descriptionAr}
+                  icon={<BellIcon />}
+                  value={enabled}
+                  onValueChange={(next) => {
+                    void handleWirdToggle(next);
+                  }}
+                  disabled={false}
+                />
+              );
+            }
+            // Fallback for any future category with no dedicated handler:
+            // toggle persists in settingsStore but no scheduler call fires.
             return (
               <SettingsToggleRow
                 key={cat.id}
@@ -139,9 +159,7 @@ export default function SettingsNotificationsScreen() {
                 description={cat.descriptionAr}
                 icon={<BellIcon />}
                 value={enabled}
-                onValueChange={(next) => {
-                  void handleWirdToggle(next);
-                }}
+                onValueChange={(next) => setNotificationEnabled(cat.id, next)}
                 disabled={false}
               />
             );

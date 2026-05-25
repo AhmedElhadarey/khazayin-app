@@ -59,6 +59,8 @@ export default function MoreScreen() {
           <Text style={styles.h1}>المزيد</Text>
         </View>
         <View style={styles.list}>
+          {/* Local-state entry rows render immediately — no need to wait
+              on the More-rows fetch (they don't depend on remote data). */}
           <ListRowCard
             title="الإعدادات"
             subtitle="التلاوة · القراءة · الإشعارات · البيانات"
@@ -235,7 +237,6 @@ const styles = StyleSheet.create({
   // Match sections/index.tsx list spacing so the two screens read identically.
   list: {
     paddingHorizontal: 16,
-    paddingTop: 8,
     gap: 8,
   },
   footer: {
