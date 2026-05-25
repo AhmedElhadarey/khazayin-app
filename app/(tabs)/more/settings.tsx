@@ -32,6 +32,10 @@ export default function SettingsScreen() {
   const defaultQiraaId = useSettingsStore((s) => s.defaultQiraaId);
   const preferredReciterId = useSettingsStore((s) => s.preferredReciterId);
   const fontSizeLevel = useSettingsStore((s) => s.fontSizeLevel);
+  const notifications = useSettingsStore((s) => s.notifications);
+  const enabledCount = Object.values(notifications).filter(Boolean).length;
+  const totalCount = Object.keys(notifications).length;
+  const notificationsSummary = `${enabledCount} من ${totalCount} مفعّلة`;
   const qiraat = useQiratStore((s) => s.data);
   const reciters = useRecitersStore((s) => s.data);
   const fetchQiraat = useQiratStore((s) => s.fetch);
@@ -121,7 +125,14 @@ export default function SettingsScreen() {
             onPress={() => router.push('/settings-font-size' as any)}
           />
         </SettingsSection>
-        <SettingsSection title="الإشعارات">{null}</SettingsSection>
+        <SettingsSection title="الإشعارات">
+          <SettingsValueRow
+            title="الإشعارات"
+            value={notificationsSummary}
+            icon={<BellIcon />}
+            onPress={() => router.push('/settings-notifications' as any)}
+          />
+        </SettingsSection>
         <SettingsSection title="التطبيق">
           <SettingsValueRow
             title="حول التطبيق"
@@ -238,6 +249,22 @@ function TrashIcon() {
         strokeLinejoin="round"
       />
       <Path d="M10 11v6M14 11v6" stroke={c} strokeWidth={1.3} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function BellIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M6 16V11a6 6 0 0112 0v5l1.5 2H4.5L6 16z"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+      <Path d="M10 20a2 2 0 004 0" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
+      <Circle cx={12} cy={5} r={1.2} fill={c} />
     </Svg>
   );
 }
