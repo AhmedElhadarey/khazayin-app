@@ -135,6 +135,14 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="التطبيق">
           <SettingsValueRow
+            title="اللغة"
+            value="العربية"
+            icon={<GlobeIcon />}
+            onPress={() =>
+              Alert.alert('اللغة', 'هذا التطبيق متاح باللغة العربية فقط.')
+            }
+          />
+          <SettingsValueRow
             title="حول التطبيق"
             value="الإصدار والمؤسسة"
             icon={<AboutIcon />}
@@ -207,6 +215,20 @@ function FontSizeIcon() {
       <Path d="M7 6v13M5 19h4" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
       <Rect x={14} y={10} width={7} height={1.6} fill={c} />
       <Path d="M17.5 11v8M16 19h3" stroke={c} strokeWidth={1.3} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function GlobeIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 20 20" fill="none">
+      <Circle cx={10} cy={10} r={7} stroke={c} strokeWidth={1.5} />
+      <Path
+        d="M3 10h14M10 3c2.5 3 2.5 11 0 14M10 3c-2.5 3-2.5 11 0 14"
+        stroke={c}
+        strokeWidth={1.3}
+      />
     </Svg>
   );
 }
