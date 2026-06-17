@@ -1,6 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import { DEFAULT_SETTINGS, SETTINGS_STORAGE_KEY } from '@/constants/settings';
+import {
+  DEFAULT_SETTINGS,
+  ONBOARDING_STEP_COUNT,
+  SETTINGS_STORAGE_KEY,
+} from '@/constants/settings';
 import { useSettingsStore } from '@/store/settingsStore';
 import type { UserSettings } from '@/types/settings';
 
@@ -55,11 +59,13 @@ describe('useSettingsStore', () => {
 
   it('T-SS-2: rehydrates a valid stored record unchanged', async () => {
     const stored: UserSettings = {
-      schemaVersion: 1,
+      schemaVersion: 2,
       defaultQiraaId: 'warsh-nafi',
       preferredReciterId: 'r3',
       fontSizeLevel: 4,
       notifications: { 'wird-daily': false, 'announcements-general': true },
+      onboardingComplete: true,
+      onboardingStep: 0,
     };
     await seedStorage({ state: stored, version: 0 });
     await rehydrateStore();
@@ -68,6 +74,7 @@ describe('useSettingsStore', () => {
     expect(s.defaultQiraaId).toBe('warsh-nafi');
     expect(s.preferredReciterId).toBe('r3');
     expect(s.fontSizeLevel).toBe(4);
+    expect(s.onboardingComplete).toBe(true);
     expect(s.notifications['wird-daily']).toBe(false);
     expect(s.notifications['announcements-general']).toBe(true);
   });
@@ -140,9 +147,124 @@ describe('useSettingsStore', () => {
     await rehydrateStore();
 
     const s = useSettingsStore.getState();
-    expect(s.schemaVersion).toBe(1);
+    expect(s.schemaVersion).toBe(2);
     expect(s.defaultQiraaId).toBe(DEFAULT_SETTINGS.defaultQiraaId);
     expect(s.fontSizeLevel).toBe(DEFAULT_SETTINGS.fontSizeLevel);
     expect(s.notifications).toEqual(DEFAULT_SETTINGS.notifications);
+  });
+
+  // -------------------------------------------------------------------------
+  // Track 003: onboarding fields + v1 → v2 migration
+  // -------------------------------------------------------------------------
+
+  it('T-SS-8: empty storage backfills onboarding defaults (complete=false, step=0)', async () => {
+    const s = useSettingsStore.getState();
+    expect(s.onboardingComplete).toBe(false);
+    expect(s.onboardingStep).toBe(0);
+  });
+
+  it('T-SS-9: a stored v1 record upgrades to v2 preserving prefs and adding onboarding defaults', async () => {
+    const v1 = {
+      schemaVersion: 1,
+      defaultQiraaId: 'warsh-nafi',
+      preferredReciterId: 'r3',
+      fontSizeLevel: 4,
+      notifications: { 'wird-daily': false, 'announcements-general': true },
+    };
+    await seedStorage({ state: v1, version: 0 });
+    await rehydrateStore();
+
+    const s = useSettingsStore.getState();
+    // schema upgraded
+    expect(s.schemaVersion).toBe(2);
+    // prefs preserved (non-destructive upgrade)
+    expect(s.defaultQiraaId).toBe('warsh-nafi');
+    expect(s.preferredReciterId).toBe('r3');
+    expect(s.fontSizeLevel).toBe(4);
+    expect(s.notifications['wird-daily']).toBe(false);
+    expect(s.notifications['announcements-general']).toBe(true);
+    // onboarding fields backfilled
+    expect(s.onboardingComplete).toBe(false);
+    expect(s.onboardingStep).toBe(0);
+  });
+
+  it('T-SS-10: unknown schemaVersion (99) resets to v2 defaults', async () => {
+    const corrupt = {
+      schemaVersion: 99,
+      defaultQiraaId: 'warsh-nafi',
+      preferredReciterId: 'r3',
+      fontSizeLevel: 4,
+      notifications: { 'wird-daily': false, 'announcements-general': true },
+      onboardingComplete: true,
+      onboardingStep: 2,
+    };
+    await seedStorage({ state: corrupt, version: 0 });
+    await rehydrateStore();
+
+    const s = useSettingsStore.getState();
+    expect(s.schemaVersion).toBe(2);
+    expect(s.defaultQiraaId).toBe(DEFAULT_SETTINGS.defaultQiraaId);
+    expect(s.onboardingComplete).toBe(false);
+    expect(s.onboardingStep).toBe(0);
+  });
+
+  it('T-SS-11: a v2 record with invalid onboarding fields is coerced to defaults', async () => {
+    const v2Bad = {
+      schemaVersion: 2,
+      defaultQiraaId: 'hafs-asim',
+      preferredReciterId: 'r7',
+      fontSizeLevel: 3,
+      notifications: { 'wird-daily': true, 'announcements-general': false },
+      onboardingComplete: 'yes',
+      onboardingStep: 99,
+    };
+    await seedStorage({ state: v2Bad, version: 0 });
+    await rehydrateStore();
+
+    const s = useSettingsStore.getState();
+    expect(s.onboardingComplete).toBe(false);
+    expect(s.onboardingStep).toBe(0);
+  });
+
+  it('T-SS-12: setOnboardingComplete(true) updates state, persists, and survives rehydrate', async () => {
+    useSettingsStore.getState().setOnboardingComplete(true);
+    expect(useSettingsStore.getState().onboardingComplete).toBe(true);
+
+    await flushPersist();
+    const raw = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+    expect(raw).not.toBeNull();
+    const parsed = JSON.parse(raw as string) as { state: UserSettings };
+    expect(parsed.state.onboardingComplete).toBe(true);
+
+    await rehydrateStore();
+    expect(useSettingsStore.getState().onboardingComplete).toBe(true);
+  });
+
+  it('T-SS-13: setOnboardingStep clamps above-range input to ONBOARDING_STEP_COUNT-1', async () => {
+    useSettingsStore.getState().setOnboardingStep(7);
+    expect(useSettingsStore.getState().onboardingStep).toBe(ONBOARDING_STEP_COUNT - 1);
+
+    await flushPersist();
+    const raw = await AsyncStorage.getItem(SETTINGS_STORAGE_KEY);
+    const parsed = JSON.parse(raw as string) as { state: UserSettings };
+    expect(parsed.state.onboardingStep).toBe(ONBOARDING_STEP_COUNT - 1);
+  });
+
+  it('T-SS-14: setOnboardingStep clamps negative input to 0', async () => {
+    useSettingsStore.getState().setOnboardingStep(2);
+    expect(useSettingsStore.getState().onboardingStep).toBe(2);
+    useSettingsStore.getState().setOnboardingStep(-1);
+    expect(useSettingsStore.getState().onboardingStep).toBe(0);
+  });
+
+  it('T-SS-15: skip after one selection retains the pick and leaves untouched prefs at default', async () => {
+    // Simulates US6: user picks a qira'a then skips before choosing a reciter.
+    useSettingsStore.getState().setDefaultQiraa('qaloon-nafi');
+    useSettingsStore.getState().setOnboardingComplete(true);
+
+    const s = useSettingsStore.getState();
+    expect(s.defaultQiraaId).toBe('qaloon-nafi');
+    expect(s.preferredReciterId).toBe(DEFAULT_SETTINGS.preferredReciterId);
+    expect(s.onboardingComplete).toBe(true);
   });
 });

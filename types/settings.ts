@@ -7,9 +7,16 @@ export type FontSizeLevel = 1 | 2 | 3 | 4 | 5;
 export type NotificationCategoryId = 'wird-daily' | 'announcements-general';
 
 export type UserSettings = {
-  schemaVersion: 1;
+  schemaVersion: 2;
   defaultQiraaId: string;
   preferredReciterId: string;
   fontSizeLevel: FontSizeLevel;
   notifications: Record<NotificationCategoryId, boolean>;
+  /** First-run onboarding gate (track 003). `true` ⇒ onboarding is skipped. */
+  onboardingComplete: boolean;
+  /**
+   * Last reached onboarding step (0-based) for resume-at-last-step. Clamped to
+   * `[0, ONBOARDING_STEP_COUNT - 1]`. Ignored once `onboardingComplete` is true.
+   */
+  onboardingStep: number;
 };
