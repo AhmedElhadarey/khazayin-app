@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   },
   inactiveLabel: {
     fontFamily: 'TheSansArabic',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '500',
     color: INACTIVE,
     writingDirection: 'rtl',
@@ -177,7 +177,7 @@ const styles = StyleSheet.create({
   },
   activeLabel: {
     fontFamily: 'TheSansArabic',
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '700',
     color: ACTIVE_INK,
     writingDirection: 'rtl',

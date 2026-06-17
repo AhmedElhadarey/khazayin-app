@@ -41,7 +41,7 @@ const styles = StyleSheet.create({
   },
   label: {
     fontFamily: 'Amiri',
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: '700',
     color: '#FDF9F2',
     writingDirection: 'rtl',

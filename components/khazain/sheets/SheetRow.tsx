@@ -58,7 +58,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   rowShort: {
-    height: 56,
+    minHeight: 56,
   },
   rowTall: {
     paddingVertical: 12,

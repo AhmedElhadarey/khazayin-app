@@ -35,7 +35,7 @@ export function QuickChip({
 const styles = StyleSheet.create({
   chip: {
     flex: 1,
-    height: 48,
+    minHeight: 48,
     borderRadius: 8,
     backgroundColor: KhazainColors.heroCream,
     alignItems: 'center',

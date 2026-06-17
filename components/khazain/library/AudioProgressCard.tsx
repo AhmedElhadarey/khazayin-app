@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   sub: {
-    fontSize: 10,
+    fontSize: 12,
     color: KhazainColors.ink500,
     marginTop: 6,
     marginBottom: 10,
