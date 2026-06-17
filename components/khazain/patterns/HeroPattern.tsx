@@ -20,6 +20,9 @@ export function HeroPattern({ children, style, opacity = 0.25, tileSize = 140 }:
         height="100%"
         style={{ position: 'absolute', inset: 0 }}
         pointerEvents="none"
+        accessible={false}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
       >
         <Defs>
           <Pattern

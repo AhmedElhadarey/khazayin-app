@@ -53,7 +53,7 @@ export function ReminderCard({
         <Text style={styles.next}>{next}</Text>
       </View>
       <View style={{ marginTop: 2 }}>
-        <Toggle on={on} onChange={onToggle} />
+        <Toggle on={on} onChange={onToggle} label={title} />
       </View>
     </View>
   );

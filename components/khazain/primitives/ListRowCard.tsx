@@ -25,7 +25,7 @@ export function ListRowCard({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={count ? `${title}، ${count}` : title}
+      accessibilityLabel={[title, subtitle, count].filter(Boolean).join('، ')}
       style={({ pressed }) => [
         styles.card,
         KhazainShadows.card,

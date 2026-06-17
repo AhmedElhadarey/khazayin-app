@@ -33,7 +33,7 @@ export function SettingsToggleRow({
           </Text>
         ) : null}
       </View>
-      <Toggle on={value} onChange={onValueChange} disabled={disabled} />
+      <Toggle on={value} onChange={onValueChange} disabled={disabled} label={title} />
     </View>
   );
 }

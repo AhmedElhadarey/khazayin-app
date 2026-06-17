@@ -14,7 +14,7 @@ import Svg, {
 // 78×86 viewBox — port of design_source/app/home.jsx RehlArt.
 export function RehlArt({ width = 78, height = 86 }: { width?: number; height?: number }) {
   return (
-    <Svg width={width} height={height} viewBox="0 0 78 86">
+    <Svg width={width} height={height} viewBox="0 0 78 86" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <Defs>
         <RadialGradient
           id="rehlGlow"

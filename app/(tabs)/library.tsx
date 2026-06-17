@@ -268,7 +268,7 @@ export default function LibraryScreen() {
               </Pressable>
               <View style={{ flex: 1 }} />
               <View style={styles.reminderInline}>
-                <Toggle on={reminderOn} onChange={setReminderOn} />
+                <Toggle on={reminderOn} onChange={setReminderOn} label="التذكير اليومي" />
 
                 <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
               </View>

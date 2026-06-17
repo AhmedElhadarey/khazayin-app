@@ -23,7 +23,7 @@ export function InlineHeader({
         onPress={onBack}
         hitSlop={10}
         accessibilityRole="button"
-        accessibilityLabel="رجوع"
+        accessibilityLabel={`رجوع، ${title}`}
         style={({ pressed }) => [styles.touchArea, { opacity: pressed ? 0.7 : 1 }]}
       >
         <Text style={styles.title} numberOfLines={1}>
