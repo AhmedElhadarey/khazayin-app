@@ -16,6 +16,7 @@
  */
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AppState } from 'react-native';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import type { SavedItem, SavedSnapshot, SavedType } from '../types/content';
@@ -27,15 +28,28 @@ const PERSIST_DEBOUNCE_MS = 100;
 // Custom debounced AsyncStorage wrapper (Board condition #1)
 // ---------------------------------------------------------------------------
 
-function createDebouncedStorage() {
+// Captures the active storage instance's flush so an AppState background
+// transition can persist a pending (debounced) write before the process is
+// suspended/killed — otherwise a save in the last 100ms window is lost (T2.4).
+let flushPendingSavedWrite: () => Promise<void> = async () => {};
+
+/** Flushes any pending debounced saved-store write immediately. */
+export function flushSavedWritesNow(): Promise<void> {
+  return flushPendingSavedWrite();
+}
+
+export function createDebouncedStorage() {
   let pendingTimer: ReturnType<typeof setTimeout> | null = null;
   let pendingValue: { key: string; value: string } | null = null;
 
   async function flush(): Promise<void> {
+    if (pendingTimer !== null) {
+      clearTimeout(pendingTimer);
+      pendingTimer = null;
+    }
     if (pendingValue === null) return;
     const { key, value } = pendingValue;
     pendingValue = null;
-    pendingTimer = null;
     try {
       await AsyncStorage.setItem(key, value);
     } catch (err) {
@@ -49,6 +63,8 @@ function createDebouncedStorage() {
     }
   }
 
+  flushPendingSavedWrite = flush;
+
   return {
     getItem: (key: string) => AsyncStorage.getItem(key),
     setItem: (key: string, value: string) => {
@@ -60,6 +76,13 @@ function createDebouncedStorage() {
     removeItem: (key: string) => AsyncStorage.removeItem(key),
   };
 }
+
+// Persist pending writes when the app leaves the foreground.
+AppState.addEventListener('change', (state) => {
+  if (state === 'background' || state === 'inactive') {
+    flushSavedWritesNow().catch(() => undefined);
+  }
+});
 
 // ---------------------------------------------------------------------------
 // Internal helpers

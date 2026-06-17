@@ -7,6 +7,7 @@ import {
   toLocalDay,
 } from '@/constants/progress';
 import type { WirdRepository } from '../types';
+import { safeParseJson } from '../safeParse';
 
 async function readSettingNumber(
   db: SQLite.SQLiteDatabase,
@@ -16,13 +17,8 @@ async function readSettingNumber(
     'SELECT value FROM khz_settings WHERE key = ?',
     key,
   );
-  if (!row) return null;
-  try {
-    const parsed = JSON.parse(row.value);
-    return typeof parsed === 'number' ? parsed : null;
-  } catch {
-    return null;
-  }
+  const parsed = safeParseJson<unknown>(row?.value ?? null, null);
+  return typeof parsed === 'number' ? parsed : null;
 }
 
 async function readSettingString(
@@ -33,13 +29,8 @@ async function readSettingString(
     'SELECT value FROM khz_settings WHERE key = ?',
     key,
   );
-  if (!row) return null;
-  try {
-    const parsed = JSON.parse(row.value);
-    return typeof parsed === 'string' ? parsed : null;
-  } catch {
-    return null;
-  }
+  const parsed = safeParseJson<unknown>(row?.value ?? null, null);
+  return typeof parsed === 'string' ? parsed : null;
 }
 
 async function writeSetting(
@@ -139,7 +130,7 @@ export function createWirdRepository(db: SQLite.SQLiteDatabase): WirdRepository 
         "SELECT value FROM khz_settings WHERE key = 'last_suggestion_at'",
       );
       if (!row) return null;
-      const parsed = JSON.parse(row.value);
+      const parsed = safeParseJson<unknown>(row.value, null);
       return typeof parsed === 'number' ? parsed : null;
     },
   };

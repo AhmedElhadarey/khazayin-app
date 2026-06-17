@@ -20,6 +20,17 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
   );
   const appliedSet = new Set(applied.map((r) => r.version));
 
+  // Downgrade guard: if the DB was written by a newer build (a migration
+  // version higher than anything this build knows), bail rather than run
+  // older code against a newer schema (T2.5).
+  const maxKnown = MIGRATIONS.reduce((m, x) => Math.max(m, x.version), 0);
+  const maxApplied = applied.reduce((m, r) => Math.max(m, r.version), 0);
+  if (maxApplied > maxKnown) {
+    throw new Error(
+      `[khazain.db] database schema version ${maxApplied} is newer than this build supports (${maxKnown}); refusing to run migrations`,
+    );
+  }
+
   for (const migration of MIGRATIONS) {
     if (appliedSet.has(migration.version)) continue;
 
@@ -35,8 +46,10 @@ async function runMigrations(db: SQLite.SQLiteDatabase): Promise<void> {
         );
       });
     } catch (err) {
+      // Preserve the original error via `cause` for diagnosability (T2.5/P3-1).
       throw new Error(
-        `[khazain.db] migration ${migration.version} (${migration.name}) failed: ${String(err)}`,
+        `[khazain.db] migration ${migration.version} (${migration.name}) failed`,
+        { cause: err },
       );
     }
   }
@@ -52,7 +65,9 @@ export async function openDb(): Promise<SQLite.SQLiteDatabase> {
       return db;
     } catch (err) {
       dbPromise = null;
-      throw new Error(`[khazain.db] open failed: ${String(err)}`);
+      // Preserve the underlying error (migration/downgrade cause + stack) so it
+      // survives to Sentry, which unwraps Error.cause chains (T2.5).
+      throw new Error('[khazain.db] open failed', { cause: err });
     }
   })();
   return dbPromise;

@@ -369,9 +369,15 @@ export function createAsyncStore<T>(
     status: 'idle' as LoadState,
     error: null,
 
-    /** Idempotent — only runs when status is 'idle'. Use `refresh` to force. */
+    /**
+     * Idempotent for in-flight/successful states — runs when status is 'idle'
+     * OR 'error', so a screen that previously failed re-attempts on remount
+     * instead of being stuck on the stale error forever (T2.2). Use `refresh`
+     * to force a re-fetch from any state.
+     */
     fetch: async (): Promise<void> => {
-      if (get().status !== 'idle') return;
+      const status = get().status;
+      if (status !== 'idle' && status !== 'error') return;
 
       if (swr) {
         await runFetchSwr(set, swr.domain, swr.sub);
