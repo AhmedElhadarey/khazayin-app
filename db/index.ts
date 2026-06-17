@@ -49,7 +49,13 @@ async function init(): Promise<Repos> {
       reset: resetMod.createResetFacade(db),
     };
     return cached;
-  })();
+  })().catch((err: unknown) => {
+    // Do NOT cache the rejection. A transient failure (corrupt file, migration
+    // throw, open error) must not permanently brick the app: clear the cached
+    // promise so the next getRepos() retries from scratch.
+    initPromise = null;
+    throw err;
+  });
   return initPromise;
 }
 

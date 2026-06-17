@@ -114,7 +114,12 @@ async function load(): Promise<void> {
     } catch {
       cache = emptyState();
     }
-  })();
+  })().catch((err: unknown) => {
+    // Don't cache a rejected load (e.g. AsyncStorage.getItem rejecting) — clear
+    // so the next op retries instead of replaying the failure forever.
+    loadPromise = null;
+    throw err;
+  });
   return loadPromise;
 }
 
