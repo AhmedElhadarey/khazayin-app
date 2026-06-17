@@ -10,7 +10,7 @@ import { KhazainColors } from '@/constants/theme';
 import { useScholarsStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 26: العلماء والمشايخ list of scholars with right-rail letter index.
@@ -33,28 +33,35 @@ export default function ScholarScreen() {
         <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>
       <View style={styles.body}>
-        <ScrollView
-          contentContainerStyle={[styles.listContent, { paddingBottom: 24 }]}
-          showsVerticalScrollIndicator={false}
-          style={styles.list}
-        >
-          <AsyncContent
-            status={status}
-            error={error}
-            onRetry={refresh}
-            skeleton={<SkeletonRibbonList count={5} />}
-            emptyMessage="لا يوجد علماء"
-          >
-            {data.map((s) => (
+        {/* Virtualized on success; AsyncContent owns loading/empty/error (T3.1). */}
+        {status === 'success' ? (
+          <FlatList
+            data={data}
+            keyExtractor={(s) => s.id}
+            renderItem={({ item: s }) => (
               <RibbonCard
-                key={s.id}
                 pretitle="فضيلة الشيخ"
                 title={s.name}
                 onPress={() => router.push(`/sections/scholar/${s.id}` as any)}
               />
-            ))}
-          </AsyncContent>
-        </ScrollView>
+            )}
+            style={styles.list}
+            contentContainerStyle={[styles.listContent, { paddingBottom: 24 }]}
+            showsVerticalScrollIndicator={false}
+          />
+        ) : (
+          <View style={styles.list}>
+            <AsyncContent
+              status={status}
+              error={error}
+              onRetry={refresh}
+              skeleton={<SkeletonRibbonList count={5} />}
+              emptyMessage="لا يوجد علماء"
+            >
+              {null}
+            </AsyncContent>
+          </View>
+        )}
         <View style={styles.rail} pointerEvents="box-none">
           <LetterIndex active="م" />
         </View>

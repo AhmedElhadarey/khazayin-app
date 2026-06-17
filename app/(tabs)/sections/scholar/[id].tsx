@@ -3,7 +3,7 @@ import { KhazainColors } from '@/constants/theme';
 import { useScholarLecturesStore, useScholarsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 28: كل الشرح — full-screen list of lecture RibbonCards for a single scholar.
@@ -43,28 +43,37 @@ export default function ScholarDetailScreen() {
       <View style={styles.searchBlock}>
         <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>
-      <ScrollView
-        contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
-        showsVerticalScrollIndicator={false}
-      >
-        <AsyncContent
-          status={status}
-          error={error}
-          onRetry={refresh}
-          skeleton={<SkeletonRibbonList count={5} />}
-          emptyMessage="لا يوجد محاضرات لهذا الشيخ"
-        >
-          {lectures.map((l) => (
+      {/* Virtualized on success — a scholar's lecture list is unbounded (T3.1).
+          AsyncContent owns the loading/empty/error states. */}
+      {status === 'success' ? (
+        <FlatList
+          data={lectures}
+          keyExtractor={(l) => l.id}
+          renderItem={({ item: l }) => (
             <RibbonCard
-              key={l.id}
               title={l.title}
               meta={l.scholar}
               duration={l.duration}
               onPress={() => Alert.alert(l.title, 'سيتم تشغيل الحلقة قريباً')}
             />
-          ))}
-        </AsyncContent>
-      </ScrollView>
+          )}
+          style={styles.flex}
+          contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
+          showsVerticalScrollIndicator={false}
+        />
+      ) : (
+        <View style={styles.list}>
+          <AsyncContent
+            status={status}
+            error={error}
+            onRetry={refresh}
+            skeleton={<SkeletonRibbonList count={5} />}
+            emptyMessage="لا يوجد محاضرات لهذا الشيخ"
+          >
+            {null}
+          </AsyncContent>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -95,6 +104,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  flex: { flex: 1 },
   list: {
     paddingHorizontal: 16,
     paddingTop: 4,

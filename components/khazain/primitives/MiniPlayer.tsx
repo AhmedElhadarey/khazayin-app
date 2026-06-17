@@ -10,11 +10,16 @@ import { LogoBadge } from './LogoBadge';
 // the RIGHT (RTL leading edge), title + reciter to its left, transport
 // controls on the FAR LEFT (skip-back, navy circle play/pause, skip-forward).
 export function MiniPlayer() {
-  const { track, isPlaying, progress, isVisible, togglePlay } = usePlayerStore();
+  // Atomic selectors: the player store's `progress` updates ~1Hz during
+  // playback; subscribing to the whole store here would re-render the SVG
+  // transport glyphs every tick. The progress bar is isolated into
+  // <ProgressFill/> so only it re-renders on a tick (T3.3).
+  const track = usePlayerStore((s) => s.track);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const isVisible = usePlayerStore((s) => s.isVisible);
+  const togglePlay = usePlayerStore((s) => s.togglePlay);
 
   if (!isVisible || !track) return null;
-
-  const pct = Math.max(0, Math.min(1, progress));
 
   return (
     <View style={[styles.shell, KhazainShadows.card]}>
@@ -52,10 +57,18 @@ export function MiniPlayer() {
 
       {/* Progress bar pinned to the bottom of the card */}
       <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${pct * 100}%` }]} />
+        <ProgressFill />
       </View>
     </View>
   );
+}
+
+// Isolated so a ~1Hz progress tick re-renders only this fill, not the parent
+// MiniPlayer and its SVG transport glyphs (T3.3).
+function ProgressFill() {
+  const progress = usePlayerStore((s) => s.progress);
+  const pct = Math.max(0, Math.min(1, progress));
+  return <View style={[styles.progressFill, { width: `${pct * 100}%` }]} />;
 }
 
 // Triangle + bar skip-back / skip-forward glyphs (small, gold/copper outline-ish per Figma).
