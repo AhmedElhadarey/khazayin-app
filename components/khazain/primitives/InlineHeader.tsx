@@ -30,9 +30,11 @@ export function InlineHeader({
           {title}
         </Text>
         <View style={styles.chevronWrap}>
+          {/* Back affordance points RIGHT — the standard RTL "back" direction,
+              unified with DetailHeader (T5.4 / audit A11Y-P2-1). */}
           <Svg width={10} height={12} viewBox="0 0 10 12">
             <Path
-              d="M7 1 L2 6 L7 11"
+              d="M3 1 L8 6 L3 11"
               stroke={KhazainColors.navy800}
               strokeWidth={1.8}
               strokeLinecap="round"
