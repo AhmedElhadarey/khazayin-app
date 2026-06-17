@@ -26,13 +26,22 @@ import { WIRD_REMINDER_DEFAULT_TIME } from '@/constants/settings';
 import { useSettingsStore } from '@/store';
 import { useWirdStore } from '@/store/wirdStore';
 
+// Guarded open of OS settings — Linking.openSettings() can reject on some
+// platforms/OEMs; match the project's external-action convention (try/catch +
+// Arabic Alert fallback) instead of a floating rejection (T5.3).
+function openOsSettings() {
+  Linking.openSettings().catch(() => {
+    Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+  });
+}
+
 function promptOpenOsSettings() {
   Alert.alert(
     'إذن الإشعارات مطلوب',
     'لتفعيل الإشعارات، يرجى السماح بها من إعدادات النظام.',
     [
       { text: 'إلغاء', style: 'cancel' },
-      { text: 'فتح الإعدادات', onPress: () => Linking.openSettings() },
+      { text: 'فتح الإعدادات', onPress: openOsSettings },
     ],
   );
 }
@@ -111,7 +120,7 @@ export default function SettingsNotificationsScreen() {
         showsVerticalScrollIndicator={false}
       >
         {permission === 'denied' ? (
-          <PermissionDeniedBanner onPress={() => Linking.openSettings()} />
+          <PermissionDeniedBanner onPress={openOsSettings} />
         ) : null}
         <View style={styles.list}>
           {NOTIFICATION_CATEGORIES.map((cat) => {

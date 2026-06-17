@@ -91,5 +91,6 @@ const styles = StyleSheet.create({
     fontFamily: 'TheSansArabic',
     fontSize: 11,
     fontWeight: '700',
+    writingDirection: 'rtl',
   },
 });
