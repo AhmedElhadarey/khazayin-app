@@ -6,7 +6,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { I18nManager, LogBox, Platform } from 'react-native';
+import { I18nManager, LogBox, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import { ToastOverlay } from '@/components/khazain';
@@ -15,7 +15,10 @@ import { useWirdStore } from '@/store/wirdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
 import { registerCacheRoot } from '@/services/cacheFacade';
-import { reconcileLegacyOnboardingFlag } from '@/services/onboardingGate';
+import {
+  reconcileLegacyOnboardingFlag,
+  shouldRedirectToOnboarding,
+} from '@/services/onboardingGate';
 import * as Sentry from '@sentry/react-native';
 import 'react-native-reanimated';
 
@@ -83,7 +86,7 @@ const KhazayinDarkTheme = {
   },
 };
 
-function useOnboardingRedirect() {
+function useOnboardingRedirect(navigatorReady: boolean) {
   const router = useRouter();
   const segments = useSegments();
   const [hydrated, setHydrated] = useState<boolean>(() =>
@@ -125,8 +128,6 @@ function useOnboardingRedirect() {
   }, [hydrated, reconciled, onboardingComplete, setOnboardingComplete]);
 
   useEffect(() => {
-    if (!hydrated || !reconciled) return;
-
     // Read the authoritative store value directly rather than the subscribed
     // `onboardingComplete` prop: the legacy migration updates the Zustand store
     // and `reconciled` (React state) together, and we must not redirect a
@@ -135,16 +136,25 @@ function useOnboardingRedirect() {
     const complete = useSettingsStore.getState().onboardingComplete;
     const inOnboarding = segments[0] === 'onboarding';
 
-    if (!complete && !inOnboarding) {
+    // `navigatorReady` gates on the root <Stack> being mounted (fonts loaded):
+    // navigating while RootLayout still returns `null` is a race that can crash
+    // or silently no-op (T1.3).
+    if (
+      shouldRedirectToOnboarding({
+        navigatorReady,
+        hydrated,
+        reconciled,
+        onboardingComplete: complete,
+        inOnboarding,
+      })
+    ) {
       router.replace('/onboarding');
     }
-  }, [hydrated, reconciled, onboardingComplete, segments, router]);
+  }, [navigatorReady, hydrated, reconciled, onboardingComplete, segments, router]);
 }
 
 function RootLayout() {
   const colorScheme = useColorScheme();
-  useOnboardingRedirect();
-  useBackgroundRefresh();
 
   const [fontsLoaded, fontError] = useFonts({
     Amiri: require('../assets/fonts/Amiri-Regular.ttf'),
@@ -152,6 +162,13 @@ function RootLayout() {
     NotoSansArabic: require('../assets/fonts/NotoSansArabic-VF.ttf'),
     NotoNaskhArabic: require('../assets/fonts/NotoNaskhArabic-VF.ttf'),
   });
+
+  // The root <Stack> only renders once fonts resolve (or error). Gate the
+  // onboarding redirect on this so navigation never fires during the `null`
+  // render before the Navigator mounts (T1.3).
+  const navigatorReady = fontsLoaded || !!fontError;
+  useOnboardingRedirect(navigatorReady);
+  useBackgroundRefresh();
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -188,6 +205,9 @@ function RootLayout() {
   }
 
   return (
+    <Sentry.ErrorBoundary
+      fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
+    >
     <ThemeProvider value={colorScheme === 'dark' ? KhazayinDarkTheme : KhazayinLightTheme}>
       <Stack
         screenOptions={{
@@ -324,8 +344,70 @@ function RootLayout() {
       <ToastOverlay />
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
     </ThemeProvider>
+    </Sentry.ErrorBoundary>
   );
 }
+
+// Full-screen Arabic fallback shown when a render error is caught, instead of
+// Sentry.wrap's default blank screen (T1.4). `onRetry` re-mounts the subtree.
+function RootErrorFallback({ onRetry }: { onRetry: () => void }) {
+  return (
+    <View style={fallbackStyles.container}>
+      <Text style={fallbackStyles.title}>حدث خطأ غير متوقع</Text>
+      <Text style={fallbackStyles.body}>
+        نعتذر، حدث خطأ أثناء تشغيل التطبيق. يمكنك إعادة المحاولة.
+      </Text>
+      <Pressable
+        onPress={onRetry}
+        accessibilityRole="button"
+        accessibilityLabel="إعادة المحاولة"
+        style={({ pressed }) => [fallbackStyles.button, { opacity: pressed ? 0.85 : 1 }]}
+      >
+        <Text style={fallbackStyles.buttonLabel}>إعادة المحاولة</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+const fallbackStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 32,
+    backgroundColor: Colors.light.background,
+  },
+  title: {
+    fontFamily: 'Amiri-Bold',
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.light.text,
+    textAlign: 'center',
+    writingDirection: 'rtl',
+    marginBottom: 10,
+  },
+  body: {
+    fontSize: 14,
+    color: Colors.light.text,
+    textAlign: 'center',
+    writingDirection: 'rtl',
+    lineHeight: 22,
+    marginBottom: 24,
+  },
+  button: {
+    paddingVertical: 12,
+    paddingHorizontal: 28,
+    borderRadius: 12,
+    backgroundColor: Colors.light.primary,
+  },
+  buttonLabel: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: '600',
+    textAlign: 'center',
+    writingDirection: 'rtl',
+  },
+});
 
 // Wrap the root so Sentry can capture render errors and touch/navigation
 // breadcrumbs. No-op beyond error boundary when no DSN is configured.

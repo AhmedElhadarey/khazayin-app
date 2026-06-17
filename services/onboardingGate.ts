@@ -35,3 +35,40 @@ export async function reconcileLegacyOnboardingFlag(): Promise<boolean> {
     return false;
   }
 }
+
+export type OnboardingRedirectInput = {
+  /**
+   * The navigator (root `<Stack>`) is mounted. While the root layout still
+   * returns `null` (fonts not yet loaded) this is `false`, and we must NOT
+   * navigate — `router.replace` before the Navigator mounts is a race that can
+   * crash or no-op (T1.3).
+   */
+  navigatorReady: boolean;
+  /** Persisted settings store finished rehydrating. */
+  hydrated: boolean;
+  /** One-time legacy-flag reconciliation finished. */
+  reconciled: boolean;
+  /** Authoritative onboarding-complete value (read from the store, not a prop). */
+  onboardingComplete: boolean;
+  /** The user is already on the onboarding route. */
+  inOnboarding: boolean;
+};
+
+/**
+ * Pure decision for the onboarding redirect. Returns `true` only when it is safe
+ * AND necessary to send the user to `/onboarding`: the navigator must be mounted,
+ * hydration + legacy reconciliation must be done, onboarding must be incomplete,
+ * and we must not already be there.
+ */
+export function shouldRedirectToOnboarding({
+  navigatorReady,
+  hydrated,
+  reconciled,
+  onboardingComplete,
+  inOnboarding,
+}: OnboardingRedirectInput): boolean {
+  if (!navigatorReady || !hydrated || !reconciled) return false;
+  if (onboardingComplete) return false;
+  if (inOnboarding) return false;
+  return true;
+}
