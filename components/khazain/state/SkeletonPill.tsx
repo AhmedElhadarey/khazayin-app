@@ -15,6 +15,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -27,14 +28,16 @@ export type SkeletonPillProps = { width?: number };
 
 export function SkeletonPill({ width = 80 }: SkeletonPillProps) {
   const translateX = useSharedValue(width);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reduceMotion) return; // honor OS reduce-motion: render a static skeleton
     translateX.value = withRepeat(
       withTiming(0, { duration: 1200, easing: Easing.linear }),
       -1,
       false,
     );
-  }, [translateX, width]);
+  }, [translateX, width, reduceMotion]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],

@@ -13,6 +13,7 @@ import { StyleSheet, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -23,14 +24,16 @@ const SHIMMER_W = Math.round(WIDTH * 0.3);
 
 export function SkeletonCard() {
   const translateX = useSharedValue(WIDTH);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reduceMotion) return; // honor OS reduce-motion: render a static skeleton
     translateX.value = withRepeat(
       withTiming(0, { duration: 1200, easing: Easing.linear }),
       -1,
       false,
     );
-  }, [translateX]);
+  }, [translateX, reduceMotion]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],
