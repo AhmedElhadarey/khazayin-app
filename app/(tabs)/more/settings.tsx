@@ -1,14 +1,13 @@
-import React, { useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
-import { KhazainColors } from '@/constants/theme';
-import { KhazainConfig } from '@/constants/config';
+import { ListRowCard } from '@/components/khazain';
 import { OrnamentPattern } from '@/components/khazain/patterns';
-import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
-import type { FontSizeLevel } from '@/types/settings';
+import { SettingsSection } from '@/components/khazain/settings';
+import { KhazainConfig } from '@/constants/config';
+import { KhazainColors } from '@/constants/theme';
+import { clearAppCache } from '@/services/cacheFacade';
+import { shareNotes } from '@/services/notesExporter';
+import { LEGACY_ONBOARDING_FLAG_KEY } from '@/services/onboardingGate';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as Sentry from '@sentry/react-native';
 import {
   useNotesStore,
   useQiratStore,
@@ -16,8 +15,13 @@ import {
   useSettingsStore,
   useToastStore,
 } from '@/store';
-import { clearAppCache } from '@/services/cacheFacade';
-import { shareNotes } from '@/services/notesExporter';
+import type { FontSizeLevel } from '@/types/settings';
+import { useRouter } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
+import React, { useEffect } from 'react';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 const FONT_LEVEL_LABELS: Record<FontSizeLevel, string> = {
   1: 'صغير جدًا',
@@ -40,6 +44,8 @@ export default function SettingsScreen() {
   const reciters = useRecitersStore((s) => s.data);
   const fetchQiraat = useQiratStore((s) => s.fetch);
   const fetchReciters = useRecitersStore((s) => s.fetch);
+  const setOnboardingComplete = useSettingsStore((s) => s.setOnboardingComplete);
+  const setOnboardingStep = useSettingsStore((s) => s.setOnboardingStep);
 
   // Resolve labels on cold open: fetch qiraat/reciters lists so the row
   // values show the Arabic name instead of a fallback dash.
@@ -88,6 +94,25 @@ export default function SettingsScreen() {
     await shareNotes(notes);
   };
 
+  const onResetOnboarding = async () => {
+    await AsyncStorage.removeItem(LEGACY_ONBOARDING_FLAG_KEY);
+    setOnboardingStep(0);
+    setOnboardingComplete(false);
+    router.replace('/onboarding' as any);
+  };
+
+  const onTestSentry = () => {
+    const dsnConfigured = !!process.env.EXPO_PUBLIC_SENTRY_DSN;
+    Sentry.captureException(new Error('Khazayin test event (dev settings)'));
+    Sentry.captureMessage('Khazayin test message (dev settings)', 'info');
+    Alert.alert(
+      'Sentry',
+      dsnConfigured
+        ? 'تم إرسال حدث تجريبي إلى Sentry. تحقّق من لوحة المشاريع خلال دقيقة.'
+        : 'لم يُضبط EXPO_PUBLIC_SENTRY_DSN — لن يُرسَل الحدث.',
+    );
+  };
+
   const qiraaName =
     qiraat.find((q) => q.id === defaultQiraaId)?.name ?? 'حفص عن عاصم';
   const reciterName =
@@ -97,80 +122,96 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 160 }}
+        contentContainerStyle={{ paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerBlock}>
           <Text style={styles.h1}>الإعدادات</Text>
         </View>
         <SettingsSection title="التلاوة">
-          <SettingsValueRow
+          <ListRowCard
             title="القراءة الافتراضية"
-            value={qiraaName}
+            subtitle={qiraaName}
             icon={<QiraaIcon />}
             onPress={() => router.push('/settings-qiraa' as any)}
           />
-          <SettingsValueRow
+          <ListRowCard
             title="القارئ المفضّل"
-            value={reciterName}
+            subtitle={reciterName}
             icon={<ReciterIcon />}
             onPress={() => router.push('/settings-reciter' as any)}
           />
         </SettingsSection>
         <SettingsSection title="القراءة">
-          <SettingsValueRow
+          <ListRowCard
             title="حجم خط القرآن"
-            value={FONT_LEVEL_LABELS[fontSizeLevel]}
+            subtitle={FONT_LEVEL_LABELS[fontSizeLevel]}
             icon={<FontSizeIcon />}
             onPress={() => router.push('/settings-font-size' as any)}
           />
         </SettingsSection>
         <SettingsSection title="الإشعارات">
-          <SettingsValueRow
+          <ListRowCard
             title="الإشعارات"
-            value={notificationsSummary}
+            subtitle={notificationsSummary}
             icon={<BellIcon />}
             onPress={() => router.push('/settings-notifications' as any)}
           />
         </SettingsSection>
         <SettingsSection title="التطبيق">
-          <SettingsValueRow
+          <ListRowCard
             title="اللغة"
-            value="العربية"
+            subtitle="العربية"
             icon={<GlobeIcon />}
             onPress={() =>
               Alert.alert('اللغة', 'هذا التطبيق متاح باللغة العربية فقط.')
             }
           />
-          <SettingsValueRow
+          <ListRowCard
             title="حول التطبيق"
-            value="الإصدار والمؤسسة"
+            subtitle="الإصدار والمؤسسة"
             icon={<AboutIcon />}
             onPress={() => router.push('/settings-about' as any)}
           />
         </SettingsSection>
         <SettingsSection title="البيانات">
-          <SettingsValueRow
+          <ListRowCard
             title="تفريغ الذاكرة المؤقتة"
-            value=""
+            subtitle=""
             icon={<TrashIcon />}
             onPress={onClearCache}
           />
-          <SettingsValueRow
+          <ListRowCard
             title="تصدير الملاحظات"
-            value=""
+            subtitle=""
             icon={<ExportIcon />}
             onPress={onExportNotes}
           />
         </SettingsSection>
         <SettingsSection title="قانوني">
-          <SettingsValueRow
+          <ListRowCard
             title="سياسة الخصوصية"
-            value=""
+            subtitle=""
             icon={<PrivacyIcon />}
             onPress={openPrivacyPolicy}
           />
         </SettingsSection>
+        {__DEV__ ? (
+          <SettingsSection title="مطوّر (Dev)">
+            <ListRowCard
+              title="إعادة الإعداد الأولي"
+              subtitle="عرض شاشة الترحيب من جديد"
+              icon={<AboutIcon />}
+              onPress={onResetOnboarding}
+            />
+            <ListRowCard
+              title="إرسال حدث تجريبي إلى Sentry"
+              subtitle="للتحقق من تسجيل الأعطال"
+              icon={<AboutIcon />}
+              onPress={onTestSentry}
+            />
+          </SettingsSection>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );

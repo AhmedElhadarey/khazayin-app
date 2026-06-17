@@ -1,7 +1,7 @@
+import { ChevronIcon } from '@/components/khazain/icons';
+import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { ChevronIcon } from '@/components/khazain/icons';
 
 type Props = {
   title: string;

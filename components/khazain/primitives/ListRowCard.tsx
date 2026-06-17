@@ -30,7 +30,7 @@ export function ListRowCard({
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <View style={styles.iconChip}>{icon}</View>
+      {chevron ? <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" /> : null}
       <View style={styles.textCol}>
         <Text style={styles.title} numberOfLines={1}>
           {title}
@@ -42,7 +42,8 @@ export function ListRowCard({
         ) : null}
         {count ? <Text style={styles.count}>{count}</Text> : null}
       </View>
-      {chevron ? <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" /> : null}
+      <View style={styles.iconChip}>{icon}</View>
+
     </Pressable>
   );
 }

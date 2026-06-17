@@ -1,6 +1,6 @@
+import { KhazainColors } from '@/constants/theme';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { KhazainColors } from '@/constants/theme';
 
 type Props = {
   title: string;
@@ -11,8 +11,8 @@ export function SettingsSection({ title, children }: Props) {
   return (
     <View style={styles.container}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>{title}</Text>
         <View style={styles.bar} />
+        <Text style={styles.title}>{title}</Text>
       </View>
       <View style={styles.rows}>{children}</View>
     </View>
