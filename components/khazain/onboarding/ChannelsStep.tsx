@@ -38,6 +38,13 @@ export function ChannelsStep(): React.ReactElement {
           labelStyle={styles.ctaLabel}
         />
         <PillButton
+          label="انضمّ إلى قناة واتساب"
+          variant="cream"
+          onPress={() => openExternal(ONBOARDING_CHANNELS.whatsappUrl, 'واتساب')}
+          style={styles.cta}
+          labelStyle={styles.ctaLabel}
+        />
+        <PillButton
           label="اشترك في قناة يوتيوب"
           variant="cream"
           onPress={() => openExternal(ONBOARDING_CHANNELS.youtubeUrl, 'يوتيوب')}

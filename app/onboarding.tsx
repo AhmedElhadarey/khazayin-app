@@ -11,6 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ChannelsStep,
+  FEATURE_STEPS,
+  FeatureStep,
   OnboardingFooter,
   OnboardingProgress,
   QiraaStep,
@@ -121,9 +123,8 @@ export default function OnboardingScreen(): React.ReactElement {
 }
 
 /**
- * Step content. Each onboarding user story replaces its placeholder with the
- * real step component (track 003: US1 welcome, US2 qira'a, US3 reciter,
- * US4 channels).
+ * Step content (track 003): 0 welcome → 1 qira'a → 2 reciter →
+ * 3–6 feature showcase (FEATURE_STEPS) → 7 channels.
  */
 function renderStep(step: number): React.ReactElement {
   switch (step) {
@@ -133,10 +134,21 @@ function renderStep(step: number): React.ReactElement {
       return <QiraaStep />;
     case 2:
       return <ReciterStep />;
-    case 3:
+    case 7:
       return <ChannelsStep />;
-    default:
-      return <WelcomeStep />;
+    default: {
+      // Steps 3–6 are the feature-showcase screens.
+      const feature = FEATURE_STEPS[step - 3];
+      return feature ? (
+        <FeatureStep
+          illustration={feature.illustration}
+          title={feature.title}
+          description={feature.description}
+        />
+      ) : (
+        <WelcomeStep />
+      );
+    }
   }
 }
 

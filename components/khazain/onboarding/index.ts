@@ -11,3 +11,4 @@ export { WelcomeStep } from './WelcomeStep';
 export { QiraaStep } from './QiraaStep';
 export { ReciterStep } from './ReciterStep';
 export { ChannelsStep } from './ChannelsStep';
+export { FeatureStep, FEATURE_STEPS } from './FeatureStep';

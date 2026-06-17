@@ -241,7 +241,7 @@ describe('useSettingsStore', () => {
   });
 
   it('T-SS-13: setOnboardingStep clamps above-range input to ONBOARDING_STEP_COUNT-1', async () => {
-    useSettingsStore.getState().setOnboardingStep(7);
+    useSettingsStore.getState().setOnboardingStep(ONBOARDING_STEP_COUNT + 3);
     expect(useSettingsStore.getState().onboardingStep).toBe(ONBOARDING_STEP_COUNT - 1);
 
     await flushPersist();
