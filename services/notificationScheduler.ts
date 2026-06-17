@@ -9,6 +9,7 @@
 
 import * as Notifications from 'expo-notifications';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { Platform } from 'react-native';
 
 import { isCategoryEnabled } from '@/services/notificationRegistry';
 
@@ -79,6 +80,22 @@ function isWirdDaily(notification: ScheduledNotificationLike): boolean {
 // Public API
 // ---------------------------------------------------------------------------
 
+// Creates the named Android notification channel (T7.5) so the wird reminder
+// shows under a meaningful, user-configurable channel in system settings
+// instead of a generic default. No-op on iOS / Expo Go. Fire-and-forget safe.
+async function ensureAndroidChannelAsync(): Promise<void> {
+  if (IS_EXPO_GO || Platform.OS !== 'android') return;
+  try {
+    await Notifications.setNotificationChannelAsync(WIRD_CATEGORY, {
+      name: WIRD_TITLE,
+      importance: Notifications.AndroidImportance.DEFAULT,
+      sound: 'default',
+    });
+  } catch (err) {
+    logDev('ensureAndroidChannelAsync failed', err);
+  }
+}
+
 export function bootstrapNotificationHandler(): void {
   if (handlerRegistered) return;
   if (IS_EXPO_GO) {
@@ -97,6 +114,8 @@ export function bootstrapNotificationHandler(): void {
         shouldSetBadge: false,
       }),
     });
+    // Fire-and-forget — channel creation must not block handler registration.
+    void ensureAndroidChannelAsync();
     handlerRegistered = true;
   } catch (err) {
     logDev('bootstrapNotificationHandler failed', err);
@@ -142,6 +161,9 @@ export async function scheduleWirdReminderAsync(
     // Idempotency: clear any prior wird-daily before scheduling the next.
     await cancelWirdReminderAsync();
 
+    // Ensure the named Android channel exists before scheduling against it.
+    await ensureAndroidChannelAsync();
+
     const identifier = await Notifications.scheduleNotificationAsync({
       content: {
         title: WIRD_TITLE,
@@ -152,6 +174,7 @@ export async function scheduleWirdReminderAsync(
         type: Notifications.SchedulableTriggerInputTypes.DAILY,
         hour: cfg.hour,
         minute: cfg.minute,
+        channelId: WIRD_CATEGORY,
       },
     });
 

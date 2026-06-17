@@ -32,7 +32,9 @@ LogBox.ignoreLogs(['Require cycle:']);
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
 Sentry.init({
   dsn: SENTRY_DSN,
-  enabled: !!SENTRY_DSN,
+  // Disabled in development so dev/test crashes don't pollute the production
+  // Sentry issue stream (T7.4).
+  enabled: !__DEV__ && !!SENTRY_DSN,
   // Performance tracing: full in dev, sampled in production.
   tracesSampleRate: __DEV__ ? 1.0 : 0.2,
   sendDefaultPii: false,

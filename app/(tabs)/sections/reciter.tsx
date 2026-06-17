@@ -1,11 +1,12 @@
 import {
+  AsyncContent,
   InlineHeader,
   LetterIndex,
   ReciterRow,
   SearchPill,
   SegmentTabs,
+  SkeletonRibbonList,
 } from '@/components/khazain';
-import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
 import { DEFAULT_SETTINGS } from '@/constants/settings';

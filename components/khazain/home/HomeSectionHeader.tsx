@@ -1,6 +1,6 @@
 import { KhazainColors } from '@/constants/theme';
 import React from 'react';
-import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
+import { I18nManager, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { ChevronIcon } from '../icons';
 
 // Home-specific section header.
@@ -16,7 +16,7 @@ export function HomeSectionHeader({
 }: {
   title: string;
   onViewAll?: () => void;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
     <View style={[styles.row, style]}>

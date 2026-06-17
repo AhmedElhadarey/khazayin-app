@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
+import { toArabicDigits } from '@/constants/progress';
 
 export type Note = {
   id: string;
@@ -56,11 +57,16 @@ export function formatRelativeAr(ts: number): string {
   const diffMs = Date.now() - ts;
   const mins = Math.floor(diffMs / 60000);
   if (mins < 1) return 'الآن';
-  if (mins < 60) return `منذ ${mins} د`;
+  if (mins < 60) return `منذ ${toArabicDigits(mins)} د`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return hrs === 1 ? 'منذ ساعة' : hrs === 2 ? 'منذ ساعتين' : `منذ ${hrs} ساعات`;
+  if (hrs < 24)
+    return hrs === 1
+      ? 'منذ ساعة'
+      : hrs === 2
+        ? 'منذ ساعتين'
+        : `منذ ${toArabicDigits(hrs)} ساعات`;
   const days = Math.floor(hrs / 24);
   if (days === 1) return 'أمس';
-  if (days < 7) return `قبل ${days} أيام`;
-  return `قبل ${Math.floor(days / 7)} أسبوع`;
+  if (days < 7) return `قبل ${toArabicDigits(days)} أيام`;
+  return `قبل ${toArabicDigits(Math.floor(days / 7))} أسبوع`;
 }
