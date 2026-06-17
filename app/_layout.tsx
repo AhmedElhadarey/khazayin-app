@@ -16,11 +16,24 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
 import { registerCacheRoot } from '@/services/cacheFacade';
 import { reconcileLegacyOnboardingFlag } from '@/services/onboardingGate';
+import * as Sentry from '@sentry/react-native';
 import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
 LogBox.ignoreLogs(['Require cycle:']);
+
+// Crash + error reporting. The DSN is supplied via env (EXPO_PUBLIC_SENTRY_DSN)
+// so no secret is committed; when unset, reporting is disabled and the app runs
+// normally. Captures native crashes and unhandled JS errors.
+const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
+Sentry.init({
+  dsn: SENTRY_DSN,
+  enabled: !!SENTRY_DSN,
+  // Performance tracing: full in dev, sampled in production.
+  tracesSampleRate: __DEV__ ? 1.0 : 0.2,
+  sendDefaultPii: false,
+});
 
 // Register the image-cache root with the cacheFacade so the Settings "Clear
 // Cache" action knows what to clear. Idempotent (deduped by id).
@@ -128,7 +141,7 @@ function useOnboardingRedirect() {
   }, [hydrated, reconciled, onboardingComplete, segments, router]);
 }
 
-export default function RootLayout() {
+function RootLayout() {
   const colorScheme = useColorScheme();
   useOnboardingRedirect();
   useBackgroundRefresh();
@@ -313,3 +326,7 @@ export default function RootLayout() {
     </ThemeProvider>
   );
 }
+
+// Wrap the root so Sentry can capture render errors and touch/navigation
+// breadcrumbs. No-op beyond error boundary when no DSN is configured.
+export default Sentry.wrap(RootLayout);
