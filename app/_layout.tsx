@@ -1,6 +1,5 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
@@ -13,8 +12,10 @@ import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import { ToastOverlay } from '@/components/khazain';
 import { useProgressStore } from '@/store/progressStore';
 import { useWirdStore } from '@/store/wirdStore';
+import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
 import { registerCacheRoot } from '@/services/cacheFacade';
+import { reconcileLegacyOnboardingFlag } from '@/services/onboardingGate';
 import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
@@ -70,27 +71,61 @@ const KhazayinDarkTheme = {
 };
 
 function useOnboardingRedirect() {
-  const [isReady, setIsReady] = useState(false);
-  const [needsOnboarding, setNeedsOnboarding] = useState(false);
   const router = useRouter();
   const segments = useSegments();
+  const [hydrated, setHydrated] = useState<boolean>(() =>
+    useSettingsStore.persist.hasHydrated(),
+  );
+  const [reconciled, setReconciled] = useState<boolean>(false);
+  const onboardingComplete = useSettingsStore((s) => s.onboardingComplete);
+  const setOnboardingComplete = useSettingsStore((s) => s.setOnboardingComplete);
 
+  // Wait for the persisted settings store to finish rehydrating before gating,
+  // so we never flash the home screen or falsely redirect on a cold start.
   useEffect(() => {
-    AsyncStorage.getItem('has_seen_onboarding').then((value) => {
-      setNeedsOnboarding(value !== 'true');
-      setIsReady(true);
+    if (hydrated) return;
+    const unsub = useSettingsStore.persist.onFinishHydration(() => setHydrated(true));
+    if (useSettingsStore.persist.hasHydrated()) setHydrated(true);
+    return unsub;
+  }, [hydrated]);
+
+  // One-time legacy-flag reconciliation: pre-track-003 installs recorded
+  // completion under `has_seen_onboarding`. Migrate it into the store before
+  // deciding whether to redirect, so existing users never see the new flow.
+  useEffect(() => {
+    if (!hydrated || reconciled) return;
+    if (onboardingComplete) {
+      setReconciled(true);
+      return;
+    }
+    let active = true;
+    reconcileLegacyOnboardingFlag().then((wasSeen) => {
+      if (!active) return;
+      if (wasSeen) setOnboardingComplete(true);
+      setReconciled(true);
     });
-  }, []);
+    return () => {
+      active = false;
+    };
+    // `onboardingComplete` is needed for the fast-path read above; the
+    // `reconciled` guard makes it a no-op on every subsequent re-run.
+  }, [hydrated, reconciled, onboardingComplete, setOnboardingComplete]);
 
   useEffect(() => {
-    if (!isReady) return;
+    if (!hydrated || !reconciled) return;
 
+    // Read the authoritative store value directly rather than the subscribed
+    // `onboardingComplete` prop: the legacy migration updates the Zustand store
+    // and `reconciled` (React state) together, and we must not redirect a
+    // just-migrated legacy user even if those two updates land in separate
+    // commits. `onboardingComplete` stays in the deps to re-run on change.
+    const complete = useSettingsStore.getState().onboardingComplete;
     const inOnboarding = segments[0] === 'onboarding';
 
-    if (needsOnboarding && !inOnboarding) {
+    if (!complete && !inOnboarding) {
       router.replace('/onboarding');
     }
-  }, [isReady, needsOnboarding, segments]);
+  }, [hydrated, reconciled, onboardingComplete, segments, router]);
 }
 
 export default function RootLayout() {
