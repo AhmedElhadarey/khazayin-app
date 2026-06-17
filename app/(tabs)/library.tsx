@@ -74,6 +74,22 @@ export default function LibraryScreen() {
 
   const savedCount = useSavedStore((s) => s.items.length);
 
+  // T1.2 — if progress hydration failed at boot, surface a retry instead of
+  // silently showing zeroed stats. Re-runs both SQLite-backed store hydrations.
+  // `retrying` guards against overlapping hydrations from repeated taps.
+  const dbFailed = useProgressStore((s) => s.dbFailed);
+  const [retrying, setRetrying] = useState(false);
+  const retryHydrate = () => {
+    if (retrying) return;
+    setRetrying(true);
+    Promise.all([
+      useProgressStore.getState().hydrate(),
+      useWirdStore.getState().hydrate(),
+    ])
+      .catch(() => undefined)
+      .finally(() => setRetrying(false));
+  };
+
   // Progress snapshot (SQLite-backed, hydrated at app boot).
   const currentStreak = useProgressStore((s) => s.currentStreak);
   const trendLast28 = useProgressStore((s) => s.trendLast28);
@@ -147,6 +163,30 @@ export default function LibraryScreen() {
         <View style={styles.searchBlock}>
           <SearchPill placeholder="ابحث في مكتبتك..." onPress={() => router.push('/search' as any)} />
         </View>
+
+        {/* T1.2 — DB hydration failure banner with retry. */}
+        {dbFailed ? (
+          <View style={styles.dbErrorBanner}>
+            <Text style={styles.dbErrorText}>
+              تعذّر تحميل بياناتك. تحقّق ثم أعد المحاولة.
+            </Text>
+            <Pressable
+              onPress={retryHydrate}
+              disabled={retrying}
+              accessibilityRole="button"
+              accessibilityLabel="إعادة المحاولة"
+              accessibilityState={{ disabled: retrying, busy: retrying }}
+              style={({ pressed }) => [
+                styles.dbErrorBtn,
+                { opacity: pressed || retrying ? 0.6 : 1 },
+              ]}
+            >
+              <Text style={styles.dbErrorBtnLabel}>
+                {retrying ? 'جارٍ المحاولة…' : 'إعادة المحاولة'}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* Stats row */}
         <View style={styles.statsRow}>
@@ -497,6 +537,38 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
   searchBlock: { paddingHorizontal: 18, paddingBottom: 14 },
+  dbErrorBanner: {
+    marginHorizontal: 14,
+    marginBottom: 14,
+    padding: 14,
+    borderRadius: 14,
+    backgroundColor: KhazainColors.cream100,
+    borderWidth: 1,
+    borderColor: 'rgba(141,107,52,0.25)',
+    alignItems: 'center',
+    gap: 10,
+  },
+  dbErrorText: {
+    fontSize: 13,
+    color: KhazainColors.ink700,
+    fontFamily: 'TheSansArabic',
+    writingDirection: 'rtl',
+    textAlign: 'center',
+  },
+  dbErrorBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 10,
+    backgroundColor: KhazainColors.navy800,
+  },
+  dbErrorBtnLabel: {
+    color: '#fff',
+    fontSize: 13,
+    fontWeight: '600',
+    fontFamily: 'TheSansArabic',
+    writingDirection: 'rtl',
+    textAlign: 'center',
+  },
   statsRow: {
     flexDirection: 'row',
     gap: 8,

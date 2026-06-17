@@ -27,6 +27,9 @@ export type WirdSnapshot = {
   target: number;
   todayPct: number;
   pendingSuggestion: SuggestionDecision | null;
+  /** Set when hydration failed (DB open/read error) — drives the Library
+   *  retry affordance alongside progressStore.dbFailed (T1.2). */
+  dbFailed: boolean;
 };
 
 export type WirdStoreActions = {
@@ -43,22 +46,29 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
   target: BEGINNER_WIRD,
   todayPct: 0,
   pendingSuggestion: null,
+  dbFailed: false,
 
   async hydrate() {
-    await getRepos();
-    const [target, pagesToday] = await Promise.all([
-      wirdRepo.getTarget(),
-      progressRepo.pagesReadToday(),
-    ]);
-    const suggestion = await progressRepo.evaluateWirdSuggestion(target);
-    set({
-      target,
-      todayPct: wirdPercent(pagesToday, target),
-      pendingSuggestion: suggestion.shouldSuggest ? suggestion : null,
-    });
-    // Reconcile the OS-scheduled wird reminder with the user's current setting.
-    // Idempotent and safe to fail silently — scheduler swallows OS errors.
-    await reconcileWirdSchedule();
+    try {
+      await getRepos();
+      const [target, pagesToday] = await Promise.all([
+        wirdRepo.getTarget(),
+        progressRepo.pagesReadToday(),
+      ]);
+      const suggestion = await progressRepo.evaluateWirdSuggestion(target);
+      set({
+        target,
+        todayPct: wirdPercent(pagesToday, target),
+        pendingSuggestion: suggestion.shouldSuggest ? suggestion : null,
+        dbFailed: false,
+      });
+      // Reconcile the OS-scheduled wird reminder with the user's current setting.
+      // Idempotent and safe to fail silently — scheduler swallows OS errors.
+      await reconcileWirdSchedule();
+    } catch (err) {
+      set({ dbFailed: true });
+      throw err;
+    }
   },
 
   async setTarget(newTarget) {
