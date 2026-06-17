@@ -8,6 +8,8 @@ Project-specific guidance for future Claude Code sessions. Read this before touc
 
 Mobile app for **مؤسسة خزائن الرحمن العالمية** (Khazain Al-Rahman International Foundation). Arabic-only, RTL-first, Islamic content: Quran (Mushaf + reciters + qira'at), scholars, books, dawah design posters, personal library with notes.
 
+> **Architecture reality (2026-06-17, keep current):** the app is **not** purely offline. Beyond SQLite, there is a full HTTP data layer (`services/api/*`, Bearer-token auth in `services/api/auth.ts`/`client.ts`), a two-tier SWR cache (`services/cache/*`), and ~12 content stores built on `createAsyncStore`/`createPaginatedStore`. It is currently **inert** — `contentService` resolves to the mock adapter because `EXPO_PUBLIC_API_BASE` is unset — so today it behaves offline, but the networked surface exists and must be accounted for before a backend is wired. **Never** commit an `EXPO_PUBLIC_API_TOKEN` (it inlines into the JS bundle); real auth tokens belong in `expo-secure-store` at runtime. **Data at rest:** notes/settings live in plaintext AsyncStorage — an accepted risk for this single-user offline app (documented; revisit with `expo-secure-store`/SQLCipher only if shared-device threat model applies).
+
 ## Stack
 
 - **Expo SDK 54** + **React Native 0.81.5** + **React 19.1**
