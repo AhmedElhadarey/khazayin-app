@@ -1,7 +1,11 @@
 import { ChevronIcon } from '@/components/khazain/icons';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
+
+// Deterministic RTL row direction (see ListRowCard): 'row' when isRTL (native,
+// unchanged), 'row-reverse' as the web/stale-reload fallback.
+const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
 
 type Props = {
   title: string;
@@ -38,7 +42,7 @@ export function SettingsValueRow({ title, value, icon, onPress }: Props) {
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
+    flexDirection: ROW_DIR,
     alignItems: 'center',
     gap: 12,
     paddingVertical: 14,

@@ -1,7 +1,11 @@
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { I18nManager, StyleSheet, Text, View } from 'react-native';
 import { Toggle } from '../primitives/Toggle';
+
+// Deterministic RTL row direction (see ListRowCard): 'row' when isRTL (native,
+// unchanged), 'row-reverse' as the web/stale-reload fallback.
+const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
 
 // Smart reminder card from design_source/app/library.jsx.
 // Layout: toggle on the LEFT, title row on the right with a small round icon badge, body, next-time caption.
@@ -61,7 +65,7 @@ export function ReminderCard({
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
+    flexDirection: ROW_DIR,
     gap: 12,
     alignItems: 'flex-start',
     padding: 14,
@@ -69,7 +73,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cream50,
   },
   titleRow: {
-    flexDirection: 'row',
+    flexDirection: ROW_DIR,
     alignItems: 'center',
     gap: 10,
     marginBottom: 6,

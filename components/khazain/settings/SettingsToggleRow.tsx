@@ -1,7 +1,11 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { I18nManager, StyleSheet, Text, View } from 'react-native';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { Toggle } from '@/components/khazain/primitives';
+
+// Deterministic RTL row direction (see ListRowCard): 'row' when isRTL (native,
+// unchanged), 'row-reverse' as the web/stale-reload fallback.
+const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
 
 type Props = {
   title: string;
@@ -40,7 +44,7 @@ export function SettingsToggleRow({
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
+    flexDirection: ROW_DIR,
     alignItems: 'center',
     gap: 12,
     paddingVertical: 14,
