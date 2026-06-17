@@ -8,11 +8,16 @@
     "scheme": "khazayinapp",
     "userInterfaceStyle": "automatic",
     "extra": {
-      "rtl": true
+      "rtl": true,
+      "router": {},
+      "eas": {
+        "projectId": "d2c62f32-9cc8-475a-8312-6ca71610055a"
+      }
     },
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ahmed.elhadarey94.khazayinapp"
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +26,8 @@
         "backgroundImage": "./assets/images/android-icon-background-khazain.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.ahmed.elhadarey94.khazayinapp"
     },
     "web": {
       "output": "static",
@@ -41,7 +47,10 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "@sentry/react-native",
+      "expo-font",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,
