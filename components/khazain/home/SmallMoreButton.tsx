@@ -11,6 +11,8 @@ export function SmallMoreButton({ onPress }: { onPress?: () => void }) {
     <Pressable
       onPress={onPress}
       hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel="المزيد"
       style={({ pressed }) => [styles.btn, { opacity: pressed ? 0.85 : 1 }]}
     >
       <Svg width={8} height={8} viewBox="0 0 8 8">

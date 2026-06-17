@@ -22,6 +22,7 @@ export function InlineHeader({
       <Pressable
         onPress={onBack}
         hitSlop={10}
+        accessibilityRole="button"
         accessibilityLabel="رجوع"
         style={({ pressed }) => [styles.touchArea, { opacity: pressed ? 0.7 : 1 }]}
       >

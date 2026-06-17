@@ -134,6 +134,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
+    minHeight: 48, // ≥44pt touch target (a11y) — no-op if content is taller
     paddingTop: 10,
     paddingBottom: 10,
     paddingHorizontal: 6,
@@ -148,6 +149,7 @@ const styles = StyleSheet.create({
   activeChip: {
     backgroundColor: ACTIVE_CHIP_BG,
     borderRadius: 14,
+    minHeight: 48, // ≥44pt touch target (a11y)
     paddingTop: 10,
     paddingBottom: 10,
     paddingHorizontal: 6,

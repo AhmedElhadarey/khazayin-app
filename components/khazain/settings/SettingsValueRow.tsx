@@ -14,6 +14,8 @@ export function SettingsValueRow({ title, value, icon, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${title}، ${value}`}
       style={({ pressed }) => [
         styles.card,
         KhazainShadows.card,

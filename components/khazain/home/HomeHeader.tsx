@@ -35,6 +35,7 @@ export function HomeHeader({
         <Pressable
           onPress={onBellPress}
           hitSlop={10}
+          accessibilityRole="button"
           accessibilityLabel="الإشعارات"
           style={({ pressed }) => [styles.bell, { opacity: pressed ? 0.8 : 1 }]}
         >

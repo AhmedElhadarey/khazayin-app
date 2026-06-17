@@ -24,6 +24,8 @@ export function ListRowCard({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={count ? `${title}، ${count}` : title}
       style={({ pressed }) => [
         styles.card,
         KhazainShadows.card,

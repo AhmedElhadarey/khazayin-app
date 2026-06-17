@@ -34,6 +34,8 @@ export function Toggle({ on, onChange, disabled }: Props) {
     <Pressable
       onPress={() => !disabled && onChange(!on)}
       disabled={disabled}
+      accessibilityRole="switch"
+      accessibilityState={{ checked: on, disabled: !!disabled }}
       hitSlop={6}
       style={{ opacity: disabled ? 0.5 : 1 }}
     >

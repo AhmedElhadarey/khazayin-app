@@ -28,6 +28,9 @@ export function LetterIndex({ active = 'م', onLetterPress, letters = LETTERS }:
             key={l}
             onPress={() => onLetterPress?.(l)}
             hitSlop={4}
+            accessibilityRole="button"
+            accessibilityLabel={`الحرف ${l}`}
+            accessibilityState={{ selected: isActive }}
             style={({ pressed }) => [
               styles.chip,
               isActive ? styles.chipActive : styles.chipIdle,

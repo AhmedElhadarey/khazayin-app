@@ -237,7 +237,11 @@ function AyahNum({ n }: { n: string }) {
 
 function MushafBtn({ label, icon }: { label: string; icon: React.ReactNode }) {
   return (
-    <Pressable style={({ pressed }) => [styles.footerBtn, { opacity: pressed ? 0.7 : 1 }]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.footerBtn, { opacity: pressed ? 0.7 : 1 }]}
+    >
       {icon}
       <Text style={styles.footerBtnLabel}>{label}</Text>
     </Pressable>

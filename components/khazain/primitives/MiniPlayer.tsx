@@ -45,8 +45,9 @@ export function MiniPlayer() {
           <SkipGlyph dir="back" />
           <Pressable
             onPress={togglePlay}
+            accessibilityRole="button"
             accessibilityLabel={isPlaying ? 'إيقاف مؤقت' : 'تشغيل'}
-            hitSlop={6}
+            hitSlop={10}
             style={({ pressed }) => [styles.playBtn, { opacity: pressed ? 0.85 : 1 }]}
           >
             {isPlaying ? <PauseGlyph /> : <PlayGlyph />}
@@ -168,8 +169,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   playBtn: {
-    width: 30,
-    height: 30,
+    width: 36,
+    height: 36,
     borderRadius: 999,
     backgroundColor: 'rgba(24,75,118,0.55)',
     alignItems: 'center',
