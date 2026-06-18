@@ -3,7 +3,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { KhazainRadius, KhazainShadows } from '@/constants/theme';
 
-const CARD = require('@/assets/khazain/home/hero-prophet-card.png');
+const CARD = require('@/assets/khazain/home/hero-prophet-card.webp');
 
 // "محمد رسول الله ﷺ" hero — flattened single image cropped from the Figma
 // page-05 render. The whole layer (scroll + calligraphy emblem + body text +

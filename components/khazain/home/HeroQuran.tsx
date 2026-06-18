@@ -3,7 +3,7 @@ import { Pressable, StyleSheet } from 'react-native';
 import { Image } from 'expo-image';
 import { KhazainRadius, KhazainShadows } from '@/constants/theme';
 
-const CARD = require('@/assets/khazain/home/hero-quran-card.png');
+const CARD = require('@/assets/khazain/home/hero-quran-card.webp');
 
 // "القرآن حياة" hero — flattened single image cropped from the Figma
 // page-05 render. Rehl, navy emblem, title, subtitle, and المزيد pill are

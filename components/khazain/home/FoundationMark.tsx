@@ -1,7 +1,7 @@
 import React from 'react';
 import { Image } from 'react-native';
 
-const EMBLEM = require('@/assets/khazain/brand/emblem-khazain-ar-rahman.png');
+const EMBLEM = require('@/assets/khazain/brand/emblem-khazain-ar-rahman.webp');
 
 // 39×54 brand mark used in the home header. Renders the Khazain Al-Rahman
 // emblem (navy + gold shield with calligraphy + tagline). The asset is the
