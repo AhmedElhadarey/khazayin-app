@@ -1,5 +1,5 @@
 import React from 'react';
-import { Image } from 'react-native';
+import { Image } from 'expo-image';
 
 const EMBLEM = require('@/assets/khazain/brand/emblem-khazain-ar-rahman.webp');
 
@@ -19,7 +19,8 @@ export function FoundationMark({
     <Image
       source={EMBLEM}
       style={{ width, height }}
-      resizeMode="contain"
+      contentFit="contain"
+      transition={0}
       accessibilityLabel="مؤسسة خزائن الرحمن"
     />
   );
