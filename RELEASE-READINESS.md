@@ -32,15 +32,13 @@ tooling run, a device test, or a server action. Do these, then merge.
 
 ## 2. Build / size (Phase 6)
 
-- ☐ **WebP optimization** (T6.1, ~3–5 MB): pick the converter (**D1**), then:
-  ```
-  npm i -D sharp                              # USER_ONLY dependency add
-  node scripts/optimize-assets.mjs --dry-run  # preview savings
-  node scripts/optimize-assets.mjs            # convert + print rewire checklist
-  ```
-  The script is conversion-only (never touches sources). ⟳ I then rewire the
-  `require('...png')` sites to `.webp`, run `tsc`, and we visually verify before
-  deleting the PNGs.
+- ✅ **WebP optimization (T6.1) — DONE.** `sharp` added (devDep, user-authorized);
+  `scripts/optimize-assets.mjs` run; 7 in-app art PNGs (heroes, dawah, emblem) →
+  WebP, `require()` sites rewired, source PNGs removed. **~2.4 MB off the bundled
+  assets** (`assets/khazain` 5.1M → 2.8M), tsc clean, 112/112 tests. App icons /
+  splash / favicon under `assets/images` correctly left as PNG (Expo requires it).
+  Still ☐ for you: an on-device glance that the heroes/dawah/emblem render correctly
+  from WebP (part of the QA pass in §4).
 - ☐ **Verify the real download size** (T6.2 — answers the original "100 MB" question):
   ```
   eas build --profile production --platform android      # produces an AAB
