@@ -77,3 +77,60 @@ Run the branch on a device/simulator and confirm:
 
 When any ⟳ item is unblocked, ping me with the input and I'll land the paired code
 change (with a review) immediately.
+
+## 5. Prayer notifications — the gate (US3)
+
+The prayer-time **engine** is complete, reviewed, and tested (36 suites / 274 tests).
+Prayer **notifications** are deliberately incapable of firing. Three independent
+guards hold them shut; do not lift any one of them alone.
+
+- ☐ **Client-approved Arabic notification copy** (FR-068 / T069). This is the only
+  blocker. Today `services/notificationScheduler.ts:76` ships
+  `PRAYER_BODY_PLACEHOLDER = 'حان وقت الصلاة'`. Five strings are needed — one body per
+  prayer, or one body reused with the prayer name as title (titles already exist as
+  `labelAr` in `services/notificationRegistry.ts`; they need no approval).
+
+  ⟳ When the copy lands, ping me. **All three of these change in ONE commit:**
+  1. replace `PRAYER_BODY_PLACEHOLDER` with the approved copy;
+  2. flip `available: false → true` on the five `prayer-*` entries in
+     `services/notificationRegistry.ts`;
+  3. install the provider — call `setPrayerTimesProvider(createPrayerTimesProvider(cfg))`
+     from a real boot site, re-installing whenever `settings.prayer` changes.
+
+  **Why together:** the five categories are `defaultOn: true`, so a user's stored
+  preference is already `true` on every install. `available` is the *scheduling*
+  guard (`services/horizonOrchestrator.ts:138-143` masks the preference by it), and
+  the null provider is the *data* guard. Flipping `available` while the copy is still
+  the placeholder fires `حان وقت الصلاة` to every user. Installing the provider without
+  flipping `available` arms nothing. Test `T-HO-7` binds the mask; keep it.
+
+  Then, per the phase-exit protocol: spec-compliance review → code-quality review →
+  on-device QA. Notifications cannot be verified in Expo Go for *exact-alarm* and
+  boot-rescheduling behaviour (local delivery does work there); confirm on a dev build.
+
+- ☐ **macOS-only:** verify `UIBackgroundModes` in the generated `ios/*/Info.plist`
+  contains `processing` **and** that `BGTaskSchedulerPermittedIdentifiers` lists the
+  `expo-background-task` identifier (T123). Without it the iOS horizon top-up silently
+  never runs — the app keeps working, notifications just stop after the armed horizon
+  drains. Cannot be checked from Windows: `npx expo prebuild -p ios` needs macOS.
+
+- ☐ **Play Console data-safety declaration** (T124): the app now reads coarse location
+  (2 dp, ~1.1 km) for prayer times, and `Location.reverseGeocodeAsync` **transmits that
+  coordinate off-device** (CLGeocoder on iOS, Play Services on Android) to resolve the
+  country for the default calculation method. Both platforms treat their own geocoder
+  as OS functionality rather than developer collection, so this is very likely not a
+  declarable event — but it is a transmission, and the earlier "coordinates never leave
+  the device" claim was wrong. Decide deliberately; do not inherit that claim.
+
+### Known gaps, accepted and documented
+- **Levant → Muslim World League.** `adhan` ships no Levant method. Deliberate fallback.
+- **`HighLatitudeRule.recommended()` tests `latitude > 48`, not `Math.abs(latitude)`.**
+  Southern-hemisphere high latitudes never get `SeventhOfTheNight`. Upstream adhan
+  asymmetry; negligible for an Arabic-first audience.
+- **`localDay` is a grouping key, not a claim about when the instant occurs.** At high
+  latitude isha crosses local midnight (verified: Svalbard, isha for `2026-06-21` fires
+  `00:02` on the 22nd), and the same happens in ordinary European summers. Test
+  `T-PT-CROSSDAY` pins this. **Do not "fix" it by dropping entries whose `fireAt`
+  escapes their `localDay` — that deletes isha at high latitudes.**
+- **Umm al-Qurā vs the printed Saudi Taqwim.** Even with the Ramadan +30, expect 1–2 min
+  residual differences; the official calendar carries manual adjustments. Not a bug.
