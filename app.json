@@ -50,7 +50,16 @@
       "expo-sqlite",
       "@sentry/react-native",
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-background-task",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "يستخدم التطبيق موقعك لحساب مواقيت الصلاة بدقة في مدينتك."
+        }
+      ],
+      "./plugins/withExactAlarmPermissions"
     ],
     "experiments": {
       "typedRoutes": true,
