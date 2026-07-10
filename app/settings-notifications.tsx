@@ -12,17 +12,13 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { useRouter } from 'expo-router';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { SettingsToggleRow } from '@/components/khazain/settings';
+import { SettingsToggleRow, SettingsValueRow } from '@/components/khazain/settings';
 import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
-import {
-  cancelWirdReminderAsync,
-  getPermissionAsync,
-  requestPermissionAsync,
-  scheduleWirdReminderAsync,
-  type PermissionStatus,
-} from '@/services/notificationScheduler';
-import { WIRD_REMINDER_DEFAULT_TIME } from '@/constants/settings';
+import { getPermissionAsync, type PermissionStatus } from '@/services/notificationScheduler';
+import { formatClockTime, isWirdReminderArmed } from '@/services/wirdReminder';
+import { setWirdReminderEnabled } from '@/services/wirdReminderToggle';
 import { useSettingsStore } from '@/store';
 import { useWirdStore } from '@/store/wirdStore';
 
@@ -47,8 +43,10 @@ function promptOpenOsSettings() {
 }
 
 export default function SettingsNotificationsScreen() {
+  const router = useRouter();
   const notifications = useSettingsStore((s) => s.notifications);
   const setNotificationEnabled = useSettingsStore((s) => s.setNotificationEnabled);
+  const wirdReminderTime = useSettingsStore((s) => s.wirdReminderTime);
   const [permission, setPermission] = useState<PermissionStatus>('undetermined');
   const isMounted = useRef(true);
 
@@ -89,24 +87,19 @@ export default function SettingsNotificationsScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [permission]);
 
+  // Delegates to `setWirdReminderEnabled`, the single boundary shared with the
+  // Library tab's inline toggle. It checks OS permission, refuses to flip the
+  // stored preference when permission is denied, and routes the schedule change
+  // through the horizon orchestrator (which reads the user's persisted
+  // `wirdReminderTime` rather than the WIRD_REMINDER_DEFAULT_TIME constant).
+  // Keeping the decision in one module is what stops these two screens drifting
+  // into different notions of what "on" means.
   const handleWirdToggle = async (next: boolean) => {
-    if (!next) {
-      setNotificationEnabled('wird-daily', false);
-      await cancelWirdReminderAsync();
-      return;
-    }
-    // Turning ON — verify OS permission first.
-    let current = permission;
-    if (current === 'undetermined') {
-      current = await requestPermissionAsync();
-      setPermission(current);
-    }
-    if (current !== 'granted') {
+    const outcome = await setWirdReminderEnabled(next);
+    if (outcome === 'permission-denied') {
+      await syncPermission(); // reflect the OS answer in the banner
       promptOpenOsSettings();
-      return; // don't flip
     }
-    setNotificationEnabled('wird-daily', true);
-    await scheduleWirdReminderAsync({ ...WIRD_REMINDER_DEFAULT_TIME });
   };
 
   return (
@@ -125,10 +118,12 @@ export default function SettingsNotificationsScreen() {
         <View style={styles.list}>
           {NOTIFICATION_CATEGORIES.map((cat) => {
             const enabled = notifications[cat.id];
-            // Per Phase 6 board C1: announcements-general renders as a
-            // disabled row with "قريبًا" until a push backend exists.
-            const isComingSoon: boolean = cat.id === 'announcements-general';
-            if (isComingSoon) {
+            // A category with no working scheduler yet (announcements-general,
+            // and the five prayer-* categories) renders as a disabled row with
+            // "قريبًا". Driven by the registry `available` flag rather than a
+            // hardcoded id list, so registering a new not-yet-wired category is
+            // enough to keep it out of the live toggles.
+            if (!cat.available) {
               return (
                 <SettingsToggleRow
                   key={cat.id}
@@ -151,7 +146,13 @@ export default function SettingsNotificationsScreen() {
                   title={cat.labelAr}
                   description={cat.descriptionAr}
                   icon={<BellIcon />}
-                  value={enabled}
+                  // NOT `enabled` — the stored preference alone. `wird-daily` is
+                  // `defaultOn: true`, so on a fresh install this rendered ON
+                  // while nothing was scheduled and the Library card correctly
+                  // showed OFF. Worse, an already-ON switch can only be tapped
+                  // OFF, so the one gesture that requests notification permission
+                  // was unreachable from the notifications screen itself.
+                  value={isWirdReminderArmed(enabled, permission)}
                   onValueChange={(next) => {
                     void handleWirdToggle(next);
                   }}
@@ -174,8 +175,40 @@ export default function SettingsNotificationsScreen() {
             );
           })}
         </View>
+
+        {/* Reminder-time picker entry (T045). Displayed whenever the wird
+            reminder is enabled — editing the time re-arms the DAILY trigger. */}
+        {notifications['wird-daily'] ? (
+          <SettingsValueRow
+            title="وقت تذكير الورد"
+            value={formatClockTime(wirdReminderTime)}
+            icon={<ClockIcon />}
+            onPress={() => router.push('/settings-wird-reminder' as any)}
+          />
+        ) : null}
+
+        {/* Honest delivery disclosure (T119). */}
+        <View style={styles.noteCard}>
+          <Text style={styles.noteText}>
+            تعتمد التذكيرات على إيقاظ النظام للتطبيق في وقتها، وقد تتأخر أحيانًا.
+          </Text>
+          <Text style={styles.noteText}>
+            على أجهزة أندرويد، استثنِ التطبيق من إعدادات توفير البطارية لضمان وصول
+            التذكيرات في موعدها.
+          </Text>
+        </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+function ClockIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke={c} strokeWidth={1.5} />
+      <Path d="M12 7v5l3.5 2" stroke={c} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
   );
 }
 
@@ -234,6 +267,22 @@ const styles = StyleSheet.create({
   },
   body: { paddingHorizontal: 16, gap: 16 },
   list: { gap: 8 },
+  noteCard: {
+    backgroundColor: KhazainColors.cream100,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(141,107,52,0.18)',
+    padding: 14,
+    gap: 8,
+  },
+  noteText: {
+    fontFamily: 'TheSansArabic',
+    fontSize: 12.5,
+    lineHeight: 20,
+    color: KhazainColors.ink700,
+    writingDirection: 'rtl',
+    textAlign: 'right',
+  },
   banner: {
     backgroundColor: '#FCE9D6',
     borderWidth: 1,

@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { I18nManager, LogBox, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
+import { useHorizonReconcile } from '@/hooks/useHorizonReconcile';
 import { ToastOverlay } from '@/components/khazain';
 import { useProgressStore } from '@/store/progressStore';
 import { useWirdStore } from '@/store/wirdStore';
@@ -155,8 +156,23 @@ function useOnboardingRedirect(navigatorReady: boolean) {
   }, [navigatorReady, hydrated, reconciled, onboardingComplete, segments, router]);
 }
 
+/** True once zustand's persist middleware has finished reading AsyncStorage. */
+function useSettingsHydrated(): boolean {
+  const [hydrated, setHydrated] = useState<boolean>(() =>
+    useSettingsStore.persist.hasHydrated(),
+  );
+  useEffect(() => {
+    if (hydrated) return;
+    const unsub = useSettingsStore.persist.onFinishHydration(() => setHydrated(true));
+    if (useSettingsStore.persist.hasHydrated()) setHydrated(true);
+    return unsub;
+  }, [hydrated]);
+  return hydrated;
+}
+
 function RootLayout() {
   const colorScheme = useColorScheme();
+  const settingsHydrated = useSettingsHydrated();
 
   const [fontsLoaded, fontError] = useFonts({
     Amiri: require('../assets/fonts/Amiri-Regular.ttf'),
@@ -171,6 +187,15 @@ function RootLayout() {
   const navigatorReady = fontsLoaded || !!fontError;
   useOnboardingRedirect(navigatorReady);
   useBackgroundRefresh();
+  // Keep the rolling notification horizon armed: register the background top-up
+  // task and reconcile on boot + every foreground (track 004, T026 / T115).
+  //
+  // Gate on settings hydration, NOT just fonts. Fonts resolve independently of
+  // AsyncStorage, so `fontsLoaded` alone would let the first reconcile read
+  // default settings and arm a schedule the user never chose. `assembleAndReconcile`
+  // also guards this internally (the background task has no React lifecycle);
+  // this gate just avoids a wasted pre-hydration pass.
+  useHorizonReconcile(fontsLoaded && settingsHydrated);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {
@@ -336,6 +361,30 @@ function RootLayout() {
         />
         <Stack.Screen
           name="settings-notifications"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="settings-wird-goal"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="settings-wird-reminder"
+          options={{
+            headerShown: false,
+            presentation: 'modal',
+            animation: 'slide_from_bottom',
+          }}
+        />
+        <Stack.Screen
+          name="settings-prayer"
           options={{
             headerShown: false,
             presentation: 'modal',

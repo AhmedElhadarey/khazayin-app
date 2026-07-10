@@ -15,7 +15,8 @@ export function HomeHeader({
   onSearchOpen,
 }: {
   greeting?: string;
-  hijriDate?: string;
+  /** `null` when the device cannot compute a Hijri date — render nothing. */
+  hijriDate?: string | null;
   onBellPress?: () => void;
   onSearchOpen?: () => void;
 }) {
@@ -29,7 +30,9 @@ export function HomeHeader({
           <FoundationMark />
           <View style={styles.greetText}>
             <Text style={styles.greeting}>{greeting}</Text>
-            <Text style={styles.hijri}>{hijriDate}</Text>
+            {/* Omit the line entirely when the date is unavailable. Showing a
+                placeholder would mean displaying a Hijri date that is wrong. */}
+            {hijriDate ? <Text style={styles.hijri}>{hijriDate}</Text> : null}
           </View>
         </View>
         <Pressable

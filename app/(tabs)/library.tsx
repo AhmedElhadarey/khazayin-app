@@ -2,7 +2,6 @@ import {
   AsyncContent,
   AudioProgressCard,
   CircularProgress,
-  ReminderCard,
   SearchPill,
   SkeletonPillList,
   StatCard,
@@ -13,6 +12,7 @@ import {
   InsightRow,
   MySavedSection,
   TrendSparkline,
+  WirdHistory,
   WirdSuggestionBanner,
 } from '@/components/khazain/library';
 import { usePlayerStore } from '@/store/playerStore';
@@ -21,15 +21,26 @@ import {
   SURAH_NAMES_AR,
   SURAH_START_PAGES,
   toArabicDigits as toArNum,
+  toLocalDay,
 } from '@/constants/progress';
-import { useLibraryFiltersStore, useSavedStore } from '@/store';
+import { shiftDay } from '@/db/helpers/calendar';
+import {
+  buildHistoryGrid,
+  completionByWeekday,
+  type HistoryCell,
+  type WeekdayCompletion,
+} from '@/services/wirdHistory';
+import { useLibraryFiltersStore, useSavedStore, useSettingsStore } from '@/store';
+import { describeWirdReminder } from '@/services/wirdReminder';
+import { setWirdReminderEnabled } from '@/services/wirdReminderToggle';
+import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useProgressStore } from '@/store/progressStore';
 import { useWirdStore } from '@/store/wirdStore';
 import { getRepos, progressRepo } from '@/db';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
@@ -59,12 +70,60 @@ export default function LibraryScreen() {
   const notes = useNotesStore((s) => s.notes);
   const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
 
-  const [reminderOn, setReminderOn] = useState(true);
-  const [smart1, setSmart1] = useState(true);
-  const [smart2, setSmart2] = useState(true);
-  const [smart3, setSmart3] = useState(false);
   const [filter, setFilter] = useState('all');
   const [lastReadPage, setLastReadPage] = useState<number>(1);
+
+  // Wird completion history (US5). Loaded lazily when the السجل pill is active.
+  // The window defaults to 12 weeks and grows via the "show more" affordance so
+  // multi-year grids are never eagerly rendered.
+  const HISTORY_WEEKS_INITIAL = 12;
+  const HISTORY_WEEKS_STEP = 12;
+  const HISTORY_WEEKS_MAX = 52;
+  const [historyWeeks, setHistoryWeeks] = useState(HISTORY_WEEKS_INITIAL);
+  const [history, setHistory] = useState<{
+    byWeekday: WeekdayCompletion[];
+    weeks: HistoryCell[][];
+    hasHistory: boolean;
+  } | null>(null);
+
+  // Wird reminder state lives in settingsStore (the single source of truth that
+  // the scheduler reads), not in local component state. Toggling here persists
+  // the preference AND re-arms/cancels the repeating DAILY trigger (T047).
+  //
+  // Routed through `setWirdReminderEnabled` so this toggle has the SAME
+  // permission semantics as the one in settings-notifications. Without it, a
+  // user who has denied notification permission could switch this on: the
+  // preference would persist, the card would render a next-reminder time, and
+  // `scheduleWirdReminderAsync` would silently no-op — the card would be
+  // advertising a reminder that can never fire.
+  const wirdReminderOn = useSettingsStore((s) => s.notifications['wird-daily']);
+  const wirdReminderTime = useSettingsStore((s) => s.wirdReminderTime);
+  const notificationPermission = useNotificationPermission();
+  const reminder = describeWirdReminder(new Date(), wirdReminderTime, {
+    enabled: wirdReminderOn,
+    permission: notificationPermission,
+  });
+  const onToggleWirdReminder = (next: boolean) => {
+    void setWirdReminderEnabled(next).then((outcome) => {
+      if (outcome === 'permission-denied') {
+        Alert.alert(
+          'إذن الإشعارات مطلوب',
+          'لتفعيل التذكير، يرجى السماح بالإشعارات من إعدادات النظام.',
+          [
+            { text: 'إلغاء', style: 'cancel' },
+            {
+              text: 'فتح الإعدادات',
+              onPress: () => {
+                Linking.openSettings().catch(() => {
+                  Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+                });
+              },
+            },
+          ],
+        );
+      }
+    });
+  };
 
   useEffect(() => {
     fetchFilters();
@@ -120,6 +179,32 @@ export default function LibraryScreen() {
     };
   }, [todayPct]);
 
+  // Load completion history when the السجل pill is active. Re-runs when the
+  // window grows (show more) or when today's wird ring nudges (a fresh page
+  // read should appear immediately). Guarded on `dbFailed` so the retry banner —
+  // not zeroed history — is what a hydration failure shows.
+  useEffect(() => {
+    if (filter !== 'history' || dbFailed) return;
+    let cancelled = false;
+    (async () => {
+      await getRepos();
+      const to = toLocalDay();
+      const from = shiftDay(to, -(historyWeeks * 7 - 1));
+      const rows = await progressRepo.dayCompletionsInRange(from, to);
+      if (cancelled) return;
+      setHistory({
+        byWeekday: completionByWeekday(rows, { from, to }),
+        weeks: buildHistoryGrid(rows, { from, to }),
+        // "Empty state" means no reading EVER — a user whose reading predates the
+        // current window still gets the grid + a way to expand it (show more).
+        hasHistory: rows.length > 0 || bestDayPages > 0,
+      });
+    })().catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [filter, historyWeeks, dbFailed, todayPct, bestDayPages]);
+
   const lastSurah = surahNameForPage(lastReadPage);
   const monthDeltaPct =
     pagesLastMonth > 0
@@ -128,10 +213,9 @@ export default function LibraryScreen() {
         ? 100
         : 0;
 
-  // Board condition #9: hide 'history' pill until feature exists.
+  // US5: the 'history' (السجل) pill is now live and renders <WirdHistory/>.
   // Override mock counts with real values from savedStore + notesStore.
   const realFilters = filters
-    .filter((f) => f.id !== 'history')
     .map((f) => ({
       ...f,
       count:
@@ -143,6 +227,7 @@ export default function LibraryScreen() {
 
   const showSaved = filter === 'all' || filter === 'saved';
   const showNotes = filter === 'all' || filter === 'notes';
+  const showHistory = filter === 'history';
 
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
   const openNewNote = (seedTitle?: string) =>
@@ -241,7 +326,16 @@ export default function LibraryScreen() {
         <View style={styles.block}>
           <View style={[styles.card, KhazainShadows.card]}>
             <View style={styles.wirdTop}>
-              <CircularProgress pct={todayPct} />
+              {/* The ring is the goal area — tap it to edit the daily target.
+                  Same route the Settings entry uses (one value, two doors). */}
+              <Pressable
+                onPress={() => router.push('/settings-wird-goal' as any)}
+                accessibilityRole="button"
+                accessibilityLabel={`هدف الورد اليومي، ${toArNum(wirdTarget)} صفحة`}
+                style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
+              >
+                <CircularProgress pct={todayPct} />
+              </Pressable>
               <View style={{ flex: 1 }}>
                 <Text style={styles.wirdTitle}>وردُ القرآن اليومي</Text>
                 <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
@@ -261,18 +355,34 @@ export default function LibraryScreen() {
                 Under forceRTL+row, JSX-first lands visually on the right. */}
             <View style={styles.wirdActions}>
               <Pressable
-                onPress={() => { }}
+                onPress={() => {
+                  // Open the Mushaf at the surah owning the last-read page so the
+                  // user resumes exactly where they stopped (FR-008). Falls back
+                  // to the Mushaf index when no page has been read yet.
+                  const target = lastSurah
+                    ? `/(tabs)/sections/mushaf?surah=${lastSurah.surahNumber}`
+                    : '/(tabs)/sections/mushaf';
+                  router.push(target as any);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="بدء الورد"
                 style={({ pressed }) => [styles.startBtn, { opacity: pressed ? 0.85 : 1 }]}
               >
                 <Text style={styles.startBtnLabel}>بدء الورد</Text>
               </Pressable>
               <View style={{ flex: 1 }} />
               <View style={styles.reminderInline}>
-                <Toggle on={reminderOn} onChange={setReminderOn} label="التذكير اليومي" />
+                <Toggle on={reminder.armed} onChange={onToggleWirdReminder} label="التذكير اليومي" />
 
                 <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
               </View>
             </View>
+            {/* Shows a time ONLY when the reminder is genuinely armed — i.e. the
+                user wants it AND the OS permits it. `wird-daily` defaults to true
+                and nothing requests permission at boot, so keying this off the
+                stored preference alone would advertise a reminder that cannot
+                fire. See `describeWirdReminder`. */}
+            <Text style={styles.wirdReminderNext}>{reminder.caption}</Text>
           </View>
         </View>
 
@@ -348,13 +458,33 @@ export default function LibraryScreen() {
                   ]}
                 >
                   <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
-                    {f.label} {f.count}
+                    {f.count ? `${f.label} ${f.count}` : f.label}
                   </Text>
                 </Pressable>
               );
             })}
           </AsyncContent>
         </View>
+
+        {showHistory && !dbFailed ? (
+          history ? (
+            <WirdHistory
+              byWeekday={history.byWeekday}
+              weeks={history.weeks}
+              hasHistory={history.hasHistory}
+              onShowMore={
+                historyWeeks < HISTORY_WEEKS_MAX
+                  ? () =>
+                      setHistoryWeeks((w) => Math.min(HISTORY_WEEKS_MAX, w + HISTORY_WEEKS_STEP))
+                  : undefined
+              }
+            />
+          ) : (
+            <View style={styles.block}>
+              <Text style={styles.historyLoading}>جارٍ تحميل السجل…</Text>
+            </View>
+          )
+        ) : null}
 
         {showSaved ? <MySavedSection /> : null}
 
@@ -399,35 +529,6 @@ export default function LibraryScreen() {
           )}
         </View>
 
-        {/* Smart reminders */}
-        <Text style={styles.sectionTitle}>التذكيرات الذكية</Text>
-        <View style={styles.remindersBlock}>
-          <ReminderCard
-            active
-            on={smart1}
-            onToggle={setSmart1}
-            title="تذكير ورد القرآن"
-            body="لم تقرأ الورد منذ ٣ أيام. تذكّر أن قراءة القرآن نور وشفاء للقلوب."
-            next="التذكير التالي: غداً الساعة ٨:٠٠ ص"
-            icon={<BookGlyph size={14} />}
-          />
-          <ReminderCard
-            on={smart2}
-            onToggle={setSmart2}
-            title="متابعة الاستماع"
-            body='حان وقت متابعة "تفسير سورة البقرة"'
-            next="التذكير التالي: اليوم الساعة ٧:٠٠ م"
-            icon={<HeadphonesGlyph size={14} />}
-          />
-          <ReminderCard
-            on={smart3}
-            onToggle={setSmart3}
-            title="مراجعة الأهداف"
-            body="راجع تقدّمك في الأهداف الأسبوعية."
-            next="التذكير التالي: الأحد الساعة ١٠:٠٠ ص"
-            icon={<StarGlyph size={14} />}
-          />
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -500,19 +601,6 @@ function HeadphonesGlyph({ size = 16 }: { size?: number }) {
   );
 }
 
-function StarGlyph({ size = 16 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M10 3l2.5 5 5.5.8-4 3.8 1 5.4L10 15.5 5 18l1-5.4-4-3.8L7.5 8 10 3z"
-        stroke={KhazainColors.navy800}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
 function ListGlyph() {
   return (
     <Svg width={12} height={12} viewBox="0 0 14 14">
@@ -580,7 +668,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     alignItems: 'stretch',
   },
-  remindersBlock: { paddingHorizontal: 14, paddingBottom: 8, gap: 10 },
   card: {
     padding: 16,
     borderRadius: 20,
@@ -645,6 +732,15 @@ const styles = StyleSheet.create({
     color: KhazainColors.ink500,
     fontFamily: 'TheSansArabic',
     writingDirection: 'rtl',
+  },
+  wirdReminderNext: {
+    fontSize: 11,
+    color: KhazainColors.gold600,
+    marginTop: 10,
+    fontWeight: '500',
+    fontFamily: 'TheSansArabic',
+    writingDirection: 'rtl',
+    textAlign: 'right',
   },
   quickNoteTitle: {
     fontFamily: 'Amiri-Bold',
@@ -762,6 +858,14 @@ const styles = StyleSheet.create({
     fontFamily: 'TheSansArabic',
     writingDirection: 'rtl',
     textAlign: 'right',
+  },
+  historyLoading: {
+    fontFamily: 'TheSansArabic',
+    fontSize: 13,
+    color: KhazainColors.ink400,
+    writingDirection: 'rtl',
+    textAlign: 'center',
+    paddingVertical: 24,
   },
 });
 

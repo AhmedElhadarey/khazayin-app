@@ -5,8 +5,9 @@ import {
   ONBOARDING_STEP_COUNT,
   SETTINGS_STORAGE_KEY,
 } from '@/constants/settings';
+import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
 import { useSettingsStore } from '@/store/settingsStore';
-import type { UserSettings } from '@/types/settings';
+import type { NotificationCategoryId, UserSettings } from '@/types/settings';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -57,8 +58,10 @@ describe('useSettingsStore', () => {
     expect(s.notifications).toEqual(DEFAULT_SETTINGS.notifications);
   });
 
-  it('T-SS-2: rehydrates a valid stored record unchanged', async () => {
-    const stored: UserSettings = {
+  it('T-SS-2: rehydrates a stored v2 record, migrating it to v3 while preserving prefs', async () => {
+    // Legacy v2 payload (no wirdReminderTime / prayer fields). Not typed as
+    // UserSettings because that type is now the v3 shape.
+    const stored = {
       schemaVersion: 2,
       defaultQiraaId: 'warsh-nafi',
       preferredReciterId: 'r3',
@@ -71,6 +74,7 @@ describe('useSettingsStore', () => {
     await rehydrateStore();
 
     const s = useSettingsStore.getState();
+    expect(s.schemaVersion).toBe(3);
     expect(s.defaultQiraaId).toBe('warsh-nafi');
     expect(s.preferredReciterId).toBe('r3');
     expect(s.fontSizeLevel).toBe(4);
@@ -147,7 +151,7 @@ describe('useSettingsStore', () => {
     await rehydrateStore();
 
     const s = useSettingsStore.getState();
-    expect(s.schemaVersion).toBe(2);
+    expect(s.schemaVersion).toBe(3);
     expect(s.defaultQiraaId).toBe(DEFAULT_SETTINGS.defaultQiraaId);
     expect(s.fontSizeLevel).toBe(DEFAULT_SETTINGS.fontSizeLevel);
     expect(s.notifications).toEqual(DEFAULT_SETTINGS.notifications);
@@ -163,7 +167,7 @@ describe('useSettingsStore', () => {
     expect(s.onboardingStep).toBe(0);
   });
 
-  it('T-SS-9: a stored v1 record upgrades to v2 preserving prefs and adding onboarding defaults', async () => {
+  it('T-SS-9: a stored v1 record upgrades to v3 preserving prefs and adding onboarding defaults', async () => {
     const v1 = {
       schemaVersion: 1,
       defaultQiraaId: 'warsh-nafi',
@@ -176,7 +180,7 @@ describe('useSettingsStore', () => {
 
     const s = useSettingsStore.getState();
     // schema upgraded
-    expect(s.schemaVersion).toBe(2);
+    expect(s.schemaVersion).toBe(3);
     // prefs preserved (non-destructive upgrade)
     expect(s.defaultQiraaId).toBe('warsh-nafi');
     expect(s.preferredReciterId).toBe('r3');
@@ -188,7 +192,7 @@ describe('useSettingsStore', () => {
     expect(s.onboardingStep).toBe(0);
   });
 
-  it('T-SS-10: unknown schemaVersion (99) resets to v2 defaults', async () => {
+  it('T-SS-10: unknown schemaVersion (99) resets to v3 defaults', async () => {
     const corrupt = {
       schemaVersion: 99,
       defaultQiraaId: 'warsh-nafi',
@@ -202,13 +206,13 @@ describe('useSettingsStore', () => {
     await rehydrateStore();
 
     const s = useSettingsStore.getState();
-    expect(s.schemaVersion).toBe(2);
+    expect(s.schemaVersion).toBe(3);
     expect(s.defaultQiraaId).toBe(DEFAULT_SETTINGS.defaultQiraaId);
     expect(s.onboardingComplete).toBe(false);
     expect(s.onboardingStep).toBe(0);
   });
 
-  it('T-SS-11: a v2 record with invalid onboarding fields is coerced to defaults', async () => {
+  it('T-SS-11: a v2 record with invalid onboarding fields is coerced to defaults (and migrates to v3)', async () => {
     const v2Bad = {
       schemaVersion: 2,
       defaultQiraaId: 'hafs-asim',
@@ -222,6 +226,7 @@ describe('useSettingsStore', () => {
     await rehydrateStore();
 
     const s = useSettingsStore.getState();
+    expect(s.schemaVersion).toBe(3);
     expect(s.onboardingComplete).toBe(false);
     expect(s.onboardingStep).toBe(0);
   });
@@ -266,5 +271,161 @@ describe('useSettingsStore', () => {
     expect(s.defaultQiraaId).toBe('qaloon-nafi');
     expect(s.preferredReciterId).toBe(DEFAULT_SETTINGS.preferredReciterId);
     expect(s.onboardingComplete).toBe(true);
+  });
+
+  // -------------------------------------------------------------------------
+  // Phase 2a (004-daily-wird-tracking): Settings v2 → v3 migration
+  //   - Hazard A: version gate must accept a stored v2 record (no full reset)
+  //   - Hazard B: stored notification toggles must survive coercion
+  //   - New fields: wirdReminderTime + prayer config
+  // -------------------------------------------------------------------------
+
+  const V2_BASE = {
+    schemaVersion: 2,
+    defaultQiraaId: 'warsh-nafi',
+    preferredReciterId: 'r3',
+    fontSizeLevel: 4,
+    notifications: { 'wird-daily': false, 'announcements-general': true },
+    onboardingComplete: true,
+    onboardingStep: 0,
+  } as const;
+
+  it('T-SS-16: a stored v2 record upgrades to v3 preserving prefs, notifications and onboarding (Hazard A regression)', async () => {
+    await seedStorage({ state: V2_BASE, version: 0 });
+    await rehydrateStore();
+
+    const s = useSettingsStore.getState();
+    expect(s.schemaVersion).toBe(3);
+    expect(s.defaultQiraaId).toBe('warsh-nafi');
+    expect(s.preferredReciterId).toBe('r3');
+    expect(s.fontSizeLevel).toBe(4);
+    expect(s.notifications['wird-daily']).toBe(false);
+    expect(s.onboardingComplete).toBe(true);
+    expect(s.onboardingStep).toBe(0);
+  });
+
+  it('T-SS-17: v2 → v3 backfills wirdReminderTime to {hour:20, minute:0}', async () => {
+    await seedStorage({ state: V2_BASE, version: 0 });
+    await rehydrateStore();
+
+    expect(useSettingsStore.getState().wirdReminderTime).toEqual({ hour: 20, minute: 0 });
+  });
+
+  it('T-SS-18: v2 → v3 backfills the five prayer categories to their defaultOn (true)', async () => {
+    await seedStorage({ state: V2_BASE, version: 0 });
+    await rehydrateStore();
+
+    const n = useSettingsStore.getState().notifications;
+    expect(n['prayer-fajr']).toBe(true);
+    expect(n['prayer-dhuhr']).toBe(true);
+    expect(n['prayer-asr']).toBe(true);
+    expect(n['prayer-maghrib']).toBe(true);
+    expect(n['prayer-isha']).toBe(true);
+  });
+
+  it('T-SS-19: a stored prayer-dhuhr=false survives rehydration (Hazard B regression)', async () => {
+    const v3 = {
+      schemaVersion: 3,
+      defaultQiraaId: 'hafs-asim',
+      preferredReciterId: 'r7',
+      fontSizeLevel: 3,
+      notifications: {
+        'wird-daily': true,
+        'announcements-general': false,
+        'prayer-fajr': true,
+        'prayer-dhuhr': false,
+        'prayer-asr': true,
+        'prayer-maghrib': true,
+        'prayer-isha': true,
+      },
+      wirdReminderTime: { hour: 20, minute: 0 },
+      prayer: { location: { kind: 'none' }, method: 'umm-al-qura', madhab: 'shafi' },
+      onboardingComplete: false,
+      onboardingStep: 0,
+    };
+    await seedStorage({ state: v3, version: 0 });
+    await rehydrateStore();
+
+    expect(useSettingsStore.getState().notifications['prayer-dhuhr']).toBe(false);
+  });
+
+  it('T-SS-20: a stored v1 record chains both migrations and lands on v3 correctly', async () => {
+    const v1 = {
+      schemaVersion: 1,
+      defaultQiraaId: 'qaloon-nafi',
+      preferredReciterId: 'r5',
+      fontSizeLevel: 2,
+      notifications: { 'wird-daily': false },
+    };
+    await seedStorage({ state: v1, version: 0 });
+    await rehydrateStore();
+
+    const s = useSettingsStore.getState();
+    expect(s.schemaVersion).toBe(3);
+    expect(s.defaultQiraaId).toBe('qaloon-nafi');
+    expect(s.preferredReciterId).toBe('r5');
+    expect(s.fontSizeLevel).toBe(2);
+    // preserved toggle
+    expect(s.notifications['wird-daily']).toBe(false);
+    // backfilled fields
+    expect(s.notifications['announcements-general']).toBe(false);
+    expect(s.notifications['prayer-fajr']).toBe(true);
+    expect(s.wirdReminderTime).toEqual({ hour: 20, minute: 0 });
+    expect(s.prayer).toEqual({
+      location: { kind: 'none' },
+      method: 'umm-al-qura',
+      madhab: 'shafi',
+    });
+    expect(s.onboardingComplete).toBe(false);
+    expect(s.onboardingStep).toBe(0);
+  });
+
+  it('T-SS-21: invalid wirdReminderTime (hour:25) coerces to the default', async () => {
+    const bad = {
+      ...V2_BASE,
+      schemaVersion: 3,
+      wirdReminderTime: { hour: 25, minute: 0 },
+      prayer: { location: { kind: 'none' }, method: 'umm-al-qura', madhab: 'shafi' },
+    };
+    await seedStorage({ state: bad, version: 0 });
+    await rehydrateStore();
+
+    expect(useSettingsStore.getState().wirdReminderTime).toEqual({ hour: 20, minute: 0 });
+  });
+
+  it('T-SS-22: invalid coordinates (latitude:999) degrade prayer.location to {kind:none}', async () => {
+    const bad = {
+      ...V2_BASE,
+      schemaVersion: 3,
+      wirdReminderTime: { hour: 20, minute: 0 },
+      prayer: {
+        location: { kind: 'gps', latitude: 999, longitude: 10 },
+        method: 'umm-al-qura',
+        madhab: 'shafi',
+      },
+    };
+    await seedStorage({ state: bad, version: 0 });
+    await rehydrateStore();
+
+    expect(useSettingsStore.getState().prayer.location).toEqual({ kind: 'none' });
+  });
+
+  it('T-SS-23: registry exhaustiveness — 7 categories whose ids match the NotificationCategoryId union', async () => {
+    const expectedIds: NotificationCategoryId[] = [
+      'wird-daily',
+      'announcements-general',
+      'prayer-fajr',
+      'prayer-dhuhr',
+      'prayer-asr',
+      'prayer-maghrib',
+      'prayer-isha',
+    ];
+    expect(NOTIFICATION_CATEGORIES.length).toBe(7);
+    const registryIds = NOTIFICATION_CATEGORIES.map((c) => c.id).sort();
+    expect(registryIds).toEqual([...expectedIds].sort());
+  });
+
+  it('T-SS-KEY: SETTINGS_STORAGE_KEY is decoupled from the schema version and unchanged', () => {
+    expect(SETTINGS_STORAGE_KEY).toBe('@khazain/settings/v1');
   });
 });

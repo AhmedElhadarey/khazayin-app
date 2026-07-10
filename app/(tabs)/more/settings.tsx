@@ -1,10 +1,15 @@
 import { ListRowCard } from '@/components/khazain';
 import { OrnamentPattern } from '@/components/khazain/patterns';
-import { SettingsSection } from '@/components/khazain/settings';
+import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
+import { toArabicDigits as toArNum } from '@/constants/progress';
+import { PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
+import { useWirdStore } from '@/store/wirdStore';
 import { KhazainConfig } from '@/constants/config';
 import { KhazainColors } from '@/constants/theme';
 import { clearAppCache } from '@/services/cacheFacade';
 import { shareNotes } from '@/services/notesExporter';
+import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
+import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { LEGACY_ONBOARDING_FLAG_KEY } from '@/services/onboardingGate';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Sentry from '@sentry/react-native';
@@ -31,21 +36,45 @@ const FONT_LEVEL_LABELS: Record<FontSizeLevel, string> = {
   5: 'كبير جدًا',
 };
 
+
 export default function SettingsScreen() {
   const router = useRouter();
   const defaultQiraaId = useSettingsStore((s) => s.defaultQiraaId);
   const preferredReciterId = useSettingsStore((s) => s.preferredReciterId);
   const fontSizeLevel = useSettingsStore((s) => s.fontSizeLevel);
   const notifications = useSettingsStore((s) => s.notifications);
-  const enabledCount = Object.values(notifications).filter(Boolean).length;
-  const totalCount = Object.keys(notifications).length;
-  const notificationsSummary = `${enabledCount} من ${totalCount} مفعّلة`;
+  const prayer = useSettingsStore((s) => s.prayer);
+  const notificationPermission = useNotificationPermission();
+
+  // Count only categories that can ACTUALLY fire: registered `available` (a
+  // scheduler exists), switched on by the user, and permitted by the OS.
+  //
+  // Counting the raw preference record instead reported "٦ من ٧ مفعّلة" on a
+  // fresh install — the five `prayer-*` categories are `defaultOn: true` but
+  // `available: false`, so none of them can produce a notification, and the wird
+  // reminder still needs an OS grant. Six of seven "enabled", zero deliverable.
+  const availableCategories = NOTIFICATION_CATEGORIES.filter((c) => c.available);
+  const armedCount = availableCategories.filter(
+    (c) => notifications[c.id] && notificationPermission === 'granted',
+  ).length;
+  const notificationsSummary =
+    armedCount === 0
+      ? 'لا توجد إشعارات مفعّلة'
+      : `${toArNum(armedCount)} من ${toArNum(availableCategories.length)} مفعّلة`;
+  // The row displays real computed times, so it is shown even while prayer
+  // notifications remain disabled. The subtitle surfaces the chosen calculation
+  // method once a location exists; before that, prompts the user to set one.
+  const prayerSubtitle =
+    prayer.location.kind !== 'none'
+      ? PRAYER_METHOD_LABELS_AR[prayer.method]
+      : 'لم يتم تحديد الموقع';
   const qiraat = useQiratStore((s) => s.data);
   const reciters = useRecitersStore((s) => s.data);
   const fetchQiraat = useQiratStore((s) => s.fetch);
   const fetchReciters = useRecitersStore((s) => s.fetch);
   const setOnboardingComplete = useSettingsStore((s) => s.setOnboardingComplete);
   const setOnboardingStep = useSettingsStore((s) => s.setOnboardingStep);
+  const wirdTarget = useWirdStore((s) => s.target);
 
   // Resolve labels on cold open: fetch qiraat/reciters lists so the row
   // values show the Arabic name instead of a fallback dash.
@@ -149,6 +178,12 @@ export default function SettingsScreen() {
             icon={<FontSizeIcon />}
             onPress={() => router.push('/settings-font-size' as any)}
           />
+          <SettingsValueRow
+            title="هدف الورد اليومي"
+            value={`${toArNum(wirdTarget)} صفحة`}
+            icon={<WirdGoalIcon />}
+            onPress={() => router.push('/settings-wird-goal' as any)}
+          />
         </SettingsSection>
         <SettingsSection title="الإشعارات">
           <ListRowCard
@@ -156,6 +191,14 @@ export default function SettingsScreen() {
             subtitle={notificationsSummary}
             icon={<BellIcon />}
             onPress={() => router.push('/settings-notifications' as any)}
+          />
+        </SettingsSection>
+        <SettingsSection title="مواقيت الصلاة">
+          <ListRowCard
+            title="مواقيت الصلاة"
+            subtitle={prayerSubtitle}
+            icon={<PrayerTimesIcon />}
+            onPress={() => router.push('/settings-prayer' as any)}
           />
         </SettingsSection>
         <SettingsSection title="التطبيق">
@@ -248,6 +291,17 @@ function ReciterIcon() {
   );
 }
 
+function WirdGoalIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Circle cx={12} cy={12} r={9} stroke={c} strokeWidth={1.5} />
+      <Circle cx={12} cy={12} r={5} stroke={c} strokeWidth={1.5} />
+      <Circle cx={12} cy={12} r={1.6} fill={c} />
+    </Svg>
+  );
+}
+
 function FontSizeIcon() {
   const c = KhazainColors.navy800;
   return (
@@ -328,6 +382,34 @@ function BellIcon() {
       />
       <Path d="M10 20a2 2 0 004 0" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
       <Circle cx={12} cy={5} r={1.2} fill={c} />
+    </Svg>
+  );
+}
+
+function PrayerTimesIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 3c2 2 3 3.5 3 5a3 3 0 01-6 0c0-1.5 1-3 3-5z"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M4 20v-6a8 8 0 0116 0v6"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path
+        d="M3 20h18M10 20v-4a2 2 0 014 0v4"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </Svg>
   );
 }

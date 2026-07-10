@@ -25,7 +25,14 @@ const TAB_META: Record<
 };
 
 // Visual RTL order (right → left): home, library, sections, more.
-// With forceRTL auto-flip + flexDirection:'row', the first JSX child lands on the right.
+//
+// The FIRST JSX child lands on the LEFT. (The previous comment here claimed the
+// opposite, which contradicts the array directly below it: `more` is first and
+// `more` is the leftmost tab.) We do not depend on `forceRTL` auto-flipping
+// `flexDirection: 'row'` — that flip is unreliable on web and across stale dev
+// reloads. Instead the typed order below is authored in visual left→right order
+// and wins deterministically. Any other row of RTL-ordered children in this repo
+// must follow the same rule; see `WirdHistory`'s COLUMN_ORDER.
 const TAB_ORDER: TabKey[] = ['more', 'sections', 'library', 'index'];
 
 // Colors pulled from the new spec.

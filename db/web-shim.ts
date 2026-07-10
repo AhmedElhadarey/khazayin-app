@@ -266,6 +266,29 @@ export function createWebRepos(): Repos {
       await load();
       return ensure().settings.last_read_page || 1;
     },
+
+    async completedDaysInRange(fromLocalDay, toLocalDay) {
+      await load();
+      return Object.entries(ensure().days)
+        .filter(
+          ([day, v]) =>
+            v.wirdCompleted === 1 && day >= fromLocalDay && day <= toLocalDay,
+        )
+        .map(([day]) => day);
+    },
+
+    async dayCompletionsInRange(fromLocalDay, toLocalDay) {
+      await load();
+      return Object.entries(ensure().days)
+        .filter(([day]) => day >= fromLocalDay && day <= toLocalDay)
+        .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+        .map(([day, v]) => ({
+          local_day: day,
+          pages_read: v.pagesRead,
+          wird_target_at_day: v.wirdTargetAtDay,
+          wird_completed: v.wirdCompleted,
+        }));
+    },
   };
 
   const lectureSessions: LectureSessionsRepository = {

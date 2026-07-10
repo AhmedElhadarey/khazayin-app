@@ -7,6 +7,7 @@ import { safeParseJson } from '../safeParse';
 import {
   bestWirdDay,
   currentStreakFromDb,
+  dayRowsInRange,
   longestStreakEver,
   monthPagesRead,
   recentActivePages,
@@ -146,6 +147,20 @@ export function createPageReadsRepository(db: SQLite.SQLiteDatabase): PageReadsR
       if (!row) return 1;
       const n = Number(safeParseJson<unknown>(row.value, null));
       return Number.isInteger(n) && n >= 1 && n <= 604 ? n : 1;
+    },
+
+    async completedDaysInRange(fromLocalDay, toLocalDay) {
+      const rows = await db.getAllAsync<{ local_day: string }>(
+        `SELECT local_day FROM khz_days
+           WHERE wird_completed = 1 AND local_day >= ? AND local_day <= ?`,
+        fromLocalDay,
+        toLocalDay,
+      );
+      return rows.map((r) => r.local_day);
+    },
+
+    async dayCompletionsInRange(fromLocalDay, toLocalDay) {
+      return dayRowsInRange(db, fromLocalDay, toLocalDay);
     },
   };
 }
