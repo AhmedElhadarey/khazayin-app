@@ -25,4 +25,25 @@ describe('playbackService', () => {
     call[1]({ position: 55 });
     expect(TrackPlayer.seekTo).toHaveBeenCalledWith(55);
   });
+
+  // L8: every remote handler must attach .catch so a rejected TrackPlayer call
+  // never becomes an unhandled rejection in the headless service context.
+  it.each([
+    [Event.RemotePlay, 'play', undefined],
+    [Event.RemotePause, 'pause', undefined],
+    [Event.RemoteNext, 'skipToNext', undefined],
+    [Event.RemotePrevious, 'skipToPrevious', undefined],
+    [Event.RemoteSeek, 'seekTo', { position: 12 }],
+    [Event.RemoteStop, 'reset', undefined],
+  ] as const)('%s handler attaches .catch to %s()', async (event, method, payload) => {
+    await playbackService();
+    const catchSpy = jest.fn();
+    ((TrackPlayer as any)[method] as jest.Mock).mockReturnValueOnce({ catch: catchSpy });
+    const call = (TrackPlayer.addEventListener as jest.Mock).mock.calls.find((c) => c[0] === event);
+    call[1](payload);
+    expect((TrackPlayer as any)[method]).toHaveBeenCalled();
+    expect(catchSpy).toHaveBeenCalledWith(expect.any(Function));
+    // the rejection handler swallows the error (returns undefined)
+    expect(catchSpy.mock.calls[0][0]()).toBeUndefined();
+  });
 });

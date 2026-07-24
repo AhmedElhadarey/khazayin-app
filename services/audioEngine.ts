@@ -15,8 +15,10 @@ import TrackPlayer, {
   Capability,
   State,
 } from 'react-native-track-player';
+import * as Sentry from '@sentry/react-native';
 import { usePlayerStore } from '@/store/playerStore';
 import { useProgressStore } from '@/store/progressStore';
+import { useToastStore } from '@/store/toastStore';
 import { fetchItemMetadata } from './archive/archiveClient';
 import { resolveEpisodes } from './archive/episodeResolver';
 import type { Lecture } from '@/types/content';
@@ -40,12 +42,14 @@ const TRANSPORT_CAPABILITIES = [
 ];
 
 /** Idempotent one-time player initialisation + transport capability config. */
-export function setupPlayer(): Promise<void> {
-  if (isWeb()) return Promise.resolve();
+export async function setupPlayer(): Promise<void> {
+  if (isWeb()) return;
   if (_setupPromise) return _setupPromise;
   _setupPromise = (async () => {
     try {
-      await TrackPlayer.setupPlayer();
+      // Audio focus: pause/duck automatically on calls & other-app playback.
+      // (PlayerOptions field — RNTP v4 only reads it here, not in updateOptions.)
+      await TrackPlayer.setupPlayer({ autoHandleInterruptions: true });
     } catch {
       // "player already initialized" after a fast refresh / re-entry — safe.
     }
@@ -57,12 +61,21 @@ export function setupPlayer(): Promise<void> {
         Capability.SkipToNext,
         Capability.SkipToPrevious,
       ],
+      // RNTP v4 only emits PlaybackProgressUpdated when an interval is set —
+      // without it the progress bar, resume position and progress tracking
+      // silently never update on device.
+      progressUpdateEventInterval: 1,
       android: {
         appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
       },
     });
   })();
-  return _setupPromise;
+  try {
+    await _setupPromise;
+  } catch (e) {
+    _setupPromise = null; // allow a later retry instead of caching the failure
+    throw e;
+  }
 }
 
 export async function play(): Promise<void> {
@@ -174,25 +187,32 @@ export async function playLecture(lecture: Lecture): Promise<void> {
  */
 export async function togglePlayback(): Promise<void> {
   if (isWeb()) return;
-  const idx = await TrackPlayer.getActiveTrackIndex();
-  const hasQueue = idx !== undefined && idx !== null;
-  if (!hasQueue) {
-    const track = usePlayerStore.getState().track;
-    if (!track) return;
-    const archiveId = track.id.split('/')[0];
-    await playLecture({
-      id: track.id,
-      title: track.title,
-      scholar: track.reciter,
-      duration: '',
-      category: 'scholar',
-      archiveId,
-    } as Lecture);
-    return;
+  try {
+    await setupPlayer();
+    const idx = await TrackPlayer.getActiveTrackIndex();
+    const hasQueue = idx !== undefined && idx !== null;
+    if (!hasQueue) {
+      const track = usePlayerStore.getState().track;
+      if (!track) return;
+      const archiveId = track.id.split('/')[0];
+      await playLecture({
+        id: track.id,
+        title: track.title,
+        scholar: track.reciter,
+        duration: '',
+        category: 'scholar',
+        archiveId,
+      } as Lecture);
+      return;
+    }
+    const { state } = await TrackPlayer.getPlaybackState();
+    if (state === State.Playing) await TrackPlayer.pause();
+    else await TrackPlayer.play();
+  } catch (err) {
+    Sentry.captureException(err);
+    useToastStore.getState().show({ message: 'تعذّر تشغيل الصوت. تحقق من اتصالك ثم حاول مجددًا.' });
+    usePlayerStore.getState().setIsPlaying(false);
   }
-  const { state } = await TrackPlayer.getPlaybackState();
-  if (state === State.Playing) await TrackPlayer.pause();
-  else await TrackPlayer.play();
 }
 
 /**

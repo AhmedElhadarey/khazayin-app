@@ -45,7 +45,22 @@ npx expo run:android      # or: npx expo run:ios
 | 4 | Lock-screen controls | Lock the phone. Notification/lock-screen shows title + play/pause + next/prev; each works (skip moves between episodes of the series). | ☐ |
 | 5 | `isPlaying` = engine truth | Pause from the lock screen → MiniPlayer play button flips to "play" (state reflects the engine, not just a local toggle). | ☐ |
 | 6 | Resume after restart | Play a lecture ~1 min in, kill the app, reopen. MiniPlayer restores that lecture **paused**; pressing play resumes near where you left off. | ☐ |
-| 7 | No unexpected pause/skip | Play for several minutes across episode boundaries; audio does not randomly stop or skip (audio-focus handling). | ☐ |
+| 7 | No unexpected pause/skip | Play for several minutes across episode boundaries; audio does not randomly stop or skip. (`autoHandleInterruptions: true` is set in `setupPlayer` for phone-call/other-app focus handling — verify a phone call pauses then resumes.) | ☐ |
+
+### Regression checks (from the code review)
+- ☐ **Progress actually advances** — after ~1 min of playback, the MiniPlayer bar
+  has moved AND `progressStore.inProgressLecture.positionSec` is non-zero
+  (depends on `progressUpdateEventInterval: 1`, now set — without it the event
+  never fires and resume silently restarts at 0).
+- ☐ **Switching lectures does not false-complete the previous one** — play series
+  A to ~30%, then tap a lecture in series B. Confirm series A is NOT marked
+  completed in the Library (guards against `TrackPlayer.reset()` emitting
+  `PlaybackQueueEnded` on some platforms → `setTrack(null)` completion flush). If
+  it IS wrongly completed, add a "programmatic reset" guard around
+  `playLecture`'s reset/setQueue.
+- ☐ **Mid-stream failure is visible** — start a lecture, then kill connectivity.
+  A `PlaybackError` should surface an Arabic toast + unstick the play button
+  (isPlaying→false), and log to Sentry (no silent frozen bar).
 
 ### Extra checks
 - ☐ Tapping a lecture with **no audio** (prophet/books/queen/radio cards, which
@@ -75,3 +90,12 @@ npx expo run:android      # or: npx expo run:ios
   this is a deliberate approximation in `playerStore.emitLectureTick`.
 - **Quran-by-reciter audio** — not wired (this archive has no recitations; needs a
   separate source + surah-list UI).
+- **Audio-less lecture cards** (prophet/books/queen/radio — no `archiveId`) are
+  tappable and surface an Arabic "no recording" alert, rather than being visibly
+  disabled/greyed. Conscious deviation from the original design line; revisit if a
+  disabled affordance is preferred.
+- **Cosmetic (L9):** on cold-start resume the progress bar may flash to 0 for
+  ~1s before the first progress tick re-seats it (the bridge's active-track-changed
+  sets progress 0; the >30s seek-guard prevents any listened-time miscount).
+- **Edge (L10):** an episode shorter than ~20s that ends between progress ticks may
+  not latch `completed` on auto-advance (only whole-queue end flushes completion).

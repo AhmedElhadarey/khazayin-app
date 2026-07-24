@@ -12,6 +12,11 @@ jest.mock('@/store/progressStore', () => ({
 jest.mock('../../archive/archiveClient', () => ({
   fetchItemMetadata: jest.fn(),
 }));
+const mockToastShow = jest.fn();
+jest.mock('@/store/toastStore', () => ({
+  useToastStore: { getState: () => ({ show: mockToastShow }) },
+}));
+jest.mock('@sentry/react-native', () => ({ captureException: jest.fn() }));
 
 import TrackPlayer, { Capability, State } from 'react-native-track-player';
 import { Platform } from 'react-native';
@@ -38,6 +43,23 @@ describe('audioEngine (native path)', () => {
         Capability.SkipToPrevious, Capability.SeekTo, Capability.Stop,
       ]),
     );
+    // FINDING #1: RNTP v4 emits PlaybackProgressUpdated only when an interval is set.
+    expect(opts.progressUpdateEventInterval).toBe(1);
+    // FINDING #3: audio-focus interruptions must pause/duck automatically.
+    // autoHandleInterruptions is a PlayerOptions field → goes to setupPlayer().
+    expect(TrackPlayer.setupPlayer).toHaveBeenCalledWith(
+      expect.objectContaining({ autoHandleInterruptions: true }),
+    );
+  });
+
+  it('does not memoize a failed setup — a later retry can succeed (L6)', async () => {
+    (TrackPlayer.updateOptions as jest.Mock).mockRejectedValueOnce(new Error('native bridge down'));
+    await expect(engine.setupPlayer()).rejects.toThrow('native bridge down');
+
+    // Second attempt: updateOptions resolves again (mock default) → setup succeeds.
+    await expect(engine.setupPlayer()).resolves.toBeUndefined();
+    expect(TrackPlayer.setupPlayer).toHaveBeenCalledTimes(2); // retry actually re-ran init
+    expect(TrackPlayer.updateOptions).toHaveBeenCalledTimes(2);
   });
 
   it('tolerates a "player already initialized" throw from setupPlayer', async () => {
@@ -178,6 +200,25 @@ describe('togglePlayback', () => {
     mockTrack = null;
     await engine.togglePlayback();
     expect(TrackPlayer.setQueue).not.toHaveBeenCalled();
+    expect(TrackPlayer.play).not.toHaveBeenCalled();
+  });
+
+  it('never rejects: getActiveTrackIndex failure → toast + isPlaying=false (H1)', async () => {
+    (TrackPlayer.getActiveTrackIndex as jest.Mock).mockRejectedValueOnce(new Error('player not initialized'));
+    await expect(engine.togglePlayback()).resolves.toBeUndefined();
+    expect(mockToastShow).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.any(String) }),
+    );
+    expect(mockSetIsPlaying).toHaveBeenCalledWith(false);
+  });
+
+  it('never rejects: cold-start playLecture network failure → toast (H1)', async () => {
+    (TrackPlayer.getActiveTrackIndex as jest.Mock).mockResolvedValue(undefined);
+    mockTrack = { id: 'ABC/001.mp3', title: 'ح1', reciter: 'الشيخ ابن عثيمين', durationSec: 600 };
+    (fetchItemMetadata as jest.Mock).mockRejectedValueOnce(new Error('network request failed'));
+    await expect(engine.togglePlayback()).resolves.toBeUndefined();
+    expect(mockToastShow).toHaveBeenCalled();
+    expect(mockSetIsPlaying).toHaveBeenCalledWith(false);
     expect(TrackPlayer.play).not.toHaveBeenCalled();
   });
 });

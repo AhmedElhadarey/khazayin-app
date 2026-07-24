@@ -5,15 +5,18 @@
  * Runs in a headless JS context, so it drives TrackPlayer directly (it must not
  * depend on React or app stores). Registered via
  * `audioEngine.registerPlaybackService()` at app entry.
+ *
+ * Every TrackPlayer call is `.catch`-guarded: in the headless context a
+ * rejected call would otherwise surface as an unhandled promise rejection.
  */
 import TrackPlayer, { Event } from 'react-native-track-player';
 
 export default async function playbackService(): Promise<void> {
   TrackPlayer.addEventListener(Event.RemotePlay, () => {
-    TrackPlayer.play();
+    TrackPlayer.play().catch(() => undefined);
   });
   TrackPlayer.addEventListener(Event.RemotePause, () => {
-    TrackPlayer.pause();
+    TrackPlayer.pause().catch(() => undefined);
   });
   TrackPlayer.addEventListener(Event.RemoteNext, () => {
     TrackPlayer.skipToNext().catch(() => undefined);
@@ -22,9 +25,9 @@ export default async function playbackService(): Promise<void> {
     TrackPlayer.skipToPrevious().catch(() => undefined);
   });
   TrackPlayer.addEventListener(Event.RemoteSeek, (e) => {
-    TrackPlayer.seekTo(e.position);
+    TrackPlayer.seekTo(e.position).catch(() => undefined);
   });
   TrackPlayer.addEventListener(Event.RemoteStop, () => {
-    TrackPlayer.reset();
+    TrackPlayer.reset().catch(() => undefined);
   });
 }

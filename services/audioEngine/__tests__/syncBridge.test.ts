@@ -8,6 +8,11 @@ jest.mock('@/store/playerStore', () => ({
   usePlayerStore: { getState: () => ({ setIsPlaying: mockSetIsPlaying, setProgress: mockSetProgress, setTrack: mockSetTrack }) },
 }));
 
+const mockToastShow = jest.fn();
+jest.mock('@/store/toastStore', () => ({ useToastStore: { getState: () => ({ show: mockToastShow }) } }));
+jest.mock('@sentry/react-native', () => ({ captureException: jest.fn() }));
+import * as Sentry from '@sentry/react-native';
+
 import { registerPlaybackListeners, unregisterPlaybackListeners } from '../syncBridge';
 
 /** Find the handler registered for a given RNTP Event. */
@@ -65,11 +70,29 @@ describe('syncBridge', () => {
     expect(mockSetIsPlaying).toHaveBeenLastCalledWith(false);
   });
 
-  it('registering twice does not double-subscribe (unregisters first)', () => {
-    const before = (TrackPlayer.addEventListener as jest.Mock).mock.results.length;
+  it('PlaybackError → Sentry.captureException + setIsPlaying(false) + Arabic toast', () => {
+    handlerFor(Event.PlaybackError)({ code: 'x', message: 'boom' });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    expect(mockSetIsPlaying).toHaveBeenLastCalledWith(false);
+    expect(mockToastShow).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.any(String) }),
+    );
+  });
+
+  it('registering twice unregisters the first batch of listeners before re-subscribing', () => {
+    // The RNTP mock returns the SAME { remove } subscription object for every
+    // addEventListener call, so its `remove` spy counts removals across all subs.
+    const sharedSub = (TrackPlayer.addEventListener as jest.Mock).mock.results[0].value;
+    const firstBatchCount = (TrackPlayer.addEventListener as jest.Mock).mock.calls.length;
+    expect(firstBatchCount).toBeGreaterThan(0);
+    sharedSub.remove.mockClear();
+
     registerPlaybackListeners();
-    // 4 event types registered per call; re-registering should remove old subs first.
-    expect((TrackPlayer.addEventListener as jest.Mock)).toHaveBeenCalled();
+
+    // Every listener from the first register() must have been removed.
+    expect(sharedSub.remove).toHaveBeenCalledTimes(firstBatchCount);
+    // And the same number of listeners was re-registered (no net growth).
+    expect((TrackPlayer.addEventListener as jest.Mock).mock.calls.length).toBe(firstBatchCount * 2);
   });
 
   it('is a no-op on web', () => {

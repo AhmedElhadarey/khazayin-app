@@ -8,7 +8,9 @@
  */
 import { Platform } from 'react-native';
 import TrackPlayer, { Event, State, type Track } from 'react-native-track-player';
+import * as Sentry from '@sentry/react-native';
 import { usePlayerStore, type PlayerTrack } from '@/store/playerStore';
+import { useToastStore } from '@/store/toastStore';
 
 const isWeb = () => Platform.OS === 'web';
 
@@ -53,6 +55,13 @@ export function registerPlaybackListeners(): void {
     TrackPlayer.addEventListener(Event.PlaybackQueueEnded, () => {
       store().setTrack(null);
       store().setIsPlaying(false);
+    }),
+    TrackPlayer.addEventListener(Event.PlaybackError, (e) => {
+      Sentry.captureException(
+        e instanceof Error ? e : new Error(`Playback error: ${JSON.stringify(e)}`),
+      );
+      store().setIsPlaying(false);
+      useToastStore.getState().show({ message: 'تعذّر تشغيل الصوت. تحقق من اتصالك ثم حاول مجددًا.' });
     }),
   );
 }
