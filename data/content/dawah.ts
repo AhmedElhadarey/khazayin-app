@@ -28,11 +28,11 @@ import type { DawahPoster } from '../../types/content';
 // ---------------------------------------------------------------------------
 
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const DAWAH_LAYLAT = require('../../assets/khazain/home/dawah-laylat-alqadr.png') as number;
+const DAWAH_LAYLAT = require('../../assets/khazain/home/dawah-laylat-alqadr.webp') as number;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const DAWAH_MAWIZA = require('../../assets/khazain/home/dawah-mawiza-sabah.png') as number;
+const DAWAH_MAWIZA = require('../../assets/khazain/home/dawah-mawiza-sabah.webp') as number;
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const DAWAH_HELAL  = require('../../assets/khazain/home/dawah-helal.png') as number;
+const DAWAH_HELAL  = require('../../assets/khazain/home/dawah-helal.webp') as number;
 
 // ---------------------------------------------------------------------------
 // DAWAH_POSTERS — combined home + month-detail entries

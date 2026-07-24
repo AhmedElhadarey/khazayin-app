@@ -8,11 +8,19 @@
     "scheme": "khazayinapp",
     "userInterfaceStyle": "automatic",
     "extra": {
-      "rtl": true
+      "rtl": true,
+      "router": {},
+      "eas": {
+        "projectId": "d2c62f32-9cc8-475a-8312-6ca71610055a"
+      }
     },
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.ahmed.elhadarey94.khazayinapp",
+      "infoPlist": {
+        "UIBackgroundModes": ["audio"]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +29,12 @@
         "backgroundImage": "./assets/images/android-icon-background-khazain.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.ahmed.elhadarey94.khazayinapp",
+      "permissions": [
+        "android.permission.FOREGROUND_SERVICE",
+        "android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK"
+      ]
     },
     "web": {
       "output": "static",
@@ -41,7 +54,19 @@
           }
         }
       ],
-      "expo-sqlite"
+      "expo-sqlite",
+      "@sentry/react-native",
+      "expo-font",
+      "expo-web-browser",
+      "expo-background-task",
+      "expo-notifications",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "يستخدم التطبيق موقعك لحساب مواقيت الصلاة بدقة في مدينتك."
+        }
+      ],
+      "./plugins/withExactAlarmPermissions"
     ],
     "experiments": {
       "typedRoutes": true,

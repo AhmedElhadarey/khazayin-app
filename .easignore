@@ -1,0 +1,23 @@
+# Files uploaded to EAS but never bundled into the binary.
+# Excluding them speeds up every build (was ~62MB of design source).
+
+# Design spec / mocks — referenced only in code comments, never required
+design_source/
+
+# Track workflow history & planning docs
+conductor/
+docs/
+
+# Local Expo cache & build artifacts
+.expo/
+web-build/
+dist/
+
+# Dev tooling
+.claude/
+.vscode/
+
+# Tests (not needed in the production bundle)
+**/__tests__/
+**/*.test.ts
+**/*.test.tsx

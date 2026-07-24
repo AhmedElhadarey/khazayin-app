@@ -48,6 +48,10 @@ export default function ContactScreen() {
       Alert.alert('البيانات ناقصة', 'يرجى ملء جميع الحقول.');
       return;
     }
+    // INTENTIONAL PLACEHOLDER (T7.8 / D3): the form does not yet transmit the
+    // message anywhere — it validates and confirms only. Wire to the foundation's
+    // email/Telegram/endpoint when the backend channel is provided. Until then
+    // this is a known stub, not a bug.
     Alert.alert('تم الإرسال', 'سنعود إليك قريباً إن شاء الله.', [
       { text: 'حسناً', onPress: () => router.back() },
     ]);

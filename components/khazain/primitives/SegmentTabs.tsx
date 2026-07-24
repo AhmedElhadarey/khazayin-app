@@ -30,6 +30,9 @@ export function SegmentTabs<T extends string>({
             <Pressable
               key={t.key}
               onPress={() => onChange(t.key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+              accessibilityLabel={t.label}
               style={({ pressed }) => [
                 styles.tab,
                 isActive ? styles.tabActive : null,

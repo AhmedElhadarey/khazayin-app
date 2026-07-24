@@ -1,8 +1,9 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet } from 'react-native';
+import { Pressable, StyleSheet } from 'react-native';
+import { Image } from 'expo-image';
 import { KhazainRadius, KhazainShadows } from '@/constants/theme';
 
-const CARD = require('@/assets/khazain/home/hero-prophet-card.png');
+const CARD = require('@/assets/khazain/home/hero-prophet-card.webp');
 
 // "محمد رسول الله ﷺ" hero — flattened single image cropped from the Figma
 // page-05 render. The whole layer (scroll + calligraphy emblem + body text +
@@ -22,7 +23,7 @@ export function HeroProphet({ onPress, onMore }: { onPress?: () => void; onMore?
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <Image source={CARD} style={styles.image} resizeMode="cover" />
+      <Image source={CARD} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={0} />
     </Pressable>
   );
 }

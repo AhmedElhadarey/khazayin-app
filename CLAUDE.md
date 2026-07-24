@@ -8,12 +8,17 @@ Project-specific guidance for future Claude Code sessions. Read this before touc
 
 Mobile app for **مؤسسة خزائن الرحمن العالمية** (Khazain Al-Rahman International Foundation). Arabic-only, RTL-first, Islamic content: Quran (Mushaf + reciters + qira'at), scholars, books, dawah design posters, personal library with notes.
 
+> **Architecture reality (2026-06-17, keep current):** the app is **not** purely offline. Beyond SQLite, there is a full HTTP data layer (`services/api/*`, Bearer-token auth in `services/api/auth.ts`/`client.ts`), a two-tier SWR cache (`services/cache/*`), and ~12 content stores built on `createAsyncStore`/`createPaginatedStore`. It is currently **inert** — `contentService` resolves to the mock adapter because `EXPO_PUBLIC_API_BASE` is unset — so today it behaves offline, but the networked surface exists and must be accounted for before a backend is wired. **Never** commit an `EXPO_PUBLIC_API_TOKEN` (it inlines into the JS bundle); real auth tokens belong in `expo-secure-store` at runtime. **Data at rest:** notes/settings live in plaintext AsyncStorage — an accepted risk for this single-user offline app (documented; revisit with `expo-secure-store`/SQLCipher only if shared-device threat model applies).
+
 ## Stack
 
 - **Expo SDK 54** + **React Native 0.81.5** + **React 19.1**
 - **expo-router 6** (file-based routing)
 - **TypeScript 5.9**
-- **Zustand 5** for state (+ `zustand/middleware` persist for notes)
+- **Zustand 5** for state (+ `zustand/middleware` persist for notes, settings)
+- **expo-notifications** for local wird reminder (Phase A scheduler, single boundary in `services/notificationScheduler.ts`)
+- **expo-web-browser** for in-app privacy policy link
+- **expo-constants** for version / build number display
 - **react-native-svg** for every icon, pattern, illustration (there are no raster icons)
 - **expo-linear-gradient** for cream gradient cards
 - **@react-native-async-storage/async-storage** for persisted stores
@@ -123,10 +128,12 @@ app/                              ← expo-router file-based routing
       reciter.tsx / mushaf.tsx / qiraat.tsx / scholar.tsx / dawah.tsx
     more/                         ← stack-per-tab
       _layout.tsx
-      index.tsx / contact.tsx / about.tsx / archive.tsx
+      index.tsx / contact.tsx / about.tsx / archive.tsx / settings.tsx (track 002)
     browse.tsx / saved.tsx / settings.tsx / search.tsx   ← legacy, hidden via href:null
   note-editor.tsx / notes-viewer.tsx                     ← modal presentation
   telegram-sheet.tsx / youtube-sheet.tsx / share-sheet.tsx  ← transparentModal + fade
+  settings-qiraa.tsx / settings-reciter.tsx / settings-font-size.tsx
+  settings-about.tsx / settings-notifications.tsx        ← track 002 modal screens
   about.tsx / contact.tsx                                ← LEGACY root routes (keep alongside)
   foundations-sandbox.tsx                                ← dev smoke-render, safe to delete
 
@@ -142,11 +149,21 @@ components/khazain/               ← all new UI lives here
                                      BookCard, QuickChip, QueenCard, DawahPoster, SmallMoreButton)
   library/                        ← StatCard, CircularProgress, AudioProgressCard, ReminderCard
   sheets/                         ← SheetShell, SheetRow
+  settings/                       ← SettingsSection, SettingsValueRow, SettingsToggleRow,
+                                     FontSizePreview (track 002)
+
+services/                         ← non-store side-effect modules
+  notificationRegistry.ts         ← category metadata + isCategoryEnabled snapshot read (track 002)
+  notificationScheduler.ts        ← SINGLE boundary touching expo-notifications (track 002)
+  cacheFacade.ts                  ← registry-based clearAppCache, user-content-safe (track 002)
+  notesExporter.ts                ← pure formatNotesExport + share-sheet glue (track 002)
 
 store/                            ← Zustand stores
   useAppStore.ts                  ← legacy store (used by legacy tabs)
   playerStore.ts                  ← MiniPlayer UI state (NOT persisted)
   notesStore.ts                   ← notes CRUD, persisted under @khazain/notes
+  settingsStore.ts                ← user preferences, persisted under @khazain/settings/v1
+                                     (track 002). Exports useSettingsStore + useFontScale hook
 
 constants/theme.ts                ← two exports:
                                      - Colors/Shadows/Spacing/Border/Typography (legacy)

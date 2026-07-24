@@ -1,4 +1,5 @@
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
+import { skipNext, skipPrev, togglePlayback } from '@/services/audioEngine';
 import { usePlayerStore } from '@/store/playerStore';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -10,11 +11,15 @@ import { LogoBadge } from './LogoBadge';
 // the RIGHT (RTL leading edge), title + reciter to its left, transport
 // controls on the FAR LEFT (skip-back, navy circle play/pause, skip-forward).
 export function MiniPlayer() {
-  const { track, isPlaying, progress, isVisible, togglePlay } = usePlayerStore();
+  // Atomic selectors: the player store's `progress` updates ~1Hz during
+  // playback; subscribing to the whole store here would re-render the SVG
+  // transport glyphs every tick. The progress bar is isolated into
+  // <ProgressFill/> so only it re-renders on a tick (T3.3).
+  const track = usePlayerStore((s) => s.track);
+  const isPlaying = usePlayerStore((s) => s.isPlaying);
+  const isVisible = usePlayerStore((s) => s.isVisible);
 
   if (!isVisible || !track) return null;
-
-  const pct = Math.max(0, Math.min(1, progress));
 
   return (
     <View style={[styles.shell, KhazainShadows.card]}>
@@ -37,24 +42,48 @@ export function MiniPlayer() {
         <View style={styles.transport}>
           {/* JSX-first → right of the transport cluster under forceRTL.
               Visual RTL right → left: [skipBack][playPause][skipFwd]. */}
-          <SkipGlyph dir="back" />
+          <SkipButton dir="back" onPress={skipPrev} label="السابق" />
           <Pressable
-            onPress={togglePlay}
+            onPress={() => togglePlayback()}
+            accessibilityRole="button"
             accessibilityLabel={isPlaying ? 'إيقاف مؤقت' : 'تشغيل'}
-            hitSlop={6}
+            hitSlop={10}
             style={({ pressed }) => [styles.playBtn, { opacity: pressed ? 0.85 : 1 }]}
           >
             {isPlaying ? <PauseGlyph /> : <PlayGlyph />}
           </Pressable>
-          <SkipGlyph dir="fwd" />
+          <SkipButton dir="fwd" onPress={skipNext} label="التالي" />
         </View>
       </View>
 
       {/* Progress bar pinned to the bottom of the card */}
       <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${pct * 100}%` }]} />
+        <ProgressFill />
       </View>
     </View>
+  );
+}
+
+// Isolated so a ~1Hz progress tick re-renders only this fill, not the parent
+// MiniPlayer and its SVG transport glyphs (T3.3).
+function ProgressFill() {
+  const progress = usePlayerStore((s) => s.progress);
+  const pct = Math.max(0, Math.min(1, progress));
+  return <View style={[styles.progressFill, { width: `${pct * 100}%` }]} />;
+}
+
+// Pressable wrapper around the pure SkipGlyph SVG — wires prev/next transport.
+function SkipButton({ dir, onPress, label }: { dir: 'back' | 'fwd'; onPress: () => void; label: string }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={10}
+      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+    >
+      <SkipGlyph dir={dir} />
+    </Pressable>
   );
 }
 
@@ -155,8 +184,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   playBtn: {
-    width: 30,
-    height: 30,
+    width: 36,
+    height: 36,
     borderRadius: 999,
     backgroundColor: 'rgba(24,75,118,0.55)',
     alignItems: 'center',

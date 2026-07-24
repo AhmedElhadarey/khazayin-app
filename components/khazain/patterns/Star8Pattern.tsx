@@ -18,6 +18,9 @@ export function Star8Pattern({ children, style, opacity = 0.35 }: Props) {
         height="100%"
         style={{ position: 'absolute', inset: 0 }}
         pointerEvents="none"
+        accessible={false}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
       >
         <Defs>
           <Pattern id="star8" x={0} y={0} width={40} height={40} patternUnits="userSpaceOnUse">

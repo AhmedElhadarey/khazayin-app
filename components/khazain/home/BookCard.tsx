@@ -43,7 +43,7 @@ export function BookCard({
 const styles = StyleSheet.create({
   card: {
     width: CARD_W,
-    height: 81,
+    minHeight: 81,
     backgroundColor: KhazainColors.heroCream,
     borderRadius: KhazainRadius.sm,
     padding: 22,

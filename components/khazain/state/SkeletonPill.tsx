@@ -13,8 +13,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -27,14 +29,21 @@ export type SkeletonPillProps = { width?: number };
 
 export function SkeletonPill({ width = 80 }: SkeletonPillProps) {
   const translateX = useSharedValue(width);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reduceMotion) {
+      // honor OS reduce-motion: stop any running shimmer and render static
+      cancelAnimation(translateX);
+      translateX.value = width;
+      return;
+    }
     translateX.value = withRepeat(
       withTiming(0, { duration: 1200, easing: Easing.linear }),
       -1,
       false,
     );
-  }, [translateX, width]);
+  }, [translateX, width, reduceMotion]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],

@@ -131,4 +131,5 @@ export const LIBRARY_FILTERS: LibraryFilter[] = [
   { id: 'all',      label: 'الكل',            count: '١٢' },
   { id: 'saved',    label: 'المحفوظات',        count: '١٨' },
   { id: 'playlist', label: 'قوائم التشغيل',   count: '٥'  },
+  { id: 'history',  label: 'السجل',           count: ''   },
 ];

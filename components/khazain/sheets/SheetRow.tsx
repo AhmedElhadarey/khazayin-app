@@ -20,6 +20,8 @@ export function SheetRow({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={sub ? `${title}، ${sub}` : title}
       style={({ pressed }) => [
         styles.row,
         sub ? styles.rowTall : styles.rowShort,
@@ -56,7 +58,7 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   rowShort: {
-    height: 56,
+    minHeight: 56,
   },
   rowTall: {
     paddingVertical: 12,

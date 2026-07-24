@@ -11,8 +11,10 @@ import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
+  cancelAnimation,
   Easing,
   useAnimatedStyle,
+  useReducedMotion,
   useSharedValue,
   withRepeat,
   withTiming,
@@ -25,14 +27,21 @@ const SHIMMER_W = Math.round(WIDTH * 0.3);
 
 export function SkeletonRow() {
   const translateX = useSharedValue(WIDTH);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reduceMotion) {
+      // honor OS reduce-motion: stop any running shimmer and render static
+      cancelAnimation(translateX);
+      translateX.value = WIDTH;
+      return;
+    }
     translateX.value = withRepeat(
       withTiming(0, { duration: 1200, easing: Easing.linear }),
       -1,
       false,
     );
-  }, [translateX]);
+  }, [translateX, reduceMotion]);
 
   const shimmerStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: translateX.value }],

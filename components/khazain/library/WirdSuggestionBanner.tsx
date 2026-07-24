@@ -79,6 +79,7 @@ const styles = StyleSheet.create({
     fontFamily: 'TheSansArabic',
     fontSize: 12,
     fontWeight: '700',
+    writingDirection: 'rtl',
   },
   acceptBtn: {
     paddingVertical: 7,
@@ -91,5 +92,6 @@ const styles = StyleSheet.create({
     fontFamily: 'TheSansArabic',
     fontSize: 12,
     fontWeight: '700',
+    writingDirection: 'rtl',
   },
 });

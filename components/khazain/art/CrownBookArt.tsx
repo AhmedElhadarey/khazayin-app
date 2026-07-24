@@ -11,7 +11,7 @@ export function CrownBookArt({
   height?: number;
 }) {
   return (
-    <Svg width={width} height={height} viewBox="0 0 130 80">
+    <Svg width={width} height={height} viewBox="0 0 130 80" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {/* book stack */}
       <Rect x={24} y={52} width={90} height={8} rx={1.5} fill="#8E6630" />
       <Rect x={28} y={45} width={82} height={8} rx={1.5} fill="#A88051" />

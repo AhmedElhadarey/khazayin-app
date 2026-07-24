@@ -1,7 +1,12 @@
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../icons';
+
+// Deterministic RTL row direction (matches the SegmentTabs pattern): when
+// isRTL is true (normal native) this is 'row' — identical to before; when the
+// flag is unreliable (web / stale reload) 'row-reverse' still yields RTL order.
+const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
 
 // Cream list-row card used in SectionsScreen and Dawah group list.
 // Visual spec: bg cardBg, r=20, padding 16/12, 64×64 circular icon chip, title/subtitle/count stack, trailing chevron.
@@ -24,13 +29,15 @@ export function ListRowCard({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={[title, subtitle, count].filter(Boolean).join('، ')}
       style={({ pressed }) => [
         styles.card,
         KhazainShadows.card,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <View style={styles.iconChip}>{icon}</View>
+      {chevron ? <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" /> : null}
       <View style={styles.textCol}>
         <Text style={styles.title} numberOfLines={1}>
           {title}
@@ -42,14 +49,15 @@ export function ListRowCard({
         ) : null}
         {count ? <Text style={styles.count}>{count}</Text> : null}
       </View>
-      {chevron ? <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" /> : null}
+      <View style={styles.iconChip}>{icon}</View>
+
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: 'row',
+    flexDirection: ROW_DIR,
     alignItems: 'center',
     gap: 12,
     paddingVertical: 16,

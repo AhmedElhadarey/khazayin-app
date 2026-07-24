@@ -114,7 +114,12 @@ async function load(): Promise<void> {
     } catch {
       cache = emptyState();
     }
-  })();
+  })().catch((err: unknown) => {
+    // Don't cache a rejected load (e.g. AsyncStorage.getItem rejecting) — clear
+    // so the next op retries instead of replaying the failure forever.
+    loadPromise = null;
+    throw err;
+  });
   return loadPromise;
 }
 
@@ -260,6 +265,29 @@ export function createWebRepos(): Repos {
     async getLastReadPage() {
       await load();
       return ensure().settings.last_read_page || 1;
+    },
+
+    async completedDaysInRange(fromLocalDay, toLocalDay) {
+      await load();
+      return Object.entries(ensure().days)
+        .filter(
+          ([day, v]) =>
+            v.wirdCompleted === 1 && day >= fromLocalDay && day <= toLocalDay,
+        )
+        .map(([day]) => day);
+    },
+
+    async dayCompletionsInRange(fromLocalDay, toLocalDay) {
+      await load();
+      return Object.entries(ensure().days)
+        .filter(([day]) => day >= fromLocalDay && day <= toLocalDay)
+        .sort((a, b) => (a[0] < b[0] ? -1 : 1))
+        .map(([day, v]) => ({
+          local_day: day,
+          pages_read: v.pagesRead,
+          wird_target_at_day: v.wirdTargetAtDay,
+          wird_completed: v.wirdCompleted,
+        }));
     },
   };
 

@@ -19,6 +19,8 @@ export function QuickChip({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
       style={({ pressed }) => [styles.chip, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
     >
       <View style={[styles.badge, { backgroundColor: iconBg }]}>{children}</View>
@@ -33,7 +35,7 @@ export function QuickChip({
 const styles = StyleSheet.create({
   chip: {
     flex: 1,
-    height: 48,
+    minHeight: 48,
     borderRadius: 8,
     backgroundColor: KhazainColors.heroCream,
     alignItems: 'center',

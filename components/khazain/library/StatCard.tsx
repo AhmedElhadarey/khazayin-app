@@ -54,7 +54,7 @@ const styles = StyleSheet.create({
   },
   sub: {
     fontFamily: 'TheSansArabic',
-    fontSize: 10.5,
+    fontSize: 12,
     color: KhazainColors.ink500,
     writingDirection: 'rtl',
     textAlign: 'center',

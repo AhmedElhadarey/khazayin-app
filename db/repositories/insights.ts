@@ -25,6 +25,21 @@ export async function getAllDayRows(db: SQLite.SQLiteDatabase): Promise<DayRow[]
   );
 }
 
+export async function dayRowsInRange(
+  db: SQLite.SQLiteDatabase,
+  fromLocalDay: string,
+  toLocalDay: string,
+): Promise<DayRow[]> {
+  return db.getAllAsync<DayRow>(
+    `SELECT local_day, pages_read, wird_target_at_day, wird_completed
+       FROM khz_days
+       WHERE local_day >= ? AND local_day <= ?
+       ORDER BY local_day`,
+    fromLocalDay,
+    toLocalDay,
+  );
+}
+
 export async function currentStreakFromDb(
   db: SQLite.SQLiteDatabase,
   today: string,

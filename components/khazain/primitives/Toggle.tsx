@@ -12,10 +12,12 @@ type Props = {
   on: boolean;
   onChange: (next: boolean) => void;
   disabled?: boolean;
+  /** Accessible name for the switch (consumers pass the row title). */
+  label?: string;
 };
 
 // iOS-style toggle: 51×31, off #E9E4DA, on navy800, knob 27×27 white w/ shadow.
-export function Toggle({ on, onChange, disabled }: Props) {
+export function Toggle({ on, onChange, disabled, label }: Props) {
   const progress = useSharedValue(on ? 1 : 0);
 
   useEffect(() => {
@@ -34,6 +36,9 @@ export function Toggle({ on, onChange, disabled }: Props) {
     <Pressable
       onPress={() => !disabled && onChange(!on)}
       disabled={disabled}
+      accessibilityRole="switch"
+      accessibilityLabel={label}
+      accessibilityState={{ checked: on, disabled: !!disabled }}
       hitSlop={6}
       style={{ opacity: disabled ? 0.5 : 1 }}
     >

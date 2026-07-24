@@ -16,7 +16,12 @@ export function SheetShell({
 }) {
   return (
     <View style={styles.root}>
-      <Pressable style={styles.backdrop} onPress={onClose} accessibilityLabel="إغلاق" />
+      <Pressable
+        style={styles.backdrop}
+        onPress={onClose}
+        accessibilityRole="button"
+        accessibilityLabel="إغلاق"
+      />
       <SafeAreaView edges={['bottom']} style={styles.sheetWrap}>
         <View style={styles.sheet}>
           <View style={styles.handle} />

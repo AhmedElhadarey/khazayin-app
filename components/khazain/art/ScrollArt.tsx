@@ -5,7 +5,7 @@ import Svg, { Circle, G, Rect, Text as SvgText } from 'react-native-svg';
 // 100×120 viewBox — port of design_source/app/home.jsx ScrollArt.
 export function ScrollArt({ width = 100, height = 120 }: { width?: number; height?: number }) {
   return (
-    <Svg width={width} height={height} viewBox="0 0 100 120">
+    <Svg width={width} height={height} viewBox="0 0 100 120" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       {/* stacked books */}
       <Rect x={10} y={94} width={82} height={8} rx={1} fill="#8E6630" />
       <Rect x={14} y={86} width={78} height={7} rx={1} fill="#A67C3F" />

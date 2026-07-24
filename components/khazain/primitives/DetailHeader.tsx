@@ -20,6 +20,7 @@ export function DetailHeader({
     <View style={[styles.row, { backgroundColor: bg }, style]}>
       <Pressable
         onPress={onBack}
+        accessibilityRole="button"
         accessibilityLabel="رجوع"
         hitSlop={8}
         style={({ pressed }) => [styles.backBtn, { opacity: pressed ? 0.8 : 1 }]}

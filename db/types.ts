@@ -34,6 +34,20 @@ export type TrendPoint = {
   pagesRead: number;
 };
 
+/**
+ * Raw `khz_days` row (snake_case, mirrors the SQLite columns) for the wird
+ * completion-history view. Deliberately NOT camelCased: it flows straight from
+ * the repository into the pure `services/wirdHistory` selectors, which read
+ * `wird_completed` per row so a day stays judged against the goal in force
+ * THAT day (`wird_target_at_day`) — never the live target.
+ */
+export type DayCompletionRow = {
+  local_day: LocalDay;
+  pages_read: number;
+  wird_target_at_day: number;
+  wird_completed: number; // 0 | 1
+};
+
 export type SuggestionDecision = {
   shouldSuggest: boolean;
   suggestedTarget: number;
@@ -53,6 +67,22 @@ export interface PageReadsRepository {
   evaluateWirdSuggestion(currentTarget: number): Promise<SuggestionDecision>;
   setLastReadPage(page: number): Promise<void>;
   getLastReadPage(): Promise<number>;
+  /**
+   * Local days (inclusive range) whose wird goal was met — i.e.
+   * `khz_days.wird_completed = 1`. Consumed by the notification-horizon
+   * orchestrator so a completed day emits no wird reminder (FR-028).
+   */
+  completedDaysInRange(fromLocalDay: string, toLocalDay: string): Promise<string[]>;
+  /**
+   * Raw `khz_days` rows (inclusive range, ascending) for the completion-history
+   * view (US5, FR-055/FR-058). Returns the per-row `wird_target_at_day` /
+   * `wird_completed` snapshot so history is judged against the goal in force
+   * that day, never the live target. Consumed by `services/wirdHistory`.
+   */
+  dayCompletionsInRange(
+    fromLocalDay: string,
+    toLocalDay: string,
+  ): Promise<DayCompletionRow[]>;
 }
 
 export interface LectureSessionsRepository {

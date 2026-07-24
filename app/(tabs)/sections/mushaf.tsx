@@ -13,7 +13,7 @@ import {
   surahStartPage,
   toArabicDigits,
 } from '@/constants/progress';
-import { useSurahsStore, useAyatStore } from '@/store';
+import { useFontScale, useSurahsStore, useAyatStore } from '@/store';
 import { usePlayerStore } from '@/store/playerStore';
 import { useProgressStore } from '@/store/progressStore';
 import { progressRepo } from '@/db';
@@ -135,6 +135,7 @@ function ReadingView({ onBack, surahParam }: { onBack: () => void; surahParam: s
   const useAyat = useAyatStore(surahId);
   const { data: ayat, status: ayatStatus, error: ayatError, fetch: fetchAyat, refresh: refreshAyat } = useAyat();
   const notePageRead = useProgressStore((s) => s.notePageRead);
+  const { fontSize: ayatFontSize, lineHeight: ayatLineHeight } = useFontScale();
 
   // Each surah opening counts as a page read for the surah's first page
   // (FR-001 — see CLAUDE.md note: a real page-swipe Mushaf will refine this later).
@@ -198,7 +199,12 @@ function ReadingView({ onBack, surahParam }: { onBack: () => void; surahParam: s
           skeleton={<SkeletonRowList count={5} />}
           emptyMessage="لا توجد آيات لهذه السورة"
         >
-          <Text style={styles.ayatBody}>
+          <Text
+            style={[
+              styles.ayatBody,
+              { fontSize: ayatFontSize, lineHeight: ayatLineHeight },
+            ]}
+          >
             {ayat.map((a, i) => (
               <React.Fragment key={a.number}>
                 {a.text}
@@ -231,7 +237,11 @@ function AyahNum({ n }: { n: string }) {
 
 function MushafBtn({ label, icon }: { label: string; icon: React.ReactNode }) {
   return (
-    <Pressable style={({ pressed }) => [styles.footerBtn, { opacity: pressed ? 0.7 : 1 }]}>
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed }) => [styles.footerBtn, { opacity: pressed ? 0.7 : 1 }]}
+    >
       {icon}
       <Text style={styles.footerBtnLabel}>{label}</Text>
     </Pressable>

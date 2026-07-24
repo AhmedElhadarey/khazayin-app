@@ -12,6 +12,22 @@ export const BEGINNER_WIRD = 10; // pages — spec FR-007
 export const MIN_WIRD = 1;
 export const MAX_WIRD = 604;
 
+/**
+ * The three juz-based wird presets offered in the goal editor (FR-005a).
+ *
+ * FLAT page counts, deliberately NOT derived from the current juz. Ajzāʾ are
+ * not uniform — juz 1 spans 21 pages, juz 2 spans 20 (see `JUZ_PAGE_RANGES`) —
+ * so a dynamic per-juz mapping would make `wird_target_at_day` incomparable
+ * across history and feed a moving target into the suggestion engine's median.
+ */
+export type JuzPreset = 'quarter' | 'half' | 'full';
+
+export const JUZ_PRESET_PAGES: Readonly<Record<JuzPreset, number>> = {
+  quarter: 5,
+  half: 10,
+  full: 20,
+};
+
 export const COMPLETION_THRESHOLD = 0.95; // spec FR-011
 
 export const SUGGESTION_COOLDOWN_DAYS = 14; // research R7

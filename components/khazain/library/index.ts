@@ -1,10 +1,10 @@
 export { StatCard } from './StatCard';
 export { CircularProgress } from './CircularProgress';
 export { AudioProgressCard } from './AudioProgressCard';
-export { ReminderCard } from './ReminderCard';
 export { MySavedSection } from './MySavedSection';
 export { TrendSparkline } from './TrendSparkline';
 export { InsightRow } from './InsightRow';
 export { showAchievementToast } from './AchievementToast';
 export { EmptyInProgressCard } from './EmptyInProgressCard';
 export { WirdSuggestionBanner } from './WirdSuggestionBanner';
+export { WirdHistory } from './WirdHistory';

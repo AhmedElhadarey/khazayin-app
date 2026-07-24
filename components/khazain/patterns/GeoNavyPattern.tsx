@@ -17,6 +17,9 @@ export function GeoNavyPattern({ children, style, opacity = 0.14 }: Props) {
         height="100%"
         style={{ position: 'absolute', inset: 0 }}
         pointerEvents="none"
+        accessible={false}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
       >
         <Defs>
           <Pattern id="geoNavy" x={0} y={0} width={80} height={80} patternUnits="userSpaceOnUse">

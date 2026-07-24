@@ -15,7 +15,7 @@ export function MosqueSilhouette({
   opacity?: number;
 }) {
   return (
-    <Svg width={width} height={height} viewBox="0 0 154 54">
+    <Svg width={width} height={height} viewBox="0 0 154 54" accessible={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
       <Path
         d="M0 54 L0 36 L18 36 L18 26 Q26 24 26 18 Q26 24 34 26 L34 36 L48 36 L48 28
            Q54 24 54 18 L54 12 Q58 10 58 6 Q58 10 62 12 L62 18 Q62 24 70 28 L70 36 L85 36 L85 26

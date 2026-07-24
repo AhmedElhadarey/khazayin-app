@@ -1,5 +1,6 @@
 import React from 'react';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { KhazainRadius } from '@/constants/theme';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
@@ -37,7 +38,7 @@ export function DawahPoster({
       ]}
     >
       {quote.imageSource ? (
-        <Image source={quote.imageSource} style={styles.image} resizeMode="cover" />
+        <Image source={quote.imageSource} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={0} />
       ) : null}
 
       {/* Top edge sheen — simulates a raised bevel catching light */}

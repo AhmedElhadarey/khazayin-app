@@ -48,6 +48,9 @@ export type ProgressSnapshot = {
   completedLectureCount: number;
 
   ready: boolean;
+  /** Set when hydration failed (DB open/read error). The Library tab shows a
+   *  retry affordance instead of silently displaying zeroed stats (T1.2). */
+  dbFailed: boolean;
 };
 
 function previousMonthString(): string {
@@ -86,6 +89,7 @@ const EMPTY: ProgressSnapshot = {
   totalListenedMinutes: 0,
   completedLectureCount: 0,
   ready: false,
+  dbFailed: false,
 };
 
 // Serialize notePageRead calls so achievement evaluation never interleaves
@@ -104,46 +108,54 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
     ...EMPTY,
 
     async hydrate() {
-      await getRepos();
-      const [
-        pagesToday,
-        pagesReadThisMonth,
-        pagesReadLastMonth,
-        currentStreak,
-        completedJuzCount,
-        longestStreakEver,
-        bestWirdDay,
-        trendLast28,
-        inProgressLecture,
-        totalListenedSec,
-        completedLectureCount,
-      ] = await Promise.all([
-        progressRepo.pagesReadToday(),
-        progressRepo.pagesReadInMonth(),
-        progressRepo.pagesReadInMonth(previousMonthString()),
-        progressRepo.currentStreak(),
-        progressRepo.completedJuzCount(),
-        progressRepo.longestStreakEver(),
-        progressRepo.bestWirdDay(),
-        progressRepo.trendLastNDays(TREND_DAYS),
-        lectureRepo.findInProgress(),
-        lectureRepo.totalListenedSec(),
-        lectureRepo.completedCount(),
-      ]);
-      set({
-        pagesToday,
-        pagesReadThisMonth,
-        pagesReadLastMonth,
-        currentStreak,
-        completedJuzCount,
-        longestStreakEver,
-        bestWirdDayPages: bestWirdDay?.pagesRead ?? 0,
-        trendLast28,
-        inProgressLecture,
-        totalListenedMinutes: Math.floor(totalListenedSec / 60),
-        completedLectureCount,
-        ready: true,
-      });
+      try {
+        await getRepos();
+        const [
+          pagesToday,
+          pagesReadThisMonth,
+          pagesReadLastMonth,
+          currentStreak,
+          completedJuzCount,
+          longestStreakEver,
+          bestWirdDay,
+          trendLast28,
+          inProgressLecture,
+          totalListenedSec,
+          completedLectureCount,
+        ] = await Promise.all([
+          progressRepo.pagesReadToday(),
+          progressRepo.pagesReadInMonth(),
+          progressRepo.pagesReadInMonth(previousMonthString()),
+          progressRepo.currentStreak(),
+          progressRepo.completedJuzCount(),
+          progressRepo.longestStreakEver(),
+          progressRepo.bestWirdDay(),
+          progressRepo.trendLastNDays(TREND_DAYS),
+          lectureRepo.findInProgress(),
+          lectureRepo.totalListenedSec(),
+          lectureRepo.completedCount(),
+        ]);
+        set({
+          pagesToday,
+          pagesReadThisMonth,
+          pagesReadLastMonth,
+          currentStreak,
+          completedJuzCount,
+          longestStreakEver,
+          bestWirdDayPages: bestWirdDay?.pagesRead ?? 0,
+          trendLast28,
+          inProgressLecture,
+          totalListenedMinutes: Math.floor(totalListenedSec / 60),
+          completedLectureCount,
+          ready: true,
+          dbFailed: false,
+        });
+      } catch (err) {
+        // Mark the failure so the UI can offer a retry; rethrow so boot logging
+        // (app/_layout.tsx) still records it.
+        set({ dbFailed: true, ready: false });
+        throw err;
+      }
     },
 
     notePageRead(pageNumber) {

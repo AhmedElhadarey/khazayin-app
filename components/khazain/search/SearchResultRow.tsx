@@ -107,5 +107,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: KhazainColors.ink900,
     fontWeight: '600',
+    writingDirection: 'rtl',
+    textAlign: 'right',
   },
 });
