@@ -89,6 +89,7 @@ export interface Lecture {
   duration: string;     // formatted ar-EG, e.g. "٤٥ د"
   category: 'prophet' | 'book' | 'queen' | 'radio' | 'scholar' | 'general';
   scholarId?: string;   // forward-link for joins after API swap
+  archiveId?: string;   // Internet Archive item id (a lecture = one audio series). Episodes resolved at play time.
 }
 
 // ---------------------------------------------------------------------------

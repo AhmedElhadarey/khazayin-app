@@ -1,0 +1,12 @@
+{
+  "server": "ia600904.us.archive.org",
+  "dir": "/33/items/002_20210904",
+  "files": [
+    { "name": "__ia_thumb.jpg", "format": "JPEG", "source": "original" },
+    { "name": "002_20210904_meta.xml", "format": "Metadata", "source": "original" },
+    { "name": "001.mp3", "title": "سورة الفاتحة", "track": "001/114", "length": "460.07", "format": "VBR MP3", "source": "original" },
+    { "name": "001_64kb.mp3", "title": "سورة الفاتحة", "track": "001/114", "length": "460.07", "format": "64Kbps MP3", "source": "derivative" },
+    { "name": "003.mp3", "title": "سورة آل عمران", "track": "003/114", "length": "15338.55", "format": "VBR MP3", "source": "original" },
+    { "name": "002.mp3", "title": "سورة البقرة", "track": "002/114", "length": "29022.43", "format": "VBR MP3", "source": "original" }
+  ]
+}

@@ -7,10 +7,11 @@ import {
   TulipBadge,
 } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useQueenLecturesStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 33: أنتِ ملكة — paginated list of lecture cards with a tulip-glyph cream disc.
@@ -48,7 +49,7 @@ export default function QueenScreen() {
             title={item.title}
             scholar={item.scholar}
             duration={item.duration}
-            onPress={() => Alert.alert(item.title, 'سيتم تشغيل الحلقة قريباً')}
+            onPress={() => startLecturePlayback(item)}
           />
         )}
         onEndReached={() => { if (hasMore && !fetchingMore) fetchMore(); }}

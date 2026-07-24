@@ -7,10 +7,11 @@ import {
   SkeletonRibbonList,
 } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useProphetLecturesStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 25: رسول الله ﷺ — paginated list of lecture cards.
@@ -48,7 +49,7 @@ export default function ProphetScreen() {
             title={item.title}
             scholar={item.scholar}
             duration={item.duration}
-            onPress={() => Alert.alert(item.title, 'سيتم تشغيل الحلقة قريباً')}
+            onPress={() => startLecturePlayback(item)}
           />
         )}
         onEndReached={() => { if (hasMore && !fetchingMore) fetchMore(); }}

@@ -1,9 +1,10 @@
 import { AsyncContent, InlineHeader, RibbonCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useScholarLecturesStore, useScholarsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 28: كل الشرح — full-screen list of lecture RibbonCards for a single scholar.
@@ -54,7 +55,7 @@ export default function ScholarDetailScreen() {
               title={l.title}
               meta={l.scholar}
               duration={l.duration}
-              onPress={() => Alert.alert(l.title, 'سيتم تشغيل الحلقة قريباً')}
+              onPress={() => startLecturePlayback(l)}
             />
           )}
           style={styles.flex}

@@ -7,10 +7,11 @@ import {
   SkeletonRibbonList,
 } from '@/components/khazain';
 import { KhazainColors } from '@/constants/theme';
+import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useRadioProgramsStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Page 35: برامج إذاعية — paginated denser radio program cards (compact LectureCard variant).
@@ -49,7 +50,7 @@ export default function RadioScreen() {
             title={item.title}
             scholar={item.scholar}
             duration={item.duration}
-            onPress={() => Alert.alert(item.title, 'سيتم تشغيل البرنامج قريباً')}
+            onPress={() => startLecturePlayback(item)}
           />
         )}
         onEndReached={() => { if (hasMore && !fetchingMore) fetchMore(); }}

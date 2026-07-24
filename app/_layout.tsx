@@ -16,6 +16,8 @@ import { useWirdStore } from '@/store/wirdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
 import { registerCacheRoot } from '@/services/cacheFacade';
+import { registerPlaybackService, restoreLastLecture, setupPlayer } from '@/services/audioEngine';
+import { registerPlaybackListeners } from '@/services/audioEngine/syncBridge';
 import {
   reconcileLegacyOnboardingFlag,
   shouldRedirectToOnboarding,
@@ -52,6 +54,9 @@ registerCacheRoot({
     return 0;
   },
 });
+
+// Register the RNTP background service for lock-screen controls (native only).
+registerPlaybackService();
 
 SplashScreen.preventAutoHideAsync().catch(() => {
   // Ignore — splash may already have been hidden in dev reloads.
@@ -211,9 +216,16 @@ function RootLayout() {
     Promise.all([
       useProgressStore.getState().hydrate(),
       useWirdStore.getState().hydrate(),
-    ]).catch((err) => {
-      console.warn('[khazayin] progress hydration failed', err);
-    });
+    ])
+      .then(() => {
+        restoreLastLecture();
+      })
+      .catch((err) => {
+        console.warn('[khazayin] progress hydration failed', err);
+      });
+    setupPlayer()
+      .then(() => registerPlaybackListeners())
+      .catch((err) => console.warn('[khazayin] audio engine setup failed', err));
   }, [fontsLoaded]);
 
   // Env preflight — warn once at root mount if the API base URL is not

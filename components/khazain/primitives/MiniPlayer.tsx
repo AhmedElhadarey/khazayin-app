@@ -1,4 +1,5 @@
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
+import { skipNext, skipPrev, togglePlayback } from '@/services/audioEngine';
 import { usePlayerStore } from '@/store/playerStore';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -17,7 +18,6 @@ export function MiniPlayer() {
   const track = usePlayerStore((s) => s.track);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const isVisible = usePlayerStore((s) => s.isVisible);
-  const togglePlay = usePlayerStore((s) => s.togglePlay);
 
   if (!isVisible || !track) return null;
 
@@ -42,9 +42,9 @@ export function MiniPlayer() {
         <View style={styles.transport}>
           {/* JSX-first → right of the transport cluster under forceRTL.
               Visual RTL right → left: [skipBack][playPause][skipFwd]. */}
-          <SkipGlyph dir="back" />
+          <SkipButton dir="back" onPress={skipPrev} label="السابق" />
           <Pressable
-            onPress={togglePlay}
+            onPress={() => togglePlayback()}
             accessibilityRole="button"
             accessibilityLabel={isPlaying ? 'إيقاف مؤقت' : 'تشغيل'}
             hitSlop={10}
@@ -52,7 +52,7 @@ export function MiniPlayer() {
           >
             {isPlaying ? <PauseGlyph /> : <PlayGlyph />}
           </Pressable>
-          <SkipGlyph dir="fwd" />
+          <SkipButton dir="fwd" onPress={skipNext} label="التالي" />
         </View>
       </View>
 
@@ -70,6 +70,21 @@ function ProgressFill() {
   const progress = usePlayerStore((s) => s.progress);
   const pct = Math.max(0, Math.min(1, progress));
   return <View style={[styles.progressFill, { width: `${pct * 100}%` }]} />;
+}
+
+// Pressable wrapper around the pure SkipGlyph SVG — wires prev/next transport.
+function SkipButton({ dir, onPress, label }: { dir: 'back' | 'fwd'; onPress: () => void; label: string }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      hitSlop={10}
+      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
+    >
+      <SkipGlyph dir={dir} />
+    </Pressable>
+  );
 }
 
 // Triangle + bar skip-back / skip-forward glyphs (small, gold/copper outline-ish per Figma).
