@@ -9,7 +9,7 @@
  * Every TrackPlayer call is `.catch`-guarded: in the headless context a
  * rejected call would otherwise surface as an unhandled promise rejection.
  */
-import TrackPlayer, { Event } from 'react-native-track-player';
+import { Event, TrackPlayer } from './rntp';
 
 export default async function playbackService(): Promise<void> {
   TrackPlayer.addEventListener(Event.RemotePlay, () => {

@@ -7,12 +7,13 @@
  * import `react-native-track-player`.
  */
 import { Platform } from 'react-native';
-import TrackPlayer, { Event, State, type Track } from 'react-native-track-player';
 import * as Sentry from '@sentry/react-native';
+import { Event, State, TrackPlayer, nativeAudioAvailable, type Track } from './rntp';
 import { usePlayerStore, type PlayerTrack } from '@/store/playerStore';
 import { useToastStore } from '@/store/toastStore';
 
-const isWeb = () => Platform.OS === 'web';
+// Inert on web and in Expo Go (no native module) — see ./rntp.
+const isInert = () => Platform.OS === 'web' || !nativeAudioAvailable;
 
 let _subs: { remove(): void }[] = [];
 
@@ -28,7 +29,7 @@ function toPlayerTrack(track: Track | undefined): PlayerTrack | null {
 
 /** Register all playback listeners (idempotent — clears prior subscriptions). */
 export function registerPlaybackListeners(): void {
-  if (isWeb()) return;
+  if (isInert()) return;
   unregisterPlaybackListeners();
   const store = () => usePlayerStore.getState();
 

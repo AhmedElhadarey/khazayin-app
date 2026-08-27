@@ -10,11 +10,13 @@
  * a resolved no-op so the web bundle never touches the native module.
  */
 import { Platform } from 'react-native';
-import TrackPlayer, {
+import {
   AppKilledPlaybackBehavior,
   Capability,
   State,
-} from 'react-native-track-player';
+  TrackPlayer,
+  nativeAudioAvailable,
+} from './audioEngine/rntp';
 import * as Sentry from '@sentry/react-native';
 import { usePlayerStore } from '@/store/playerStore';
 import { useProgressStore } from '@/store/progressStore';
@@ -25,6 +27,25 @@ import type { Lecture } from '@/types/content';
 
 const isWeb = () => Platform.OS === 'web';
 
+/**
+ * "Inert" = no real audio engine behind us: on web, or in Expo Go where the
+ * react-native-track-player native module is absent (see ./audioEngine/rntp).
+ * Every engine function short-circuits here so touching the undefined native
+ * `TrackPlayer` never throws.
+ */
+const isInert = () => isWeb() || !nativeAudioAvailable;
+
+/**
+ * Tell the user why playback did nothing. Only meaningful in Expo Go (a native
+ * platform missing the module) — web is a silent no-op by design.
+ */
+function notifyAudioUnavailable(): void {
+  if (isWeb()) return;
+  useToastStore.getState().show({
+    message: 'تشغيل الصوت غير متاح في Expo Go — يتطلب نسخة تطوير من التطبيق (Development Build).',
+  });
+}
+
 let _setupPromise: Promise<void> | null = null;
 
 /** Test-only: reset the one-time setup guard. */
@@ -32,18 +53,9 @@ export function __resetForTests(): void {
   _setupPromise = null;
 }
 
-const TRANSPORT_CAPABILITIES = [
-  Capability.Play,
-  Capability.Pause,
-  Capability.SkipToNext,
-  Capability.SkipToPrevious,
-  Capability.SeekTo,
-  Capability.Stop,
-];
-
 /** Idempotent one-time player initialisation + transport capability config. */
 export async function setupPlayer(): Promise<void> {
-  if (isWeb()) return;
+  if (isInert()) return;
   if (_setupPromise) return _setupPromise;
   _setupPromise = (async () => {
     try {
@@ -54,7 +66,14 @@ export async function setupPlayer(): Promise<void> {
       // "player already initialized" after a fast refresh / re-entry — safe.
     }
     await TrackPlayer.updateOptions({
-      capabilities: TRANSPORT_CAPABILITIES,
+      capabilities: [
+        Capability.Play,
+        Capability.Pause,
+        Capability.SkipToNext,
+        Capability.SkipToPrevious,
+        Capability.SeekTo,
+        Capability.Stop,
+      ],
       compactCapabilities: [
         Capability.Play,
         Capability.Pause,
@@ -79,22 +98,22 @@ export async function setupPlayer(): Promise<void> {
 }
 
 export async function play(): Promise<void> {
-  if (isWeb()) return;
+  if (isInert()) return;
   await TrackPlayer.play();
 }
 
 export async function pause(): Promise<void> {
-  if (isWeb()) return;
+  if (isInert()) return;
   await TrackPlayer.pause();
 }
 
 export async function seekTo(positionSec: number): Promise<void> {
-  if (isWeb()) return;
+  if (isInert()) return;
   await TrackPlayer.seekTo(positionSec);
 }
 
 export async function skipNext(): Promise<void> {
-  if (isWeb()) return;
+  if (isInert()) return;
   try {
     await TrackPlayer.skipToNext();
   } catch {
@@ -103,7 +122,7 @@ export async function skipNext(): Promise<void> {
 }
 
 export async function skipPrev(): Promise<void> {
-  if (isWeb()) return;
+  if (isInert()) return;
   try {
     await TrackPlayer.skipToPrevious();
   } catch {
@@ -112,7 +131,7 @@ export async function skipPrev(): Promise<void> {
 }
 
 export async function stop(): Promise<void> {
-  if (isWeb()) return;
+  if (isInert()) return;
   await TrackPlayer.reset();
 }
 
@@ -130,7 +149,7 @@ export class NoAudioError extends Error {
  * episode. Mirrors UI state onto the player store.
  */
 export async function playLecture(lecture: Lecture): Promise<void> {
-  if (isWeb()) return;
+  if (isInert()) return notifyAudioUnavailable();
   if (!lecture.archiveId) throw new NoAudioError();
 
   await setupPlayer();
@@ -186,7 +205,7 @@ export async function playLecture(lecture: Lecture): Promise<void> {
  * resumes (playLecture reads the saved position from progressStore).
  */
 export async function togglePlayback(): Promise<void> {
-  if (isWeb()) return;
+  if (isInert()) return notifyAudioUnavailable();
   try {
     await setupPlayer();
     const idx = await TrackPlayer.getActiveTrackIndex();
@@ -220,7 +239,7 @@ export async function togglePlayback(): Promise<void> {
  * Must be called once at app entry, before setupPlayer(). Native only.
  */
 export function registerPlaybackService(): void {
-  if (isWeb()) return;
+  if (isInert()) return;
   TrackPlayer.registerPlaybackService(() => require('./audioEngine/playbackService').default);
 }
 
@@ -230,7 +249,7 @@ export function registerPlaybackService(): void {
  * the queue and seeks to the saved position).
  */
 export function restoreLastLecture(): void {
-  if (isWeb()) return;
+  if (isInert()) return;
   const inProgress = useProgressStore.getState().inProgressLecture;
   if (!inProgress || inProgress.completed) return;
   const initialProgress =
