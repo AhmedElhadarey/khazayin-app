@@ -45,10 +45,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-khazain.png",
-          "imageWidth": 393,
-          "resizeMode": "cover",
-          "backgroundColor": "#F5EDE4"
+          "image": "./assets/images/splash-emblem.png",
+          "imageWidth": 131,
+          "resizeMode": "contain",
+          "backgroundColor": "#F4E7DA"
         }
       ],
       "expo-sqlite",

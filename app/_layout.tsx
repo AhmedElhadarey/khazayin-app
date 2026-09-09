@@ -29,7 +29,14 @@ import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
-LogBox.ignoreLogs(['Require cycle:']);
+if (__DEV__ && process.env.EXPO_PUBLIC_VISUAL_AUDIT === '1') {
+  // Debug LogBox toasts cover the bottom navigation and invalidate visual
+  // comparisons. Capture runs opt in explicitly; ordinary development keeps
+  // every warning visible.
+  LogBox.ignoreAllLogs();
+} else {
+  LogBox.ignoreLogs(['Require cycle:']);
+}
 
 // Crash + error reporting. The DSN is supplied via env (EXPO_PUBLIC_SENTRY_DSN)
 // so no secret is committed; when unset, reporting is disabled and the app runs
@@ -230,15 +237,19 @@ function RootLayout() {
 
   // The native splash stays up for the whole gate, so there is no blank frame
   // between it and the launch overlay.
-  useEffect(() => {
-    if (navigatorReady) {
-      SplashScreen.hideAsync().catch(() => undefined);
-    }
-  }, [navigatorReady]);
-
   // Cold-start only: `shouldRunLaunchSequence` returns true exactly once per
   // app session, so a tab return or a Fast Refresh never replays the sequence.
   const [showLaunch, setShowLaunch] = useState(() => shouldRunLaunchSequence());
+
+  useEffect(() => {
+    // When the launch overlay is mounted it owns the hand-over: it hides the
+    // native splash once its own emblem has drawn, so the two never trade
+    // places through a blank frame. Without the overlay, readiness is the cue.
+    if (showLaunch) return;
+    if (navigatorReady) {
+      SplashScreen.hideAsync().catch(() => undefined);
+    }
+  }, [navigatorReady, showLaunch]);
 
   // Progress-tracking hydration. Failures fall back to zero values so the
   // Library tab never crashes if the DB layer mis-initializes.
@@ -271,20 +282,16 @@ function RootLayout() {
     }
   }, []);
 
-  if (!navigatorReady) {
-    return null;
-  }
-
   return (
     <Sentry.ErrorBoundary
       fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
     >
     <ThemeProvider value={colorScheme === 'dark' ? KhazayinDarkTheme : KhazayinLightTheme}>
-      {/* The Figma launch states (nodes 2001:888, 2001:914, 2007:511) render
-          over the mounted navigator, so nothing flashes between the native
-          splash and Home. It is mounted only after fonts *and* settings
-          resolve, so it can never delay readiness, and only on a cold start. */}
-      {showLaunch ? <LaunchSequence onDone={() => setShowLaunch(false)} /> : null}
+      {/* Home still never appears before fonts *and* settings resolve. The
+          launch overlay is a sibling rather than a wrapper, so it can mount on
+          the first JS frame and show the wait rather than follow it. */}
+      {navigatorReady ? (
+      <>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -442,7 +449,14 @@ function RootLayout() {
         />
       </Stack>
       <ToastOverlay />
+      </>
+      ) : null}
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      {/* Last child, so it paints over the navigator during the hand-over —
+          Figma nodes 2001:888, 2001:914, 2007:511. */}
+      {showLaunch ? (
+        <LaunchSequence ready={navigatorReady} onDone={() => setShowLaunch(false)} />
+      ) : null}
     </ThemeProvider>
     </Sentry.ErrorBoundary>
   );

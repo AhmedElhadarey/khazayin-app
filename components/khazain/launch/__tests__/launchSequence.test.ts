@@ -1,62 +1,97 @@
 import {
-  LAUNCH_PHASES,
-  LAUNCH_TOTAL_MS,
+  BREATHE_MS,
+  GROW_MS,
+  MAX_VISIBLE_MS,
+  MIN_VISIBLE_MS,
   REDUCED_MOTION_MS,
+  SCALE,
+  SETTLE_MS,
   __resetLaunchSequenceForTests,
-  launchSequence,
+  resolveExit,
   shouldRunLaunchSequence,
 } from '../launchTiming';
 
 beforeEach(() => __resetLaunchSequenceForTests());
 
 /**
- * Figma nodes 2001:835, 2001:888, 2001:914, 2007:511 — the four launch states
- * the app previously collapsed into one static image.
+ * Figma nodes 2001:888, 2001:914, 2007:511. The emblem's growth is the loading
+ * signal, so these assert that the timeline follows readiness rather than a
+ * fixed duration — the defect the rebuild exists to fix.
  */
-describe('launchSequence', () => {
-  it('reproduces the reference phases in order', () => {
-    expect(launchSequence({ reduceMotion: false }).map((p) => p.phase)).toEqual([
-      'background',
-      'emblem',
-      'hold',
-    ]);
+describe('resolveExit', () => {
+  it('waits for the minimum-visible floor when the app is ready sooner', () => {
+    const exit = resolveExit({ readyAtMs: 120 });
+    expect(exit.startsAtMs).toBe(MIN_VISIBLE_MS);
+    expect(exit.heldForMinimum).toBe(true);
   });
 
-  it('names the Figma node each phase reproduces', () => {
-    expect(launchSequence({ reduceMotion: false }).map((p) => p.nodeId)).toEqual([
-      '2001:888',
-      '2001:914',
-      '2007:511',
-    ]);
+  it('exits as soon as the app is ready once past the floor', () => {
+    const exit = resolveExit({ readyAtMs: 2200 });
+    expect(exit.startsAtMs).toBe(2200);
+    expect(exit.heldForMinimum).toBe(false);
   });
 
-  it('lands inside the 600-1200ms budget', () => {
-    expect(LAUNCH_TOTAL_MS).toBeGreaterThanOrEqual(600);
-    expect(LAUNCH_TOTAL_MS).toBeLessThanOrEqual(1200);
-    expect(LAUNCH_PHASES.reduce((sum, p) => sum + p.durationMs, 0)).toBe(LAUNCH_TOTAL_MS);
+  it('exits at the floor exactly when readiness lands on it', () => {
+    const exit = resolveExit({ readyAtMs: MIN_VISIBLE_MS });
+    expect(exit.startsAtMs).toBe(MIN_VISIBLE_MS);
+    expect(exit.heldForMinimum).toBe(false);
   });
 
-  it('gives every phase a positive duration', () => {
-    LAUNCH_PHASES.forEach((phase) => {
-      expect([phase.phase, phase.durationMs > 0]).toEqual([phase.phase, true]);
-    });
+  it('hands over at the cap when the app never reports ready', () => {
+    const exit = resolveExit({ readyAtMs: null });
+    expect(exit.startsAtMs).toBe(MAX_VISIBLE_MS);
+    expect(exit.endsAtMs).toBe(MAX_VISIBLE_MS + SETTLE_MS);
   });
 
-  it('collapses to a single final state under Reduce Motion', () => {
-    const reduced = launchSequence({ reduceMotion: true });
-    expect(reduced).toHaveLength(1);
-    expect(reduced[0].phase).toBe('hold');
-    expect(reduced[0].durationMs).toBe(REDUCED_MOTION_MS);
-    expect(REDUCED_MOTION_MS).toBeLessThan(LAUNCH_TOTAL_MS);
+  it('never waits past the cap for a very late readiness', () => {
+    expect(resolveExit({ readyAtMs: MAX_VISIBLE_MS * 3 }).startsAtMs).toBe(MAX_VISIBLE_MS);
   });
 
-  it('never mutates the shared phase table', () => {
-    launchSequence({ reduceMotion: false }).push({
-      phase: 'hold',
-      nodeId: 'x',
-      durationMs: 1,
-    });
-    expect(LAUNCH_PHASES).toHaveLength(3);
+  it('treats a negative readiness as immediate rather than negative', () => {
+    // A clock skew or a ready-before-mount must not pull the exit backwards.
+    const exit = resolveExit({ readyAtMs: -500 });
+    expect(exit.startsAtMs).toBe(MIN_VISIBLE_MS);
+  });
+
+  it('ends exactly one settle after it starts', () => {
+    const exit = resolveExit({ readyAtMs: 1500 });
+    expect(exit.endsAtMs - exit.startsAtMs).toBe(exit.durationMs);
+    expect(exit.durationMs).toBe(SETTLE_MS);
+  });
+
+  it('skips the floor and shortens the fade under Reduce Motion', () => {
+    const exit = resolveExit({ readyAtMs: 50, reduceMotion: true });
+    expect(exit.startsAtMs).toBe(50);
+    expect(exit.durationMs).toBe(REDUCED_MOTION_MS);
+    expect(exit.heldForMinimum).toBe(false);
+  });
+
+  it('still respects the cap under Reduce Motion', () => {
+    expect(resolveExit({ readyAtMs: null, reduceMotion: true }).startsAtMs).toBe(MAX_VISIBLE_MS);
+  });
+});
+
+describe('scale steps', () => {
+  it('grows away from rest and breathes around the held size', () => {
+    expect(SCALE.held).toBeGreaterThan(SCALE.rest);
+    expect(SCALE.breatheLow).toBeLessThan(SCALE.held);
+    expect(SCALE.breatheHigh).toBeGreaterThan(SCALE.held);
+  });
+
+  it('keeps the growth subtle enough not to crop on the narrowest screen', () => {
+    // The emblem is 131pt wide inside a 320pt-wide frame at worst.
+    expect(SCALE.breatheHigh).toBeLessThanOrEqual(1.15);
+  });
+});
+
+describe('budgets', () => {
+  it('shows the emblem long enough to register but not long enough to annoy', () => {
+    expect(MIN_VISIBLE_MS).toBeGreaterThanOrEqual(600);
+    expect(MIN_VISIBLE_MS).toBeLessThan(MAX_VISIBLE_MS);
+  });
+
+  it('finishes growing before the floor releases, so growth is never cut short', () => {
+    expect(GROW_MS).toBeLessThanOrEqual(MIN_VISIBLE_MS);
   });
 });
 

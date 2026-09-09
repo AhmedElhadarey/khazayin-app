@@ -1,10 +1,13 @@
 export { LaunchSequence } from './LaunchSequence';
 export {
-  LAUNCH_PHASES,
-  LAUNCH_TOTAL_MS,
+  BREATHE_MS,
+  GROW_MS,
+  MAX_VISIBLE_MS,
+  MIN_VISIBLE_MS,
   REDUCED_MOTION_MS,
-  launchSequence,
+  SCALE,
+  SETTLE_MS,
+  resolveExit,
   shouldRunLaunchSequence,
-  type LaunchPhase,
-  type LaunchStep,
+  type LaunchExit,
 } from './launchTiming';
