@@ -9,9 +9,8 @@ type Props = {
   seeAllLabel?: string;
 };
 
-// RTL-safe section header: gold bar + title pinned to the RIGHT,
-// optional "عرض الكل" link pinned to the LEFT.
-// Uses absolute positioning so the visual is deterministic regardless of I18nManager state.
+// RTL-safe section header: gold bar + title on the RIGHT and optional link on
+// the LEFT. Content-driven height prevents clipping at larger font scales.
 export function SectionHeader({ title, onSeeAll, seeAllLabel = 'عرض الكل' }: Props) {
   return (
     <View style={styles.row}>
@@ -37,17 +36,18 @@ const innerFlex = I18nManager.isRTL ? 'row' : ('row-reverse' as const);
 
 const styles = StyleSheet.create({
   row: {
-    height: 21,
-    position: 'relative',
+    minHeight: 21,
+    flexDirection: innerFlex,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   titleGroup: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
     flexDirection: innerFlex,
     alignItems: 'center',
     gap: 8,
+    minWidth: 0,
+    flexShrink: 1,
   },
   bar: {
     width: 5,
@@ -64,13 +64,10 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
   link: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
     flexDirection: innerFlex,
     alignItems: 'center',
     gap: 4,
+    flexShrink: 0,
   },
   linkLabel: {
     fontFamily: 'TheSansArabic',

@@ -10,11 +10,11 @@ export default function AboutScreen() {
   const router = useRouter();
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
       <DetailHeader title="مؤسسة خزائن الرحمن" onBack={() => router.back()} />
       <ScrollView
-        contentContainerStyle={[styles.container, { paddingBottom: 160 }]}
+        contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={styles.body}>

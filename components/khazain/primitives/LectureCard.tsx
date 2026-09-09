@@ -1,15 +1,15 @@
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import type { Lecture } from '@/types/content';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
 import { BookmarkButton } from './BookmarkButton';
 
 // Cream rounded card used across pages 25 / 33 / 34 / 35.
 // Visual layout (RTL):
-//   [icon disc — flush RIGHT]  [title (bold) + scholar (muted)]   ...   [duration chip + bookmark — flush LEFT]
+//   [icon disc — flush RIGHT]  [title (bold) + scholar (muted)]   ...   [duration chip + optional bookmark — flush LEFT]
 //
-// All inner pieces use absolute positioning to survive `forceRTL` quirks
-// across native + web (per CLAUDE.md).
+// A deterministic row direction keeps the visual order stable without fixed
+// left/right reservations, so the text column can grow on narrow phones.
 //
 // `compact` shrinks the card height + icon for the denser radio variant (page 35).
 // `pretitleSmall` renders an optional pretitle line above the title (e.g. "فضيلة الشيخ").
@@ -23,6 +23,7 @@ export function LectureCard({
   duration,
   pretitleSmall,
   compact,
+  showBookmark = false,
   onPress,
 }: {
   id: string;
@@ -33,6 +34,7 @@ export function LectureCard({
   duration?: string;
   pretitleSmall?: string;
   compact?: boolean;
+  showBookmark?: boolean;
   onPress?: () => void;
 }) {
   const heightStyle = compact ? styles.cardCompact : styles.card;
@@ -60,7 +62,7 @@ export function LectureCard({
             {pretitleSmall}
           </Text>
         ) : null}
-        <Text style={titleStyle} numberOfLines={1}>
+        <Text style={titleStyle} numberOfLines={compact ? 1 : 2}>
           {title}
         </Text>
         {scholar ? (
@@ -70,29 +72,37 @@ export function LectureCard({
         ) : null}
       </View>
 
-      {/* Left-edge: duration chip + bookmark cluster. */}
-      <View style={styles.endCluster}>
-        {duration ? <Text style={styles.duration}>{duration}</Text> : null}
-        <BookmarkButton
-          type="lecture"
-          entityId={id}
-          snapshot={{ type: 'lecture', title, scholar: scholar ?? '', duration: duration ?? '', category }}
-          variant="light"
-        />
-      </View>
+      {/* Left-edge: duration plus an opt-in save affordance. */}
+      {duration || showBookmark ? (
+        <View style={styles.endCluster}>
+          {duration ? <Text style={styles.duration}>{duration}</Text> : null}
+          {showBookmark ? (
+            <BookmarkButton
+              type="lecture"
+              entityId={id}
+              snapshot={{ type: 'lecture', title, scholar: scholar ?? '', duration: duration ?? '', category }}
+              variant="light"
+            />
+          ) : null}
+        </View>
+      ) : null}
     </Pressable>
   );
 }
 
+const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
+
 const styles = StyleSheet.create({
   cardBase: {
+    flexDirection: ROW_DIR,
+    alignItems: 'center',
+    gap: 10,
     borderRadius: 16,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: 'rgba(141,107,52,0.08)',
-    position: 'relative',
     justifyContent: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
   },
   card: {
     minHeight: 84,
@@ -103,32 +113,24 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   iconWrap: {
-    position: 'absolute',
-    right: 12,
-    top: 0,
-    bottom: 0,
     width: 48,
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
   iconWrapCompact: {
-    position: 'absolute',
-    right: 10,
-    top: 0,
-    bottom: 0,
     width: 40,
     justifyContent: 'center',
     alignItems: 'center',
+    flexShrink: 0,
   },
   textBlock: {
-    paddingRight: 70, // leave room for icon disc on the right
-    paddingLeft: 120, // leave room for duration chip + bookmark on the left
+    flex: 1,
+    minWidth: 0,
     alignItems: 'flex-end',
     gap: 4,
   },
   textBlockCompact: {
-    paddingRight: 56,
-    paddingLeft: 110,
     gap: 2,
   },
   pretitle: {
@@ -172,13 +174,10 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   endCluster: {
-    position: 'absolute',
-    left: 10,
-    top: 0,
-    bottom: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
   },
   duration: {
     fontFamily: 'TheSansArabic',

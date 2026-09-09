@@ -148,7 +148,7 @@ export default function SettingsScreen() {
     reciters.find((r) => r.id === preferredReciterId)?.name ?? '—';
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 60 }}

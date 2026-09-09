@@ -32,7 +32,7 @@ export default function QiraatScreen() {
   }, [data, defaultQiraaId, setDefaultQiraa]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       {/* sheet-like handle + centered title */}
       <View style={styles.handleWrap}>
         <View style={styles.handle} />

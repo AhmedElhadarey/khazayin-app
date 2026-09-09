@@ -1,7 +1,7 @@
 import { KhazainColors } from '@/constants/theme';
 import { todayHijriArabic } from '@/lib/hijriDate';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SearchPill } from '../primitives';
 import { FoundationMark } from './FoundationMark';
@@ -21,8 +21,7 @@ export function HomeHeader({
   onSearchOpen?: () => void;
 }) {
   // RTL visual layout (right → left): [FoundationMark][greeting block]   [bell]
-  // We use absolute positioning so we don't depend on flex auto-flip
-  // (which is unreliable on web / stale dev reloads — see CLAUDE.md).
+  // Use an explicit direction so native and web agree on the visual order.
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
@@ -74,6 +73,8 @@ function BellGlyph() {
   );
 }
 
+const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
+
 const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: 16,
@@ -82,15 +83,13 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   row: {
-    height: 54,
-    position: 'relative',
-    justifyContent: 'center',
+    minHeight: 54,
+    flexDirection: ROW_DIR,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   bell: {
-    position: 'absolute',
-    left: 0,
-    top: '50%',
-    marginTop: -16,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -98,19 +97,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 4,
+    flexShrink: 0,
   },
   // RTL visual order: [FoundationMark][greetText] anchored to the right edge.
   // JSX order matches: FoundationMark first → renders on the right under forceRTL.
   greetBlock: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
+    flex: 1,
+    minWidth: 0,
+    flexDirection: ROW_DIR,
     alignItems: 'center',
     gap: 8,
   },
   greetText: {
+    flexShrink: 1,
+    minWidth: 0,
     alignItems: 'flex-end',
   },
   greeting: {

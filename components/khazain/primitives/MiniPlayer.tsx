@@ -125,12 +125,12 @@ function PauseGlyph() {
   );
 }
 
-const BAR_HEIGHT = 80;
+const MIN_BAR_HEIGHT = 80;
 const COVER = 56;
 
 const styles = StyleSheet.create({
   shell: {
-    height: BAR_HEIGHT,
+    minHeight: MIN_BAR_HEIGHT,
     borderRadius: KhazainRadius.lg,
     overflow: 'hidden',
     backgroundColor: KhazainColors.cream50,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   row: {
-    flex: 1,
+    minHeight: COVER,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
@@ -156,9 +156,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    flexShrink: 0,
   },
   info: {
     flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
     gap: 4,
   },
@@ -182,6 +184,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
   },
   playBtn: {
     width: 36,

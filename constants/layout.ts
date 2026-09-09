@@ -25,3 +25,31 @@ export const TAB_BAR_VPAD = 14;
 // Breathing room added to the bottom of any tab-screen ScrollView so the
 // last item sits ~24 px above the floating MiniPlayer's top edge.
 export const SCREEN_BOTTOM_BREATHING = 24;
+
+const MAIN_TAB_PATHS = new Set(['/', '/library', '/sections', '/more']);
+
+/** Keep the primary navigation on the four Figma tab roots only. */
+export function shouldShowMainTabBar(pathname: string): boolean {
+  const withoutQuery = pathname.split(/[?#]/, 1)[0] || '/';
+  const normalized = withoutQuery.length > 1
+    ? withoutQuery.replace(/\/+$/, '')
+    : withoutQuery;
+  return MAIN_TAB_PATHS.has(normalized);
+}
+
+const FIGMA_CAROUSEL_CARD_WIDTH = 216.1;
+const COMPACT_CAROUSEL_CARD_WIDTH = 150;
+
+/**
+ * Preserve the Figma carousel proportion on phones without allowing cards to
+ * become unusably narrow or tablet-wide.
+ */
+export function responsiveCarouselCardWidth(windowWidth: number): number {
+  const pagePadding = 16 * 2;
+  const cardGap = 12;
+  const proportionalWidth = (windowWidth - pagePadding - cardGap) / 1.8;
+  return Math.min(
+    FIGMA_CAROUSEL_CARD_WIDTH,
+    Math.max(COMPACT_CAROUSEL_CARD_WIDTH, proportionalWidth),
+  );
+}

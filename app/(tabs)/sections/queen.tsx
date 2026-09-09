@@ -32,7 +32,7 @@ export default function QueenScreen() {
   useEffect(() => { fetch(); }, [fetch]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title="أنتِ ملكة" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
         <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />

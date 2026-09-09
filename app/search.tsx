@@ -115,7 +115,7 @@ export default function SearchModalScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title="بحث" onBack={() => router.back()} />
 
       {/* Active search input */}

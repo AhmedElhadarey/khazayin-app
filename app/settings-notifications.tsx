@@ -103,7 +103,7 @@ export default function SettingsNotificationsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
         <View style={styles.handle} />
       </View>

@@ -7,8 +7,8 @@ import { ChevronIcon } from '../icons';
 // Visual in RTL (the only mode this app runs in, but we defend against LTR):
 //   right edge: [title][goldBar]                left edge: [chevron][عرض الكل]
 //
-// We bypass RTL auto-flip by using absolute positioning for the two groups —
-// expo-router-web or a stale forceRTL cache shouldn't be able to flip us.
+// The explicit direction below keeps both groups deterministic across native
+// and web while allowing the row to grow with the user's font scale.
 export function HomeSectionHeader({
   title,
   onViewAll,
@@ -48,18 +48,19 @@ const innerFlex = I18nManager.isRTL ? 'row' : ('row-reverse' as const);
 
 const styles = StyleSheet.create({
   row: {
-    height: 21,
+    minHeight: 21,
     paddingHorizontal: 16,
-    position: 'relative',
+    flexDirection: innerFlex,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   titleGroup: {
-    position: 'absolute',
-    right: 16,
-    top: 0,
-    bottom: 0,
     flexDirection: innerFlex,
     alignItems: 'center',
     gap: 8,
+    minWidth: 0,
+    flexShrink: 1,
   },
   title: {
     fontFamily: 'TheSansArabic',
@@ -76,13 +77,10 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.goldBar,
   },
   linkAnchor: {
-    position: 'absolute',
-    left: 16,
-    top: 0,
-    bottom: 0,
     flexDirection: innerFlex,
     alignItems: 'center',
     gap: 4,
+    flexShrink: 0,
   },
   linkLabel: {
     fontFamily: 'TheSansArabic',

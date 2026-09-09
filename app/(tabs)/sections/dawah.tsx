@@ -26,7 +26,7 @@ export default function DawahScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
       <InlineHeader title="تصميمات دعوية" onBack={() => router.back()} />
       <ScrollView

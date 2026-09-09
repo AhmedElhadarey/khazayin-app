@@ -58,9 +58,11 @@ handoff.md
 .security-key
 logs/security/
 .message-bus/*
-docs/*
+# 18 MB Figma/app audit image baseline stays local; the markdown record is tracked.
+docs/audit/
 scripts/*
-CLAUDE.md
+# Visual-audit harness is source, not a local helper script.
+!scripts/visual-audit/
 .specify
 specs/*
 .claude/*

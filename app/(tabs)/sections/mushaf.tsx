@@ -99,7 +99,7 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
   }, [fetchSurahs]);
 
   return (
-    <SafeAreaView style={styles.listScreen} edges={['top']}>
+    <SafeAreaView style={styles.listScreen} edges={['top', 'bottom']}>
       <InlineHeader title="قراءة القرآن" onBack={onBack} />
       <View style={styles.searchBlock}>
         <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
@@ -167,7 +167,7 @@ function ReadingView({ onBack, surahParam }: { onBack: () => void; surahParam: s
     : '';
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={[styles.headerBg, { backgroundColor: MUSHAF_BG }]}>
         <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
         <Text style={styles.subtitle}>

@@ -184,6 +184,11 @@ function RootLayout() {
     'Amiri-Bold': require('../assets/fonts/Amiri-Bold.ttf'),
     NotoSansArabic: require('../assets/fonts/NotoSansArabic-VF.ttf'),
     NotoNaskhArabic: require('../assets/fonts/NotoNaskhArabic-VF.ttf'),
+    // Temporary aliases for the licensed design families. Keeping the design
+    // names in component styles lets the real font files replace these aliases
+    // later without another repo-wide style rewrite.
+    TheSansArabic: require('../assets/fonts/NotoSansArabic-VF.ttf'),
+    TheMixArab: require('../assets/fonts/NotoSansArabic-VF.ttf'),
   });
 
   // The root <Stack> only renders once fonts resolve (or error). Gate the

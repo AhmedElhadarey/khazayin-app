@@ -58,7 +58,7 @@ export default function ContactScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
       <DetailHeader title="تواصل معنا" onBack={() => router.back()} />
       <KeyboardAvoidingView
@@ -66,7 +66,7 @@ export default function ContactScreen() {
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: 160 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: 24 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

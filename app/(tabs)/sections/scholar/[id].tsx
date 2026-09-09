@@ -35,7 +35,7 @@ export default function ScholarDetailScreen() {
     scholars.find((s) => s.id === id)?.name ?? 'عبد المحسن العباد';
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title="كل الشرح" onBack={() => router.back()} />
       <View style={styles.headBlock}>
         <Text style={styles.preName}>فضيلة الشيخ</Text>

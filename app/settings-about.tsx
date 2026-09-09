@@ -35,7 +35,7 @@ export default function SettingsAboutScreen() {
   const version = resolveVersion();
   const build = resolveBuildNumber();
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
         <View style={styles.handle} />
       </View>

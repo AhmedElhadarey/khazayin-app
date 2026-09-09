@@ -1,5 +1,6 @@
 import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
 import { OrnamentPattern } from '@/components/khazain/patterns';
+import { SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
 import { useMoreRowsStore } from '@/store';
@@ -49,10 +50,8 @@ export default function MoreScreen() {
     <SafeAreaView style={styles.screen} edges={['top']}>
       <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
       <ScrollView
-        // The floating MiniPlayer + tab bar covers ~140 of the bottom — leave
-        // room so the wordmark sits comfortably above the bar instead of being
-        // hidden under it.
-        contentContainerStyle={{ paddingBottom: 160 }}
+        // React Navigation already reserves the measured tab-bar height.
+        contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_BREATHING }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerBlock}>

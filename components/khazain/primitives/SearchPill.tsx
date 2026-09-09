@@ -126,7 +126,7 @@ function ClearGlyph({ color }: { color: string }) {
 
 const styles = StyleSheet.create({
   pill: {
-    height: 40,
+    minHeight: 44,
     borderRadius: KhazainRadius.md,
     borderWidth: 1,
     flexDirection: 'row',

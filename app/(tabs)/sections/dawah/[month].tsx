@@ -37,7 +37,7 @@ export default function DawahMonthScreen() {
   const handleDownload = () => Alert.alert('تنزيل', 'سيتم التنزيل قريباً');
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title={title} onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}

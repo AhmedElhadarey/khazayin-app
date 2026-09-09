@@ -1,9 +1,9 @@
 import { KhazainColors } from '@/constants/theme';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
 // Right-rail Arabic letter index. Used on reciter / surah-listing / scholar screens.
-// Each chip ~28px wide × 32px tall, 8px radius, cream bg with card border.
+// Each chip is 22px square; the rail scrolls vertically on shorter phones.
 // Active chip → navy fill + white letter.
 //
 // RTL note: this component is *visually* pinned to the screen's RIGHT edge
@@ -20,7 +20,13 @@ export type LetterIndexProps = {
 
 export function LetterIndex({ active = 'م', onLetterPress, letters = LETTERS }: LetterIndexProps) {
   return (
-    <View style={styles.rail}>
+    <ScrollView
+      style={styles.rail}
+      contentContainerStyle={styles.railContent}
+      showsVerticalScrollIndicator={false}
+      nestedScrollEnabled
+      contentInsetAdjustmentBehavior="never"
+    >
       {letters.map((l) => {
         const isActive = l === active;
         return (
@@ -43,15 +49,19 @@ export function LetterIndex({ active = 'م', onLetterPress, letters = LETTERS }:
           </Pressable>
         );
       })}
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   rail: {
     width: 26,
-    gap: 4,
+    flex: 1,
+  },
+  railContent: {
+    gap: 2,
     alignItems: 'center',
+    paddingBottom: 2,
   },
   chip: {
     width: 22,

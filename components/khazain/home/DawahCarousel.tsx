@@ -1,5 +1,5 @@
 import React, { useMemo, useRef } from 'react';
-import { Dimensions, NativeScrollEvent, NativeSyntheticEvent, ScrollView, View } from 'react-native';
+import { NativeScrollEvent, NativeSyntheticEvent, ScrollView, useWindowDimensions, View } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -12,14 +12,11 @@ import { KhazainSpacing } from '@/constants/theme';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import { DawahPoster } from './DawahPoster';
 
-const { width: SCREEN_W } = Dimensions.get('window');
-
 // Card art is 220×232. Slot is intentionally narrower (165) so neighbouring
 // posters overlap the focused one by ~28 px on each side — Twitch-style.
 const CARD_W = 220;
 const CARD_H = 232;
 const SLOT = 165;
-const SIDE_PAD = (SCREEN_W - SLOT) / 2;
 
 type WrappedEntry = { item: DawahPosterModel; realIndex: number };
 
@@ -30,6 +27,9 @@ export function DawahCarousel({
   items: DawahPosterModel[];
   onItemPress?: (item: DawahPosterModel, index: number) => void;
 }) {
+  const { width: windowWidth } = useWindowDimensions();
+  const sidePadding = Math.max(0, (windowWidth - SLOT) / 2);
+
   // All hooks must be called unconditionally — guards (G10) live below.
   const wrapped = useMemo<WrappedEntry[]>(() => {
     if (!items || items.length < 2) return [];
@@ -100,7 +100,7 @@ export function DawahCarousel({
       contentContainerStyle={{
         paddingTop: KhazainSpacing.x3,
         paddingBottom: KhazainSpacing.x6,
-        paddingHorizontal: SIDE_PAD,
+        paddingHorizontal: sidePadding,
         alignItems: 'center',
       }}
     >

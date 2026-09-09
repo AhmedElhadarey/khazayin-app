@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon-khazain.png",
     "scheme": "khazayinapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "extra": {
       "rtl": true,
       "router": {},
