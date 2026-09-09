@@ -1,4 +1,5 @@
-import { DetailHeader } from '@/components/khazain';
+import { InlineHeader } from '@/components/khazain';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { OrnamentPattern } from '@/components/khazain/patterns';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useRouter } from 'expo-router';
@@ -60,7 +61,7 @@ export default function ContactScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
-      <DetailHeader title="تواصل معنا" onBack={() => router.back()} />
+      <InlineHeader title="تواصل معنا" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -142,14 +143,13 @@ function ActionCard({
         { transform: [{ scale: pressed ? 0.99 : 1 }] },
       ]}
     >
-      {/* Light cream disc, anchored to the right (RTL start) so the visual
-          order is deterministic across platforms regardless of flexDirection
-          flipping. */}
-      <View style={styles.actionTile}>{icon}</View>
+      {/* Physical left → right: text, then the icon disc on the right edge
+          (Figma node 2106:2598). */}
       <View style={styles.actionTextCol}>
         <Text style={styles.actionTitle}>{title}</Text>
         <Text style={styles.actionValue}>{value}</Text>
       </View>
+      <View style={styles.actionTile}>{icon}</View>
     </Pressable>
   );
 }
@@ -234,32 +234,32 @@ const styles = StyleSheet.create({
   // Action cards: cream card with a cream-tinted disc on the RTL-start side
   // (right edge) and a two-line text block to its left.
   actionCard: {
-    position: 'relative',
+    ...PHYSICAL_ROW,
     backgroundColor: KhazainColors.cream50,
-    borderRadius: 16,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.10)',
-    minHeight: 70,
-    paddingVertical: 14,
-    paddingLeft: 16,
-    paddingRight: 70, // disc 46 + 12 inset + 12 gap
-    justifyContent: 'center',
+    borderColor: KhazainColors.cardBorder,
+    minHeight: CARD_DENSITY.lectureCardMinHeight,
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    alignItems: 'center',
+    gap: 12,
   },
   actionTile: {
-    position: 'absolute',
-    right: 12,
-    top: '50%',
-    width: 46,
-    height: 46,
-    borderRadius: 23,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: KhazainColors.iconChipBg,
     borderWidth: 1,
     borderColor: 'rgba(26,53,87,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
-    transform: [{ translateY: -23 }],
+    flexShrink: 0,
   },
   actionTextCol: {
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'flex-end',
     gap: 2,
   },
   actionTitle: {

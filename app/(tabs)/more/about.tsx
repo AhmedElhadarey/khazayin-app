@@ -1,4 +1,4 @@
-import { DetailHeader } from '@/components/khazain';
+import { InlineHeader } from '@/components/khazain';
 import { OrnamentPattern } from '@/components/khazain/patterns';
 import { KhazainColors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
@@ -12,7 +12,7 @@ export default function AboutScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
-      <DetailHeader title="مؤسسة خزائن الرحمن" onBack={() => router.back()} />
+      <InlineHeader title="مؤسسة خزائن الرحمن" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}

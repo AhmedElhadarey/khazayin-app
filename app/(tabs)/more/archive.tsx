@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { DetailHeader, SearchPill } from '@/components/khazain';
+import { InlineHeader, SearchPill } from '@/components/khazain';
 import { ChevronIcon } from '@/components/khazain/icons';
 import { OrnamentPattern } from '@/components/khazain/patterns';
 import { listRowAccessibilityLabel } from '@/constants/rtlContracts';
@@ -22,7 +22,7 @@ export default function ArchiveScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
-      <DetailHeader title="الأرشيف" onBack={() => router.back()} />
+      <InlineHeader title="الأرشيف" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
