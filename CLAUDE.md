@@ -105,12 +105,16 @@ For every task in the plan:
   2. **Physical child order** — a row whose children are authored in visual left→right order spreads `PHYSICAL_ROW`, which pins `direction: 'ltr'` so the authored order is what renders. Text inside it keeps its own RTL direction.
 - Prefer logical `start`/`end` for semantically leading/trailing content. Use physical `left`/`right` only inside a container whose direction you have explicitly set.
 - Nothing in the layout contract reads `I18nManager` — the exports are frozen literals, so physical order cannot drift with module-initialization order or platform. Do not reintroduce `const dir = I18nManager.isRTL ? 'row' : 'row-reverse'` at module scope.
+- **One deliberate exception: `primitives/RtlCarousel.tsx`.** It still branches on `I18nManager.isRTL`, because a horizontal `ScrollView` has a *second* RTL concern the style contract does not cover — the native scroll origin, which `direction: 'ltr'` on the content container does not move. Pinning the container while the ScrollView keeps an RTL origin would land the carousel scrolled to the wrong end on some platforms. It renders correctly on iOS, Android and web today; changing it needs a paired capture on all three, not a style swap.
 - Required physical orders (left → right): bottom nav = More, Sections, Library, Home (`TAB_PHYSICAL_ORDER`); list cards = disclosure, text, icon badge; Mushaf footer = Index, Go to bookmark, Save bookmark. The letter index rail sits at the physical right edge.
 - Absolute positioning is still fine for pinning a group to one edge, but it must not be used to *reverse* a row — use `PHYSICAL_ROW` for that.
 
 ## Design source is the spec
 
-- `design_source/app/{home,sections,library,more,shared}.jsx` + `styles.css` + `mobile.html` is a faithful HTML/React prototype.
+Authority order, highest first: **`KHAZAYIN.fig` node → `design_source/` mock → `handoff.md`.**
+
+- The 28 top-level mobile frames in `KHAZAYIN.fig` are the current spec for every screen they cover. `docs/visual-regression/figma-mobile-screen-map.json` maps node → route, and `docs/plans/2026-09-09-figma-style-remediation-{design,implementation-plan,qa}.md` record what was measured against them and where the export is unusable.
+- `design_source/app/{home,sections,library,more,shared}.jsx` + `styles.css` + `mobile.html` is a faithful HTML/React prototype, and remains the spec for anything the 28 frames do not cover.
 - **The mocks win over `handoff.md` whenever they disagree** (handoff copy sometimes lags the mock). Dimensions, colors, Arabic copy — port verbatim.
 - Illustrations (rehl, scroll, crown+book, mosque) are ports of the inline SVGs in the mocks. When real client art arrives they'll replace the SVGs but keep the component API.
 
