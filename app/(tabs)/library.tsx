@@ -10,11 +10,21 @@ import {
 import {
   EmptyInProgressCard,
   InsightRow,
+  ReminderList,
   MySavedSection,
   TrendSparkline,
   WirdHistory,
   WirdSuggestionBanner,
 } from '@/components/khazain/library';
+import { PHYSICAL_ROW, physicalTabOrder } from '@/constants/layout';
+import {
+  LIBRARY_SUMMARY_CARD_ORDER,
+  type LibrarySectionKey,
+  type LibraryFilter,
+  type LibrarySummaryCardKey,
+  visibleLibrarySections,
+} from '@/constants/libraryPresentation';
+import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import {
@@ -70,7 +80,7 @@ export default function LibraryScreen() {
   const notes = useNotesStore((s) => s.notes);
   const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
 
-  const [filter, setFilter] = useState('all');
+  const [filter, setFilter] = useState<LibraryFilter>('all');
   const [lastReadPage, setLastReadPage] = useState<number>(1);
 
   // Wird completion history (US5). Loaded lazily when the السجل pill is active.
@@ -128,8 +138,6 @@ export default function LibraryScreen() {
   useEffect(() => {
     fetchFilters();
   }, [fetchFilters]);
-
-  const recentNotes = notes.slice(0, 2);
 
   const savedCount = useSavedStore((s) => s.items.length);
 
@@ -225,9 +233,14 @@ export default function LibraryScreen() {
         f.count,
     }));
 
-  const showSaved = filter === 'all' || filter === 'saved';
-  const showNotes = filter === 'all' || filter === 'notes';
-  const showHistory = filter === 'history';
+  // Reminder categories that are both shipped and switched on. Derived from the
+  // notification registry, so the Library never advertises a reminder that has
+  // no scheduler behind it.
+  const notificationSettings = useSettingsStore((st) => st.notifications);
+  const activeReminders = NOTIFICATION_CATEGORIES.filter(
+    (category) =>
+      category.available && (notificationSettings?.[category.id] ?? category.defaultOn),
+  );
 
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
   const openNewNote = (seedTitle?: string) =>
@@ -235,306 +248,378 @@ export default function LibraryScreen() {
   const openExistingNote = (id: string) =>
     router.push({ pathname: '/note-editor' as any, params: { id } });
 
+  // The three Figma summary cards, keyed so LIBRARY_SUMMARY_CARD_ORDER can
+  // place them without the JSX order mattering.
+  const summaryCards: Record<LibrarySummaryCardKey, React.ReactNode> = {
+    reminders: (
+      <StatCard
+        title="تذكيراتي"
+        subtitle={
+          activeReminders.length === 0
+            ? 'لا تذكيرات نشطة'
+            : `${toArNum(activeReminders.length)} تذكيرات نشطة`
+        }
+        icon={<StatBellGlyph />}
+      />
+    ),
+    quranWird: (
+      <StatCard
+        title="ورد القرآن"
+        subtitle={
+          currentStreak === 0
+            ? 'لم تبدأ بعد'
+            : currentStreak === 1
+              ? 'يوم واحد متتالي'
+              : `${toArNum(currentStreak)} يوم متتالي`
+        }
+        icon={<BookGlyph />}
+      />
+    ),
+    notes: (
+      <StatCard
+        title="ملاحظاتي"
+        subtitle={`${toArNum(notes.length)} ملاحظة`}
+        icon={<PencilGlyph />}
+      />
+    ),
+  };
+
+  const audiobookProgressCard = inProgressLecture ? (
+    (() => {
+      const lecture = inProgressLecture;
+      const pct = lecture.durationSec > 0
+        ? Math.min(100, Math.round((lecture.positionSec / lecture.durationSec) * 100))
+        : 0;
+      const resume = () => {
+        usePlayerStore.getState().setTrack({
+          id: lecture.lectureId,
+          title: lecture.title,
+          reciter: lecture.author,
+          durationSec: lecture.durationSec,
+        });
+        usePlayerStore.getState().setProgress(
+          lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0,
+        );
+        usePlayerStore.getState().setVisible(true);
+      };
+      return (
+        <AudioProgressCard
+          title={lecture.title}
+          author={lecture.author}
+          pct={pct}
+          subtitle={`${toArNum(pct)}٪ مكتمل`}
+          primaryLabel="متابعة"
+          secondaryLabel="إضافة ملاحظة"
+          onPrimary={resume}
+          onSecondary={() => openNewNote(lecture.title)}
+        />
+      );
+    })()
+  ) : (
+    <EmptyInProgressCard onBrowse={() => router.push('/(tabs)/sections/scholar' as any)} />
+  );
+
+  // Rendered from LIBRARY_SECTION_ORDER so the reference hierarchy is a
+  // single declaration, and every newer metric provably sits below it.
+  const sections: Partial<Record<LibrarySectionKey, React.ReactNode>> = {
+    header: (
+      <View style={styles.headerBlock}>
+        <Text style={styles.h1}>مكتبتي</Text>
+      </View>
+    ),
+
+    search: (
+      <View style={styles.searchBlock}>
+        <SearchPill placeholder="ابحث في مكتبتك..." onPress={() => router.push('/search' as any)} />
+      </View>
+    ),
+
+    // T1.2 — DB hydration failure banner with retry.
+    dbError: dbFailed ? (
+      <View style={styles.dbErrorBanner}>
+        <Text style={styles.dbErrorText}>
+          تعذّر تحميل بيانات التقدّم. الأرقام أدناه قد تكون غير دقيقة.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="إعادة المحاولة"
+          onPress={retryHydrate}
+          disabled={retrying}
+          style={({ pressed }) => [styles.dbErrorBtn, { opacity: pressed ? 0.8 : 1 }]}
+        >
+          <Text style={styles.dbErrorBtnLabel}>إعادة المحاولة</Text>
+        </Pressable>
+      </View>
+    ) : null,
+
+    // Physical left → right: تذكيراتي، ورد القرآن، ملاحظاتي.
+    summaryCards: (
+      <View style={styles.statsRow}>
+        {LIBRARY_SUMMARY_CARD_ORDER.map((key) => (
+          <React.Fragment key={key}>{summaryCards[key]}</React.Fragment>
+        ))}
+      </View>
+    ),
+
+    dailyWird: (
+      <View style={styles.block}>
+        <View style={[styles.card, KhazainShadows.card]}>
+          <View style={styles.wirdTop}>
+            {/* The ring is the goal area — tap it to edit the daily target. */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="تعديل هدف الورد اليومي"
+              hitSlop={8}
+              onPress={() => router.push('/settings-wird-goal' as any)}
+            >
+              <CircularProgress pct={todayPct} />
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.wirdTitle}>وردُ القرآن اليومي</Text>
+              <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
+              <Text style={styles.wirdHighlight}>
+                {lastSurah
+                  ? `سورة ${lastSurah.name} — صفحة ${toArNum(lastReadPage)}`
+                  : 'لم تبدأ القراءة بعد'}
+              </Text>
+            </View>
+          </View>
+          {/* Actions row: "بدء الورد" navy pill, then the reminder toggle. */}
+          <View style={styles.wirdActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="بدء الورد"
+              onPress={() =>
+                router.push({
+                  pathname: '/(tabs)/sections/mushaf' as any,
+                  params: lastSurah ? { surah: String(lastSurah.surahNumber) } : {},
+                })
+              }
+              style={({ pressed }) => [styles.startBtn, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={styles.startBtnLabel}>بدء الورد</Text>
+            </Pressable>
+            <View style={{ flex: 1 }} />
+            <View style={styles.reminderInline}>
+              <Toggle on={reminder.armed} onChange={onToggleWirdReminder} label="التذكير اليومي" />
+              <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
+            </View>
+          </View>
+          {/* Shows a time ONLY when the reminder is genuinely armed. */}
+          <Text style={styles.wirdReminderNext}>{reminder.caption}</Text>
+        </View>
+      </View>
+    ),
+
+    quickNote: (
+      <View style={styles.block}>
+        <View style={[styles.card, KhazainShadows.card]}>
+          <Text style={styles.quickNoteTitle}>ملاحظة سريعة</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="اكتب ملاحظة"
+            onPress={() => openNewNote()}
+            style={styles.noteBody}
+          >
+            <Text style={styles.noteBodyPlaceholder}>اكتب ملاحظتك هنا...</Text>
+          </Pressable>
+          {/* Physical left → right: حفظ, then the format buttons at the right. */}
+          <View style={styles.noteToolbar}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="حفظ الملاحظة"
+              onPress={() => openNewNote()}
+              style={({ pressed }) => [styles.noteSaveBtn, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={styles.noteSaveLabel}>حفظ</Text>
+            </Pressable>
+            <View style={{ flex: 1 }} />
+            <FormatBtn>
+              <ListGlyph />
+            </FormatBtn>
+            <FormatBtn italic>I</FormatBtn>
+            <FormatBtn bold>B</FormatBtn>
+          </View>
+          <View style={styles.recentBlock}>
+            <Text style={styles.recentHeader}>آخر الملاحظات</Text>
+            {notes.length === 0 ? (
+              <Text style={styles.recentEmpty}>لا توجد ملاحظات بعد</Text>
+            ) : (
+              notes.slice(0, 3).map((n) => (
+                <Pressable
+                  key={n.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={n.title}
+                  onPress={() => openExistingNote(n.id)}
+                  style={styles.recentRow}
+                >
+                  <Text style={styles.recentTime}>{formatRelativeAr(n.updatedAt)}</Text>
+                  <Text style={styles.recentTitle} numberOfLines={1}>
+                    {n.title}
+                  </Text>
+                </Pressable>
+              ))
+            )}
+          </View>
+        </View>
+      </View>
+    ),
+
+    filters: (
+      <View style={styles.filtersRow}>
+        <AsyncContent
+          status={filtersStatus}
+          error={filtersError}
+          onRetry={refreshFilters}
+          skeleton={<SkeletonPillList count={3} />}
+          emptyMessage="لا توجد تصنيفات"
+        >
+          <>
+            {physicalTabOrder(realFilters).map((f) => {
+              const active = filter === f.id;
+              return (
+                <Pressable
+                  key={f.id}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  accessibilityLabel={f.label}
+                  onPress={() => setFilter(f.id as LibraryFilter)}
+                  style={[styles.filterPill, active && styles.filterPillActive]}
+                >
+                  <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
+                    {f.label} {f.count}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </>
+        </AsyncContent>
+      </View>
+    ),
+
+    savedList: <MySavedSection />,
+
+    audiobookProgress: (
+      <>
+        <Text style={styles.sectionTitle}>تقدّم الكتب المسموعة</Text>
+        <View style={styles.block}>{audiobookProgressCard}</View>
+      </>
+    ),
+
+    smartReminders: (
+      <>
+        <Text style={styles.sectionTitle}>التذكيرات الذكية</Text>
+        <View style={styles.block}>
+          <ReminderList
+            reminders={activeReminders.map((c) => ({
+              id: c.id,
+              labelAr: c.labelAr,
+              descriptionAr: c.descriptionAr,
+            }))}
+            onManage={() => router.push('/settings-notifications' as any)}
+          />
+        </View>
+      </>
+    ),
+
+    // ── Sections added after the design; never above the reference set. ──
+
+    wirdHistory: dbFailed ? null : history ? (
+      <WirdHistory
+        byWeekday={history.byWeekday}
+        weeks={history.weeks}
+        hasHistory={history.hasHistory}
+        onShowMore={
+          historyWeeks < HISTORY_WEEKS_MAX
+            ? () => setHistoryWeeks((w) => Math.min(HISTORY_WEEKS_MAX, w + HISTORY_WEEKS_STEP))
+            : undefined
+        }
+      />
+    ) : (
+      <View style={styles.block}>
+        <Text style={styles.historyLoading}>جارٍ تحميل السجل…</Text>
+      </View>
+    ),
+
+    wirdTrend: (
+      <View style={styles.block}>
+        <View style={[styles.card, KhazainShadows.card]}>
+          <Text style={styles.quickNoteTitle}>آخر ٢٨ يومًا</Text>
+          <View style={styles.sparklineBlock}>
+            <TrendSparkline points={trendLast28} wirdTarget={wirdTarget} />
+          </View>
+        </View>
+      </View>
+    ),
+
+    insights: (
+      <InsightRow
+        longestStreak={longestStreak}
+        bestDayPages={bestDayPages}
+        monthDeltaPct={monthDeltaPct}
+      />
+    ),
+
+    wirdSuggestion: pendingSuggestion?.shouldSuggest ? (
+      <WirdSuggestionBanner
+        suggestedTarget={pendingSuggestion.suggestedTarget}
+        onAccept={() => {
+          acceptSuggestion().catch(() => undefined);
+        }}
+        onDismiss={() => {
+          dismissSuggestion().catch(() => undefined);
+        }}
+      />
+    ) : null,
+
+    completedLectures: (
+      <View style={styles.block}>
+        <StatCard
+          title="محاضرات مكتملة"
+          subtitle={
+            completedLectureCount === 0
+              ? 'لم تكتمل بعد'
+              : `${toArNum(completedLectureCount)} محاضرة`
+          }
+          icon={<HeadphonesGlyph />}
+        />
+      </View>
+    ),
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.headerBlock}>
-          <Text style={styles.h1}>مكتبتي</Text>
-        </View>
-        <View style={styles.searchBlock}>
-          <SearchPill placeholder="ابحث في مكتبتك..." onPress={() => router.push('/search' as any)} />
-        </View>
-
-        {/* T1.2 — DB hydration failure banner with retry. */}
-        {dbFailed ? (
-          <View style={styles.dbErrorBanner}>
-            <Text style={styles.dbErrorText}>
-              تعذّر تحميل بياناتك. تحقّق ثم أعد المحاولة.
-            </Text>
-            <Pressable
-              onPress={retryHydrate}
-              disabled={retrying}
-              accessibilityRole="button"
-              accessibilityLabel="إعادة المحاولة"
-              accessibilityState={{ disabled: retrying, busy: retrying }}
-              style={({ pressed }) => [
-                styles.dbErrorBtn,
-                { opacity: pressed || retrying ? 0.6 : 1 },
-              ]}
-            >
-              <Text style={styles.dbErrorBtnLabel}>
-                {retrying ? 'جارٍ المحاولة…' : 'إعادة المحاولة'}
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {/* Stats row */}
-        <View style={styles.statsRow}>
-          <StatCard
-            title="ملاحظاتي"
-            subtitle={`${toArNum(notes.length)} ملاحظة`}
-            icon={<PencilGlyph />}
-          />
-          <StatCard
-            title="ورد القرآن"
-            subtitle={
-              currentStreak === 0
-                ? 'لم تبدأ بعد'
-                : currentStreak === 1
-                  ? 'يوم واحد متتالي'
-                  : `${toArNum(currentStreak)} يوم متتالي`
-            }
-            icon={<BookGlyph />}
-          />
-          <StatCard
-            title="محاضرات مكتملة"
-            subtitle={
-              completedLectureCount === 0
-                ? 'لم تكتمل بعد'
-                : `${toArNum(completedLectureCount)} محاضرة`
-            }
-            icon={<HeadphonesGlyph />}
-          />
-        </View>
-
-        {/* Insight row — longest streak / best wird day / month delta. */}
-        <InsightRow
-          longestStreak={longestStreak}
-          bestDayPages={bestDayPages}
-          monthDeltaPct={monthDeltaPct}
-        />
-
-        {/* Adaptive wird-target suggestion (research R7) */}
-        {pendingSuggestion?.shouldSuggest ? (
-          <WirdSuggestionBanner
-            suggestedTarget={pendingSuggestion.suggestedTarget}
-            onAccept={() => {
-              acceptSuggestion().catch(() => undefined);
-            }}
-            onDismiss={() => {
-              dismissSuggestion().catch(() => undefined);
-            }}
-          />
-        ) : null}
-
-        {/* Daily Wird card */}
-        <View style={styles.block}>
-          <View style={[styles.card, KhazainShadows.card]}>
-            <View style={styles.wirdTop}>
-              {/* The ring is the goal area — tap it to edit the daily target.
-                  Same route the Settings entry uses (one value, two doors). */}
-              <Pressable
-                onPress={() => router.push('/settings-wird-goal' as any)}
-                accessibilityRole="button"
-                accessibilityLabel={`هدف الورد اليومي، ${toArNum(wirdTarget)} صفحة`}
-                style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-              >
-                <CircularProgress pct={todayPct} />
-              </Pressable>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.wirdTitle}>وردُ القرآن اليومي</Text>
-                <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
-                <Text style={styles.wirdHighlight}>
-                  {lastSurah
-                    ? `سورة ${lastSurah.name} · الصفحة ${toArNum(lastReadPage)}`
-                    : `الصفحة ${toArNum(lastReadPage)} من ٦٠٤`}
-                </Text>
-              </View>
-
-            </View>
-            {/* 28-day pages-per-day sparkline below the ring. */}
-            <View style={styles.sparklineBlock}>
-              <TrendSparkline points={trendLast28} wirdTarget={wirdTarget} />
-            </View>
-            {/* Actions row: "بدء الورد" navy pill on RIGHT (first), toggle row on LEFT.
-                Under forceRTL+row, JSX-first lands visually on the right. */}
-            <View style={styles.wirdActions}>
-              <Pressable
-                onPress={() => {
-                  // Open the Mushaf at the surah owning the last-read page so the
-                  // user resumes exactly where they stopped (FR-008). Falls back
-                  // to the Mushaf index when no page has been read yet.
-                  const target = lastSurah
-                    ? `/(tabs)/sections/mushaf?surah=${lastSurah.surahNumber}`
-                    : '/(tabs)/sections/mushaf';
-                  router.push(target as any);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="بدء الورد"
-                style={({ pressed }) => [styles.startBtn, { opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Text style={styles.startBtnLabel}>بدء الورد</Text>
-              </Pressable>
-              <View style={{ flex: 1 }} />
-              <View style={styles.reminderInline}>
-                <Toggle on={reminder.armed} onChange={onToggleWirdReminder} label="التذكير اليومي" />
-
-                <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
-              </View>
-            </View>
-            {/* Shows a time ONLY when the reminder is genuinely armed — i.e. the
-                user wants it AND the OS permits it. `wird-daily` defaults to true
-                and nothing requests permission at boot, so keying this off the
-                stored preference alone would advertise a reminder that cannot
-                fire. See `describeWirdReminder`. */}
-            <Text style={styles.wirdReminderNext}>{reminder.caption}</Text>
-          </View>
-        </View>
-
-        {/* Quick note */}
-        {showNotes ? (
-        <View style={styles.block}>
-          <View style={[styles.card, KhazainShadows.card]}>
-            <Text style={styles.quickNoteTitle}>ملاحظة سريعة</Text>
-            <Pressable
-              onPress={() => openNewNote()}
-              style={({ pressed }) => [styles.noteBody, { opacity: pressed ? 0.85 : 1 }]}
-            >
-              <Text style={styles.noteBodyPlaceholder}>اكتب ملاحظتك هنا...</Text>
-            </Pressable>
-            {/* Toolbar: format buttons on the RIGHT (RTL leading), save pill on the LEFT.
-                JSX order is right→left under forceRTL+row, so format btns come first. */}
-            <View style={styles.noteToolbar}>
-              <FormatBtn bold>B</FormatBtn>
-              <FormatBtn italic>I</FormatBtn>
-              <FormatBtn>
-                <ListGlyph />
-              </FormatBtn>
-              <View style={{ flex: 1 }} />
-              <Pressable
-                onPress={() => openNewNote()}
-                style={({ pressed }) => [styles.noteSaveBtn, { opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Text style={styles.noteSaveLabel}>حفظ</Text>
-              </Pressable>
-            </View>
-            <View style={styles.recentBlock}>
-              <Text style={styles.recentHeader}>آخر الملاحظات</Text>
-              {recentNotes.length === 0 ? (
-                <Text style={styles.recentEmpty}>لا توجد ملاحظات بعد</Text>
-              ) : (
-                recentNotes.map((n) => (
-                  <Pressable
-                    key={n.id}
-                    onPress={() => openExistingNote(n.id)}
-                    style={({ pressed }) => [styles.recentRow, { opacity: pressed ? 0.7 : 1 }]}
-                  >
-                    <Text style={styles.recentTitle} numberOfLines={1}>
-                      {n.title || 'ملاحظة بلا عنوان'}
-                    </Text>
-                    <Text style={styles.recentTime}>{formatRelativeAr(n.updatedAt)}</Text>
-                  </Pressable>
-                ))
-              )}
-            </View>
-          </View>
-        </View>
-        ) : null}
-
-        {/* Filter pills */}
-        <View style={styles.filtersRow}>
-          <AsyncContent
-            status={filtersStatus}
-            error={filtersError}
-            onRetry={refreshFilters}
-            skeleton={<SkeletonPillList count={3} />}
-            emptyMessage="لا توجد تصنيفات"
-          >
-            {realFilters.map((f) => {
-              const active = filter === f.id;
-              return (
-                <Pressable
-                  key={f.id}
-                  onPress={() => setFilter(f.id)}
-                  style={({ pressed }) => [
-                    styles.filterPill,
-                    active ? styles.filterPillActive : styles.filterPillInactive,
-                    { opacity: pressed ? 0.85 : 1 },
-                  ]}
-                >
-                  <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
-                    {f.count ? `${f.label} ${f.count}` : f.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </AsyncContent>
-        </View>
-
-        {showHistory && !dbFailed ? (
-          history ? (
-            <WirdHistory
-              byWeekday={history.byWeekday}
-              weeks={history.weeks}
-              hasHistory={history.hasHistory}
-              onShowMore={
-                historyWeeks < HISTORY_WEEKS_MAX
-                  ? () =>
-                      setHistoryWeeks((w) => Math.min(HISTORY_WEEKS_MAX, w + HISTORY_WEEKS_STEP))
-                  : undefined
-              }
-            />
-          ) : (
-            <View style={styles.block}>
-              <Text style={styles.historyLoading}>جارٍ تحميل السجل…</Text>
-            </View>
-          )
-        ) : null}
-
-        {showSaved ? <MySavedSection /> : null}
-
-        {/* Audio progress — real in-progress lecture from progressStore. */}
-        <Text style={styles.sectionTitle}>تقدّم الكتب المسموعة</Text>
-        <View style={styles.block}>
-          {inProgressLecture ? (
-            (() => {
-              const lecture = inProgressLecture;
-              const pct = lecture.durationSec > 0
-                ? Math.min(100, Math.round((lecture.positionSec / lecture.durationSec) * 100))
-                : 0;
-              const resume = () => {
-                usePlayerStore.getState().setTrack({
-                  id: lecture.lectureId,
-                  title: lecture.title,
-                  reciter: lecture.author,
-                  durationSec: lecture.durationSec,
-                });
-                usePlayerStore.getState().setProgress(
-                  lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0,
-                );
-                usePlayerStore.getState().setVisible(true);
-              };
-              return (
-                <AudioProgressCard
-                  title={lecture.title}
-                  author={lecture.author}
-                  pct={pct}
-                  subtitle={`${toArNum(pct)}٪ مكتمل`}
-                  primaryLabel="متابعة"
-                  secondaryLabel="إضافة ملاحظة"
-                  onPrimary={resume}
-                  onSecondary={() => openNewNote(lecture.title)}
-                />
-              );
-            })()
-          ) : (
-            <EmptyInProgressCard
-              onBrowse={() => router.push('/(tabs)/sections/scholar' as any)}
-            />
-          )}
-        </View>
-
+        {visibleLibrarySections(filter).map((key) => (
+          <React.Fragment key={key}>{sections[key]}</React.Fragment>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ── Small inline components / glyphs ──────────────────────────────
+// ── Small inline components / glyphs ──
+
+function StatBellGlyph() {
+  return (
+    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M3.44 17.29c-.78 0-1.22-1.05-.66-1.62l1.12-1.12c.3-.3.48-.75.48-1.2v-3.24c0-3.95 3.21-7.16 7.16-7.16 3.94 0 7.16 3.21 7.16 7.16v3.24c0 .45.18.9.48 1.2l1.12 1.12c.57.57.17 1.62-.66 1.62H3.44z"
+        fill={KhazainColors.navy800}
+        opacity={0.4}
+      />
+      <Path
+        d="M14.83 18.3a2.85 2.85 0 0 1-5.66 0"
+        stroke={KhazainColors.navy800}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+      />
+    </Svg>
+  );
+}
 
 function FormatBtn({
   children,
@@ -616,13 +701,16 @@ function ListGlyph() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  headerBlock: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 8, alignItems: 'center' },
+  // Figma node 2031:4659 anchors the page title at the physical right.
+  headerBlock: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 8, alignItems: 'flex-end' },
   h1: {
     fontFamily: 'Amiri-Bold',
     fontSize: 22,
+    lineHeight: 30,
     fontWeight: '700',
     color: KhazainColors.navy800,
     writingDirection: 'rtl',
+    textAlign: 'right',
   },
   searchBlock: { paddingHorizontal: 18, paddingBottom: 14 },
   dbErrorBanner: {
@@ -658,7 +746,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   statsRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     gap: 8,
     paddingHorizontal: 14,
     marginBottom: 16,
@@ -675,7 +763,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(141,107,52,0.1)',
   },
-  wirdTop: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  // Physical left → right: progress ring, then the reading summary.
+  wirdTop: { ...PHYSICAL_ROW, alignItems: 'center', gap: 14 },
   wirdTitle: {
     fontFamily: 'Amiri-Bold',
     fontSize: 18,
@@ -701,8 +790,9 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
+  // Physical left → right: بدء الورد, spacer, daily-reminder toggle.
   wirdActions: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     gap: 8,
     marginTop: 14,
     alignItems: 'center',
@@ -722,7 +812,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   reminderInline: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 4,
@@ -766,8 +856,9 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
+  // Physical left → right: حفظ, spacer, then the format buttons at the right.
   noteToolbar: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 4,
     marginTop: 8,
@@ -798,8 +889,9 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
+  // Physical left → right: relative time, then the note title at the right.
   recentRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     justifyContent: 'space-between',
     paddingVertical: 5,
   },
@@ -824,7 +916,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   filtersRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     gap: 8,
     paddingHorizontal: 18,
     paddingBottom: 10,
