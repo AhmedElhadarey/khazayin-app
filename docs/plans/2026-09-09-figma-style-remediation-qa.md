@@ -130,7 +130,7 @@ permanent substitute.
 | Widths 320 / 360 / 375 / 393 / 411 / 430 / 480 + tablet | Covered by `__tests__/responsiveLayout.test.ts` as pure geometry: gutters never collapse, content caps and centres above 480, reserved icon and disclosure columns hold, the tab strip scrolls rather than wraps |
 | Bottom inset counted once | Pinned by `screenBottomPadding()`; React Navigation already insets by the measured tab bar |
 | 44pt touch targets | Row heights asserted at or above the minimum independently of visual density |
-| Font scale 1.3 | **NOT VERIFIED** — needs a device pass with the OS text size raised |
+| Font scale 1.3 | **PASS** — verified on the iPhone 16 simulator at `content_size extra-large` and again at `accessibility-medium`, which is well beyond 1.3. Rows grow, long subtitles ellipsize, the reserved icon and disclosure columns stay fixed and reachable, and nothing overlaps or clips off-screen |
 | Loading and empty states | No permanent skeleton and no incorrect empty state in either capture run |
 
 ## What changed, by audit finding
@@ -168,5 +168,5 @@ permanent substitute.
 - [x] No reversed physical order remains on either platform
 - [x] No new TypeScript, test, or lint failures
 - [ ] Typography gate resolved — blocked on licensed fonts or explicit approval
-- [ ] Font scale 1.3 device pass
+- [x] Font scale 1.3 device pass — verified past 1.3 at `accessibility-medium`
 - [x] Extra non-Figma screens pass the shared RTL and responsive contracts
