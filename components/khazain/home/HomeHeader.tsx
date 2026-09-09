@@ -1,13 +1,17 @@
+import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { todayHijriArabic } from '@/lib/hijriDate';
 import React from 'react';
-import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { SearchPill } from '../primitives';
 import { FoundationMark } from './FoundationMark';
 
-// Home header row: bell chip (leading end), greeting + Hijri date + FoundationMark (trailing end),
-// then SearchPill below. Matches design_source/app/home.jsx HomeHeader.
+// Home header row (Figma node 2001:940).
+//
+// Physical left → right: [bell chip] ......... [greeting + Hijri date][mark]
+// Authored in that order inside PHYSICAL_ROW containers so the bell cannot
+// swap to the right under forceRTL.
 export function HomeHeader({
   greeting = 'سبحان الله',
   hijriDate = todayHijriArabic(),
@@ -20,20 +24,9 @@ export function HomeHeader({
   onBellPress?: () => void;
   onSearchOpen?: () => void;
 }) {
-  // RTL visual layout (right → left): [FoundationMark][greeting block]   [bell]
-  // Use an explicit direction so native and web agree on the visual order.
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
-        <View style={styles.greetBlock}>
-          <FoundationMark />
-          <View style={styles.greetText}>
-            <Text style={styles.greeting}>{greeting}</Text>
-            {/* Omit the line entirely when the date is unavailable. Showing a
-                placeholder would mean displaying a Hijri date that is wrong. */}
-            {hijriDate ? <Text style={styles.hijri}>{hijriDate}</Text> : null}
-          </View>
-        </View>
         <Pressable
           onPress={onBellPress}
           hitSlop={10}
@@ -43,6 +36,15 @@ export function HomeHeader({
         >
           <BellGlyph />
         </Pressable>
+        <View style={styles.greetBlock}>
+          <View style={styles.greetText}>
+            <Text style={styles.greeting}>{greeting}</Text>
+            {/* Omit the line entirely when the date is unavailable. Showing a
+                placeholder would mean displaying a Hijri date that is wrong. */}
+            {hijriDate ? <Text style={styles.hijri}>{hijriDate}</Text> : null}
+          </View>
+          <FoundationMark />
+        </View>
       </View>
       <View style={{ marginTop: 8 }}>
         <SearchPill placeholder="بحث.." onPress={onSearchOpen} />
@@ -73,8 +75,6 @@ function BellGlyph() {
   );
 }
 
-const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
-
 const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: 16,
@@ -83,8 +83,8 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   row: {
+    ...PHYSICAL_ROW,
     minHeight: 54,
-    flexDirection: ROW_DIR,
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
@@ -99,13 +99,13 @@ const styles = StyleSheet.create({
     padding: 4,
     flexShrink: 0,
   },
-  // RTL visual order: [FoundationMark][greetText] anchored to the right edge.
-  // JSX order matches: FoundationMark first → renders on the right under forceRTL.
+  // Physical order inside the right-hand group: [greetText][FoundationMark].
   greetBlock: {
+    ...PHYSICAL_ROW,
     flex: 1,
     minWidth: 0,
-    flexDirection: ROW_DIR,
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 8,
   },
   greetText: {
@@ -117,14 +117,16 @@ const styles = StyleSheet.create({
     fontFamily: 'TheMixArab',
     fontSize: 16,
     color: KhazainColors.ink900,
+    lineHeight: 22,
     fontWeight: '600',
-    writingDirection: 'rtl',
+    ...RTL_TEXT,
   },
   hijri: {
     fontFamily: 'TheMixArab',
-    fontSize: 14,
+    fontSize: 13,
+    lineHeight: 18,
     color: KhazainColors.inkSubtle,
-    marginTop: 4,
-    writingDirection: 'rtl',
+    marginTop: 2,
+    ...RTL_TEXT,
   },
 });
