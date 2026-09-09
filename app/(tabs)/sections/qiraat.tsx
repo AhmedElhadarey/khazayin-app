@@ -1,4 +1,5 @@
 import { AsyncContent, ReciterRow, SkeletonRibbonList } from '@/components/khazain';
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
 import { useQiratStore, useSettingsStore } from '@/store';
@@ -37,7 +38,7 @@ export default function QiraatScreen() {
       <View style={styles.handleWrap}>
         <View style={styles.handle} />
       </View>
-      <Text style={styles.title}>آختر القراءة</Text>
+      <Text style={styles.title}>اختر القراءة</Text>
       <ScrollView
         contentContainerStyle={[styles.list, { paddingBottom: 32 }]}
         showsVerticalScrollIndicator={false}
@@ -79,6 +80,7 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Amiri-Bold',
     fontSize: 18,
+    lineHeight: 26,
     fontWeight: '700',
     color: KhazainColors.ink900,
     textAlign: 'center',
@@ -88,6 +90,6 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: CARD_DENSITY.listGap,
   },
 });

@@ -8,9 +8,9 @@ import {
 } from '@/components/khazain';
 import { PHYSICAL_ROW } from '@/constants/layout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
+import { findSurahIdForPage, normalizeSurahParam, surahMetaLine } from '@/services/mushafNavigation';
 import { KhazainColors } from '@/constants/theme';
 import {
-  SURAH_START_PAGES,
   surahName,
   surahStartPage,
   toArabicDigits,
@@ -18,10 +18,10 @@ import {
 import { useFontScale, useSurahsStore, useAyatStore } from '@/store';
 import { usePlayerStore } from '@/store/playerStore';
 import { useProgressStore } from '@/store/progressStore';
-import { progressRepo } from '@/db';
+import { getRepos, progressRepo } from '@/db';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -49,27 +49,51 @@ export default function MushafScreen() {
   // FR-009 — auto-resume to the surah that owns the saved last_read_page.
   // Only fires once per app session and only when no explicit surah was
   // requested via deep link.
+  //
+  // Until the lookup settles the screen shows a plain Mushaf surface rather
+  // than the index, so a resuming reader never sees the list flash past on the
+  // way to their surah (node 2349:829).
+  const [resumeChecked, setResumeChecked] = useState(!!params.surah || _autoResumeFired);
   useEffect(() => {
-    if (params.surah || _autoResumeFired) return;
+    if (params.surah || _autoResumeFired) {
+      setResumeChecked(true);
+      return;
+    }
     _autoResumeFired = true;
-    progressRepo
-      .getLastReadPage()
-      .then((page) => {
-        if (page <= 1) return;
-        const surahId = findSurahIdForPage(page);
-        if (surahId) {
-          router.replace(`/sections/mushaf?surah=${surahId}` as any);
-        }
-      })
-      .catch(() => undefined);
+    let cancelled = false;
+    // `progressRepo` is a Proxy that throws synchronously when the DB has not
+    // hydrated yet, which a cold-start deep link straight to this route hits.
+    // Await `getRepos()` first, exactly as the Library screen does.
+    (async () => {
+      await getRepos();
+      const page = await progressRepo.getLastReadPage();
+      if (cancelled) return;
+      const surahId = page > 1 ? findSurahIdForPage(page) : null;
+      if (surahId) {
+        router.replace(`/sections/mushaf?surah=${surahId}` as any);
+        return;
+      }
+      setResumeChecked(true);
+    })().catch(() => {
+      if (!cancelled) setResumeChecked(true);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [params.surah, router]);
 
   // Reading view (page 22/23) when a surah is selected, otherwise list (page 21).
   // `key={params.surah}` forces a remount when the user picks a different surah
   // so the Zustand store hook resolved inside ReadingView stays stable for
   // each surah session (Rules of Hooks).
-  if (params.surah) {
-    return <ReadingView key={params.surah} onBack={() => router.back()} surahParam={params.surah} />;
+  const surahId = normalizeSurahParam(params.surah);
+  if (surahId) {
+    return <ReadingView key={surahId} onBack={() => router.back()} surahId={surahId} />;
+  }
+  if (!resumeChecked) {
+    // Node 2349:829 — a stable page surface, not the index and not a spinner
+    // over unrelated content.
+    return <SafeAreaView style={[styles.screen, { backgroundColor: MUSHAF_BG }]} edges={['top', 'bottom']} />;
   }
   return (
     <ListView
@@ -77,19 +101,6 @@ export default function MushafScreen() {
       onPick={(id) => router.push(`/sections/mushaf?surah=${id}` as any)}
     />
   );
-}
-
-/**
- * Reverse-lookup: which surah-id ('001'..'114') owns a given mushaf page.
- * Linear scan — 114 entries, runs once per cold-start resume.
- */
-function findSurahIdForPage(page: number): string | null {
-  for (let n = 114; n >= 1; n -= 1) {
-    if (SURAH_START_PAGES[n] <= page) {
-      return String(n).padStart(3, '0');
-    }
-  }
-  return null;
 }
 
 function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string) => void }) {
@@ -130,10 +141,9 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
   );
 }
 
-function ReadingView({ onBack, surahParam }: { onBack: () => void; surahParam: string }) {
-  // Per-surah Zustand store hook. Parent keys this component by surahParam
-  // so the hook reference is stable across re-renders of the same surah.
-  const surahId = useMemo(() => surahParam.padStart(3, '0'), [surahParam]);
+function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string }) {
+  // Per-surah Zustand store hook. The parent keys this component by surahId so
+  // the hook reference is stable across re-renders of the same surah.
   const useAyat = useAyatStore(surahId);
   const { data: ayat, status: ayatStatus, error: ayatError, fetch: fetchAyat, refresh: refreshAyat } = useAyat();
   const notePageRead = useProgressStore((s) => s.notePageRead);
@@ -141,10 +151,7 @@ function ReadingView({ onBack, surahParam }: { onBack: () => void; surahParam: s
 
   // Each surah opening counts as a page read for the surah's first page
   // (FR-001 — see CLAUDE.md note: a real page-swipe Mushaf will refine this later).
-  const surahNumber = useMemo(() => {
-    const n = Number(surahParam);
-    return Number.isInteger(n) && n >= 1 && n <= 114 ? n : 2;
-  }, [surahParam]);
+  const surahNumber = useMemo(() => Number(surahId), [surahId]);
   const currentPage = useMemo(() => surahStartPage(surahNumber), [surahNumber]);
   const displayName = useMemo(() => surahName(surahNumber), [surahNumber]);
 
@@ -164,19 +171,22 @@ function ReadingView({ onBack, surahParam }: { onBack: () => void; surahParam: s
     };
   }, [currentPage, notePageRead]);
 
-  const ayahCountLabel = ayat.length > 0
-    ? `${toArabicDigits(ayat.length)} آية`
-    : '';
+  // Revelation type comes from the surah catalogue; the store is already
+  // cached from the index, so this costs nothing.
+  const { data: surahs } = useSurahsStore();
+  const surahRecord = surahs.find((s) => s.id === surahId);
+  const metaLine = surahMetaLine({
+    revelationType: surahRecord?.revelationType,
+    ayahCount: ayat.length > 0 ? ayat.length : surahRecord?.ayahCount,
+    page: currentPage,
+  });
+  const ayahCountLabel = ayat.length > 0 ? `${toArabicDigits(ayat.length)} آية` : '';
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={[styles.headerBg, { backgroundColor: MUSHAF_BG }]}>
         <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
-        <Text style={styles.subtitle}>
-          {ayahCountLabel
-            ? `${ayahCountLabel}  ·  صفحة ${toArabicDigits(currentPage)} من ٦٠٤`
-            : `صفحة ${toArabicDigits(currentPage)} من ٦٠٤`}
-        </Text>
+        <Text style={styles.subtitle}>{metaLine}</Text>
       </View>
       <ScrollView contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator={false}>
         <View style={styles.ornamentWrap}>
