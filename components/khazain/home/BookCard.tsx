@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { responsiveCarouselCardWidth } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { BookmarkButton } from '../primitives';
 
 // Figma source-of-truth values (frame "الكتب العلمية", node 2001:940):
@@ -88,13 +89,9 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.navy,
   },
   name: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 16,
-    color: KhazainColors.navy,
-    fontWeight: '700',
-    textAlign: 'center',
-    lineHeight: 18.5,
-    writingDirection: 'rtl',
+    // The design renders these titles as calligraphy images. The app's titles
+    // are data, so a Naskh face stands in — see CALLIGRAPHY_FAMILY.
+    ...textStyle('calligraphyTitle', { color: KhazainColors.navy, textAlign: 'center' }),
   },
   bookmarkSlot: {
     position: 'absolute',

@@ -29,7 +29,10 @@ export function DawahCarousel({
   onItemPress?: (item: DawahPosterModel, index: number) => void;
 }) {
   const { width: windowWidth } = useWindowDimensions();
-  const { cardWidth, cardHeight, slot, sidePadding, translate } = dawahLayout(windowWidth);
+  // Memoised so `translate` keeps its identity across renders: it is captured
+  // by the slots' animated styles.
+  const layout = useMemo(() => dawahLayout(windowWidth), [windowWidth]);
+  const { cardWidth, cardHeight, slot, sidePadding, translate } = layout;
 
   // All hooks must be called unconditionally — guards (G10) live below.
   const wrapped = useMemo<WrappedEntry[]>(() => {
@@ -166,10 +169,16 @@ function Slot({
     // The design does not space these evenly: the outermost pair sits much
     // closer to its neighbour than the neighbour does to the centre, so the
     // outer slots are pulled inward off the uniform snap grid.
+    //
+    // Sign matters here. At `inputRange[0]` this card sits two slots to the
+    // RIGHT of the focused one, so pulling it inward is a negative shift;
+    // the mirror case at `inputRange[4]` is positive. Getting this backwards
+    // pushes the outer posters outward instead and piles them onto their
+    // neighbours — `posterOffset` is the same arithmetic, under test.
     const translateX = interpolate(
       scrollX.value,
       inputRange,
-      [outerShift, neighbourShift, 0, -neighbourShift, -outerShift],
+      [-outerShift, -neighbourShift, 0, neighbourShift, outerShift],
       Extrapolation.CLAMP,
     );
     const z = interpolate(

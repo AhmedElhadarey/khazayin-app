@@ -1,5 +1,6 @@
 import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { todayHijriArabic } from '@/lib/hijriDate';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -114,19 +115,10 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   greeting: {
-    fontFamily: 'TheMixArab',
-    fontSize: 16,
-    color: KhazainColors.ink900,
-    lineHeight: 22,
-    fontWeight: '600',
-    ...RTL_TEXT,
+    ...textStyle('body', { color: KhazainColors.ink900 }),
   },
   hijri: {
-    fontFamily: 'TheMixArab',
-    fontSize: 13,
-    lineHeight: 18,
-    color: KhazainColors.inkSubtle,
+    ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
     marginTop: 2,
-    ...RTL_TEXT,
   },
 });

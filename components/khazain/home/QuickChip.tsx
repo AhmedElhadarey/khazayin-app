@@ -1,4 +1,5 @@
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -56,15 +57,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '700',
-    color: KhazainColors.navy,
-    textAlign: 'center',
+    ...textStyle('label', { color: KhazainColors.navy, textAlign: 'center' }),
     marginTop: 8,
     paddingHorizontal: 4,
-    writingDirection: 'rtl',
   },
   navyStripe: {
     position: 'absolute',

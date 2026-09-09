@@ -1,5 +1,6 @@
 import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { ChevronIcon } from '../icons';
@@ -63,9 +64,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   title: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '700',
+    ...textStyle('sectionTitle'),
     letterSpacing: 0,
     color: KhazainColors.navy,
     ...RTL_TEXT,
@@ -83,9 +82,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   linkLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '700',
+    ...textStyle('label'),
     letterSpacing: 0,
     color: KhazainColors.goldAccent,
     ...RTL_TEXT,

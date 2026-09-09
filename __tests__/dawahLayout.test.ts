@@ -44,6 +44,26 @@ describe('dawah coverflow layout', () => {
     expect(gap).toBeLessThan(0);
   });
 
+  it('pulls the outermost posters inward rather than pushing them out', () => {
+    // The uniform snap grid would put them at 2 x slot; the design puts them
+    // nearer than that, so the shift has to reduce the distance.
+    const { slot, translate } = dawahLayout(REF);
+    expect(posterOffset(REF, 2)).toBeLessThan(2 * slot);
+    expect(translate[0]).toBeGreaterThan(0);
+    expect(posterOffset(REF, 2)).toBeCloseTo(2 * slot - translate[0], 6);
+  });
+
+  it('stays symmetric about the focused poster', () => {
+    [1, 2, 3].forEach((d) => {
+      expect(posterOffset(REF, -d)).toBeCloseTo(-posterOffset(REF, d), 6);
+    });
+  });
+
+  it('keeps posters in order outward from the focus', () => {
+    expect(posterOffset(REF, 1)).toBeGreaterThan(0);
+    expect(posterOffset(REF, 2)).toBeGreaterThan(posterOffset(REF, 1));
+  });
+
   it('scales the whole fan with the window', () => {
     [320, 360, 393, 430, 480].forEach((w) => {
       expect(dawahLayout(w).cardWidth / w).toBeCloseTo(CENTRE_WIDTH_RATIO, 6);
