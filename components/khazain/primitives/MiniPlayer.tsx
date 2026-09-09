@@ -1,3 +1,4 @@
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { skipNext, skipPrev, togglePlayback } from '@/services/audioEngine';
 import { usePlayerStore } from '@/store/playerStore';
@@ -24,10 +25,21 @@ export function MiniPlayer() {
   return (
     <View style={[styles.shell, KhazainShadows.card]}>
       <View style={styles.row}>
-        {/* JSX-first lands on the right under forceRTL+row.
-            Visual RTL right → left: [cover][text][transport]. */}
-        <View style={styles.cover}>
-          <LogoBadge size={56} />
+        {/* Physical left → right: transport cluster, title block, cover. */}
+        <View style={styles.transport}>
+          {/* Within the cluster, physical left → right:
+              skip forward, play/pause, skip back. */}
+          <SkipButton dir="fwd" onPress={skipNext} label="التالي" />
+          <Pressable
+            onPress={() => togglePlayback()}
+            accessibilityRole="button"
+            accessibilityLabel={isPlaying ? 'إيقاف مؤقت' : 'تشغيل'}
+            hitSlop={10}
+            style={({ pressed }) => [styles.playBtn, { opacity: pressed ? 0.85 : 1 }]}
+          >
+            {isPlaying ? <PauseGlyph /> : <PlayGlyph />}
+          </Pressable>
+          <SkipButton dir="back" onPress={skipPrev} label="السابق" />
         </View>
 
         <View style={styles.info}>
@@ -39,20 +51,8 @@ export function MiniPlayer() {
           </Text>
         </View>
 
-        <View style={styles.transport}>
-          {/* JSX-first → right of the transport cluster under forceRTL.
-              Visual RTL right → left: [skipBack][playPause][skipFwd]. */}
-          <SkipButton dir="back" onPress={skipPrev} label="السابق" />
-          <Pressable
-            onPress={() => togglePlayback()}
-            accessibilityRole="button"
-            accessibilityLabel={isPlaying ? 'إيقاف مؤقت' : 'تشغيل'}
-            hitSlop={10}
-            style={({ pressed }) => [styles.playBtn, { opacity: pressed ? 0.85 : 1 }]}
-          >
-            {isPlaying ? <PauseGlyph /> : <PlayGlyph />}
-          </Pressable>
-          <SkipButton dir="fwd" onPress={skipNext} label="التالي" />
+        <View style={styles.cover}>
+          <LogoBadge size={56} />
         </View>
       </View>
 
@@ -141,8 +141,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   row: {
+    ...PHYSICAL_ROW,
     minHeight: COVER,
-    flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   transport: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 6,
     flexShrink: 0,

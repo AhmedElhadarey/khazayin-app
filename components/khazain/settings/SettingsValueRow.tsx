@@ -1,11 +1,11 @@
 import { ChevronIcon } from '@/components/khazain/icons';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
-import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
+import { PHYSICAL_ROW } from '@/constants/layout';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-// Deterministic RTL row direction (see ListRowCard): 'row' when isRTL (native,
-// unchanged), 'row-reverse' as the web/stale-reload fallback.
-const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
+// Physical left → right: disclosure, current value, title, icon chip — the
+// same shape as ListRowCard, pinned by PHYSICAL_ROW.
 
 type Props = {
   title: string;
@@ -26,23 +26,26 @@ export function SettingsValueRow({ title, value, icon, onPress }: Props) {
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <View style={styles.iconChip}>{icon}</View>
+      {/* Physical left → right: chevron, value, text, icon chip. */}
+      <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" />
+      <View style={styles.valueWrap}>
+        <Text style={styles.value} numberOfLines={1}>
+          {value}
+        </Text>
+      </View>
       <View style={styles.textCol}>
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
       </View>
-      <Text style={styles.value} numberOfLines={1}>
-        {value}
-      </Text>
-      <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" />
+      <View style={styles.iconChip}>{icon}</View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: ROW_DIR,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     paddingVertical: 14,
@@ -73,6 +76,9 @@ const styles = StyleSheet.create({
     color: KhazainColors.inkTitle,
     writingDirection: 'rtl',
     textAlign: 'right',
+  },
+  valueWrap: {
+    flexShrink: 0,
   },
   value: {
     fontFamily: 'TheSansArabic',

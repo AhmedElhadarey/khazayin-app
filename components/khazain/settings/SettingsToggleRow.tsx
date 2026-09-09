@@ -1,11 +1,11 @@
 import React from 'react';
-import { I18nManager, StyleSheet, Text, View } from 'react-native';
+import { PHYSICAL_ROW } from '@/constants/layout';
+import { StyleSheet, Text, View } from 'react-native';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { Toggle } from '@/components/khazain/primitives';
 
-// Deterministic RTL row direction (see ListRowCard): 'row' when isRTL (native,
-// unchanged), 'row-reverse' as the web/stale-reload fallback.
-const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
+// Physical left → right: toggle, title and description, icon chip — pinned by
+// PHYSICAL_ROW so the control cannot swap sides.
 
 type Props = {
   title: string;
@@ -26,7 +26,8 @@ export function SettingsToggleRow({
 }: Props) {
   return (
     <View style={[styles.card, KhazainShadows.card, disabled ? styles.disabled : null]}>
-      <View style={styles.iconChip}>{icon}</View>
+      {/* Physical left → right: toggle, text, icon chip. */}
+      <Toggle on={value} onChange={onValueChange} disabled={disabled} label={title} />
       <View style={styles.textCol}>
         <Text style={styles.title} numberOfLines={1}>
           {title}
@@ -37,14 +38,14 @@ export function SettingsToggleRow({
           </Text>
         ) : null}
       </View>
-      <Toggle on={value} onChange={onValueChange} disabled={disabled} label={title} />
+      <View style={styles.iconChip}>{icon}</View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: ROW_DIR,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     paddingVertical: 14,
