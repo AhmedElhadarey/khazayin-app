@@ -113,6 +113,7 @@ For every task in the plan:
 
 Authority order, highest first: **`KHAZAYIN.fig` node → `design_source/` mock → `handoff.md`.**
 
+- **The Figma file is on disk at `docs/KHAZAYIN.fig`** — no cloud URL is needed, and no MCP round-trip. It is a ZIP: `unzip -l docs/KHAZAYIN.fig` lists `canvas.fig` (the binary node graph), `thumbnail.png`, `meta.json`, and `images/` — 181 raw, full-resolution source images keyed by content hash, with alpha intact. When a screen needs real client art, extract it from there rather than deriving it from a flattened frame export or redrawing it as SVG. Rendered frame exports live in `docs/audit/<date>/figma-reference/` (untracked).
 - The 28 top-level mobile frames in `KHAZAYIN.fig` are the current spec for every screen they cover. `docs/visual-regression/figma-mobile-screen-map.json` maps node → route, and `docs/plans/2026-09-09-figma-style-remediation-{design,implementation-plan,qa}.md` record what was measured against them and where the export is unusable.
 - `design_source/app/{home,sections,library,more,shared}.jsx` + `styles.css` + `mobile.html` is a faithful HTML/React prototype, and remains the spec for anything the 28 frames do not cover.
 - **The mocks win over `handoff.md` whenever they disagree** (handoff copy sometimes lags the mock). Dimensions, colors, Arabic copy — port verbatim.
