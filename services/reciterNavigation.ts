@@ -10,6 +10,15 @@ import type { Lecture, Reciter, Surah } from '@/types/content';
 
 /** The Qiraa tab is a list of readings, not of reciters, and keeps its screen. */
 const QIRAAT_STYLE = 'qiraat';
+const RECITER_TABS = new Set(['tajweed', 'murattal', 'muallam', 'qiraat']);
+
+export const DEFAULT_RECITER_TAB = 'tajweed';
+
+/** Normalizes Expo Router's scalar/array query value into a supported tab. */
+export function reciterTabFromParam(value: string | string[] | undefined): string {
+  const candidate = Array.isArray(value) ? value[0] : value;
+  return candidate && RECITER_TABS.has(candidate) ? candidate : DEFAULT_RECITER_TAB;
+}
 
 export function reciterDestination(reciter: Reciter): string {
   if (reciter.style === QIRAAT_STYLE) return '/sections/qiraat';

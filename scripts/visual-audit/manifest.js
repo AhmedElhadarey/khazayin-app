@@ -1,5 +1,7 @@
 'use strict';
 
+/* global __dirname */
+
 /**
  * Pure helpers shared by the iOS and Android capture harnesses.
  *
@@ -19,10 +21,10 @@ const MANIFEST_PATH = path.join(
 
 /**
  * State keys that expo-router actually reads off the URL. Every other state key
- * describes in-screen interaction (a segmented tab, a selected row) that a deep
- * link cannot reach, so those frames are captured by a documented tap sequence.
+ * describes in-screen interaction that a deep link cannot reach, so those
+ * frames are captured by a documented tap sequence.
  */
-const DEEP_LINKABLE_STATE_KEYS = new Set(['surah']);
+const DEEP_LINKABLE_STATE_KEYS = new Set(['surah', 'tab']);
 
 /**
  * In-screen state a route already shows on arrival. A frame pinned to one of
@@ -146,20 +148,87 @@ function buildCaptureTargets(manifest, scheme = 'khazayinapp') {
       reason,
       deepLink: kind === 'deep-link' ? buildDeepLink(scheme, record) : null,
       fileName: captureFileName(record),
+      readyText: record.readyText,
       referenceImage: record.referenceImage,
     };
   });
 }
+
+/**
+ * Arabic diacritics. Stripped before matching so a marker can be written
+ * without tashkeel and still match "المصحف المجوّد" as the app renders it.
+ */
+const ARABIC_DIACRITICS = /[\u0610-\u061A\u064B-\u065F\u0670\u06D6-\u06ED]/g;
+
+function normalizeArabic(value) {
+  return String(value).replace(ARABIC_DIACRITICS, '').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * True when an Android view hierarchy dump actually shows `readyText`.
+ *
+ * A debug build that has not finished navigating - or has silently fallen back
+ * to a stale bundle, or is still on the native splash - still screenshots
+ * cleanly. The screenshot looks plausible and the run reports success. That is
+ * how a full column of Pixel 7 "passes" was once recorded against
+ * pre-remediation code. Checking that a string unique to the requested screen
+ * is actually on screen is what turns that silent failure into a loud one.
+ *
+ * Only `text` attributes count: a hierarchy of bare Views with no text is a
+ * splash or a blank screen, never a rendered route.
+ */
+function screenHasReadyText(hierarchyXml, readyText) {
+  if (!readyText) return true;
+  const needle = normalizeArabic(readyText);
+  if (needle === '') return true;
+  const texts = String(hierarchyXml).match(/\btext="([^"]*)"/g) || [];
+  return texts.some((attr) => {
+    const value = attr.slice('text="'.length, -1);
+    return value !== '' && normalizeArabic(value).includes(needle);
+  });
+}
+
+/**
+ * Screen rect inside the 500x880 reference mockups, and the scale it implies.
+ *
+ * The Figma exports are device mockups: the phone body, bezel and drop shadow
+ * are part of the image. Every export uses one template, so the screen sits at
+ * the same rect in all of them - verified on 25 of the 28; the three that miss
+ * it are the two blank frames and the dark Mushaf reader, where edge detection
+ * has nothing to find, not a different template.
+ *
+ * `height` is derived rather than detected: 387 px spans a 393 pt screen, so a
+ * 852 pt device is 387 * 852/393 px tall. Detection reads a few rows more
+ * because the mockup's rounded corners bleed, and using the derived figure is
+ * what keeps both axes at one scale - which any overlay or measurement needs.
+ */
+const REFERENCE_SCREEN = Object.freeze({
+  left: 56,
+  top: 18,
+  width: 387,
+  height: Math.round((387 * 852) / 393),
+});
+
+/** Points per reference pixel: 393 pt across REFERENCE_SCREEN.width. */
+const PT_PER_REFERENCE_PX = 393 / REFERENCE_SCREEN.width;
+
+/** The landmark tolerance in design section 8. */
+const TOLERANCE_PT = 4;
 
 module.exports = {
   DEEP_LINKABLE_STATE_KEYS,
   DEFAULT_SCREEN_STATE,
   MANIFEST_PATH,
   MASK_REGIONS,
+  PT_PER_REFERENCE_PX,
+  REFERENCE_SCREEN,
   REPO_ROOT,
+  TOLERANCE_PT,
   buildCaptureTargets,
   buildDeepLink,
   captureFileName,
   classifyTarget,
   loadScreenManifest,
+  normalizeArabic,
+  screenHasReadyText,
 };

@@ -41,6 +41,7 @@
     "width": 393,
     "height": 1321,
     "appRoute": "/",
+    "readyText": "سبحان الله",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/05-2001-940.png"
   },
@@ -50,6 +51,7 @@
     "width": 393,
     "height": 1891,
     "appRoute": "/library",
+    "readyText": "مكتبتي",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/06-2031-4659.png"
   },
@@ -59,6 +61,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections",
+    "readyText": "الأقسام",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/07-2031-5675.png"
   },
@@ -68,6 +71,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/reciter",
+    "readyText": "المصحف المجود",
     "state": {
       "tab": "tajweed"
     },
@@ -80,6 +84,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/scholar",
+    "readyText": "العلماء والمشايخ",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/09-2102-2975.png"
   },
@@ -89,6 +94,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/reciter",
+    "readyText": "المصحف المرتل",
     "state": {
       "tab": "murattal"
     },
@@ -101,6 +107,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/dawah",
+    "readyText": "تصميمات دعوية",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/11-2120-942.png"
   },
@@ -110,6 +117,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/dawah/shawwal-ramadan",
+    "readyText": "دعاء ليلة القدر",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/12-2120-1857.png"
   },
@@ -119,6 +127,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/reciter/r1",
+    "readyText": "الشيخ عبد الباسط عبد الصمد",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/13-2207-5270.png"
   },
@@ -128,6 +137,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/mushaf",
+    "readyText": "قراءة القرآن",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/14-2207-17898.png"
   },
@@ -138,7 +148,7 @@
     "height": 844,
     "appRoute": null,
     "state": {
-      "surah": "1"
+      "surah": "2"
     },
     "status": "transition",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/15-2349-829.png"
@@ -149,8 +159,9 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/mushaf",
+    "readyText": "سورة البقرة",
     "state": {
-      "surah": "1"
+      "surah": "2"
     },
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/16-2349-982.png"
@@ -161,6 +172,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/qiraat",
+    "readyText": "اختر القراءة",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/17-2457-954.png"
   },
@@ -170,6 +182,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/prophet",
+    "readyText": "رسول الله",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/18-2465-1911.png"
   },
@@ -179,6 +192,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/scholar/s1",
+    "readyText": "كل الشرح",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/19-2510-1990.png"
   },
@@ -188,6 +202,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/queen",
+    "readyText": "أنت ملكة",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/20-2589-1772.png"
   },
@@ -197,6 +212,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/books",
+    "readyText": "الكتب العلمية",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/21-2597-2552.png"
   },
@@ -206,6 +222,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/radio",
+    "readyText": "برامج إذاعية",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/22-2606-3830.png"
   },
@@ -215,6 +232,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/audiobooks",
+    "readyText": "كتب صوتية",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/23-2869-2088.png"
   },
@@ -224,6 +242,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/sections/exclusive",
+    "readyText": "حصريات خزائن الرحمن",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/24-2869-2306.png"
   },
@@ -233,6 +252,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/more",
+    "readyText": "المزيد",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/25-2102-2711.png"
   },
@@ -242,6 +262,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/more/contact",
+    "readyText": "تواصل معنا",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/26-2106-2598.png"
   },
@@ -251,6 +272,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/more/about",
+    "readyText": "مؤسسة خزائن الرحمن",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/27-2106-2712.png"
   },
@@ -260,6 +282,7 @@
     "width": 393,
     "height": 844,
     "appRoute": "/more/archive",
+    "readyText": "الأرشيف",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/28-2558-1334.png"
   }

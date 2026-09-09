@@ -1,5 +1,10 @@
 import { RECITERS, SURAHS } from '@/data/content/quran';
-import { reciterDestination, surahAsLecture } from '@/services/reciterNavigation';
+import {
+  DEFAULT_RECITER_TAB,
+  reciterDestination,
+  reciterTabFromParam,
+  surahAsLecture,
+} from '@/services/reciterNavigation';
 import { startSurahPlayback } from '@/services/surahPlayback';
 
 // The audio boundary pulls in react-native-track-player and Sentry, neither of
@@ -38,6 +43,21 @@ describe('reciterDestination', () => {
         '/sections/mushaf',
       ]);
     });
+  });
+});
+
+describe('reciterTabFromParam', () => {
+  it('selects the Murattal state from a visual-audit deep link', () => {
+    expect(reciterTabFromParam('murattal')).toBe('murattal');
+  });
+
+  it('accepts Expo Router array parameters', () => {
+    expect(reciterTabFromParam(['muallam'])).toBe('muallam');
+  });
+
+  it('falls back safely for absent or unsupported tabs', () => {
+    expect(reciterTabFromParam(undefined)).toBe(DEFAULT_RECITER_TAB);
+    expect(reciterTabFromParam('unknown')).toBe(DEFAULT_RECITER_TAB);
   });
 });
 

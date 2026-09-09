@@ -6,6 +6,11 @@
 **Plan:** [implementation plan](2026-09-09-figma-style-remediation-implementation-plan.md)
 **Baseline evidence:** [`docs/audit/2026-09-09`](../audit/2026-09-09/README.md) — unchanged.
 
+**Status:** comparison evidence is ready. All 28 rows have implementation
+evidence, including an automated Murattal tab capture. Final pixel signoff is
+still conditional on the typography gate and the user decisions under
+*Exceptions*.
+
 ## Devices
 
 | Target | Build | Notes |
@@ -14,19 +19,18 @@
 | Pixel 7 emulator (`Pixel_7_API_36`) | Debug, 412 × 915 dp | Gradle needs JDK 21; Android Studio's bundled JBR is 25 and fails with "Unsupported class file major version 69" |
 
 Captures were produced by `npm run capture:ios` / `npm run capture:android`
-into `/tmp/khazayin-qa/`. They are **not** committed and they do not overwrite
-the audit baseline. Both runs captured 22 of 28 frames automatically; the
-remaining six are transitions or an interaction-only state, listed below.
-
-Every capture in this report carries the LogBox development banner across the
-bottom of the screen. It is a debug-build artefact, not app UI.
+and published under `docs/audit/2026-09-09-post/`. They are ignored generated
+evidence and do not overwrite the audit baseline. Both runs captured 23 of 28
+frames automatically; the remaining five are transition states listed below.
+Metro ran with `EXPO_PUBLIC_VISUAL_AUDIT=1`, which suppresses development-only
+LogBox toasts so they cannot cover the bottom navigation or skew measurement.
 
 ## Automated gates
 
 | Gate | Result |
 |---|---|
 | `npx tsc --noEmit --pretty false` | clean |
-| `npm test` | 45 → 61 suites, 365 → 623 tests, all passing |
+| `npm test` | 45 → 62 suites, 365 → 643 tests, all passing |
 | `npm run lint` | 0 errors; only the pre-existing legacy warnings documented in CLAUDE.md |
 
 ## Frame matrix
@@ -34,17 +38,13 @@ bottom of the screen. It is a debug-build artefact, not app UI.
 Legend — **✓** deep-link capture on that device · **rec** cold-start stills ·
 **partial** code path verified, transient frame not captured · **—** not verified.
 
-**What a PASS in this table does and does not mean.** Design section 8 asks for
-major landmarks within 4 pt of Figma. The reference exports are 500 × 880
-*device mockups* — the phone body, bezel and shadow are part of the image — so
-one exported pixel is roughly 0.96 screen points and the frame origin is not
-recoverable. They cannot resolve a 4 pt tolerance, and no measurement in this
-report claims to. Geometry conformance is therefore **spec-driven**: the
-figures in design section 5.2 are implemented as named constants in
-`constants/layout.ts` and asserted by `__tests__/responsiveLayout.test.ts`,
-while the captures verify composition, physical order, density and state. The
-one place a real measurement was taken is row pitch, read off the app's own
-screenshots by a pixel column scan (74 pt = 66 pt card + 8 pt gap).
+**What a PASS in this table does and does not mean.** See *Measured deviation*
+below. In short: the 4 pt tolerance in design section 8 is measurable, and was
+measured, on the three frames whose export content matches the app's; those
+pass. On the other twenty the export's own content differs from the app's
+(placeholder rows, blank media, a dark reader), so no number is claimed and the
+PASS rests on composition, physical order, density and state as seen in the
+side-by-side captures.
 
 | # | Node | Screen | Route | iPhone 16 | Pixel 7 | Result | Notes |
 |---:|---|---|---|:-:|:-:|---|---|
@@ -57,13 +57,13 @@ screenshots by a pixel column scan (74 pt = 66 pt card + 8 pt gap).
 | 7 | `2031:5675` | Sections root — nine section cards | `/sections` | ✓ | ✓ | **PASS** | Nine sections, reference copy and counts, physical order. |
 | 8 | `2031:6193` | Reciters — default (Mujawwad) tab | `/sections/reciter` | ✓ | ✓ | **PASS** | Vertical void removed, rail right, default tab rightmost, six rows as in the frame. |
 | 9 | `2102:2975` | Scholars list | `/sections/scholar` | ✓ | ✓ | **PASS** | Quill badge right, rail right, compact cards. |
-| 10 | `2102:3187` | Reciters — Murattal tab | `/sections/reciter` | — | — | **NOT VERIFIED** | Interaction-only tab state. Needs the manual tap sequence in the harness README. |
+| 10 | `2102:3187` | Reciters — Murattal tab | `/sections/reciter?tab=murattal` | ✓ | ✓ | **PASS** | The tab state is URL-addressable and captured automatically; six Murattal rows are visible. |
 | 11 | `2120:942` | Dawah design — month list | `/sections/dawah` | ✓ | ✓ | **PASS** | Six months, count left, title, badge right. |
 | 12 | `2120:1857` | Dawah design — Shawwal and Ramadan posters | `/sections/dawah/shawwal-ramadan` | ✓ | ✓ | **PASS** | Four poster rows. The incorrect empty state is gone. |
 | 13 | `2207:5270` | Reciter audio — surah list for a selected reciter | `/sections/reciter/r1` | ✓ | ✓ | **PASS** | New route. Reciter identity carried through instead of dropped. |
 | 14 | `2207:17898` | Mushaf — surah index | `/sections/mushaf` | ✓ | ✓ | **PASS** | Index rows match; the app-only bookmark sits on the trailing edge. |
 | 15 | `2349:829` | Mushaf reader — loading and transition state | `—` | partial | partial | **PASS — E6** | Resume path holds a stable Mushaf surface; the transient frame itself was not captured. |
-| 16 | `2349:982` | Mushaf reader — loaded surah | `/sections/mushaf` | ✓ | ✓ | **PASS** | Header metadata and footer order match; real ayat replace the frame’s black media area. |
+| 16 | `2349:982` | Mushaf reader — loaded surah | `/sections/mushaf?surah=2` | ✓ | ✓ | **PASS** | Like-for-like Al-Baqarah state; header metadata and footer order match, and real ayat replace the frame’s black media area. |
 | 17 | `2457:954` | Qiraat — ten qiraa rows | `/sections/qiraat` | ✓ | ✓ | **PASS** | Ten rows, compact density, adornment placement. |
 | 18 | `2465:1911` | Prophet biography lectures | `/sections/prophet` | ✓ | ✓ | **PASS** | Compact rows, badge right, duration left. |
 | 19 | `2510:1990` | Scholar detail — lectures for one scholar | `/sections/scholar/s1` | ✓ | ✓ | **PASS — E2** | Ribbon right, layout matches. Durations empty by design. |
@@ -77,10 +77,83 @@ screenshots by a pixel column scan (74 pt = 66 pt card + 8 pt gap).
 | 27 | `2106:2712` | About the foundation | `/more/about` | ✓ | ✓ | **PASS** | Inline header, paragraphs, Vision and Mission cards, faint corner ornament. |
 | 28 | `2558:1334` | Archive | `/more/archive` | ✓ | ✓ | **PASS — E3** | Header, search, three routed categories. The frame exports blank. |
 
-**27 of 28 frames pass**, six of them with a documented exception. One frame
-(`2102:3187`) is unverified because `simctl`/`adb` cannot tap a segmented
-tab; the manual sequence is documented in
-`scripts/visual-audit/README.md`.
+**28 of 28 rows pass the recorded functional/composition checks**, with the
+exceptions below still requiring user approval before final signoff. Twenty-
+three stable route states have clean side-by-side captures on both devices;
+the other five are launch/reader transition states.
+
+## Measured deviation
+
+The reference exports are 500 × 880 device mockups, but the screen inside the
+mockup is a fixed rect — `(56, 18, 387, 839)`, verified identical on 25 of the
+28 exports — so the screen area *is* recoverable. 387 px spans a 393 pt screen,
+which puts one reference pixel at 1.0155 pt and the 4 pt tolerance at 3.9 px.
+An earlier draft of this report claimed the exports could not resolve 4 pt at
+all. That was wrong, and it was wrong in the convenient direction: it excused
+the measurement rather than doing it.
+
+`npm run measure:figma` does it. Both images are reduced to a row profile —
+mean luminance per row — and aligned by cross-correlation. A row profile
+ignores the icon art, photography and font differences that are a known,
+accepted divergence from the export, and keeps exactly what the tolerance is
+about: where the horizontal bands of the layout start and stop.
+
+**iPhone 16, 393 × 852 — the reference width.**
+
+| Node | Screen | offset | correlation | ≤ 4 pt |
+|---|---|---:|---:|:-:|
+| `2031:4659` | Library | −3.0 pt | 0.936 | yes |
+| `2031:5675` | Sections root | −3.0 pt | 0.958 | yes |
+| `2102:2711` | More root | −3.0 pt | 0.968 | yes |
+
+The other twenty frames report **not comparable**, not a failure, and the
+distinction is the whole point. Correlation across the 23 measured frames falls
+into two groups with a wide gap: 0.94–0.97 for the three above, −0.07 to 0.82
+for the rest. The upper group is where the export shows the same rows the app
+does. In the lower group the export repeats one placeholder name down the whole
+list (`2031:6193`, `2102:2975`, and every lecture list), exports blank media
+(`2869:2306`, `2558:1334` — exception E3), or renders a dark surface whose ayat
+differ from the app's (`2349:982`). There the correlation peak is driven by
+content divergence, not geometry, and a confident-looking number would be an
+artefact of the export. The threshold sits at 0.88, inside the gap.
+
+This was learned the hard way: a first version of the tool normalized over the
+whole frame and then scored sub-bands, which produced correlations above 1.0
+and "drift" figures of 65 and 120 pt on frames that have nothing comparable in
+them. `scripts/visual-audit/profile.js` now correlates inside the window it is
+scoring, and `__tests__/profile.test.ts` pins that.
+
+**Pixel 7, 412 × 915 — no deviation reported, by design.** Absolute geometry
+can only be measured against an export on a device the export was drawn for.
+The app is responsive, so on a 412 dp device the layout is *meant* to differ
+from a 393 pt frame; scaling that capture onto the reference rect compresses it
+into a uniform ~11 pt apparent offset that is entirely an artefact of the
+rescale. `measure.mjs` takes `--device-width-pt` and reports nothing at all
+when it is not 393. Android parity is verified from the side-by-side
+composition, which is what that platform's column in the matrix above means.
+
+## Comparison artefacts
+
+Produced by `npm run compare:figma` from the post-remediation capture run and
+kept out of git with the rest of the image baseline:
+
+| Artefact | Path |
+|---|---|
+| Contact sheet, all 23 stable frames | `docs/audit/2026-09-09-post/compare/contact-sheet.png` |
+| Side-by-side, reference \| iPhone \| Pixel | `docs/audit/2026-09-09-post/compare/side-by-side/` |
+| 50% overlay, reference over iPhone | `docs/audit/2026-09-09-post/compare/overlay/` |
+| Measurement summaries | `docs/audit/2026-09-09-post/measure-{ios,android}.json` |
+| Raw captures | `docs/audit/2026-09-09-post/app-captures-{ios,android}/` |
+
+**Both device columns were re-captured from clean starts.** The first Android
+attempt could not reach Metro, and a second attempt shared the emulator with
+another capture driver; together those produced black, stale and mislabeled
+PNGs. `capture-android.mjs` now establishes `adb reverse`, verifies Metro,
+force-stops the package for every route, and waits for route-specific visible
+text before writing a PNG. The iOS harness also terminates the app before each
+deep link and waits eight seconds, preventing scroll position and launch-layer
+state from leaking between frames. The previously scrolled Home capture is now
+at its deterministic top position.
 
 ## Exceptions
 
@@ -238,11 +311,10 @@ recorded here.
 - *`services/surahPlayback.ts` is a thin delegate* to `startLecturePlayback`.
   That is the point: it is the seam that keeps one player path, so a caller
   cannot start a second one.
-- *`2102:3187` is `status: "implemented"` in the manifest.* That field records
-  whether the route exists, not whether a capture was taken. The record's
-  `state.tab = "murattal"` already makes `classifyTarget` return `manual`, and
-  `scripts/visual-audit/__tests__/routeManifest.test.ts` asserts exactly that.
-  The frame stays **NOT VERIFIED** in the matrix above.
+- *`2102:3187` remains the same reciter route.* Its `state.tab = "murattal"`
+  becomes the query `?tab=murattal`; the screen validates and applies that
+  state. This makes the second Figma tab deterministic and automatically
+  capturable without pretending it is a separate file route.
 - *Clear button placement in `SearchPill`.* No reference frame shows a filled
   search field, so `SEARCH_PILL_ORDER` putting the clear affordance at the
   physical right is this app's choice, not a Figma measurement. It is now
@@ -312,14 +384,12 @@ Nothing below is blocked on work; each needs a call or an asset.
 5. **E4 — Launch overlay art.** `splash-khazain.png` exists only flattened, so
    the overlay uses the app's `LogoBadge`. Separated layers would make the
    sequence art-identical.
-6. **`2102:3187`** needs a human tap: open `/sections/reciter`, tap
-   المصحف المرتل. Neither `simctl` nor `adb` can reach an interaction-only
-   state; the sequence is in `scripts/visual-audit/README.md`.
-
 ## Definition of done — status
 
-- [x] All 28 rows evaluated; 27 pass, 5 exceptions still open (E2, E3, E4, E6, E7)
-- [ ] `2102:3187` verified — needs the manual tap sequence
+- [x] All 28 rows evaluated; 28 pass the recorded checks, with 5 exceptions still awaiting approval (E2, E3, E4, E6, E7)
+- [x] Side-by-side, 50% overlay and contact sheet produced for all 23 stable frames
+- [x] Deviation measured where the export supports it — 3 frames, all within 4 pt
+- [x] `2102:3187` verified on both devices through `?tab=murattal`
 - [x] No permanent loading skeleton or incorrect empty state
 - [x] No reversed physical order remains on either platform
 - [x] No new TypeScript, test, or lint failures

@@ -8,10 +8,10 @@
  *
  * Usage:
  *   node scripts/visual-audit/capture-ios.mjs --out /tmp/khazayin-capture/ios
- *   node scripts/visual-audit/capture-ios.mjs --device "iPhone 16" --settle 1200
+ *   node scripts/visual-audit/capture-ios.mjs --device "iPhone 16" --settle 8000
  */
 
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 
@@ -20,9 +20,13 @@ import { parseCliArgs, reportRun, settle } from './run.js';
 
 const options = parseCliArgs(process.argv.slice(2), {
   device: 'iPhone 16',
+  bundleId: 'com.ahmed.elhadarey94.khazayinapp',
+  node: '',
   out: '/tmp/khazayin-capture/ios',
   scheme: 'khazayinapp',
-  settle: 1500,
+  // Each route is a cold start so the delay must cover Metro bundle loading,
+  // the one-second launch sequence, and the route's own data hydration.
+  settle: 8000,
 });
 
 function simctl(args) {
@@ -58,7 +62,11 @@ function resolveBootedDevice(name) {
 
 async function main() {
   const udid = resolveBootedDevice(options.device);
-  const targets = buildCaptureTargets(loadScreenManifest(), options.scheme);
+  const allTargets = buildCaptureTargets(loadScreenManifest(), options.scheme);
+  const targets = options.node
+    ? allTargets.filter((target) => target.nodeId === options.node)
+    : allTargets;
+  if (targets.length === 0) throw new Error(`Unknown manifest node "${options.node}".`);
   mkdirSync(options.out, { recursive: true });
 
   const captured = [];
@@ -70,6 +78,10 @@ async function main() {
       continue;
     }
     const destination = path.join(options.out, target.fileName);
+    // Start each route from a fresh process so a prior ScrollView offset or
+    // navigation stack cannot leak into the next frame. `terminate` returns a
+    // non-zero status when the app is not running, which is harmless here.
+    spawnSync('xcrun', ['simctl', 'terminate', udid, options.bundleId]);
     simctl(['openurl', udid, target.deepLink]);
     await settle(options.settle);
     simctl(['io', udid, 'screenshot', destination]);

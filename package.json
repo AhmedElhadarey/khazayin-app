@@ -5,11 +5,13 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "capture:ios": "node scripts/visual-audit/capture-ios.mjs",
     "capture:android": "node scripts/visual-audit/capture-android.mjs",
+    "compare:figma": "node scripts/visual-audit/compare.mjs",
+    "measure:figma": "node scripts/visual-audit/measure.mjs",
     "lint": "expo lint",
     "test": "jest",
     "test:watch": "jest --watch"

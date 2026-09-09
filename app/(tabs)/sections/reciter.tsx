@@ -11,10 +11,10 @@ import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
-import { reciterDestination } from '@/services/reciterNavigation';
+import { reciterDestination, reciterTabFromParam } from '@/services/reciterNavigation';
 import type { Reciter } from '@/types/content';
 import { useRecitersStore, useSettingsStore } from '@/store';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -24,7 +24,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ReciterScreen() {
   const router = useRouter();
-  const [active, setActive] = useState<string>('tajweed');
+  const { tab } = useLocalSearchParams<{ tab?: string | string[] }>();
+  const requestedTab = reciterTabFromParam(tab);
+  const [active, setActive] = useState<string>(requestedTab);
   const { data, status, error, fetch, refresh } = useRecitersStore();
   const preferredReciterId = useSettingsStore((s) => s.preferredReciterId);
   const setPreferredReciter = useSettingsStore((s) => s.setPreferredReciter);
@@ -32,6 +34,12 @@ export default function ReciterScreen() {
   useEffect(() => {
     fetch();
   }, [fetch]);
+
+  // A deep link can select an audited tab state without inventing another
+  // route. Keep this synchronized when an intent reaches a mounted screen.
+  useEffect(() => {
+    setActive(requestedTab);
+  }, [requestedTab]);
 
   // Stale-id fallback (track 002): if the persisted preferred reciter no
   // longer exists in the current list, revert to the foundation default.

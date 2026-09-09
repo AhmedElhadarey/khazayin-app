@@ -5,6 +5,7 @@ import {
   classifyTarget,
   DEEP_LINKABLE_STATE_KEYS,
   MASK_REGIONS,
+  screenHasReadyText,
 } from '../manifest';
 import { parseArgs } from '../run';
 
@@ -15,6 +16,7 @@ const home = {
   height: 1321,
   appRoute: '/',
   status: 'implemented' as const,
+  readyText: 'سبحان الله',
   referenceImage: 'docs/audit/2026-09-09/figma-reference/05-2001-940.png',
 };
 
@@ -24,8 +26,9 @@ const mushafSurah = {
   width: 393,
   height: 844,
   appRoute: '/sections/mushaf',
-  state: { surah: '1' },
+  state: { surah: '2' },
   status: 'implemented' as const,
+  readyText: 'سورة البقرة',
   referenceImage: 'docs/audit/2026-09-09/figma-reference/16-2349-982.png',
 };
 
@@ -37,6 +40,7 @@ const murattalTab = {
   appRoute: '/sections/reciter',
   state: { tab: 'murattal' },
   status: 'implemented' as const,
+  readyText: 'المصحف المرتل',
   referenceImage: 'docs/audit/2026-09-09/figma-reference/10-2102-3187.png',
 };
 
@@ -48,6 +52,7 @@ const tajweedTab = {
   appRoute: '/sections/reciter',
   state: { tab: 'tajweed' },
   status: 'implemented' as const,
+  readyText: 'المصحف المجود',
   referenceImage: 'docs/audit/2026-09-09/figma-reference/08-2031-6193.png',
 };
 
@@ -81,7 +86,7 @@ describe('captureFileName', () => {
   });
 
   it('keeps query state in the filename so states never overwrite each other', () => {
-    expect(captureFileName(mushafSurah)).toBe('16-2349-982__sections-mushaf__surah-1.png');
+    expect(captureFileName(mushafSurah)).toBe('16-2349-982__sections-mushaf__surah-2.png');
   });
 
   it('names route-less frames by node alone', () => {
@@ -96,13 +101,17 @@ describe('buildDeepLink', () => {
 
   it('preserves deep-linkable query state', () => {
     expect(buildDeepLink('khazayinapp', mushafSurah)).toBe(
-      'khazayinapp:///sections/mushaf?surah=1',
+      'khazayinapp:///sections/mushaf?surah=2',
     );
   });
 
-  it('omits interaction-only state from the URL', () => {
-    expect(buildDeepLink('khazayinapp', murattalTab)).toBe('khazayinapp:///sections/reciter');
-    expect(buildDeepLink('khazayinapp', tajweedTab)).toBe('khazayinapp:///sections/reciter');
+  it('preserves reciter tab state without inventing another route', () => {
+    expect(buildDeepLink('khazayinapp', murattalTab)).toBe(
+      'khazayinapp:///sections/reciter?tab=murattal',
+    );
+    expect(buildDeepLink('khazayinapp', tajweedTab)).toBe(
+      'khazayinapp:///sections/reciter?tab=tajweed',
+    );
   });
 
   it('returns null when there is no route to open', () => {
@@ -111,7 +120,7 @@ describe('buildDeepLink', () => {
   });
 
   it('only treats query parameters the router actually reads as deep-linkable', () => {
-    expect([...DEEP_LINKABLE_STATE_KEYS]).toEqual(['surah']);
+    expect([...DEEP_LINKABLE_STATE_KEYS]).toEqual(['surah', 'tab']);
   });
 });
 
@@ -128,10 +137,8 @@ describe('classifyTarget', () => {
     expect(classifyTarget(tajweedTab)).toEqual({ kind: 'deep-link', reason: null });
   });
 
-  it('requires a manual tap sequence for non-default interaction state', () => {
-    const target = classifyTarget(murattalTab);
-    expect(target.kind).toBe('manual');
-    expect(target.reason).toContain('tab');
+  it('captures the non-default reciter tab automatically', () => {
+    expect(classifyTarget(murattalTab)).toEqual({ kind: 'deep-link', reason: null });
   });
 
   it('skips transition frames', () => {
@@ -164,15 +171,43 @@ describe('buildCaptureTargets', () => {
   it('carries the deep link and file name for automatic targets', () => {
     expect(targets[1]).toMatchObject({
       kind: 'deep-link',
-      deepLink: 'khazayinapp:///sections/mushaf?surah=1',
-      fileName: '16-2349-982__sections-mushaf__surah-1.png',
+      deepLink: 'khazayinapp:///sections/mushaf?surah=2',
+      fileName: '16-2349-982__sections-mushaf__surah-2.png',
+      readyText: 'سورة البقرة',
     });
   });
 
-  it('leaves no deep link on manual and skipped targets', () => {
-    expect(targets[2].deepLink).toBeNull();
+  it('carries the Murattal tab query into its automatic target', () => {
+    expect(targets[2]).toMatchObject({
+      kind: 'deep-link',
+      deepLink: 'khazayinapp:///sections/reciter?tab=murattal',
+      fileName: '10-2102-3187__sections-reciter__tab-murattal.png',
+      readyText: 'المصحف المرتل',
+    });
+  });
+
+  it('leaves no deep link on skipped targets', () => {
     expect(targets[3].deepLink).toBeNull();
     expect(targets[4].deepLink).toBeNull();
+  });
+});
+
+describe('screenHasReadyText', () => {
+  const renderedHierarchy =
+    '<hierarchy><node class="android.widget.TextView" text="الأقسام" /></hierarchy>';
+
+  it('recognizes the requested route once its visible marker is in the Android hierarchy', () => {
+    expect(screenHasReadyText(renderedHierarchy, 'الأقسام')).toBe(true);
+  });
+
+  it('rejects a stale route even though React Native has mounted a hierarchy', () => {
+    expect(screenHasReadyText(renderedHierarchy, 'مكتبتي')).toBe(false);
+  });
+
+  it('rejects native splash and black-screen hierarchies with no visible text', () => {
+    expect(screenHasReadyText('<hierarchy><node class="android.view.View" /></hierarchy>', 'الأقسام')).toBe(
+      false,
+    );
   });
 });
 

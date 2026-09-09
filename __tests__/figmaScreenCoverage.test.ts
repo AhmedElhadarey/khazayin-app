@@ -18,6 +18,7 @@ type FigmaScreenRecord = {
   width: number;
   height: number;
   appRoute: string | null;
+  readyText?: string;
   state?: Record<string, string>;
   status: FigmaScreenStatus;
   referenceImage: string;
@@ -73,6 +74,7 @@ describe('Figma mobile screen manifest', () => {
   });
 
   it('covers Home and Library', () => {
+    expect(ROOT_NODES.every((nodeId) => byNode.has(nodeId))).toBe(true);
     expect(byNode.get('2001:940')?.appRoute).toBe('/');
     expect(byNode.get('2031:4659')?.appRoute).toBe('/library');
   });
@@ -102,6 +104,12 @@ describe('Figma mobile screen manifest', () => {
       });
   });
 
+  it('gives every implemented frame a visible readiness marker for native captures', () => {
+    manifest
+      .filter((record) => record.status === 'implemented')
+      .forEach((record) => expect(record.readyText).toEqual(expect.stringMatching(/\S/)));
+  });
+
   it('leaves transition frames without a route', () => {
     manifest
       .filter((record) => record.status === 'transition')
@@ -120,7 +128,7 @@ describe('Figma mobile screen manifest', () => {
   it('models tab and query states explicitly instead of inventing file routes', () => {
     expect(byNode.get('2031:6193')?.state).toEqual({ tab: 'tajweed' });
     expect(byNode.get('2102:3187')?.state).toEqual({ tab: 'murattal' });
-    expect(byNode.get('2349:982')?.state).toEqual({ surah: '1' });
+    expect(byNode.get('2349:982')?.state).toEqual({ surah: '2' });
     expect(byNode.get('2349:982')?.appRoute).toBe('/sections/mushaf');
   });
 
