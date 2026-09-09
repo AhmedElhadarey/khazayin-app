@@ -37,7 +37,7 @@ export default function ArchiveScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
+      <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
       <DetailHeader title="الأرشيف" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}

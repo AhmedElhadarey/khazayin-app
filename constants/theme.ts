@@ -164,7 +164,7 @@ export const KhazainColors = {
   // Surfaces
   pageBg: '#F8F2ED',
   cardBg: '#FCFAF8',
-  cardBorder: '#D9D6D3',
+  cardBorder: 'rgba(141, 107, 52, 0.10)',
   iconChipBg: 'rgba(215, 185, 149, 0.16)',
 
   // Cream scale

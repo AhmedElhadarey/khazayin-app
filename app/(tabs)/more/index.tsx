@@ -48,7 +48,7 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
+      <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
       <ScrollView
         // React Navigation already reserves the measured tab-bar height.
         contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_BREATHING }}

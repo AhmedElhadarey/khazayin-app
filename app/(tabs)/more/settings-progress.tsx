@@ -81,7 +81,7 @@ export default function SettingsProgressScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
+      <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
       <DetailHeader title="إعدادات التقدّم" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}

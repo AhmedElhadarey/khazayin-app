@@ -59,7 +59,7 @@ export default function ContactScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
+      <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
       <DetailHeader title="تواصل معنا" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
