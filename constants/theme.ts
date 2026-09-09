@@ -243,14 +243,16 @@ export const KhazainShadows = {
     shadowOpacity: 0.04,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    // Android renders elevation as a hard grey outline at 2+; 1 keeps the lift
+    // without the separator the 2026-09-09 audit found around every card.
+    elevation: 1,
   },
   input: {
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    elevation: 1,
   },
   press: {
     shadowColor: '#34240C',

@@ -203,3 +203,45 @@ export const SEGMENT_TABS = Object.freeze({
 export function physicalTabOrder<T>(tabs: readonly T[]): T[] {
   return [...tabs].reverse();
 }
+
+// ---------------------------------------------------------------------------
+// Shared card density (design spec section 5.2)
+// ---------------------------------------------------------------------------
+//
+// One density for every lecture-like screen. Do not fork these per route
+// unless the corresponding Figma frame genuinely differs — the audit found the
+// app's rows roughly a third taller than the reference, which pushed content
+// below the fold on every content list.
+//
+// Visual density is independent of the press target: rows keep at least
+// MIN_TOUCH_TARGET of height, and smaller controls inside them use hitSlop.
+
+export const CARD_DENSITY = Object.freeze({
+  // Section/root list card — node 2031:5675.
+  sectionCardHeight: 96,
+  sectionCardPaddingVertical: 16,
+  sectionIconDisc: 64,
+  sectionCardRadius: 20,
+
+  // Lecture-style card — nodes 2465:1911, 2589:1772, 2597:2552, 2606:3830.
+  lectureCardMinHeight: 66,
+  lectureCardRadius: 12,
+  lectureBadgeDisc: 40,
+
+  // Reciter, qiraa, and scholar rows — nodes 2031:6193, 2457:954, 2102:2975.
+  reciterRowMinHeight: 60,
+  scholarRowMinHeight: 64,
+
+  listGap: 8,
+
+  // Skeletons stand in for real rows, so the page must not jump on load.
+  skeletonRowHeight: 66,
+  skeletonRibbonHeight: 60,
+  skeletonGap: 8,
+
+  /**
+   * Android draws elevation as a hard grey outline at the values this app used
+   * before; 1 keeps a card lifted without the separator the audit flagged.
+   */
+  cardElevation: 1,
+} as const);

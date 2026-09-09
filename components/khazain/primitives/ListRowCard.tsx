@@ -1,4 +1,4 @@
-import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { LIST_ROW_ORDER, type ListRowSlot, listRowAccessibilityLabel } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import React from 'react';
@@ -70,17 +70,17 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 16,
+    paddingVertical: CARD_DENSITY.sectionCardPaddingVertical,
     paddingHorizontal: 12,
-    borderRadius: 20,
+    borderRadius: CARD_DENSITY.sectionCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: KhazainColors.cardBorder,
   },
   iconChip: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: CARD_DENSITY.sectionIconDisc,
+    height: CARD_DENSITY.sectionIconDisc,
+    borderRadius: CARD_DENSITY.sectionIconDisc / 2,
     backgroundColor: KhazainColors.iconChipBg,
     alignItems: 'center',
     justifyContent: 'center',

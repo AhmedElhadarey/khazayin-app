@@ -6,6 +6,7 @@
  *
  * Track: khazain-content-service_20260506  Phase 3 / T3.1
  */
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect } from 'react';
@@ -61,7 +62,7 @@ export function SkeletonRibbon() {
 
 export type SkeletonRibbonListProps = { count?: number; gap?: number };
 
-export function SkeletonRibbonList({ count = 3, gap = 8 }: SkeletonRibbonListProps) {
+export function SkeletonRibbonList({ count = 3, gap = CARD_DENSITY.skeletonGap }: SkeletonRibbonListProps) {
   return (
     <View style={{ gap }}>
       {Array.from({ length: count }).map((_, i) => (
@@ -73,7 +74,8 @@ export function SkeletonRibbonList({ count = 3, gap = 8 }: SkeletonRibbonListPro
 
 const styles = StyleSheet.create({
   base: {
-    height: 48,
+    // Same height as the reciter/qiraa row it stands in for.
+    height: CARD_DENSITY.skeletonRibbonHeight,
     width: '100%',
     borderRadius: KhazainRadius.sm,
     backgroundColor: KhazainColors.skeleton,

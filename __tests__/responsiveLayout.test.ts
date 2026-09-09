@@ -1,4 +1,5 @@
 import {
+  CARD_DENSITY,
   CONTENT_MAX_WIDTH,
   MIN_TOUCH_TARGET,
   PHYSICAL_ROW,
@@ -216,5 +217,59 @@ describe('segmented tab strip', () => {
     // Wider than the narrowest supported screen — so the strip must scroll
     // horizontally rather than wrap onto a second line.
     expect(stripWidth).toBeGreaterThan(320);
+  });
+});
+
+describe('shared card density', () => {
+  // Design specification section 5.2, measured against the numbered frames in
+  // docs/audit/2026-09-09/figma-reference.
+  it('keeps the section card at the audited 96pt with a 64pt disc', () => {
+    expect(CARD_DENSITY.sectionCardHeight).toBe(96);
+    expect(CARD_DENSITY.sectionIconDisc).toBe(64);
+    expect(CARD_DENSITY.sectionCardRadius).toBe(20);
+  });
+
+  it('derives the section card height from its padding and disc', () => {
+    expect(CARD_DENSITY.sectionCardPaddingVertical * 2 + CARD_DENSITY.sectionIconDisc).toBe(
+      CARD_DENSITY.sectionCardHeight,
+    );
+  });
+
+  it('targets 64-68pt for a one-line lecture card, not the old 84pt floor', () => {
+    expect(CARD_DENSITY.lectureCardMinHeight).toBeGreaterThanOrEqual(64);
+    expect(CARD_DENSITY.lectureCardMinHeight).toBeLessThanOrEqual(68);
+  });
+
+  it('targets 56-64pt for reciter, qiraa, and scholar rows', () => {
+    [CARD_DENSITY.reciterRowMinHeight, CARD_DENSITY.scholarRowMinHeight].forEach((height) => {
+      expect(height).toBeGreaterThanOrEqual(56);
+      expect(height).toBeLessThanOrEqual(64);
+    });
+  });
+
+  it('uses an 8pt vertical list gap', () => {
+    expect(CARD_DENSITY.listGap).toBe(8);
+  });
+
+  it('keeps every row above the minimum touch target despite the compaction', () => {
+    [
+      CARD_DENSITY.sectionCardHeight,
+      CARD_DENSITY.lectureCardMinHeight,
+      CARD_DENSITY.reciterRowMinHeight,
+      CARD_DENSITY.scholarRowMinHeight,
+    ].forEach((height) => {
+      expect(height).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+    });
+  });
+
+  it('gives skeletons the same geometry as the rows they stand in for', () => {
+    expect(CARD_DENSITY.skeletonRowHeight).toBe(CARD_DENSITY.lectureCardMinHeight);
+    expect(CARD_DENSITY.skeletonRibbonHeight).toBe(CARD_DENSITY.reciterRowMinHeight);
+    expect(CARD_DENSITY.skeletonGap).toBe(CARD_DENSITY.listGap);
+  });
+
+  it('keeps Android elevation as subtle as the iOS shadow', () => {
+    // The audit found heavy grey outlines around Android cards.
+    expect(CARD_DENSITY.cardElevation).toBeLessThanOrEqual(1);
   });
 });

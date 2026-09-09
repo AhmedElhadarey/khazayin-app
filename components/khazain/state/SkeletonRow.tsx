@@ -6,6 +6,7 @@
  *
  * Track: khazain-content-service_20260506  Phase 3 / T3.1
  */
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect } from 'react';
@@ -63,7 +64,7 @@ export function SkeletonRow() {
 
 export type SkeletonRowListProps = { count?: number; gap?: number };
 
-export function SkeletonRowList({ count = 3, gap = 12 }: SkeletonRowListProps) {
+export function SkeletonRowList({ count = 3, gap = CARD_DENSITY.skeletonGap }: SkeletonRowListProps) {
   return (
     <View style={{ gap }}>
       {Array.from({ length: count }).map((_, i) => (
@@ -75,7 +76,8 @@ export function SkeletonRowList({ count = 3, gap = 12 }: SkeletonRowListProps) {
 
 const styles = StyleSheet.create({
   base: {
-    height: 64,
+    // Same height as the row it stands in for, so the page does not jump.
+    height: CARD_DENSITY.skeletonRowHeight,
     width: '100%',
     borderRadius: KhazainRadius.md,
     backgroundColor: KhazainColors.skeleton,

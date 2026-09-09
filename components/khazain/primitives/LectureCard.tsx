@@ -1,4 +1,4 @@
-import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { LECTURE_CARD_ORDER, type LectureCardSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import type { Lecture } from '@/types/content';
@@ -12,7 +12,9 @@ import { BookmarkButton } from './BookmarkButton';
 // Figma nodes 2465:1911, 2589:1772, 2597:2552, 2606:3830. LECTURE_CARD_ORDER
 // drives it inside a PHYSICAL_ROW container, so forceRTL cannot reverse it.
 //
-// `compact` shrinks the card height + icon for the denser radio variant (page 35).
+// Every lecture-like frame in the Figma file uses one row density, so the card
+// height comes from CARD_DENSITY and `compact` now only tightens the type and
+// clamps the title to a single line for the radio programme list (page 35).
 // `pretitleSmall` renders an optional pretitle line above the title (e.g. "فضيلة الشيخ").
 // `iconNode` lets each section slot a different glyph badge.
 export function LectureCard({
@@ -102,29 +104,28 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 10,
-    borderRadius: 16,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: 'rgba(141,107,52,0.08)',
     justifyContent: 'center',
     paddingHorizontal: 12,
+    minHeight: CARD_DENSITY.lectureCardMinHeight,
   },
   card: {
-    minHeight: 84,
-    paddingVertical: 14,
+    paddingVertical: 8,
   },
   cardCompact: {
-    minHeight: 64,
-    paddingVertical: 10,
+    paddingVertical: 6,
   },
   iconWrap: {
-    width: 48,
+    width: CARD_DENSITY.lectureBadgeDisc,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
   },
   iconWrapCompact: {
-    width: 40,
+    width: CARD_DENSITY.lectureBadgeDisc,
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
@@ -133,22 +134,23 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     alignItems: 'flex-end',
-    gap: 4,
+    gap: 2,
   },
   textBlockCompact: {
-    gap: 2,
+    gap: 1,
   },
   pretitle: {
     fontFamily: 'TheSansArabic',
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 14,
     fontWeight: '500',
     color: KhazainColors.ink500,
     ...RTL_TEXT,
   },
   title: {
     fontFamily: 'Amiri-Bold',
-    fontSize: 17,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 20,
     fontWeight: '700',
     color: KhazainColors.ink900,
     ...RTL_TEXT,
@@ -156,20 +158,24 @@ const styles = StyleSheet.create({
   titleCompact: {
     fontFamily: 'Amiri-Bold',
     fontSize: 14,
-    lineHeight: 20,
+    lineHeight: 19,
     fontWeight: '700',
     color: KhazainColors.ink900,
     ...RTL_TEXT,
   },
   scholar: {
+    // Arabic faces carry tall ascenders/descenders, so an unset lineHeight
+    // silently inflates every row. Every text style here pins one.
     fontFamily: 'TheSansArabic',
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 16,
     color: KhazainColors.ink500,
     ...RTL_TEXT,
   },
   scholarCompact: {
     fontFamily: 'TheSansArabic',
     fontSize: 11,
+    lineHeight: 15,
     color: KhazainColors.ink500,
     ...RTL_TEXT,
   },
@@ -181,7 +187,8 @@ const styles = StyleSheet.create({
   },
   duration: {
     fontFamily: 'TheSansArabic',
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: '700',
     color: KhazainColors.navy800,
     writingDirection: 'rtl',

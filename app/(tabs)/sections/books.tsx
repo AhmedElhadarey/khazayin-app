@@ -6,6 +6,7 @@ import {
   SearchPill,
   SkeletonRibbonList,
 } from '@/components/khazain';
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useBookLecturesStore } from '@/store';
@@ -78,6 +79,6 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 4,
-    gap: 10,
+    gap: CARD_DENSITY.listGap,
   },
 });

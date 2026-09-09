@@ -1,3 +1,4 @@
+import { CARD_DENSITY, PHYSICAL_BOX, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -56,12 +57,14 @@ export function RibbonCard({
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 76,
-    borderRadius: 16,
+    // The gold ribbon and the duration block are pinned to physical edges.
+    ...PHYSICAL_BOX,
+    minHeight: CARD_DENSITY.scholarRowMinHeight,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: 'rgba(141,107,52,0.08)',
-    paddingVertical: 14,
+    paddingVertical: 10,
     paddingRight: 22, // extra space for ribbon
     paddingLeft: 16,
     position: 'relative',
@@ -80,32 +83,31 @@ const styles = StyleSheet.create({
   titleBlock: {
     paddingRight: 0,
     alignItems: 'flex-end',
-    gap: 4,
+    gap: 2,
   },
   pretitle: {
     fontFamily: 'TheSansArabic',
-    fontSize: 13,
+    fontSize: 11,
+    lineHeight: 14,
     fontWeight: '500',
     color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   title: {
     fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    lineHeight: 26,
+    fontSize: 16,
+    lineHeight: 22,
     fontWeight: '700',
     color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   meta: {
     fontFamily: 'TheSansArabic',
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 16,
     color: KhazainColors.ink500,
     marginTop: 2,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   durationBlock: {
     position: 'absolute',
@@ -116,7 +118,8 @@ const styles = StyleSheet.create({
   },
   duration: {
     fontFamily: 'TheSansArabic',
-    fontSize: 12,
+    fontSize: 11,
+    lineHeight: 15,
     fontWeight: '600',
     color: KhazainColors.ink700,
     writingDirection: 'rtl',

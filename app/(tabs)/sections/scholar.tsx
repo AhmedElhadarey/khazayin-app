@@ -6,7 +6,7 @@ import {
   SearchPill,
   SkeletonRibbonList,
 } from '@/components/khazain';
-import { PHYSICAL_BOX } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { useScholarsStore } from '@/store';
 import { useRouter } from 'expo-router';
@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     paddingRight: 36,
   },
   listContent: {
-    gap: 10,
+    gap: CARD_DENSITY.listGap,
   },
   rail: {
     // LETTER_INDEX_EDGE — the alphabet rail lives on the physical right edge.

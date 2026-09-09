@@ -1,4 +1,4 @@
-import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { RECITER_ROW_ORDER, type ReciterRowSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
@@ -50,7 +50,7 @@ export function ReciterRow({
         {isDefault ? <Text style={styles.defaultBadge}>الافتراضي</Text> : null}
       </View>
     ),
-    quranBadge: <QuranBadge size={44} />,
+    quranBadge: <QuranBadge size={CARD_DENSITY.lectureBadgeDisc} />,
   };
 
   return (
@@ -75,11 +75,11 @@ export function ReciterRow({
 const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
-    minHeight: 64,
-    paddingVertical: 12,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
+    paddingVertical: 10,
     paddingHorizontal: 14,
     gap: 12,
-    borderRadius: 16,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: 'rgba(141,107,52,0.08)',
@@ -92,6 +92,7 @@ const styles = StyleSheet.create({
   defaultBadge: {
     fontFamily: 'TheSansArabic',
     fontSize: 11,
+    lineHeight: 14,
     fontWeight: '600',
     color: KhazainColors.goldAccent,
     ...RTL_TEXT,
@@ -114,7 +115,8 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontFamily: 'TheSansArabic',
-    fontSize: 13,
+    fontSize: 12,
+    lineHeight: 16,
     color: KhazainColors.ink500,
     ...RTL_TEXT,
   },
