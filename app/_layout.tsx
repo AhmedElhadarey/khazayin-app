@@ -1,3 +1,4 @@
+import { LaunchSequence, shouldRunLaunchSequence } from '@/components/khazain/launch';
 import { FONT_ASSET_MODULES } from '@/constants/fonts';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -208,6 +209,10 @@ function RootLayout() {
     }
   }, [fontsLoaded, fontError]);
 
+  // Cold-start only: `shouldRunLaunchSequence` returns true exactly once per
+  // app session, so a tab return or a Fast Refresh never replays the sequence.
+  const [showLaunch, setShowLaunch] = useState(() => shouldRunLaunchSequence());
+
   // Progress-tracking hydration. Failures fall back to zero values so the
   // Library tab never crashes if the DB layer mis-initializes.
   useEffect(() => {
@@ -248,6 +253,11 @@ function RootLayout() {
       fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
     >
     <ThemeProvider value={colorScheme === 'dark' ? KhazayinDarkTheme : KhazayinLightTheme}>
+      {/* The Figma launch states (nodes 2001:888, 2001:914, 2007:511) render
+          over the mounted navigator, so nothing flashes between the native
+          splash and Home. It is mounted only after fonts resolve, so it can
+          never delay readiness, and only on a cold start. */}
+      {showLaunch ? <LaunchSequence onDone={() => setShowLaunch(false)} /> : null}
       <Stack
         screenOptions={{
           headerShown: false,
