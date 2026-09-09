@@ -14,7 +14,6 @@ import {
   contentWidth,
   physicalTabOrder,
   rowTextWidth,
-  screenBottomPadding,
   horizontalGutter,
   responsiveCarouselCardWidth,
   shouldShowMainTabBar,
@@ -327,9 +326,9 @@ describe('responsive profile coverage', () => {
   });
 
   it('counts the bottom inset exactly once', () => {
-    // React Navigation already insets every screen by the measured tab bar.
-    expect(screenBottomPadding()).toBe(SCREEN_BOTTOM_BREATHING);
-    expect(screenBottomPadding()).toBeLessThan(tabBarHeight(34));
+    // React Navigation already insets every screen by the measured tab bar, so
+    // a screen's own bottom padding is breathing room only — never the bar.
+    expect(SCREEN_BOTTOM_BREATHING).toBeLessThan(tabBarHeight(34));
   });
 
   it('keeps every reserved control at or above the touch minimum with hitSlop', () => {

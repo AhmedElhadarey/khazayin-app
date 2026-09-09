@@ -1,3 +1,5 @@
+import { KhazainColors } from '@/constants/theme';
+
 // Layout constants for tab screens.
 //
 // IMPORTANT — how the bottom edge actually works in this app:
@@ -147,12 +149,25 @@ export function contentWidth(width: number): number {
   return columnWidth - horizontalGutter(columnWidth) * 2;
 }
 
+/**
+ * `#RRGGBB` → `rgba(r, g, b, a)`. Colours are named once in `KhazainColors`
+ * (CLAUDE.md, Theme conventions); the tab bar needs one of them at reduced
+ * opacity, and re-typing the literal is how the palette drifts.
+ */
+function withAlpha(hex: string, alpha: number): string {
+  const value = hex.replace('#', '');
+  const r = parseInt(value.slice(0, 2), 16);
+  const g = parseInt(value.slice(2, 4), 16);
+  const b = parseInt(value.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 // ---------------------------------------------------------------------------
 // Bottom navigation geometry (Figma node 2031:5675, design spec section 5.2)
 // ---------------------------------------------------------------------------
 
 export const TAB_BAR = Object.freeze({
-  background: '#184B76',
+  background: KhazainColors.navy800,
   /** Controls row only. The safe-area inset is added on top, exactly once. */
   controlsHeight: 49,
   /** iPhone home-indicator inset the 83pt reference bar was measured with. */
@@ -161,12 +176,12 @@ export const TAB_BAR = Object.freeze({
   itemHeight: 49,
   itemRadius: 8,
   /** Translucent gold over navy — not an opaque cream panel. */
-  activeFill: 'rgba(215, 185, 149, 0.16)',
-  activeInk: '#F1E7DD',
-  inactiveInk: 'rgba(241, 231, 221, 0.85)',
+  activeFill: KhazainColors.navPillBg,
+  activeInk: KhazainColors.navLabel,
+  inactiveInk: withAlpha(KhazainColors.navLabel, 0.85),
   indicatorWidth: 40,
   indicatorHeight: 4,
-  indicatorColor: '#C1A584',
+  indicatorColor: KhazainColors.navPill,
   iconSize: 24,
 } as const);
 
@@ -280,14 +295,3 @@ export function rowTextWidth(width: number): number {
   );
 }
 
-/**
- * Bottom padding a tab screen's scroll view should add.
- *
- * React Navigation measures the rendered tab bar — MiniPlayer, navy bar, and
- * safe-area inset together — and already insets every screen by its full
- * height. A screen that adds `tabBarHeight()` again double-counts the bottom.
- * The only thing a screen still owes is breathing room.
- */
-export function screenBottomPadding(): number {
-  return SCREEN_BOTTOM_BREATHING;
-}

@@ -1,4 +1,4 @@
-import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { MIN_TOUCH_TARGET, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import {
   INLINE_HEADER_ORDER,
   type InlineHeaderSlot,
@@ -67,14 +67,14 @@ export function InlineHeader({
 const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
-    minHeight: 44,
+    minHeight: MIN_TOUCH_TARGET,
     paddingHorizontal: 16,
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
   touchArea: {
     ...PHYSICAL_ROW,
-    minHeight: 44, // ≥44pt touch target even though the title is shorter
+    minHeight: MIN_TOUCH_TARGET, // full target even though the title is shorter
     alignItems: 'center',
     gap: 8,
     minWidth: 0,

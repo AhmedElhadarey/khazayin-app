@@ -26,24 +26,15 @@ export const HOME_SECTION_GAP = 24;
 export const HOME_HERO_TOP_GAP = 8;
 
 export type HomeQuickChip = {
+  /** Also the slot key for the chip's glyph — see HOME_QUICK_CHIP_GLYPH. */
+  id: 'audiobooks' | 'radio' | 'exclusive';
   label: string;
-  /** Destination, or null while the Figma route does not exist yet. */
-  route: string | null;
-  /** The route this chip is specified to open once it is implemented. */
-  plannedRoute: string;
+  route: string;
 };
 
 /** Physical left → right, matching the reference frame. */
 export const HOME_QUICK_CHIPS: readonly HomeQuickChip[] = Object.freeze([
-  {
-    label: 'كتب صوتية',
-    route: '/sections/audiobooks',
-    plannedRoute: '/sections/audiobooks',
-  },
-  { label: 'برامج إذاعية', route: '/sections/radio', plannedRoute: '/sections/radio' },
-  {
-    label: 'حصريات خزائن الرحمن',
-    route: '/sections/exclusive',
-    plannedRoute: '/sections/exclusive',
-  },
+  { id: 'audiobooks', label: 'كتب صوتية', route: '/sections/audiobooks' },
+  { id: 'radio', label: 'برامج إذاعية', route: '/sections/radio' },
+  { id: 'exclusive', label: 'حصريات خزائن الرحمن', route: '/sections/exclusive' },
 ]);

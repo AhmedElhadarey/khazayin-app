@@ -21,6 +21,7 @@ import { RtlCarousel } from '@/components/khazain/primitives';
 import {
   HOME_HERO_TOP_GAP,
   HOME_QUICK_CHIPS,
+  type HomeQuickChip,
   HOME_SECTION_GAP,
   HOME_SECTION_ORDER,
   type HomeSectionKey,
@@ -133,11 +134,11 @@ export default function HomeScreen() {
       <View style={styles.quickChipsRow}>
         {HOME_QUICK_CHIPS.map((chip) => (
           <QuickChip
-            key={chip.label}
+            key={chip.id}
             label={chip.label}
-            onPress={chip.route ? () => router.push(chip.route as any) : undefined}
+            onPress={() => router.push(chip.route as any)}
           >
-            {QUICK_CHIP_GLYPHS[chip.label]}
+            {QUICK_CHIP_GLYPH[chip.id]}
           </QuickChip>
         ))}
       </View>
@@ -184,10 +185,12 @@ export default function HomeScreen() {
   );
 }
 
-const QUICK_CHIP_GLYPHS: Record<string, React.ReactNode> = {
-  'كتب صوتية': <HeadphonesGlyph />,
-  'برامج إذاعية': <MicGlyph />,
-  'حصريات خزائن الرحمن': <StarGlyph />,
+// Keyed by the chip id, not its Arabic label: renaming a label in
+// HOME_QUICK_CHIPS must not silently drop the glyph.
+const QUICK_CHIP_GLYPH: Record<HomeQuickChip['id'], React.ReactNode> = {
+  audiobooks: <HeadphonesGlyph />,
+  radio: <MicGlyph />,
+  exclusive: <StarGlyph />,
 };
 
 // ── Quick-chip badge glyphs (small inline SVGs, ported verbatim from home.jsx) ────

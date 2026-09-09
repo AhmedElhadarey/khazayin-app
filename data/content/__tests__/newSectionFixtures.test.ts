@@ -53,7 +53,7 @@ describe('Route coverage for the new sections', () => {
 
   it('activates every Home quick chip', () => {
     HOME_QUICK_CHIPS.forEach((chip) => {
-      expect([chip.label, chip.route]).toEqual([chip.label, chip.plannedRoute]);
+      expect([chip.id, chip.route.startsWith('/sections/')]).toEqual([chip.id, true]);
     });
   });
 

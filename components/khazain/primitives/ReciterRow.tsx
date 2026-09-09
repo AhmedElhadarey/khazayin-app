@@ -1,5 +1,9 @@
 import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
-import { RECITER_ROW_ORDER, type ReciterRowSlot } from '@/constants/rtlContracts';
+import {
+  listRowAccessibilityLabel,
+  RECITER_ROW_ORDER,
+  type ReciterRowSlot,
+} from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -57,7 +61,7 @@ export function ReciterRow({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={[title, subtitle].filter(Boolean).join('، ')}
+      accessibilityLabel={listRowAccessibilityLabel({ title, subtitle })}
       style={({ pressed }) => [
         styles.row,
         KhazainShadows.card,
@@ -82,7 +86,7 @@ const styles = StyleSheet.create({
     borderRadius: CARD_DENSITY.lectureCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.08)',
+    borderColor: KhazainColors.cardBorder,
     alignItems: 'center',
   },
   rowDefault: {
@@ -109,8 +113,7 @@ const styles = StyleSheet.create({
     fontSize: 17,
     fontWeight: '700',
     color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
     lineHeight: 24,
   },
   subtitle: {

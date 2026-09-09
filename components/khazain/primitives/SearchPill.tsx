@@ -1,4 +1,4 @@
-import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { MIN_TOUCH_TARGET, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { SEARCH_PILL_ORDER, type SearchPillSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import React from 'react';
@@ -26,8 +26,9 @@ type Props = Omit<TextInputProps, 'style'> & {
    */
   onPress?: () => void;
   /**
-   * Input mode only: when set AND `value` is non-empty, renders an X icon
-   * on the trailing edge. Tapping it calls onClear.
+   * Input mode only: when set AND `value` is non-empty, renders an X icon at
+   * the physical RIGHT of the pill — the RTL start edge, opposite the
+   * magnifier, per SEARCH_PILL_ORDER. Tapping it calls onClear.
    */
   onClear?: () => void;
 };
@@ -148,7 +149,7 @@ function ClearGlyph({ color }: { color: string }) {
 const styles = StyleSheet.create({
   pill: {
     ...PHYSICAL_ROW,
-    minHeight: 44,
+    minHeight: MIN_TOUCH_TARGET,
     borderRadius: KhazainRadius.md,
     borderWidth: 1,
     alignItems: 'center',

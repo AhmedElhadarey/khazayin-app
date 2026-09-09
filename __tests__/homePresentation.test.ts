@@ -54,10 +54,13 @@ describe('Home quick chips', () => {
     expect(radio?.route).toBe('/sections/radio');
   });
 
-  it('routes every chip at the screen it is specified to open', () => {
-    HOME_QUICK_CHIPS.forEach((chip) => {
-      expect([chip.label, chip.route]).toEqual([chip.label, chip.plannedRoute]);
-    });
+  it('routes every chip at a real section screen', () => {
+    // The audit found chips that rendered but went nowhere.
+    expect(HOME_QUICK_CHIPS.map((chip) => [chip.id, chip.route])).toEqual([
+      ['audiobooks', '/sections/audiobooks'],
+      ['radio', '/sections/radio'],
+      ['exclusive', '/sections/exclusive'],
+    ]);
   });
 });
 

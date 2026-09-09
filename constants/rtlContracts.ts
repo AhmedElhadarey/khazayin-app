@@ -31,7 +31,13 @@ export type ReciterRowSlot = (typeof RECITER_ROW_ORDER)[number];
 export const INLINE_HEADER_ORDER = Object.freeze(['title', 'back'] as const);
 export type InlineHeaderSlot = (typeof INLINE_HEADER_ORDER)[number];
 
-/** Search control — magnifier at the physical left, Arabic placeholder right. */
+/**
+ * Search control — magnifier at the physical left, Arabic placeholder right,
+ * and the clear affordance at the physical right (the RTL start edge). No
+ * reference frame shows a filled search field, so the clear placement is this
+ * app's choice rather than a Figma measurement; it is recorded here so the
+ * component and its prop documentation cannot drift apart.
+ */
 export const SEARCH_PILL_ORDER = Object.freeze(['icon', 'field', 'clear'] as const);
 export type SearchPillSlot = (typeof SEARCH_PILL_ORDER)[number];
 

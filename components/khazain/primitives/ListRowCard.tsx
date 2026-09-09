@@ -1,6 +1,6 @@
 import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { LIST_ROW_ORDER, type ListRowSlot, listRowAccessibilityLabel } from '@/constants/rtlContracts';
-import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
+import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../icons';
@@ -135,6 +135,3 @@ const styles = StyleSheet.create({
     ...RTL_TEXT,
   },
 });
-
-// Silence unused-radius lint noise if any build tool checks that we reference a token.
-void KhazainRadius;
