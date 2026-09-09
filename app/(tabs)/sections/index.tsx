@@ -1,5 +1,6 @@
 import { AsyncContent, ListRowCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
 import { SECTION_ICONS, SectionIconKey } from '@/components/khazain/icons/sections';
+import { CARD_DENSITY, PHYSICAL_BOX, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { useSectionsStore } from '@/store';
 import type { SectionEntry } from '@/types/content';
@@ -67,11 +68,14 @@ export default function SectionsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   container: { paddingTop: 0 },
+  // Figma node 2031:5675 anchors the page title at the physical right.
   headerBlock: {
+    // PHYSICAL_BOX so `flex-end` means the physical right, not the RTL end.
+    ...PHYSICAL_BOX,
     paddingHorizontal: 16,
     paddingTop: 12,
     paddingBottom: 8,
-    alignItems: 'center',
+    alignItems: 'flex-end',
   },
   h1: {
     fontFamily: 'TheSansArabic',
@@ -79,7 +83,7 @@ const styles = StyleSheet.create({
     lineHeight: 28,
     fontWeight: '700',
     color: KhazainColors.inkTitle,
-    writingDirection: 'rtl',
+    ...RTL_TEXT,
   },
   searchBlock: {
     paddingHorizontal: 16,
@@ -87,6 +91,6 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: CARD_DENSITY.listGap,
   },
 });

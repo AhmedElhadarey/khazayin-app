@@ -16,7 +16,7 @@ import {
   WirdHistory,
   WirdSuggestionBanner,
 } from '@/components/khazain/library';
-import { PHYSICAL_ROW, physicalTabOrder } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW, physicalTabOrder } from '@/constants/layout';
 import {
   LIBRARY_SUMMARY_CARD_ORDER,
   type LibrarySectionKey,
@@ -702,7 +702,7 @@ function ListGlyph() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   // Figma node 2031:4659 anchors the page title at the physical right.
-  headerBlock: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 8, alignItems: 'flex-end' },
+  headerBlock: { ...PHYSICAL_BOX, paddingHorizontal: 18, paddingTop: 14, paddingBottom: 8, alignItems: 'flex-end' },
   h1: {
     fontFamily: 'Amiri-Bold',
     fontSize: 22,

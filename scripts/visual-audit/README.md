@@ -31,6 +31,22 @@ npx expo run:android --device Pixel_7_API_36
 the default SDK location. Set `ANDROID_HOME` yourself if your SDK lives
 elsewhere; no machine-specific path is committed.
 
+## First run on a clean simulator
+
+A fresh install lands on the onboarding gate, and `simctl` cannot tap through
+it. Either complete onboarding by hand once, or run the simulator-only helper:
+
+```bash
+bash scripts/visual-audit/skip-onboarding-ios.sh
+```
+
+It writes the onboarding flag into the booted simulator's app container. It is
+never called by a capture run — see the warning at the top of the script.
+
+Content also comes from a 24-hour SWR cache, so after changing mock fixtures a
+capture may still show the previous copy. Reinstall the app on the simulator
+(`xcrun simctl uninstall`, then install the built `.app`) to force a refetch.
+
 ## Running
 
 ```bash

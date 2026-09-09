@@ -21,22 +21,26 @@ import type { LibraryFilter, Lookup, MoreRow, SectionEntry } from '../../types/c
 /**
  * `iconKey` corresponds to the keys in SECTION_ICONS from
  * `components/khazain/icons/sections`. Resolved at render-time.
+ *
+ * Order, copy, and counts are the reference dataset for Figma node 2031:5675
+ * and are asserted by `__tests__/sectionPresentation.test.ts`. In API mode the
+ * counts come from the backend and may differ; only the geometry is fixed.
  */
 export const SECTIONS: SectionEntry[] = [
   {
     id:       'quran',
     route:    '/sections/reciter',
     title:    'القرآن حياة',
-    subtitle: 'تلاوات وتفسير وتدبّر القرآن الكريم',
-    count:    '١٥١ حلقة',
+    subtitle: 'تلاوات وتفسير وتدبر القرآن الكريم',
+    count:    '١٥٦ حلقة',
     iconKey:  'quran',
   },
   {
     id:       'prophet',
     route:    '/sections/prophet',
     title:    'رسول الله ﷺ',
-    subtitle: 'السيرة النبوية والشمائل المحمدية',
-    count:    '٢٥٣ حلقة',
+    subtitle: 'محاضرات ودروس كبار العلماء',
+    count:    '٢٤٣ حلقة',
     iconKey:  'prophet',
   },
   {
@@ -44,7 +48,7 @@ export const SECTIONS: SectionEntry[] = [
     route:    '/sections/scholar',
     title:    'العلماء والمشايخ',
     subtitle: 'محاضرات ودروس كبار العلماء',
-    count:    '٢٥٣ حلقة',
+    count:    '٢٤٣ حلقة',
     iconKey:  'scholar',
   },
   {
@@ -60,7 +64,7 @@ export const SECTIONS: SectionEntry[] = [
     route:    '/sections/queen',
     title:    'أنتِ ملكة',
     subtitle: 'ملكةٌ أنتِ لا سواكِ',
-    count:    null,
+    count:    '١٢٨ حلقة',
     iconKey:  'crown',
   },
   {
@@ -68,7 +72,7 @@ export const SECTIONS: SectionEntry[] = [
     route:    null,
     title:    'كتب صوتية',
     subtitle: 'كتب إسلامية مقروءة بصوت عذب',
-    count:    '١٧ كتاباً',
+    count:    '٦٧ كتاب',
     iconKey:  'headphones',
   },
   {
@@ -96,6 +100,13 @@ export const SECTIONS: SectionEntry[] = [
     iconKey:  'design',
   },
 ];
+
+/**
+ * Sections whose Figma screen has no route yet. Task 4.5 implements
+ * /sections/audiobooks and /sections/exclusive and empties this list; until
+ * then the cards open a "قريباً" alert rather than a dead route.
+ */
+export const PENDING_SECTION_ROUTES: readonly string[] = ['audiobooks', 'exclusive'];
 
 // ---------------------------------------------------------------------------
 // MORE_ROWS — More tab list (more/index.tsx)
