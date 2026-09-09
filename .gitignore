@@ -63,6 +63,7 @@ docs/audit/
 scripts/*
 # Visual-audit harness is source, not a local helper script.
 !scripts/visual-audit/
+CLAUDE.md
 .specify
 specs/*
 .claude/*
