@@ -217,8 +217,8 @@
     "name": "Audiobooks",
     "width": 393,
     "height": 844,
-    "appRoute": null,
-    "status": "missing-route",
+    "appRoute": "/sections/audiobooks",
+    "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/23-2869-2088.png"
   },
   {
@@ -226,8 +226,8 @@
     "name": "Exclusive content",
     "width": 393,
     "height": 844,
-    "appRoute": null,
-    "status": "missing-route",
+    "appRoute": "/sections/exclusive",
+    "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/24-2869-2306.png"
   },
   {

@@ -17,6 +17,8 @@ export default function SectionsLayout() {
       <Stack.Screen name="queen" />
       <Stack.Screen name="books" />
       <Stack.Screen name="radio" />
+      <Stack.Screen name="audiobooks" />
+      <Stack.Screen name="exclusive" />
     </Stack>
   );
 }

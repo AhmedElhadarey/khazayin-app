@@ -50,9 +50,10 @@ describe('Sections root fixtures', () => {
     expect(routeless).toEqual([...PENDING_SECTION_ROUTES]);
   });
 
-  it('tracks exactly the sections Task 4.5 still has to implement', () => {
-    // Emptied when /sections/audiobooks and /sections/exclusive exist.
-    expect([...PENDING_SECTION_ROUTES]).toEqual(['audiobooks', 'exclusive']);
+  it('has no section left without a screen', () => {
+    // Task 4.5 implemented /sections/audiobooks and /sections/exclusive; the
+    // list stays as the guard for any section added without a screen.
+    expect([...PENDING_SECTION_ROUTES]).toEqual([]);
   });
 
   it('points every routed section at a section or tab path', () => {

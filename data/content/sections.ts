@@ -69,7 +69,7 @@ export const SECTIONS: SectionEntry[] = [
   },
   {
     id:       'audiobooks',
-    route:    null,
+    route:    '/sections/audiobooks',
     title:    'كتب صوتية',
     subtitle: 'كتب إسلامية مقروءة بصوت عذب',
     count:    '٦٧ كتاب',
@@ -77,7 +77,7 @@ export const SECTIONS: SectionEntry[] = [
   },
   {
     id:       'exclusive',
-    route:    null,
+    route:    '/sections/exclusive',
     title:    'حصريات خزائن الرحمن',
     subtitle: 'محتوى حصري ومميّز',
     count:    '٣١ حلقة',
@@ -102,11 +102,11 @@ export const SECTIONS: SectionEntry[] = [
 ];
 
 /**
- * Sections whose Figma screen has no route yet. Task 4.5 implements
- * /sections/audiobooks and /sections/exclusive and empties this list; until
- * then the cards open a "قريباً" alert rather than a dead route.
+ * Sections whose Figma screen has no route yet. Empty now that every section
+ * is implemented; the sections screen still falls back to a "قريباً" alert
+ * rather than pushing a dead route if one is ever added here again.
  */
-export const PENDING_SECTION_ROUTES: readonly string[] = ['audiobooks', 'exclusive'];
+export const PENDING_SECTION_ROUTES: readonly string[] = [];
 
 // ---------------------------------------------------------------------------
 // MORE_ROWS — More tab list (more/index.tsx)

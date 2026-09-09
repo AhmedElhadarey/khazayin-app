@@ -33,13 +33,17 @@ export type HomeQuickChip = {
   plannedRoute: string;
 };
 
-/**
- * Physical left → right, matching the reference frame. Audiobooks and
- * Exclusives have no route yet (Task 4.5 adds them); until then their chips
- * stay inert rather than pushing a route expo-router cannot match.
- */
+/** Physical left → right, matching the reference frame. */
 export const HOME_QUICK_CHIPS: readonly HomeQuickChip[] = Object.freeze([
-  { label: 'كتب صوتية', route: null, plannedRoute: '/sections/audiobooks' },
+  {
+    label: 'كتب صوتية',
+    route: '/sections/audiobooks',
+    plannedRoute: '/sections/audiobooks',
+  },
   { label: 'برامج إذاعية', route: '/sections/radio', plannedRoute: '/sections/radio' },
-  { label: 'حصريات خزائن الرحمن', route: null, plannedRoute: '/sections/exclusive' },
+  {
+    label: 'حصريات خزائن الرحمن',
+    route: '/sections/exclusive',
+    plannedRoute: '/sections/exclusive',
+  },
 ]);

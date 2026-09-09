@@ -54,13 +54,10 @@ describe('Home quick chips', () => {
     expect(radio?.route).toBe('/sections/radio');
   });
 
-  it('marks the chips whose Figma routes do not exist yet', () => {
-    // Implemented by Task 4.5; until then the chip must not push a dead route.
-    const pending = HOME_QUICK_CHIPS.filter((chip) => chip.route === null);
-    expect(pending.map((chip) => chip.plannedRoute)).toEqual([
-      '/sections/audiobooks',
-      '/sections/exclusive',
-    ]);
+  it('routes every chip at the screen it is specified to open', () => {
+    HOME_QUICK_CHIPS.forEach((chip) => {
+      expect([chip.label, chip.route]).toEqual([chip.label, chip.plannedRoute]);
+    });
   });
 });
 

@@ -206,6 +206,49 @@ export function MicBadge({ size = 48 }: { size?: number }) {
   );
 }
 
+/** Audio waveform — كتب صوتية (Figma node 2869:2088). */
+export function AudioWaveBadge({ size = 48 }: { size?: number }) {
+  const bars = [
+    { x: 3, y: 10, h: 8 },
+    { x: 7, y: 6, h: 16 },
+    { x: 11, y: 2, h: 24 },
+    { x: 15, y: 7, h: 14 },
+    { x: 19, y: 11, h: 6 },
+  ];
+  return (
+    <Disc size={size}>
+      <Svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 28" fill="none">
+        {bars.map((bar) => (
+          <Path
+            key={bar.x}
+            d={`M${bar.x} ${bar.y} L${bar.x} ${bar.y + bar.h}`}
+            stroke={KhazainColors.gold500}
+            strokeWidth={1.6}
+            strokeLinecap="round"
+          />
+        ))}
+      </Svg>
+    </Disc>
+  );
+}
+
+/** Eight-point star — حصريات خزائن الرحمن (Figma node 2869:2306). */
+export function SparkleBadge({ size = 48 }: { size?: number }) {
+  return (
+    <Disc size={size}>
+      <Svg width={size * 0.5} height={size * 0.5} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M12 2 L14 9 L21 12 L14 15 L12 22 L10 15 L3 12 L10 9 Z"
+          stroke={KhazainColors.gold500}
+          strokeWidth={1.2}
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </Svg>
+    </Disc>
+  );
+}
+
 const styles = StyleSheet.create({
   disc: {
     backgroundColor: KhazainColors.iconChipBg,

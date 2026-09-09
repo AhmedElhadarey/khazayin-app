@@ -7,30 +7,14 @@ import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { DetailHeader, SearchPill } from '@/components/khazain';
 import { ChevronIcon } from '@/components/khazain/icons';
 import { OrnamentPattern } from '@/components/khazain/patterns';
+import { listRowAccessibilityLabel } from '@/constants/rtlContracts';
+import { ARCHIVE_ROWS, type ArchiveRow } from '@/data/content/archive';
 
-const ITEMS = [
-  {
-    id: 'scholars',
-    title: 'العلماء والمشايخ',
-    subtitle: 'محاضرات ودروس كبار العلماء',
-    count: '٢٤٣ حلقة',
-    glyph: <ScholarsGlyph />,
-  },
-  {
-    id: 'books',
-    title: 'الكتب العلمية',
-    subtitle: 'شروحات الكتب الإسلامية المهمة',
-    count: '٨٩ حلقة',
-    glyph: <BookGlyph />,
-  },
-  {
-    id: 'audio',
-    title: 'كتب صوتية',
-    subtitle: 'كتب إسلامية مقروءة بصوت عذب',
-    count: '٦٧ كتاب',
-    glyph: <AudioBookGlyph />,
-  },
-] as const;
+const GLYPH_BY_ID: Record<ArchiveRow['id'], React.ReactNode> = {
+  scholars: <ScholarsGlyph />,
+  books: <BookGlyph />,
+  audio: <AudioBookGlyph />,
+};
 
 export default function ArchiveScreen() {
   const router = useRouter();
@@ -47,13 +31,14 @@ export default function ArchiveScreen() {
           <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
         </View>
         <View style={styles.list}>
-          {ITEMS.map((it) => (
+          {ARCHIVE_ROWS.map((it) => (
             <ArchiveCard
               key={it.id}
               title={it.title}
               subtitle={it.subtitle}
               count={it.count}
-              icon={it.glyph}
+              icon={GLYPH_BY_ID[it.id]}
+              onPress={() => router.push(it.route as any)}
             />
           ))}
         </View>
@@ -70,14 +55,19 @@ function ArchiveCard({
   subtitle,
   count,
   icon,
+  onPress,
 }: {
   title: string;
   subtitle: string;
   count: string;
   icon: React.ReactNode;
+  onPress?: () => void;
 }) {
   return (
     <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={listRowAccessibilityLabel({ title, subtitle, count })}
       style={({ pressed }) => [
         styles.card,
         KhazainShadows.card,
