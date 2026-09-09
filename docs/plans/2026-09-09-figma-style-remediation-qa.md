@@ -248,6 +248,25 @@ recorded here.
   physical right is this app's choice, not a Figma measurement. It is now
   documented that way in both the constant and the prop, which previously
   disagreed.
+- *`RtlCarousel` still branches on `I18nManager.isRTL`*, which is what the RTL
+  rule this track wrote forbids. A horizontal `ScrollView` has a second RTL
+  concern the style contract does not cover: the native scroll origin, which
+  `direction: 'ltr'` on the content container does not move. Pinning the
+  container while the ScrollView keeps an RTL origin would land the carousel
+  at the wrong end on some platforms. It renders correctly on iOS, Android and
+  web in both capture runs; converting it needs a paired capture on all three,
+  not a style swap. Named as the one carve-out in CLAUDE.md.
+- *`2001:835` is treated as the native splash, not an overlay phase.* Task 6.1
+  lists four nodes; the overlay reproduces three and `2001:835` is the state
+  the native splash already owns, so reproducing it in React Native would mean
+  drawing the frame the overlay exists to avoid flashing past. That reading is
+  in the `LaunchSequence` docblock; it is a decision, and it is recorded here.
+  The `assets/khazain/launch/` layers Task 6.1 also lists fall under E4 — they
+  do not exist to add.
+- *`LaunchPhase` carries three phases where the render distinguishes one*, and
+  its `nodeId` is never read at runtime. Both are kept: the phase list is the
+  timing contract asserted by `launchSequence.test.ts`, and the node ids are
+  how a reader ties each phase back to the frame it reproduces.
 
 **Out-of-plan changes, and why.**
 
@@ -261,10 +280,41 @@ recorded here.
   bar over a cream page. Consequence: the `colorScheme === 'dark'` branch in
   `app/_layout.tsx` is now unreachable. It is left in place rather than deleted,
   since a dark theme is a product decision, not a cleanup.
-- `.gitignore` un-ignored `docs/*` **and** `CLAUDE.md`. Only the docs were
-  needed. `CLAUDE.md` has been returned to the ignore list and untracked; the
-  file itself is unchanged on disk, including the RTL and font sections this
-  track rewrote. If you want that guidance in history, `git add -f CLAUDE.md`.
+- `.gitignore` un-ignored `docs/*` **and** `CLAUDE.md`. The docs were needed.
+  The `CLAUDE.md` line was a **no-op either way**: the file has been in the
+  index since `init`, and an ignore pattern does not untrack a file already
+  tracked. The line is restored so the `.gitignore` diff stays minimal, and
+  `CLAUDE.md` stays tracked with this track's RTL, font-registry, file-layout
+  and design-authority edits. (Untracking it was briefly attempted and undone;
+  commits `436a519` and `c1cffff` are that pair, and the hero-crop commit body
+  does not mention the file it also touched.)
+
+## Decisions needed from you
+
+Nothing below is blocked on work; each needs a call or an asset.
+
+1. **Typography (E-gate).** `TheSansArabic` / `TheMixArab` render as
+   `NotoSansArabic-VF.ttf`. Either supply the licensed files, or approve Noto
+   Sans as the permanent substitute — until then every result here is
+   "typography provisional".
+2. **E2 — Scholar lecture durations.** The frame shows "٣٢ دقيقة" on every
+   row; the fixture leaves the duration blank because scholar entries are
+   Internet Archive series whose real length resolves at play time. Options:
+   leave it blank (current), fetch the length at list time (a network call per
+   row), or ship the Figma placeholder as literal text. This was left blank
+   rather than invented; say which you want.
+3. **E7 — Home foundation mark.** Frame `2001:940` shows only the bell chip
+   and the greeting; the app also renders the foundation mark at the physical
+   right. Kept as brand identity. Remove it for frame parity, or keep it.
+4. **E3 — Blank reference frames (`2869:2306`, `2558:1334`).** Both export as
+   blank media. Their screens follow the written specification instead. Worth
+   a look at the source `.fig` before signoff.
+5. **E4 — Launch overlay art.** `splash-khazain.png` exists only flattened, so
+   the overlay uses the app's `LogoBadge`. Separated layers would make the
+   sequence art-identical.
+6. **`2102:3187`** needs a human tap: open `/sections/reciter`, tap
+   المصحف المرتل. Neither `simctl` nor `adb` can reach an interaction-only
+   state; the sequence is in `scripts/visual-audit/README.md`.
 
 ## Definition of done — status
 
