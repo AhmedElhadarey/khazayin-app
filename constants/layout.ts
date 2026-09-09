@@ -245,3 +245,49 @@ export const CARD_DENSITY = Object.freeze({
    */
   cardElevation: 1,
 } as const);
+
+// ---------------------------------------------------------------------------
+// Reserved columns
+// ---------------------------------------------------------------------------
+//
+// Fixed-width slots in a row. They never shrink, so a long Arabic title wraps
+// or ellipsizes instead of pushing a control off the screen at 320pt.
+
+export const RESERVED_COLUMNS = Object.freeze({
+  disclosure: 20,
+  iconBadge: CARD_DENSITY.lectureBadgeDisc,
+  sectionIconDisc: CARD_DENSITY.sectionIconDisc,
+  /** The letter rail itself, and the inset a list must leave beside it. */
+  letterRail: 26,
+  letterRailInset: 36,
+} as const);
+
+/**
+ * Text width left in a lecture-style row after its reserved columns.
+ * Used to prove a row still has room for its title at the narrowest width.
+ */
+export function rowTextWidth(width: number): number {
+  const gutters = horizontalGutter(width) * 2;
+  const rowPadding = 12 * 2;
+  const gaps = 10 * 2;
+  return (
+    Math.min(width, CONTENT_MAX_WIDTH) -
+    gutters -
+    rowPadding -
+    gaps -
+    RESERVED_COLUMNS.iconBadge -
+    RESERVED_COLUMNS.disclosure
+  );
+}
+
+/**
+ * Bottom padding a tab screen's scroll view should add.
+ *
+ * React Navigation measures the rendered tab bar — MiniPlayer, navy bar, and
+ * safe-area inset together — and already insets every screen by its full
+ * height. A screen that adds `tabBarHeight()` again double-counts the bottom.
+ * The only thing a screen still owes is breathing room.
+ */
+export function screenBottomPadding(): number {
+  return SCREEN_BOTTOM_BREATHING;
+}

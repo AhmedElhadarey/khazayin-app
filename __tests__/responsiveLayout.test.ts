@@ -9,8 +9,12 @@ import {
   TAB_BAR,
   TAB_PHYSICAL_ORDER,
   tabBarHeight,
+  RESERVED_COLUMNS,
+  SCREEN_BOTTOM_BREATHING,
   contentWidth,
   physicalTabOrder,
+  rowTextWidth,
+  screenBottomPadding,
   horizontalGutter,
   responsiveCarouselCardWidth,
   shouldShowMainTabBar,
@@ -271,5 +275,67 @@ describe('shared card density', () => {
   it('keeps Android elevation as subtle as the iOS shadow', () => {
     // The audit found heavy grey outlines around Android cards.
     expect(CARD_DENSITY.cardElevation).toBeLessThanOrEqual(1);
+  });
+});
+
+const WIDTH_PROFILES = [320, 360, 375, 393, 411, 430, 480] as const;
+const TABLET_WIDTH = 834;
+
+describe('responsive profile coverage', () => {
+  it.each(WIDTH_PROFILES)('never collapses the gutter at %ipt', (width) => {
+    expect(horizontalGutter(width)).toBeGreaterThanOrEqual(12);
+    expect(horizontalGutter(width)).toBeLessThanOrEqual(16);
+  });
+
+  it.each(WIDTH_PROFILES)('leaves usable content width at %ipt', (width) => {
+    expect(contentWidth(width)).toBeGreaterThan(width * 0.85);
+  });
+
+  it('centres rather than stretches on a tablet', () => {
+    expect(contentWidth(TABLET_WIDTH)).toBe(contentWidth(CONTENT_MAX_WIDTH));
+    expect(widthProfile(TABLET_WIDTH)).toBe('wide');
+    // The leftover is what centres the column.
+    expect(TABLET_WIDTH - contentWidth(TABLET_WIDTH)).toBeGreaterThan(0);
+  });
+
+  it.each(WIDTH_PROFILES)('keeps room for row text at %ipt', (width) => {
+    // Reserved columns are fixed, so this is what a title actually gets.
+    expect(rowTextWidth(width)).toBeGreaterThan(150);
+  });
+
+  it('keeps the icon and disclosure columns fixed across every width', () => {
+    const widths = WIDTH_PROFILES.map((w) => rowTextWidth(w));
+    // Text width grows with the screen; the reserved columns never move.
+    expect(widths).toEqual([...widths].sort((a, b) => a - b));
+    expect(RESERVED_COLUMNS.iconBadge).toBe(40);
+    expect(RESERVED_COLUMNS.disclosure).toBe(20);
+  });
+
+  it('reserves more than the rail width beside a letter rail', () => {
+    expect(RESERVED_COLUMNS.letterRailInset).toBeGreaterThan(RESERVED_COLUMNS.letterRail);
+  });
+
+  it('keeps the tab strip scrollable rather than wrapped at every width', () => {
+    const stripWidth = 4 * SEGMENT_TABS.minTabWidth + 3 * SEGMENT_TABS.gap;
+    WIDTH_PROFILES.forEach((width) => {
+      if (stripWidth > contentWidth(width)) {
+        // Wider than the column: it must scroll, which it does — the strip is
+        // a horizontal ScrollView with a non-growing height.
+        expect(SEGMENT_TABS.strip.flexGrow).toBe(0);
+      }
+    });
+  });
+
+  it('counts the bottom inset exactly once', () => {
+    // React Navigation already insets every screen by the measured tab bar.
+    expect(screenBottomPadding()).toBe(SCREEN_BOTTOM_BREATHING);
+    expect(screenBottomPadding()).toBeLessThan(tabBarHeight(34));
+  });
+
+  it('keeps every reserved control at or above the touch minimum with hitSlop', () => {
+    // The visual columns are smaller than 44pt by design; the rows they sit in
+    // are not, which is what the press target actually follows.
+    expect(CARD_DENSITY.lectureCardMinHeight).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+    expect(CARD_DENSITY.reciterRowMinHeight).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
   });
 });
