@@ -1,15 +1,16 @@
+import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { LECTURE_CARD_ORDER, type LectureCardSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import type { Lecture } from '@/types/content';
 import React from 'react';
-import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BookmarkButton } from './BookmarkButton';
 
 // Cream rounded card used across pages 25 / 33 / 34 / 35.
-// Visual layout (RTL):
-//   [icon disc — flush RIGHT]  [title (bold) + scholar (muted)]   ...   [duration chip + optional bookmark — flush LEFT]
 //
-// A deterministic row direction keeps the visual order stable without fixed
-// left/right reservations, so the text column can grow on narrow phones.
+// Physical order (left → right) is duration/actions, text, section badge —
+// Figma nodes 2465:1911, 2589:1772, 2597:2552, 2606:3830. LECTURE_CARD_ORDER
+// drives it inside a PHYSICAL_ROW container, so forceRTL cannot reverse it.
 //
 // `compact` shrinks the card height + icon for the denser radio variant (page 35).
 // `pretitleSmall` renders an optional pretitle line above the title (e.g. "فضيلة الشيخ").
@@ -42,20 +43,23 @@ export function LectureCard({
   const titleStyle = compact ? styles.titleCompact : styles.title;
   const scholarStyle = compact ? styles.scholarCompact : styles.scholar;
 
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.cardBase,
-        heightStyle,
-        KhazainShadows.card,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      {/* Right-edge: icon disc. */}
-      <View style={iconWrapStyle}>{iconNode}</View>
-
-      {/* Center text block, anchored to the right (visually leading edge in RTL). */}
+  const slots: Record<LectureCardSlot, React.ReactNode> = {
+    // Physical left: duration plus an opt-in save affordance.
+    meta:
+      duration || showBookmark ? (
+        <View style={styles.endCluster}>
+          {duration ? <Text style={styles.duration}>{duration}</Text> : null}
+          {showBookmark ? (
+            <BookmarkButton
+              type="lecture"
+              entityId={id}
+              snapshot={{ type: 'lecture', title, scholar: scholar ?? '', duration: duration ?? '', category }}
+              variant="light"
+            />
+          ) : null}
+        </View>
+      ) : null,
+    text: (
       <View style={[styles.textBlock, compact && styles.textBlockCompact]}>
         {pretitleSmall ? (
           <Text style={styles.pretitle} numberOfLines={1}>
@@ -71,30 +75,31 @@ export function LectureCard({
           </Text>
         ) : null}
       </View>
+    ),
+    // Physical right: the section badge disc.
+    badge: <View style={iconWrapStyle}>{iconNode}</View>,
+  };
 
-      {/* Left-edge: duration plus an opt-in save affordance. */}
-      {duration || showBookmark ? (
-        <View style={styles.endCluster}>
-          {duration ? <Text style={styles.duration}>{duration}</Text> : null}
-          {showBookmark ? (
-            <BookmarkButton
-              type="lecture"
-              entityId={id}
-              snapshot={{ type: 'lecture', title, scholar: scholar ?? '', duration: duration ?? '', category }}
-              variant="light"
-            />
-          ) : null}
-        </View>
-      ) : null}
+  return (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.cardBase,
+        heightStyle,
+        KhazainShadows.card,
+        { transform: [{ scale: pressed ? 0.98 : 1 }] },
+      ]}
+    >
+      {LECTURE_CARD_ORDER.map((slot) => (
+        <React.Fragment key={slot}>{slots[slot]}</React.Fragment>
+      ))}
     </Pressable>
   );
 }
 
-const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
-
 const styles = StyleSheet.create({
   cardBase: {
-    flexDirection: ROW_DIR,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 10,
     borderRadius: 16,
@@ -138,8 +143,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   title: {
     fontFamily: 'Amiri-Bold',
@@ -147,8 +151,7 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: '700',
     color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   titleCompact: {
     fontFamily: 'Amiri-Bold',
@@ -156,25 +159,22 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     fontWeight: '700',
     color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   scholar: {
     fontFamily: 'TheSansArabic',
     fontSize: 13,
     color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   scholarCompact: {
     fontFamily: 'TheSansArabic',
     fontSize: 11,
     color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   endCluster: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 6,
     flexShrink: 0,

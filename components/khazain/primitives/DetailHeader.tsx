@@ -1,10 +1,14 @@
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 
-// Sub-screen header: 36×36 back chip (leading end) + centered Amiri title.
-// Back chevron points right (visual forward direction in RTL).
+// Sub-screen header: centred Amiri title with a 36×36 back chip pinned to the
+// physical RIGHT — the RTL leading edge — and a matching spacer on the left so
+// the title stays optically centred. Authored left → right inside a
+// PHYSICAL_ROW, so the chip cannot swap sides under forceRTL.
+// Back chevron points right (the RTL back direction).
 export function DetailHeader({
   title,
   onBack,
@@ -18,6 +22,14 @@ export function DetailHeader({
 }) {
   return (
     <View style={[styles.row, { backgroundColor: bg }, style]}>
+      {/* Physical left: spacer matching the back chip so the title stays centred. */}
+      <View style={styles.backBtnSpacer} />
+      <View style={styles.titleWrap}>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+      </View>
+      {/* Physical right: the back chip, on the RTL leading edge. */}
       <Pressable
         onPress={onBack}
         accessibilityRole="button"
@@ -36,20 +48,13 @@ export function DetailHeader({
           />
         </Svg>
       </Pressable>
-      <View style={styles.titleWrap}>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-      </View>
-      {/* Spacer with same width as back button so the centered title stays centered in RTL. */}
-      <View style={styles.backBtnSpacer} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     paddingHorizontal: 14,
     paddingVertical: 10,
@@ -79,6 +84,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     color: KhazainColors.navy800,
-    writingDirection: 'rtl',
+    ...RTL_TEXT,
+    textAlign: 'center',
   },
 });

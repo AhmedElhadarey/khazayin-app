@@ -7,6 +7,7 @@ import {
   SegmentTabs,
   SkeletonRibbonList,
 } from '@/components/khazain';
+import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
@@ -102,6 +103,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
   body: {
+    // PHYSICAL_BOX pins the rail's `right` offset and the list's `paddingRight`
+    // to real physical edges; without it forceRTL swaps both to the left.
+    ...PHYSICAL_BOX,
     flex: 1,
     paddingTop: 8,
     position: 'relative',
@@ -115,6 +119,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   rail: {
+    // LETTER_INDEX_EDGE — the alphabet rail lives on the physical right edge.
     position: 'absolute',
     top: 8,
     bottom: 0,

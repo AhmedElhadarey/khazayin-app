@@ -6,6 +6,8 @@ import {
   SkeletonRowList,
   SurahRow,
 } from '@/components/khazain';
+import { PHYSICAL_ROW } from '@/constants/layout';
+import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import {
   SURAH_START_PAGES,
@@ -215,15 +217,26 @@ function ReadingView({ onBack, surahParam }: { onBack: () => void; surahParam: s
           </Text>
         </AsyncContent>
       </ScrollView>
-      {/* Footer order RTL: حفظ علامة (right), الانتقال للعلامة (center), الفهرس (left). */}
+      {/* Physical left → right: الفهرس، الانتقال للعلامة، حفظ علامة
+          (MUSHAF_FOOTER_ORDER, Figma node 2349:982). */}
       <View style={styles.footer}>
-        <MushafBtn label="الفهرس" icon={<MenuGlyph />} />
-        <MushafBtn label="الانتقال للعلامة" icon={<BookmarkFilledGlyph />} />
-        <MushafBtn label="حفظ علامة" icon={<BookmarkGlyph />} />
+        {MUSHAF_FOOTER_ORDER.map((slot) => (
+          <MushafBtn
+            key={slot}
+            label={FOOTER_BUTTONS[slot].label}
+            icon={FOOTER_BUTTONS[slot].icon()}
+          />
+        ))}
       </View>
     </SafeAreaView>
   );
 }
+
+const FOOTER_BUTTONS: Record<MushafFooterSlot, { label: string; icon: () => React.ReactNode }> = {
+  index: { label: 'الفهرس', icon: () => <MenuGlyph /> },
+  goToBookmark: { label: 'الانتقال للعلامة', icon: () => <BookmarkFilledGlyph /> },
+  saveBookmark: { label: 'حفظ علامة', icon: () => <BookmarkGlyph /> },
+};
 
 function AyahNum({ n }: { n: string }) {
   return (
@@ -367,7 +380,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Amiri-Bold',
   },
   footer: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     justifyContent: 'space-around',
     gap: 10,
     paddingVertical: 10,

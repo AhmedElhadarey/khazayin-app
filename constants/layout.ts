@@ -85,6 +85,13 @@ export const RTL_TEXT = Object.freeze({
   textAlign: 'right',
 } as const);
 
+/**
+ * Container whose physical `left`/`right` edges — including absolute offsets
+ * and left/right padding — must be honoured exactly as authored. Use it on the
+ * parent of anything pinned to a physical edge, such as the letter-index rail.
+ */
+export const PHYSICAL_BOX = Object.freeze({ direction: 'ltr' } as const);
+
 /** Row style for children authored in physical left → right order. */
 export const PHYSICAL_ROW = Object.freeze({
   flexDirection: 'row',

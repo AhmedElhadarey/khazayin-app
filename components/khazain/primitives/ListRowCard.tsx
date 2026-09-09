@@ -1,16 +1,17 @@
+import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { LIST_ROW_ORDER, type ListRowSlot, listRowAccessibilityLabel } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import React from 'react';
-import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../icons';
 
-// Deterministic RTL row direction (matches the SegmentTabs pattern): when
-// isRTL is true (normal native) this is 'row' — identical to before; when the
-// flag is unreliable (web / stale reload) 'row-reverse' still yields RTL order.
-const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
-
 // Cream list-row card used in SectionsScreen and Dawah group list.
-// Visual spec: bg cardBg, r=20, padding 16/12, 64×64 circular icon chip, title/subtitle/count stack, trailing chevron.
-// Port of design_source/app/shared.jsx ListRowCard.
+// Visual spec: bg cardBg, r=20, padding 16/12, 64×64 circular icon chip,
+// title/subtitle/count stack, leading chevron.
+//
+// Physical order (left → right) is disclosure, text, icon badge — Figma node
+// 2031:5675. It is driven by LIST_ROW_ORDER inside a PHYSICAL_ROW container so
+// React Native cannot reverse it under forceRTL.
 export function ListRowCard({
   icon,
   title,
@@ -26,18 +27,11 @@ export function ListRowCard({
   chevron?: boolean;
   onPress?: () => void;
 }) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={[title, subtitle, count].filter(Boolean).join('، ')}
-      style={({ pressed }) => [
-        styles.card,
-        KhazainShadows.card,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      {chevron ? <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" /> : null}
+  const slots: Record<ListRowSlot, React.ReactNode> = {
+    disclosure: chevron ? (
+      <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" />
+    ) : null,
+    text: (
       <View style={styles.textCol}>
         <Text style={styles.title} numberOfLines={1}>
           {title}
@@ -49,15 +43,31 @@ export function ListRowCard({
         ) : null}
         {count ? <Text style={styles.count}>{count}</Text> : null}
       </View>
-      <View style={styles.iconChip}>{icon}</View>
+    ),
+    iconBadge: <View style={styles.iconChip}>{icon}</View>,
+  };
 
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={listRowAccessibilityLabel({ title, subtitle, count })}
+      style={({ pressed }) => [
+        styles.card,
+        KhazainShadows.card,
+        { transform: [{ scale: pressed ? 0.98 : 1 }] },
+      ]}
+    >
+      {LIST_ROW_ORDER.map((slot) => (
+        <React.Fragment key={slot}>{slots[slot]}</React.Fragment>
+      ))}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: ROW_DIR,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     paddingVertical: 16,
@@ -87,16 +97,14 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     fontWeight: '600',
     color: KhazainColors.inkTitle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   subtitle: {
     fontFamily: 'TheSansArabic',
     fontSize: 14,
     lineHeight: 20,
     color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   count: {
     fontFamily: 'TheSansArabic',
@@ -105,8 +113,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: KhazainColors.inkCount,
     marginTop: 2,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
 });
 

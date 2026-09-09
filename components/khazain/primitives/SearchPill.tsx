@@ -1,3 +1,5 @@
+import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { SEARCH_PILL_ORDER, type SearchPillSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import React from 'react';
 import {
@@ -30,7 +32,10 @@ type Props = Omit<TextInputProps, 'style'> & {
   onClear?: () => void;
 };
 
-// 40-tall rounded search input with leading magnifier.
+// 40-tall rounded search control. The magnifier sits at the physical LEFT with
+// the Arabic placeholder right-aligned beside it (Figma nodes 2031:5675,
+// 2102:2975); SEARCH_PILL_ORDER records that contract and PHYSICAL_ROW stops
+// forceRTL from swapping the two.
 // `dark` variant for MushafScreen per handoff §6.
 //
 // Dual-mode (added 2026-05-11):
@@ -66,13 +71,18 @@ export function SearchPill({
           containerStyle,
         ]}
       >
-        <SearchIcon size={16} color={iconColor} />
-        <Text
-          style={[styles.placeholderText, { color: placeholderColor }]}
-          numberOfLines={1}
-        >
-          {placeholder}
-        </Text>
+        {renderSlots({
+          icon: <SearchIcon size={16} color={iconColor} />,
+          field: (
+            <Text
+              style={[styles.placeholderText, { color: placeholderColor }]}
+              numberOfLines={1}
+            >
+              {placeholder}
+            </Text>
+          ),
+          clear: null,
+        })}
       </Pressable>
     );
   }
@@ -89,28 +99,39 @@ export function SearchPill({
         containerStyle,
       ]}
     >
-      <SearchIcon size={16} color={iconColor} />
-      <TextInput
-        {...rest}
-        value={value}
-        placeholder={placeholder}
-        placeholderTextColor={placeholderColor}
-        style={[styles.input, { color: textColor }]}
-        textAlign="right"
-      />
-      {showClear ? (
-        <Pressable
-          onPress={onClear}
-          accessibilityRole="button"
-          accessibilityLabel="مسح البحث"
-          hitSlop={8}
-          style={styles.clearBtn}
-        >
-          <ClearGlyph color={iconColor} />
-        </Pressable>
-      ) : null}
+      {renderSlots({
+        icon: <SearchIcon size={16} color={iconColor} />,
+        field: (
+          <TextInput
+            {...rest}
+            value={value}
+            placeholder={placeholder}
+            placeholderTextColor={placeholderColor}
+            style={[styles.input, { color: textColor }]}
+            textAlign="right"
+          />
+        ),
+        clear: showClear ? (
+          <Pressable
+            onPress={onClear}
+            accessibilityRole="button"
+            accessibilityLabel="مسح البحث"
+            hitSlop={8}
+            style={styles.clearBtn}
+          >
+            <ClearGlyph color={iconColor} />
+          </Pressable>
+        ) : null,
+      })}
     </View>
   );
+}
+
+/** Renders the pill's children in the physical left → right contract order. */
+function renderSlots(slots: Record<SearchPillSlot, React.ReactNode>) {
+  return SEARCH_PILL_ORDER.map((slot) => (
+    <React.Fragment key={slot}>{slots[slot]}</React.Fragment>
+  ));
 }
 
 // Simple X glyph rendered as two crossed strokes. Inline to avoid pulling in
@@ -126,10 +147,10 @@ function ClearGlyph({ color }: { color: string }) {
 
 const styles = StyleSheet.create({
   pill: {
+    ...PHYSICAL_ROW,
     minHeight: 44,
     borderRadius: KhazainRadius.md,
     borderWidth: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     paddingHorizontal: 12,
@@ -140,15 +161,14 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '400',
     paddingVertical: 0,
-    writingDirection: 'rtl',
+    ...RTL_TEXT,
   },
   placeholderText: {
     flex: 1,
     fontFamily: 'TheSansArabic',
     fontSize: 14,
     fontWeight: '400',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
   },
   clearBtn: {
     width: 24,

@@ -1,14 +1,16 @@
+import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import React from 'react';
-import { I18nManager, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 import { ChevronIcon } from '../icons';
 
-// Home-specific section header.
-// Visual in RTL (the only mode this app runs in, but we defend against LTR):
-//   right edge: [title][goldBar]                left edge: [chevron][عرض الكل]
+// Home-specific section header (Figma node 2001:940).
 //
-// The explicit direction below keeps both groups deterministic across native
-// and web while allowing the row to grow with the user's font scale.
+// Physical left → right: [chevron][عرض الكل] ......... [title][goldBar]
+//
+// Authored in that order inside PHYSICAL_ROW containers, so neither group can
+// swap sides under forceRTL. Height is content-driven so a larger font scale
+// grows the row rather than clipping it.
 export function HomeSectionHeader({
   title,
   onViewAll,
@@ -19,44 +21,42 @@ export function HomeSectionHeader({
   style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={[styles.row, style]}>
-      <View style={styles.titleGroup}>
-        <View style={styles.goldBar} />
-
-        <Text style={styles.title}>{title}</Text>
-      </View>
+    <View style={[styles.row, !onViewAll && styles.rowTitleOnly, style]}>
       {onViewAll ? (
         <Pressable
           onPress={onViewAll}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`عرض الكل، ${title}`}
           style={({ pressed }) => [styles.linkAnchor, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Text style={styles.linkLabel}>عرض الكل</Text>
           <ChevronIcon size={14} color={KhazainColors.goldAccent} direction="start" />
-
+          <Text style={styles.linkLabel}>عرض الكل</Text>
         </Pressable>
       ) : null}
+      <View style={styles.titleGroup}>
+        <Text style={styles.title}>{title}</Text>
+        <View style={styles.goldBar} />
+      </View>
     </View>
   );
 }
 
-// Inside each group we want the "first item" (title / chevron) to be on the right.
-// Using flexDirection: 'row-reverse' in LTR achieves that; in native RTL it's
-// internally flipped back to 'row' which also achieves it. So this expression is
-// deterministic across both modes.
-const innerFlex = I18nManager.isRTL ? 'row' : ('row-reverse' as const);
-
 const styles = StyleSheet.create({
   row: {
+    ...PHYSICAL_ROW,
     minHeight: 21,
     paddingHorizontal: 16,
-    flexDirection: innerFlex,
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
   },
+  // Without a link there is no left-hand group, so the title anchors right.
+  rowTitleOnly: {
+    justifyContent: 'flex-end',
+  },
   titleGroup: {
-    flexDirection: innerFlex,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 8,
     minWidth: 0,
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0,
     color: KhazainColors.navy,
-    writingDirection: 'rtl',
+    ...RTL_TEXT,
   },
   goldBar: {
     width: 5,
@@ -77,7 +77,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.goldBar,
   },
   linkAnchor: {
-    flexDirection: innerFlex,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 4,
     flexShrink: 0,
@@ -88,6 +88,6 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 0,
     color: KhazainColors.goldAccent,
-    writingDirection: 'rtl',
+    ...RTL_TEXT,
   },
 });

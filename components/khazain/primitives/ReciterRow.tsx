@@ -1,16 +1,18 @@
+import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { RECITER_ROW_ORDER, type ReciterRowSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
-import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { QuranBadge } from './QuranBadge';
 
-// JSX order is [textCol, badge]. We want textCol visually on the LEFT and
-// badge visually on the RIGHT. Picks 'row' on LTR / 'row-reverse' on RTL.
-const HEAD_FLEX: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row-reverse' : 'row';
-
 // Reciter / Quran-list row used on pages 13/14 (reciter tabs list) and
 // page 16 (qiraat sheet — `chevron` only, no subtitle).
-// Visual order (RTL): [QuranBadge disc] [title + subtitle] (...) [navy `◀` chevron]
+//
+// Physical order (left → right) is disclosure, text, Quran badge — Figma
+// nodes 2031:6193 and 2457:954, driven by RECITER_ROW_ORDER so the row cannot
+// reverse under forceRTL. The previous absolute head/chevron blocks are gone:
+// they pinned the two clusters to opposite edges and left the middle empty.
 export function ReciterRow({
   title,
   subtitle,
@@ -22,9 +24,40 @@ export function ReciterRow({
   onPress?: () => void;
   isDefault?: boolean;
 }) {
+  const slots: Record<ReciterRowSlot, React.ReactNode> = {
+    disclosure: (
+      <Svg width={12} height={14} viewBox="0 0 12 14">
+        <Path
+          d="M9 1 L3 7 L9 13"
+          stroke={KhazainColors.navy800}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          fill="none"
+        />
+      </Svg>
+    ),
+    text: (
+      <View style={styles.textCol}>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+        {isDefault ? <Text style={styles.defaultBadge}>الافتراضي</Text> : null}
+      </View>
+    ),
+    quranBadge: <QuranBadge size={44} />,
+  };
+
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={[title, subtitle].filter(Boolean).join('، ')}
       style={({ pressed }) => [
         styles.row,
         KhazainShadows.card,
@@ -32,47 +65,25 @@ export function ReciterRow({
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <View style={styles.headBlock}>
-        <View style={styles.textCol}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
-          {subtitle ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
-              {subtitle}
-            </Text>
-          ) : null}
-          {isDefault ? <Text style={styles.defaultBadge}>الافتراضي</Text> : null}
-        </View>
-        <QuranBadge size={44} />
-      </View>
-      <View style={styles.chevronBlock}>
-        <Svg width={12} height={14} viewBox="0 0 12 14">
-          <Path
-            d="M9 1 L3 7 L9 13"
-            stroke={KhazainColors.navy800}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </Svg>
-      </View>
+      {RECITER_ROW_ORDER.map((slot) => (
+        <React.Fragment key={slot}>{slots[slot]}</React.Fragment>
+      ))}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
+    ...PHYSICAL_ROW,
     minHeight: 64,
     paddingVertical: 12,
     paddingHorizontal: 14,
+    gap: 12,
     borderRadius: 16,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: 'rgba(141,107,52,0.08)',
-    position: 'relative',
-    justifyContent: 'center',
+    alignItems: 'center',
   },
   rowDefault: {
     borderColor: KhazainColors.goldAccent,
@@ -83,20 +94,12 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: '600',
     color: KhazainColors.goldAccent,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...RTL_TEXT,
     marginTop: 2,
   },
-  headBlock: {
-    position: 'absolute',
-    right: 14,
-    top: 0,
-    bottom: 0,
-    flexDirection: HEAD_FLEX,
-    alignItems: 'center',
-    gap: 12,
-  },
   textCol: {
+    flex: 1,
+    minWidth: 0,
     alignItems: 'flex-end',
     gap: 2,
   },
@@ -113,14 +116,6 @@ const styles = StyleSheet.create({
     fontFamily: 'TheSansArabic',
     fontSize: 13,
     color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  chevronBlock: {
-    position: 'absolute',
-    left: 14,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
+    ...RTL_TEXT,
   },
 });

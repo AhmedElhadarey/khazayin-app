@@ -1,6 +1,7 @@
+import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import React from 'react';
-import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../icons';
 
 type Props = {
@@ -9,41 +10,50 @@ type Props = {
   seeAllLabel?: string;
 };
 
-// RTL-safe section header: gold bar + title on the RIGHT and optional link on
-// the LEFT. Content-driven height prevents clipping at larger font scales.
+// Section header: optional "عرض الكل" link at the physical LEFT, then the
+// title and its gold bar at the physical RIGHT. Authored left → right inside a
+// PHYSICAL_ROW so the two groups cannot swap under forceRTL. Height is
+// content-driven, so a larger font scale grows the row instead of clipping it.
 export function SectionHeader({ title, onSeeAll, seeAllLabel = 'عرض الكل' }: Props) {
   return (
-    <View style={styles.row}>
-      <View style={styles.titleGroup}>
-        <Text style={styles.title}>{title}</Text>
-        <View style={styles.bar} />
-      </View>
+    <View style={[styles.row, !onSeeAll && styles.rowTitleOnly]}>
+      {/* Physical left: the "عرض الكل" link, arrow first. */}
       {onSeeAll ? (
         <Pressable
           onPress={onSeeAll}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`${seeAllLabel}، ${title}`}
           style={({ pressed }) => [styles.link, { opacity: pressed ? 0.7 : 1 }]}
         >
           <ChevronIcon size={14} color={KhazainColors.goldAccent} direction="start" />
           <Text style={styles.linkLabel}>{seeAllLabel}</Text>
         </Pressable>
       ) : null}
+      {/* Physical right: the title with its gold bar on the outer edge. */}
+      <View style={styles.titleGroup}>
+        <Text style={styles.title}>{title}</Text>
+        <View style={styles.bar} />
+      </View>
     </View>
   );
 }
 
-const innerFlex = I18nManager.isRTL ? 'row' : ('row-reverse' as const);
 
 const styles = StyleSheet.create({
   row: {
+    ...PHYSICAL_ROW,
     minHeight: 21,
-    flexDirection: innerFlex,
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: 12,
   },
+  // Without a link there is no left-hand group, so the title anchors right.
+  rowTitleOnly: {
+    justifyContent: 'flex-end',
+  },
   titleGroup: {
-    flexDirection: innerFlex,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 8,
     minWidth: 0,
@@ -64,7 +74,7 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
   link: {
-    flexDirection: innerFlex,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 4,
     flexShrink: 0,
@@ -74,6 +84,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: KhazainColors.goldAccent,
-    writingDirection: 'rtl',
+    ...RTL_TEXT,
   },
 });
