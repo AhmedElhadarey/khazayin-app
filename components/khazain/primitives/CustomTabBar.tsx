@@ -4,32 +4,35 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PHYSICAL_ROW, RTL_TEXT, TAB_BAR, TAB_PHYSICAL_ORDER } from '@/constants/layout';
 import {
-  BookmarkIcon,
-  GridIcon,
-  HouseIcon,
-  IconProps,
-  MenuLinesIcon,
-} from '../icons';
+  NavHomeIcon,
+  NavLibraryIcon,
+  NavMoreIcon,
+  NavSectionsIcon,
+  type NavIconProps,
+} from '../icons/nav';
 import { MiniPlayer } from './MiniPlayer';
 
 // "index" is the home tab (expo-router's default route name within the (tabs) group).
 type TabKey = 'index' | 'library' | 'sections' | 'more';
 
+// Figma component 2001:17457 pairs each tab with a Vuesax icon and ships two
+// variants of it — outline while inactive, solid (`bulk`) while active.
 const TAB_META: Record<
   TabKey,
-  { label: string; Icon: React.ComponentType<IconProps> }
+  { label: string; Icon: React.ComponentType<NavIconProps> }
 > = {
-  index: { label: 'الرئيسية', Icon: HouseIcon },
-  library: { label: 'مكتبتي', Icon: BookmarkIcon },
-  sections: { label: 'الأقسام', Icon: GridIcon },
-  more: { label: 'المزيد', Icon: MenuLinesIcon },
+  index: { label: 'الرئيسية', Icon: NavHomeIcon },
+  library: { label: 'مكتبتي', Icon: NavLibraryIcon },
+  sections: { label: 'الأقسام', Icon: NavSectionsIcon },
+  more: { label: 'المزيد', Icon: NavMoreIcon },
 };
 
 // Physical order is authored left → right and pinned with `PHYSICAL_ROW`
 // (`direction: 'ltr'`), so it renders identically on iOS, Android, web, a cold
 // start, and a Fast Refresh. See the RTL contract in `constants/layout.ts`.
 //
-// Left → right: More, Sections, Library, Home — matching Figma node 2031:5675.
+// Left → right: More, Sections, Library, Home — matching the `navigation`
+// instance in Figma node 2031:5675 (the Sections frame that carries the bar).
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -79,8 +82,10 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                   {active ? <View style={styles.indicator} /> : null}
                   <Icon
                     size={TAB_BAR.iconSize}
-                    color={active ? TAB_BAR.indicatorColor : TAB_BAR.inactiveInk}
+                    color={active ? TAB_BAR.activeInk : TAB_BAR.inactiveInk}
+                    accentColor={TAB_BAR.indicatorColor}
                     strokeWidth={1.6}
+                    active={active}
                   />
                   <Text
                     style={[styles.label, active && styles.labelActive]}
@@ -147,13 +152,13 @@ const styles = StyleSheet.create({
   },
   label: {
     ...RTL_TEXT,
+    // Figma 2001:17457: TheSansArabic Bold 12, not 11 at weight 500.
     fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '700',
     color: TAB_BAR.inactiveInk,
   },
   labelActive: {
-    fontWeight: '700',
     color: TAB_BAR.activeInk,
   },
 });

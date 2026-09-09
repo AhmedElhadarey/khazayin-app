@@ -11,12 +11,13 @@ import Animated, {
 import { KhazainSpacing } from '@/constants/theme';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import { DawahPoster } from './DawahPoster';
+import { SCALE_STEPS, dawahLayout } from './dawahLayout';
 
-// Card art is 220×232. Slot is intentionally narrower (165) so neighbouring
-// posters overlap the focused one by ~28 px on each side — Twitch-style.
-const CARD_W = 220;
-const CARD_H = 232;
-const SLOT = 165;
+// The fan's proportions come from Figma node 2001:940 rather than from
+// hand-picked numbers — see `dawahLayout`. The design overlaps these posters
+// on purpose; what it does differently from the old constants is make the
+// focused poster smaller (39% of the window, not 56%) and step the
+// neighbours down harder, which is what reads as depth.
 
 type WrappedEntry = { item: DawahPosterModel; realIndex: number };
 
@@ -28,7 +29,7 @@ export function DawahCarousel({
   onItemPress?: (item: DawahPosterModel, index: number) => void;
 }) {
   const { width: windowWidth } = useWindowDimensions();
-  const sidePadding = Math.max(0, (windowWidth - SLOT) / 2);
+  const { cardWidth, cardHeight, slot, sidePadding, translate } = dawahLayout(windowWidth);
 
   // All hooks must be called unconditionally — guards (G10) live below.
   const wrapped = useMemo<WrappedEntry[]>(() => {
@@ -43,7 +44,7 @@ export function DawahCarousel({
   const FIRST_REAL = 1;
   const LAST_REAL = items?.length ?? 0;
 
-  const scrollX = useSharedValue(FIRST_REAL * SLOT);
+  const scrollX = useSharedValue(FIRST_REAL * slot);
   const onScroll = useAnimatedScrollHandler({
     onScroll: (e) => {
       scrollX.value = e.contentOffset.x;
@@ -67,8 +68,8 @@ export function DawahCarousel({
         <DawahPoster
           quote={only}
           onPress={() => onItemPress?.(only, 0)}
-          width={CARD_W}
-          height={CARD_H}
+          width={cardWidth}
+          height={cardHeight}
         />
       </View>
     );
@@ -79,9 +80,9 @@ export function DawahCarousel({
   const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     const x = e.nativeEvent.contentOffset.x;
     if (x <= 0) {
-      ref.current?.scrollTo({ x: LAST_REAL * SLOT, animated: false });
-    } else if (x >= (wrapped.length - 1) * SLOT) {
-      ref.current?.scrollTo({ x: FIRST_REAL * SLOT, animated: false });
+      ref.current?.scrollTo({ x: LAST_REAL * slot, animated: false });
+    } else if (x >= (wrapped.length - 1) * slot) {
+      ref.current?.scrollTo({ x: FIRST_REAL * slot, animated: false });
     }
   };
 
@@ -89,14 +90,14 @@ export function DawahCarousel({
     <Animated.ScrollView
       ref={ref as any}
       horizontal
-      snapToInterval={SLOT}
+      snapToInterval={slot}
       snapToAlignment="start"
       decelerationRate="fast"
       showsHorizontalScrollIndicator={false}
       onScroll={onScroll}
       onMomentumScrollEnd={handleMomentumEnd}
       scrollEventThrottle={16}
-      contentOffset={{ x: FIRST_REAL * SLOT, y: 0 }}
+      contentOffset={{ x: FIRST_REAL * slot, y: 0 }}
       contentContainerStyle={{
         paddingTop: KhazainSpacing.x3,
         paddingBottom: KhazainSpacing.x6,
@@ -110,6 +111,10 @@ export function DawahCarousel({
           entry={entry}
           index={i}
           scrollX={scrollX}
+          slot={slot}
+          cardWidth={cardWidth}
+          cardHeight={cardHeight}
+          translate={translate}
           onPress={() => onItemPress?.(entry.item, entry.realIndex)}
         />
       ))}
@@ -121,25 +126,35 @@ function Slot({
   entry,
   index,
   scrollX,
+  slot,
+  cardWidth,
+  cardHeight,
+  translate,
   onPress,
 }: {
   entry: WrappedEntry;
   index: number;
   scrollX: SharedValue<number>;
+  slot: number;
+  cardWidth: number;
+  cardHeight: number;
+  translate: readonly [number, number, number];
   onPress?: () => void;
 }) {
+  const [outerScale, neighbourScale] = SCALE_STEPS;
+  const [outerShift, neighbourShift] = translate;
   const animatedStyle = useAnimatedStyle(() => {
     const inputRange = [
-      (index - 2) * SLOT,
-      (index - 1) * SLOT,
-      index * SLOT,
-      (index + 1) * SLOT,
-      (index + 2) * SLOT,
+      (index - 2) * slot,
+      (index - 1) * slot,
+      index * slot,
+      (index + 1) * slot,
+      (index + 2) * slot,
     ];
     const scale = interpolate(
       scrollX.value,
       inputRange,
-      [0.72, 0.84, 1, 0.84, 0.72],
+      [outerScale, neighbourScale, 1, neighbourScale, outerScale],
       Extrapolation.CLAMP,
     );
     const opacity = interpolate(
@@ -148,10 +163,13 @@ function Slot({
       [0.45, 0.7, 1, 0.7, 0.45],
       Extrapolation.CLAMP,
     );
+    // The design does not space these evenly: the outermost pair sits much
+    // closer to its neighbour than the neighbour does to the centre, so the
+    // outer slots are pulled inward off the uniform snap grid.
     const translateX = interpolate(
       scrollX.value,
       inputRange,
-      [22, 12, 0, -12, -22],
+      [outerShift, neighbourShift, 0, -neighbourShift, -outerShift],
       Extrapolation.CLAMP,
     );
     const z = interpolate(
@@ -170,11 +188,16 @@ function Slot({
   return (
     <Animated.View
       style={[
-        { width: SLOT, height: CARD_H, alignItems: 'center', justifyContent: 'center' },
+        { width: slot, height: cardHeight, alignItems: 'center', justifyContent: 'center' },
         animatedStyle,
       ]}
     >
-      <DawahPoster quote={entry.item} onPress={onPress} width={CARD_W} height={CARD_H} />
+      <DawahPoster
+        quote={entry.item}
+        onPress={onPress}
+        width={cardWidth}
+        height={cardHeight}
+      />
     </Animated.View>
   );
 }

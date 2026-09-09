@@ -124,7 +124,11 @@ export const PHYSICAL_ROW = Object.freeze({
   direction: 'ltr',
 } as const);
 
-/** Bottom navigation, physical left → right (Figma node 2031:5675). */
+/**
+ * Bottom navigation, physical left → right. The bar is the `navigation`
+ * instance (393 x 83, flush to the frame's bottom edge) and each tab is
+ * Figma component 2001:17457.
+ */
 export const TAB_PHYSICAL_ORDER = Object.freeze([
   'more',
   'sections',
