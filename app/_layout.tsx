@@ -146,7 +146,7 @@ function useOnboardingRedirect(navigatorReady: boolean) {
     const complete = useSettingsStore.getState().onboardingComplete;
     const inOnboarding = segments[0] === 'onboarding';
 
-    // `navigatorReady` gates on the root <Stack> being mounted (fonts loaded):
+    // `navigatorReady` gates on the root <Stack> being mounted (fonts + settings):
     // navigating while RootLayout still returns `null` is a race that can crash
     // or silently no-op (T1.3).
     if (
@@ -177,9 +177,30 @@ function useSettingsHydrated(): boolean {
   return hydrated;
 }
 
+/**
+ * Boot readiness never waits forever. `onFinishHydration` fires on failure as
+ * well as success, but a wedged AsyncStorage would otherwise pin the app on the
+ * native splash with no way out, so readiness is capped.
+ */
+const SETTINGS_HYDRATION_CAP_MS = 3000;
+
+function useSettingsSettled(): boolean {
+  const hydrated = useSettingsHydrated();
+  const [capped, setCapped] = useState(false);
+  useEffect(() => {
+    if (hydrated) return;
+    const t = setTimeout(() => {
+      console.warn('[khazayin] settings hydration exceeded the boot cap; continuing');
+      setCapped(true);
+    }, SETTINGS_HYDRATION_CAP_MS);
+    return () => clearTimeout(t);
+  }, [hydrated]);
+  return hydrated || capped;
+}
+
 function RootLayout() {
   const colorScheme = useColorScheme();
-  const settingsHydrated = useSettingsHydrated();
+  const settingsSettled = useSettingsSettled();
 
   // Every family the app may reference lives in constants/fonts.ts; this is
   // the only useFonts call. A fontFamily missing from that registry fails
@@ -187,10 +208,14 @@ function RootLayout() {
   // platform Arabic face.
   const [fontsLoaded, fontError] = useFonts(FONT_ASSET_MODULES);
 
-  // The root <Stack> only renders once fonts resolve (or error). Gate the
-  // onboarding redirect on this so navigation never fires during the `null`
-  // render before the Navigator mounts (T1.3).
-  const navigatorReady = fontsLoaded || !!fontError;
+  // The root <Stack> only renders once fonts resolve (or error) AND the settings
+  // store has read AsyncStorage. Design section 6.1 (node 2001:835) requires
+  // that Home never appears before fonts *and* settings hydrate; fonts resolve
+  // independently of AsyncStorage, so gating on fonts alone would paint a
+  // screen built from default settings. Gate the onboarding redirect on the
+  // same flag so navigation never fires during the `null` render before the
+  // Navigator mounts (T1.3).
+  const navigatorReady = (fontsLoaded || !!fontError) && settingsSettled;
   useOnboardingRedirect(navigatorReady);
   useBackgroundRefresh();
   // Keep the rolling notification horizon armed: register the background top-up
@@ -201,13 +226,15 @@ function RootLayout() {
   // default settings and arm a schedule the user never chose. `assembleAndReconcile`
   // also guards this internally (the background task has no React lifecycle);
   // this gate just avoids a wasted pre-hydration pass.
-  useHorizonReconcile(fontsLoaded && settingsHydrated);
+  useHorizonReconcile(navigatorReady);
 
+  // The native splash stays up for the whole gate, so there is no blank frame
+  // between it and the launch overlay.
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    if (navigatorReady) {
       SplashScreen.hideAsync().catch(() => undefined);
     }
-  }, [fontsLoaded, fontError]);
+  }, [navigatorReady]);
 
   // Cold-start only: `shouldRunLaunchSequence` returns true exactly once per
   // app session, so a tab return or a Fast Refresh never replays the sequence.
@@ -216,7 +243,7 @@ function RootLayout() {
   // Progress-tracking hydration. Failures fall back to zero values so the
   // Library tab never crashes if the DB layer mis-initializes.
   useEffect(() => {
-    if (!fontsLoaded) return;
+    if (!navigatorReady) return;
     bootstrapNotificationHandler();
     Promise.all([
       useProgressStore.getState().hydrate(),
@@ -231,7 +258,7 @@ function RootLayout() {
     setupPlayer()
       .then(() => registerPlaybackListeners())
       .catch((err) => console.warn('[khazayin] audio engine setup failed', err));
-  }, [fontsLoaded]);
+  }, [navigatorReady]);
 
   // Env preflight — warn once at root mount if the API base URL is not
   // configured. The app will run on mockAdapter silently; this log reminds
@@ -244,7 +271,7 @@ function RootLayout() {
     }
   }, []);
 
-  if (!fontsLoaded && !fontError) {
+  if (!navigatorReady) {
     return null;
   }
 
@@ -255,8 +282,8 @@ function RootLayout() {
     <ThemeProvider value={colorScheme === 'dark' ? KhazayinDarkTheme : KhazayinLightTheme}>
       {/* The Figma launch states (nodes 2001:888, 2001:914, 2007:511) render
           over the mounted navigator, so nothing flashes between the native
-          splash and Home. It is mounted only after fonts resolve, so it can
-          never delay readiness, and only on a cold start. */}
+          splash and Home. It is mounted only after fonts *and* settings
+          resolve, so it can never delay readiness, and only on a cold start. */}
       {showLaunch ? <LaunchSequence onDone={() => setShowLaunch(false)} /> : null}
       <Stack
         screenOptions={{
