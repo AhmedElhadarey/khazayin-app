@@ -2,8 +2,13 @@
 
 **Date:** 2026-09-09 · **Branch:** `007-splash-rebuild`
 **Spec:** `docs/KHAZAYIN.fig` nodes `2001:888` (background + wordmark), `2001:914` (centre
-emblem), `2007:511` (exit hold). Node `2001:835` is mapped as a splash state in
-`figma-mobile-screen-map.json` but its export is the Home screen; it is not a splash frame.
+emblem), `2007:511` (exit hold).
+
+> **Correction (2026-09-10):** this document previously said node `2001:835` "is not a
+> splash frame" because its export shows Home. Reading the node itself out of the `.fig`
+> shows it *is* one — named "Splash", 393 x 852, holding the emblem, the tagline
+> `تأخـذ بيـــدك إلى الجنـة` and the wordmark. The manifest is right; the rendered export
+> `01-2001-835.png` is the file that is wrong.
 
 ## Why rebuild
 

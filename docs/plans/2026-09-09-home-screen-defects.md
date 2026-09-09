@@ -1,6 +1,11 @@
 # Home screen — defect audit and remediation plan
 
-**Date:** 2026-09-09 · **Status:** awaiting approval, nothing implemented
+**Date:** 2026-09-09 · **Status:** implemented on `008-home-screen-defects`.
+
+> Read `2026-09-09-home-geometry-findings.md` alongside this. This plan was written
+> against rendered exports; reading the `.fig` directly corrected four of its entries —
+> D2's remedy, D8's premise, D3's font-scale justification and D1's single card width —
+> and `2026-09-09-home-screen-qa.md` records what shipped and what is still open.
 **Spec:** `docs/KHAZAYIN.fig` node `2001:835` (Home, fully rendered) and `2001:940`
 (Home, 393 × 1321 — the full-height frame).
 
