@@ -1,3 +1,4 @@
+import { FONT_ASSET_MODULES } from '@/constants/fonts';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -179,17 +180,11 @@ function RootLayout() {
   const colorScheme = useColorScheme();
   const settingsHydrated = useSettingsHydrated();
 
-  const [fontsLoaded, fontError] = useFonts({
-    Amiri: require('../assets/fonts/Amiri-Regular.ttf'),
-    'Amiri-Bold': require('../assets/fonts/Amiri-Bold.ttf'),
-    NotoSansArabic: require('../assets/fonts/NotoSansArabic-VF.ttf'),
-    NotoNaskhArabic: require('../assets/fonts/NotoNaskhArabic-VF.ttf'),
-    // Temporary aliases for the licensed design families. Keeping the design
-    // names in component styles lets the real font files replace these aliases
-    // later without another repo-wide style rewrite.
-    TheSansArabic: require('../assets/fonts/NotoSansArabic-VF.ttf'),
-    TheMixArab: require('../assets/fonts/NotoSansArabic-VF.ttf'),
-  });
+  // Every family the app may reference lives in constants/fonts.ts; this is
+  // the only useFonts call. A fontFamily missing from that registry fails
+  // __tests__/fontRegistry.test.ts rather than silently falling back to the
+  // platform Arabic face.
+  const [fontsLoaded, fontError] = useFonts(FONT_ASSET_MODULES);
 
   // The root <Stack> only renders once fonts resolve (or error). Gate the
   // onboarding redirect on this so navigation never fires during the `null`
