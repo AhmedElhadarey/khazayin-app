@@ -1,13 +1,18 @@
+import { PHYSICAL_ROW, RTL_TEXT, SEGMENT_TABS, physicalTabOrder } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import React from 'react';
-import { I18nManager, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 // Pill-segmented tabs with an active underline + bold title.
-// Used on the reciter / mushaf tabs strip (page 13).
+// Used on the reciter / mushaf tabs strip (Figma nodes 2031:6193, 2102:3187).
 //
-// `tabs` are listed in RTL visual order (right-most first). The component
-// picks the correct flex direction based on `I18nManager.isRTL` so the
-// first tab always appears on the right regardless of platform.
+// `tabs` are authored in RTL reading order (right-most first, so the default
+// tab is index 0). `physicalTabOrder` reverses that into left → right and
+// PHYSICAL_ROW pins it, so the strip cannot flip between iOS and Android.
+//
+// The strip never grows vertically: a horizontal ScrollView defaults to
+// flexGrow 1 and used to swallow the whole gap between the search field and
+// the list.
 export function SegmentTabs<T extends string>({
   tabs,
   active,
@@ -21,10 +26,11 @@ export function SegmentTabs<T extends string>({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.strip}
       contentContainerStyle={styles.scroll}
     >
-      <View style={[styles.row, { flexDirection: ROW_DIR }]}>
-        {tabs.map((t) => {
+      <View style={styles.row}>
+        {physicalTabOrder(tabs).map((t) => {
           const isActive = t.key === active;
           return (
             <Pressable
@@ -51,25 +57,24 @@ export function SegmentTabs<T extends string>({
   );
 }
 
-// In RTL native, plain 'row' visually flows right-to-left already, so the
-// first JSX child sits on the right. On web (or LTR), 'row-reverse' achieves
-// the same visual ordering.
-const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
-
 const styles = StyleSheet.create({
+  strip: {
+    ...SEGMENT_TABS.strip,
+  },
   scroll: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: SEGMENT_TABS.stripPaddingVertical,
   },
   row: {
+    ...PHYSICAL_ROW,
     alignItems: 'flex-end',
-    gap: 8,
+    gap: SEGMENT_TABS.gap,
   },
   tab: {
     paddingHorizontal: 14,
     paddingTop: 10,
     paddingBottom: 8,
-    minWidth: 88,
+    minWidth: SEGMENT_TABS.minTabWidth,
     alignItems: 'center',
     borderRadius: 12,
     backgroundColor: KhazainColors.cream200,
@@ -81,7 +86,7 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'TheSansArabic',
     fontSize: 13,
-    writingDirection: 'rtl',
+    ...RTL_TEXT,
     textAlign: 'center',
   },
   labelIdle: {

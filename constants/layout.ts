@@ -177,3 +177,29 @@ export const TAB_BAR = Object.freeze({
 export function tabBarHeight(safeAreaBottom: number): number {
   return TAB_BAR.controlsHeight + Math.max(0, safeAreaBottom);
 }
+
+// ---------------------------------------------------------------------------
+// Segmented tab strip (Figma nodes 2031:6193 and 2102:3187)
+// ---------------------------------------------------------------------------
+
+export const SEGMENT_TABS = Object.freeze({
+  /**
+   * A horizontal ScrollView defaults to `flexGrow: 1`, so in a column layout
+   * it swallowed the space between the tabs and the list — the large vertical
+   * void the audit found on the reciter screen. Pinning growth to 0 makes the
+   * strip exactly as tall as its content.
+   */
+  strip: Object.freeze({ flexGrow: 0, flexShrink: 0 } as const),
+  stripPaddingVertical: 6,
+  gap: 8,
+  minTabWidth: 88,
+} as const);
+
+/**
+ * Tab lists are authored in RTL reading order (right-most first, so the
+ * default tab is index 0). Physical layout runs left → right, so the physical
+ * order is the reverse. Returns a new array; the input is never mutated.
+ */
+export function physicalTabOrder<T>(tabs: readonly T[]): T[] {
+  return [...tabs].reverse();
+}

@@ -4,10 +4,12 @@ import {
   PHYSICAL_ROW,
   REFERENCE_WIDTH,
   RTL_TEXT,
+  SEGMENT_TABS,
   TAB_BAR,
   TAB_PHYSICAL_ORDER,
   tabBarHeight,
   contentWidth,
+  physicalTabOrder,
   horizontalGutter,
   responsiveCarouselCardWidth,
   shouldShowMainTabBar,
@@ -165,5 +167,54 @@ describe('root route tab-bar visibility', () => {
   it('shows the bar on exactly the four Figma tab roots', () => {
     const roots = TAB_PHYSICAL_ORDER.map((tab) => (tab === 'index' ? '/' : `/${tab}`));
     expect(roots.every(shouldShowMainTabBar)).toBe(true);
+  });
+});
+
+describe('segmented tab strip', () => {
+  const RECITER_TABS = [
+    { key: 'tajweed', label: 'المصحف المجوّد' },
+    { key: 'murattal', label: 'المصحف المرتل' },
+    { key: 'muallam', label: 'المصحف المعلّم' },
+    { key: 'qiraat', label: 'قراءات' },
+  ];
+
+  it('renders RTL-authored tabs in reversed physical order', () => {
+    // Figma node 2031:6193, left → right: قراءات، المعلّم، المرتل، المجوّد.
+    expect(physicalTabOrder(RECITER_TABS).map((t) => t.key)).toEqual([
+      'qiraat',
+      'muallam',
+      'murattal',
+      'tajweed',
+    ]);
+  });
+
+  it('puts the first authored tab at the physical right, where the default lives', () => {
+    const physical = physicalTabOrder(RECITER_TABS);
+    expect(physical[physical.length - 1].key).toBe(RECITER_TABS[0].key);
+  });
+
+  it('does not mutate the caller\'s tab array', () => {
+    const original = [...RECITER_TABS];
+    physicalTabOrder(RECITER_TABS);
+    expect(RECITER_TABS).toEqual(original);
+  });
+
+  it('never grows vertically, so no void appears between tabs and the list', () => {
+    expect(SEGMENT_TABS.strip.flexGrow).toBe(0);
+    expect(SEGMENT_TABS.strip.flexShrink).toBe(0);
+  });
+
+  it('keeps the Figma spacing between search, tabs, and the first row', () => {
+    expect(SEGMENT_TABS.stripPaddingVertical).toBeGreaterThanOrEqual(6);
+    expect(SEGMENT_TABS.stripPaddingVertical).toBeLessThanOrEqual(8);
+    expect(SEGMENT_TABS.gap).toBe(8);
+  });
+
+  it('keeps every tab at least a comfortable touch width but lets it scroll at 320', () => {
+    expect(SEGMENT_TABS.minTabWidth).toBe(88);
+    const stripWidth = 4 * SEGMENT_TABS.minTabWidth + 3 * SEGMENT_TABS.gap;
+    // Wider than the narrowest supported screen — so the strip must scroll
+    // horizontally rather than wrap onto a second line.
+    expect(stripWidth).toBeGreaterThan(320);
   });
 });
