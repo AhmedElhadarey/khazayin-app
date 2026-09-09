@@ -90,6 +90,8 @@ function main() {
       x: +abs.m02.toFixed(2), y: +abs.m12.toFixed(2),
       w: w === null ? null : +w.toFixed(2), h: h === null ? null : +h.toFixed(2),
       cornerRadius: n.cornerRadius,
+      opacity: n.opacity,
+      blendMode: n.blendMode,
       family: n.fontName && n.fontName.family,
       style: n.fontName && n.fontName.style,
       fontSize: n.fontSize,
@@ -99,6 +101,16 @@ function main() {
         '#' + [p.color.r, p.color.g, p.color.b].map((c) =>
           Math.round(c * 255).toString(16).padStart(2, '0')).join('')
           + (p.opacity !== undefined && p.opacity < 1 ? `@${p.opacity.toFixed(2)}` : '')),
+      // Image paints key straight into the archive's `images/` directory by
+      // content hash, which is how real client art gets out of the file
+      // rather than being recovered from a flattened frame export.
+      images: (n.fillPaints || [])
+        .filter((p) => p.image && p.image.hash)
+        .map((p) => ({
+          hash: Buffer.from(p.image.hash).toString('hex'),
+          opacity: p.opacity,
+          visible: p.visible !== false,
+        })),
       layoutMode: n.stackMode,
       itemSpacing: n.stackSpacing,
       padding: n.stackHorizontalPadding !== undefined

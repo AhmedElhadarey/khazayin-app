@@ -3,6 +3,7 @@ import {
   SCALE_STEPS,
   dawahLayout,
   posterOffset,
+  slotDistance,
 } from '@/components/khazain/home/dawahLayout';
 
 // Figma node 2001:940, frame "تصميمات دعوية".
@@ -29,11 +30,9 @@ describe('dawah coverflow layout', () => {
     expect(outer).toBeLessThan(0.72);
   });
 
-  it('places neighbours and outermost posters where the design puts them', () => {
+  it('spaces neighbours the way the design does', () => {
     expect(posterOffset(REF, 1)).toBeCloseTo(116.11, 1);
-    expect(posterOffset(REF, 2)).toBeCloseTo(176.0, 1);
     expect(posterOffset(REF, -1)).toBeCloseTo(-116.11, 1);
-    expect(posterOffset(REF, -2)).toBeCloseTo(-176.0, 1);
     expect(posterOffset(REF, 0)).toBe(0);
   });
 
@@ -44,13 +43,10 @@ describe('dawah coverflow layout', () => {
     expect(gap).toBeLessThan(0);
   });
 
-  it('pulls the outermost posters inward rather than pushing them out', () => {
-    // The uniform snap grid would put them at 2 x slot; the design puts them
-    // nearer than that, so the shift has to reduce the distance.
-    const { slot, translate } = dawahLayout(REF);
-    expect(posterOffset(REF, 2)).toBeLessThan(2 * slot);
-    expect(translate[0]).toBeGreaterThan(0);
-    expect(posterOffset(REF, 2)).toBeCloseTo(2 * slot - translate[0], 6);
+  it('steps uniformly, one poster per swipe', () => {
+    const { slot } = dawahLayout(REF);
+    expect(posterOffset(REF, 1)).toBeCloseTo(slot, 6);
+    expect(posterOffset(REF, 2)).toBeCloseTo(2 * slot, 6);
   });
 
   it('stays symmetric about the focused poster', () => {
@@ -69,6 +65,28 @@ describe('dawah coverflow layout', () => {
       expect(dawahLayout(w).cardWidth / w).toBeCloseTo(CENTRE_WIDTH_RATIO, 6);
       expect(posterOffset(w, 1) / w).toBeCloseTo(116.11 / REF, 6);
     });
+  });
+
+  it('reads a poster as focused when its slot is centred in the viewport', () => {
+    // The scroll axis does not have to start at content x = 0 for this to
+    // hold, which is the whole point: the app forces RTL.
+    const { slot, sidePadding } = dawahLayout(REF);
+    const centred = (index: number) => sidePadding + index * slot + slot / 2 - REF / 2;
+    [0, 1, 2, 7].forEach((i) => {
+      expect(
+        slotDistance({ index: i, scrollX: centred(i), viewportWidth: REF, slot, sidePadding }),
+      ).toBeCloseTo(0, 6);
+    });
+  });
+
+  it('reads neighbouring slots as one step away in each direction', () => {
+    const { slot, sidePadding } = dawahLayout(REF);
+    const scrollX = sidePadding + 3 * slot + slot / 2 - REF / 2;
+    const at = (index: number) =>
+      slotDistance({ index, scrollX, viewportWidth: REF, slot, sidePadding });
+    expect(at(2)).toBeCloseTo(-1, 6);
+    expect(at(4)).toBeCloseTo(1, 6);
+    expect(at(5)).toBeCloseTo(2, 6);
   });
 
   it('centres the focused poster in the window', () => {

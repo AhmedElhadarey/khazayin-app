@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 
@@ -32,7 +33,9 @@ export function SmallMoreButton({ onPress }: { onPress?: () => void }) {
 
 const styles = StyleSheet.create({
   btn: {
-    flexDirection: 'row',
+    // Physical order is [chevron][label], pinned rather than left to
+    // flexDirection auto-flip — see the RTL contract in constants/layout.ts.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 2,
     paddingHorizontal: 19,

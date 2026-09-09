@@ -95,7 +95,7 @@ describe('type scale', () => {
 
   it('orders the display roles by size', () => {
     const ladder: TextRole[] = [
-      'displayLarge', 'display', 'screenTitle', 'sectionTitle', 'cardTitle', 'label', 'labelSmall',
+      'displayLarge', 'display', 'screenTitle', 'heroTitle', 'sectionTitle', 'cardTitle', 'label', 'labelSmall',
     ];
     const sizes = ladder.map((role) => TEXT_ROLES[role].fontSize);
     expect(sizes).toEqual([...sizes].sort((a, b) => b - a));

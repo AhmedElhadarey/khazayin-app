@@ -1,4 +1,4 @@
-import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { todayHijriArabic } from '@/lib/hijriDate';

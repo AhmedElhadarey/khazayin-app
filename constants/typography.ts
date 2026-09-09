@@ -63,6 +63,7 @@ export type TextRole =
   | 'displayLarge'
   | 'display'
   | 'screenTitle'
+  | 'heroTitle'
   | 'sectionTitle'
   | 'cardTitle'
   | 'label'
@@ -91,6 +92,8 @@ export const TEXT_ROLES: Readonly<Record<TextRole, TextStyle>> = Object.freeze({
   displayLarge: { fontFamily: DISPLAY_FAMILY, fontSize: 32, fontWeight: '700', lineHeight: 42 },
   display: { fontFamily: DISPLAY_FAMILY, fontSize: 28, fontWeight: '700', lineHeight: 38 },
   screenTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 24, fontWeight: '700', lineHeight: 32 },
+  /** The Quran hero's `القرآن حــياة`, the one place the design sets 20. */
+  heroTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 20, fontWeight: '700', lineHeight: 28 },
   /** Home's `العلماء والمشايخ` / `الكتب العلمية` row headings. */
   sectionTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 16, fontWeight: '700', lineHeight: 24 },
   cardTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 14, fontWeight: '700', lineHeight: 20 },

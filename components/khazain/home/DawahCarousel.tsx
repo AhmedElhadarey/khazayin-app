@@ -11,7 +11,7 @@ import Animated, {
 import { KhazainSpacing } from '@/constants/theme';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import { DawahPoster } from './DawahPoster';
-import { SCALE_STEPS, dawahLayout } from './dawahLayout';
+import { SCALE_STEPS, dawahLayout, slotDistance } from './dawahLayout';
 
 // The fan's proportions come from Figma node 2001:940 rather than from
 // hand-picked numbers — see `dawahLayout`. The design overlaps these posters
@@ -32,7 +32,7 @@ export function DawahCarousel({
   // Memoised so `translate` keeps its identity across renders: it is captured
   // by the slots' animated styles.
   const layout = useMemo(() => dawahLayout(windowWidth), [windowWidth]);
-  const { cardWidth, cardHeight, slot, sidePadding, translate } = layout;
+  const { cardWidth, cardHeight, slot, sidePadding } = layout;
 
   // All hooks must be called unconditionally — guards (G10) live below.
   const wrapped = useMemo<WrappedEntry[]>(() => {
@@ -115,9 +115,10 @@ export function DawahCarousel({
           index={i}
           scrollX={scrollX}
           slot={slot}
+          sidePadding={sidePadding}
+          viewportWidth={windowWidth}
           cardWidth={cardWidth}
           cardHeight={cardHeight}
-          translate={translate}
           onPress={() => onItemPress?.(entry.item, entry.realIndex)}
         />
       ))}
@@ -130,68 +131,46 @@ function Slot({
   index,
   scrollX,
   slot,
+  sidePadding,
+  viewportWidth,
   cardWidth,
   cardHeight,
-  translate,
   onPress,
 }: {
   entry: WrappedEntry;
   index: number;
   scrollX: SharedValue<number>;
   slot: number;
+  sidePadding: number;
+  viewportWidth: number;
   cardWidth: number;
   cardHeight: number;
-  translate: readonly [number, number, number];
   onPress?: () => void;
 }) {
   const [outerScale, neighbourScale] = SCALE_STEPS;
-  const [outerShift, neighbourShift] = translate;
+  // Distance in slots from whatever is centred in the viewport. Driving the
+  // fan off this rather than off `scrollX` against `index * slot` is what
+  // makes it work under forced RTL, where the scroll axis does not start at
+  // content x = 0.
+  const STEPS = [-2, -1, 0, 1, 2];
   const animatedStyle = useAnimatedStyle(() => {
-    const inputRange = [
-      (index - 2) * slot,
-      (index - 1) * slot,
-      index * slot,
-      (index + 1) * slot,
-      (index + 2) * slot,
-    ];
+    const d = slotDistance({
+      index,
+      scrollX: scrollX.value,
+      viewportWidth,
+      slot,
+      sidePadding,
+    });
     const scale = interpolate(
-      scrollX.value,
-      inputRange,
+      d, STEPS,
       [outerScale, neighbourScale, 1, neighbourScale, outerScale],
       Extrapolation.CLAMP,
     );
     const opacity = interpolate(
-      scrollX.value,
-      inputRange,
-      [0.45, 0.7, 1, 0.7, 0.45],
-      Extrapolation.CLAMP,
+      d, STEPS, [0.45, 0.7, 1, 0.7, 0.45], Extrapolation.CLAMP,
     );
-    // The design does not space these evenly: the outermost pair sits much
-    // closer to its neighbour than the neighbour does to the centre, so the
-    // outer slots are pulled inward off the uniform snap grid.
-    //
-    // Sign matters here. At `inputRange[0]` this card sits two slots to the
-    // RIGHT of the focused one, so pulling it inward is a negative shift;
-    // the mirror case at `inputRange[4]` is positive. Getting this backwards
-    // pushes the outer posters outward instead and piles them onto their
-    // neighbours — `posterOffset` is the same arithmetic, under test.
-    const translateX = interpolate(
-      scrollX.value,
-      inputRange,
-      [-outerShift, -neighbourShift, 0, neighbourShift, outerShift],
-      Extrapolation.CLAMP,
-    );
-    const z = interpolate(
-      scrollX.value,
-      inputRange,
-      [0, 5, 100, 5, 0],
-      Extrapolation.CLAMP,
-    );
-    return {
-      transform: [{ translateX }, { scale }],
-      opacity,
-      zIndex: Math.round(z),
-    };
+    const z = interpolate(d, STEPS, [0, 5, 100, 5, 0], Extrapolation.CLAMP);
+    return { transform: [{ scale }], opacity, zIndex: Math.round(z) };
   });
 
   return (
