@@ -2,6 +2,11 @@ import { InlineHeader } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { OrnamentPattern } from '@/components/khazain/patterns';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import {
+  CONTACT_INCOMPLETE_ALERT,
+  CONTACT_SENT_ALERT,
+  isContactFormComplete,
+} from '@/services/contactForm';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -45,15 +50,15 @@ export default function ContactScreen() {
   const onEmail = () => open(`mailto:${CONTACT_EMAIL}`, 'البريد');
 
   const submit = () => {
-    if (!name.trim() || !email.trim() || !message.trim()) {
-      Alert.alert('البيانات ناقصة', 'يرجى ملء جميع الحقول.');
+    if (!isContactFormComplete({ name, email, message })) {
+      Alert.alert(CONTACT_INCOMPLETE_ALERT.title, CONTACT_INCOMPLETE_ALERT.body);
       return;
     }
     // INTENTIONAL PLACEHOLDER (T7.8 / D3): the form does not yet transmit the
     // message anywhere — it validates and confirms only. Wire to the foundation's
     // email/Telegram/endpoint when the backend channel is provided. Until then
     // this is a known stub, not a bug.
-    Alert.alert('تم الإرسال', 'سنعود إليك قريباً إن شاء الله.', [
+    Alert.alert(CONTACT_SENT_ALERT.title, CONTACT_SENT_ALERT.body, [
       { text: 'حسناً', onPress: () => router.back() },
     ]);
   };

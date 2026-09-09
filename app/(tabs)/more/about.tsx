@@ -1,6 +1,7 @@
 import { InlineHeader } from '@/components/khazain';
 import { OrnamentPattern } from '@/components/khazain/patterns';
 import { KhazainColors } from '@/constants/theme';
+import { ABOUT_CARDS, ABOUT_PARAGRAPHS } from '@/data/content/about';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -17,24 +18,15 @@ export default function AboutScreen() {
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Text style={styles.body}>
-          مؤسسة خزائن الرحمن هي مؤسسة دعوية تهدف إلى نشر العلم الشرعي والمحتوى الإسلامي الهادف من خلال منصات متعددة.
-        </Text>
-        <Text style={styles.body}>
-          نسعى لخدمة الدين الإسلامي من خلال توفير محتوى عالي الجودة يشمل المحاضرات والدروس والبرامج الدينية.
-        </Text>
-        <Text style={styles.body}>
-          تضم المؤسسة أكثر من ٦٥ قناة يوتيوب متخصصة في المحتوى الديني والدعوي، بالإضافة إلى قنوات التليجرام الرسمية.
-        </Text>
+        {ABOUT_PARAGRAPHS.map((paragraph) => (
+          <Text key={paragraph} style={styles.body}>
+            {paragraph}
+          </Text>
+        ))}
         <View style={styles.cardsBlock}>
-          <InfoCard
-            title="رؤيتنا"
-            body="أن نكون المرجع الأول في نشر المحتوى الإسلامي الأصيل والموثوق عبر المنصات الرقمية."
-          />
-          <InfoCard
-            title="رسالتنا"
-            body="نشر العلم الشرعي والقيم الإسلامية من خلال وسائل التقنية الحديثة لنصل إلى أكبر عدد من المسلمين حول العالم."
-          />
+          {ABOUT_CARDS.map((card) => (
+            <InfoCard key={card.id} title={card.title} body={card.body} />
+          ))}
         </View>
       </ScrollView>
     </SafeAreaView>
