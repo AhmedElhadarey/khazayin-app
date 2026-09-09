@@ -53,3 +53,89 @@ export function responsiveCarouselCardWidth(windowWidth: number): number {
     Math.max(COMPACT_CAROUSEL_CARD_WIDTH, proportionalWidth),
   );
 }
+
+// ---------------------------------------------------------------------------
+// Physical RTL layout contract
+// ---------------------------------------------------------------------------
+//
+// The app runs with `I18nManager.forceRTL(true)`, but React Native's automatic
+// left/right flipping of `flexDirection: 'row'` is not dependable: it differs
+// between a cold native start, a Fast Refresh, and web, and it is applied
+// *again* by some platform views, producing the double reversals the audit
+// found in the tab bar, list rows, headers, and the Mushaf footer.
+//
+// So this repo separates two concerns that are easy to conflate:
+//
+//   * TEXT direction — always RTL. Use `RTL_TEXT` on every Text style.
+//   * PHYSICAL child order — authored explicitly. A row whose children are
+//     written in visual left→right order must spread `PHYSICAL_ROW`, which
+//     pins `direction: 'ltr'` so the authored order is what renders. Text
+//     inside it keeps its own RTL direction from `RTL_TEXT`.
+//
+// Prefer logical `start`/`end` for semantically leading/trailing content.
+// Reach for physical `left`/`right` only inside a container that has set its
+// own direction, so the physical edge is unambiguous.
+//
+// Nothing here reads `I18nManager` — these are frozen literals, so physical
+// order cannot change with module-initialization order or platform.
+
+/** Text style base for Arabic copy. */
+export const RTL_TEXT = Object.freeze({
+  writingDirection: 'rtl',
+  textAlign: 'right',
+} as const);
+
+/** Row style for children authored in physical left → right order. */
+export const PHYSICAL_ROW = Object.freeze({
+  flexDirection: 'row',
+  direction: 'ltr',
+} as const);
+
+/** Bottom navigation, physical left → right (Figma node 2031:5675). */
+export const TAB_PHYSICAL_ORDER = Object.freeze([
+  'more',
+  'sections',
+  'library',
+  'index',
+] as const);
+
+// ---------------------------------------------------------------------------
+// Width profiles
+// ---------------------------------------------------------------------------
+
+/** The Figma frame width every geometry figure in the design spec refers to. */
+export const REFERENCE_WIDTH = 393;
+
+/** Widest content column. Beyond this, content centres instead of stretching. */
+export const CONTENT_MAX_WIDTH = 480;
+
+/** WCAG / platform minimum interactive size, independent of visual density. */
+export const MIN_TOUCH_TARGET = 44;
+
+const COMPACT_BELOW = 375;
+const WIDE_ABOVE = 430;
+
+const REFERENCE_GUTTER = 16;
+const COMPACT_GUTTER = 12;
+
+export type WidthProfile = 'compact' | 'regular' | 'wide';
+
+export function widthProfile(width: number): WidthProfile {
+  if (width < COMPACT_BELOW) return 'compact';
+  if (width > WIDE_ABOVE) return 'wide';
+  return 'regular';
+}
+
+/**
+ * Screen gutter for a given width. Narrow phones give up horizontal space
+ * before they give up font size, per design specification section 5.5.
+ */
+export function horizontalGutter(width: number): number {
+  return widthProfile(width) === 'compact' ? COMPACT_GUTTER : REFERENCE_GUTTER;
+}
+
+/** Usable content width: the screen minus gutters, capped at CONTENT_MAX_WIDTH. */
+export function contentWidth(width: number): number {
+  const columnWidth = Math.min(width, CONTENT_MAX_WIDTH);
+  return columnWidth - horizontalGutter(columnWidth) * 2;
+}

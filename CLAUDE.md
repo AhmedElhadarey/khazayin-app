@@ -99,10 +99,14 @@ For every task in the plan:
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
   ```
-- **Do not rely on `flexDirection: 'row'` auto-flip.** It works on native after a reload but fails on Expo web and stale dev reloads. Two safe patterns already established in the repo:
-  1. **Absolute positioning** for left/right-pinned groups (see `components/khazain/home/HomeSectionHeader.tsx` and `primitives/SectionHeader.tsx`).
-  2. **Hardcoded JSX order matching the visual RTL order** (see `primitives/CustomTabBar.tsx` where `TAB_ORDER = ['more', 'sections', 'library', 'index']` — more on the left, index/home on the right — because with forceRTL unreliable across targets, the typed order wins deterministically).
-- Use `writingDirection: 'rtl'` + `textAlign: 'right'` on every Text style. There is no English copy anywhere in the UI.
+- **Do not rely on `flexDirection: 'row'` auto-flip.** It works on native after a reload but fails on Expo web and stale dev reloads, and some platform views flip a second time — which is exactly what produced the reversed tab bar, list rows, headers, rails, and Mushaf footer found in the 2026-09-09 Figma audit.
+- **The contract lives in `constants/layout.ts`.** Separate the two concerns:
+  1. **Text direction** — spread `RTL_TEXT` (`writingDirection: 'rtl'` + `textAlign: 'right'`) on every Text style. There is no English copy anywhere in the UI.
+  2. **Physical child order** — a row whose children are authored in visual left→right order spreads `PHYSICAL_ROW`, which pins `direction: 'ltr'` so the authored order is what renders. Text inside it keeps its own RTL direction.
+- Prefer logical `start`/`end` for semantically leading/trailing content. Use physical `left`/`right` only inside a container whose direction you have explicitly set.
+- Nothing in the layout contract reads `I18nManager` — the exports are frozen literals, so physical order cannot drift with module-initialization order or platform. Do not reintroduce `const dir = I18nManager.isRTL ? 'row' : 'row-reverse'` at module scope.
+- Required physical orders (left → right): bottom nav = More, Sections, Library, Home (`TAB_PHYSICAL_ORDER`); list cards = disclosure, text, icon badge; Mushaf footer = Index, Go to bookmark, Save bookmark. The letter index rail sits at the physical right edge.
+- Absolute positioning is still fine for pinning a group to one edge, but it must not be used to *reverse* a row — use `PHYSICAL_ROW` for that.
 
 ## Design source is the spec
 
