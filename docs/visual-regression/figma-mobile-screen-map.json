@@ -118,11 +118,8 @@
     "name": "Reciter audio — surah list for a selected reciter",
     "width": 393,
     "height": 844,
-    "appRoute": null,
-    "state": {
-      "reciterId": "r1"
-    },
-    "status": "missing-route",
+    "appRoute": "/sections/reciter/r1",
+    "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/13-2207-5270.png"
   },
   {

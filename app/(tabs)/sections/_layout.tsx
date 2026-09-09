@@ -7,6 +7,7 @@ export default function SectionsLayout() {
     <Stack screenOptions={{ headerShown: false, animation: 'slide_from_left' }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="reciter" />
+      <Stack.Screen name="reciter/[id]" />
       <Stack.Screen name="mushaf" />
       <Stack.Screen name="qiraat" />
       <Stack.Screen name="scholar" />

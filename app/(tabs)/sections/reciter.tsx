@@ -11,6 +11,8 @@ import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
+import { reciterDestination } from '@/services/reciterNavigation';
+import type { Reciter } from '@/types/content';
 import { useRecitersStore, useSettingsStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -43,12 +45,11 @@ export default function ReciterScreen() {
   // Filter by active tab — local UI state, store doesn't know about tabs
   const filtered = data.filter((r) => r.style === active);
 
-  const onPickReciter = () => {
-    if (active === 'qiraat') {
-      router.push('/sections/qiraat' as any);
-    } else {
-      router.push('/sections/mushaf' as any);
-    }
+  // The reciter is carried through: `reciterDestination` sends the Qiraa tab to
+  // the qiraat screen and every other reciter to their own listening list. The
+  // previous version ignored its argument and opened the general Mushaf.
+  const onPickReciter = (reciter: Reciter) => {
+    router.push(reciterDestination(reciter) as any);
   };
 
   return (
@@ -71,7 +72,7 @@ export default function ReciterScreen() {
                 title={r.name}
                 subtitle={r.styleLabel}
                 isDefault={r.id === preferredReciterId}
-                onPress={onPickReciter}
+                onPress={() => onPickReciter(r)}
               />
             )}
             style={styles.list}
