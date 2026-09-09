@@ -2,6 +2,7 @@ import {
   AsyncContent,
   InlineHeader,
   LetterIndex,
+  QuillBadge,
   RibbonCard,
   SearchPill,
   SkeletonRibbonList,
@@ -42,6 +43,7 @@ export default function ScholarScreen() {
             renderItem={({ item: s }) => (
               <RibbonCard
                 pretitle="فضيلة الشيخ"
+                badge={<QuillBadge size={CARD_DENSITY.lectureBadgeDisc} />}
                 title={s.name}
                 onPress={() => router.push(`/sections/scholar/${s.id}` as any)}
               />

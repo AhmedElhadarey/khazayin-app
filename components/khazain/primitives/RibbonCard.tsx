@@ -1,4 +1,4 @@
-import { CARD_DENSITY, PHYSICAL_BOX, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -6,20 +6,27 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 // Cream card with a thin gold vertical ribbon on the RIGHT edge (start-side in RTL).
 // Used on العلماء والمشايخ (page 26), كل الشرح (page 28).
 //
-// Layout uses absolute-positioning of inner content so it survives `forceRTL`
-// inconsistencies on web (per CLAUDE.md). Title and subtitle are right-aligned
-// with the ribbon flush to the right edge.
+// Physical left → right: duration, title block, trailing adornment. The
+// adornment is a badge disc on the scholar list (node 2102:2975) and the gold
+// ribbon on the scholar detail list (node 2510:1990).
 export function RibbonCard({
   pretitle,
   title,
   meta,
   duration,
+  badge,
   onPress,
 }: {
   pretitle?: string;
   title: string;
   meta?: string;
   duration?: string;
+  /**
+   * Trailing adornment. The scholar list uses a quill badge disc (node
+   * 2102:2975); the scholar detail list keeps the gold ribbon (node
+   * 2510:1990). Omit for the ribbon.
+   */
+  badge?: React.ReactNode;
   onPress?: () => void;
 }) {
   return (
@@ -31,9 +38,10 @@ export function RibbonCard({
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      {/* Right-edge gold ribbon */}
-      <View style={styles.ribbon} />
-      {/* Title block — pinned to the right (visual leading edge in RTL) */}
+      {/* Physical left — duration */}
+      {duration ? <Text style={styles.duration}>{duration}</Text> : null}
+
+      {/* Centre — title block, right-aligned */}
       <View style={styles.titleBlock}>
         {pretitle ? <Text style={styles.pretitle}>{pretitle}</Text> : null}
         <Text style={styles.title} numberOfLines={2}>
@@ -45,43 +53,38 @@ export function RibbonCard({
           </Text>
         ) : null}
       </View>
-      {/* Duration / count chip — pinned to the left */}
-      {duration ? (
-        <View style={styles.durationBlock}>
-          <Text style={styles.duration}>{duration}</Text>
-        </View>
-      ) : null}
+
+      {/* Physical right — badge disc, or the gold ribbon when none is given */}
+      {badge ?? <View style={styles.ribbon} />}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    // The gold ribbon and the duration block are pinned to physical edges.
-    ...PHYSICAL_BOX,
+    ...PHYSICAL_ROW,
+    alignItems: 'center',
+    gap: 12,
     minHeight: CARD_DENSITY.scholarRowMinHeight,
     borderRadius: CARD_DENSITY.lectureCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: 'rgba(141,107,52,0.08)',
     paddingVertical: 10,
-    paddingRight: 22, // extra space for ribbon
-    paddingLeft: 16,
-    position: 'relative',
+    paddingHorizontal: 14,
     overflow: 'hidden',
-    justifyContent: 'center',
   },
   ribbon: {
-    position: 'absolute',
-    right: 0,
-    top: 8,
-    bottom: 8,
+    alignSelf: 'stretch',
+    marginVertical: -2,
     width: 5,
     borderRadius: 3,
     backgroundColor: KhazainColors.goldBar,
+    flexShrink: 0,
   },
   titleBlock: {
-    paddingRight: 0,
+    flex: 1,
+    minWidth: 0,
     alignItems: 'flex-end',
     gap: 2,
   },
@@ -109,14 +112,8 @@ const styles = StyleSheet.create({
     marginTop: 2,
     ...RTL_TEXT,
   },
-  durationBlock: {
-    position: 'absolute',
-    left: 14,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
   duration: {
+    flexShrink: 0,
     fontFamily: 'TheSansArabic',
     fontSize: 11,
     lineHeight: 15,

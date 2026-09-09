@@ -1,10 +1,11 @@
 import {
+  AudioWaveBadge,
   InlineHeader,
   LectureCard,
   LetterIndex,
   SearchPill,
 } from '@/components/khazain';
-import { AudioWaveBadge } from '@/components/khazain/primitives/LectureBadges';
+
 import { AUDIOBOOKS } from '@/data/content/audiobooks';
 import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';

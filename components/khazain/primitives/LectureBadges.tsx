@@ -206,6 +206,29 @@ export function MicBadge({ size = 48 }: { size?: number }) {
   );
 }
 
+/** Quill and inkwell — العلماء والمشايخ (Figma node 2102:2975). */
+export function QuillBadge({ size = 48 }: { size?: number }) {
+  return (
+    <Disc size={size}>
+      <Svg width={size * 0.55} height={size * 0.55} viewBox="0 0 24 24" fill="none">
+        <Path
+          d="M5 19l3-3m0 0l8-8a3 3 0 014 4l-8 8H8v-1zM14 6l4 4"
+          stroke={KhazainColors.gold500}
+          strokeWidth={1.3}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <Path
+          d="M6 19h2"
+          stroke={KhazainColors.gold500}
+          strokeWidth={1.3}
+          strokeLinecap="round"
+        />
+      </Svg>
+    </Disc>
+  );
+}
+
 /** Audio waveform — كتب صوتية (Figma node 2869:2088). */
 export function AudioWaveBadge({ size = 48 }: { size?: number }) {
   const bars = [

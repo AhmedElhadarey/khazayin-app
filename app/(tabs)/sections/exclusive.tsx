@@ -3,8 +3,9 @@ import {
   LectureCard,
   LetterIndex,
   SearchPill,
+  SparkleBadge,
 } from '@/components/khazain';
-import { SparkleBadge } from '@/components/khazain/primitives/LectureBadges';
+
 import { EXCLUSIVE_ITEMS } from '@/data/content/exclusive';
 import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';

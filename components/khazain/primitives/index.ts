@@ -24,6 +24,9 @@ export {
   TulipBadge,
   OpenBookBadge,
   MicBadge,
+  QuillBadge,
+  AudioWaveBadge,
+  SparkleBadge,
 } from './LectureBadges';
 export { DawahPosterRow } from './DawahPosterRow';
 export { RtlCarousel } from './RtlCarousel';
