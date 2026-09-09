@@ -3,7 +3,6 @@ import {
   SCALE_STEPS,
   dawahLayout,
   posterOffset,
-  slotDistance,
 } from '@/components/khazain/home/dawahLayout';
 
 // Figma node 2001:940, frame "تصميمات دعوية".
@@ -67,26 +66,11 @@ describe('dawah coverflow layout', () => {
     });
   });
 
-  it('reads a poster as focused when its slot is centred in the viewport', () => {
-    // The scroll axis does not have to start at content x = 0 for this to
-    // hold, which is the whole point: the app forces RTL.
-    const { slot, sidePadding } = dawahLayout(REF);
-    const centred = (index: number) => sidePadding + index * slot + slot / 2 - REF / 2;
-    [0, 1, 2, 7].forEach((i) => {
-      expect(
-        slotDistance({ index: i, scrollX: centred(i), viewportWidth: REF, slot, sidePadding }),
-      ).toBeCloseTo(0, 6);
+  it('scales the whole fan with the window', () => {
+    [320, 360, 393, 430, 480].forEach((w) => {
+      expect(dawahLayout(w).cardWidth / w).toBeCloseTo(CENTRE_WIDTH_RATIO, 6);
+      expect(posterOffset(w, 1) / w).toBeCloseTo(116.11 / REF, 6);
     });
-  });
-
-  it('reads neighbouring slots as one step away in each direction', () => {
-    const { slot, sidePadding } = dawahLayout(REF);
-    const scrollX = sidePadding + 3 * slot + slot / 2 - REF / 2;
-    const at = (index: number) =>
-      slotDistance({ index, scrollX, viewportWidth: REF, slot, sidePadding });
-    expect(at(2)).toBeCloseTo(-1, 6);
-    expect(at(4)).toBeCloseTo(1, 6);
-    expect(at(5)).toBeCloseTo(2, 6);
   });
 
   it('centres the focused poster in the window', () => {

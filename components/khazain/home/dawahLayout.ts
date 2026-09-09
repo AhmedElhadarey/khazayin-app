@@ -74,31 +74,3 @@ export function dawahLayout(windowWidth: number): DawahLayout {
 export function posterOffset(windowWidth: number, distance: number): number {
   return distance * dawahLayout(windowWidth).slot;
 }
-
-/**
- * How many slots a poster is from the focused one.
- *
- * Taken from the viewport's centre in content coordinates rather than from
- * the scroll offset's distance to `index * slot`. That older form assumed the
- * scroll axis starts at content x = 0, which is only true left-to-right; this
- * app forces RTL, so no poster ever resolved as focused and every one of them
- * clamped to the smallest step of the scale.
- */
-export function slotDistance({
-  index,
-  scrollX,
-  viewportWidth,
-  slot,
-  sidePadding,
-}: {
-  index: number;
-  scrollX: number;
-  viewportWidth: number;
-  slot: number;
-  sidePadding: number;
-}): number {
-  'worklet';
-  const slotCentre = sidePadding + index * slot + slot / 2;
-  const focusCentre = scrollX + viewportWidth / 2;
-  return (slotCentre - focusCentre) / slot;
-}
