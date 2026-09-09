@@ -96,18 +96,38 @@ export const QIRAAT: Qiraat[] = [
 // ---------------------------------------------------------------------------
 
 /**
- * 7 reciters from reciter.tsx, distributed across the 4 tab styles.
- * The source screen used repeated placeholder names; here distinct real names
- * are used to give the UI meaningful content.
+ * Reciters, distributed across the 4 tab styles.
+ *
+ * Figma nodes 2031:6193 (Mujawwad) and 2102:3187 (Murattal) both show a list
+ * of six rows, so those two tabs carry six entries each — the audit found two
+ * and three, which left the frames visibly short and the letter rail scrolling
+ * against an almost-empty column. The reference frames repeat one placeholder
+ * name down the whole list; distinct, widely-recorded reciters are used here
+ * instead so the mock reads as content rather than as a repeated stub.
+ * The teaching (`muallam`) tab has no reference frame; it carries the three
+ * reciters whose مصحف معلّم recordings are the ones the foundation names.
+ *
+ * These are placeholders for the real catalogue, not a curated list: they
+ * carry no `archiveId`, so tapping one reports "no recording" rather than
+ * implying a source that does not exist.
  */
 export const RECITERS: Reciter[] = [
-  { id: 'r1', name: 'الشيخ عبد الباسط عبد الصمد',    style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
-  { id: 'r2', name: 'الشيخ محمود خليل الحصري',        style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
-  { id: 'r3', name: 'الشيخ محمد صديق المنشاوي',       style: 'murattal', styleLabel: 'المصحف المرتل'  },
-  { id: 'r4', name: 'الشيخ عبد الرحمن السديس',        style: 'murattal', styleLabel: 'المصحف المرتل'  },
-  { id: 'r5', name: 'الشيخ سعد الغامدي',              style: 'murattal', styleLabel: 'المصحف المرتل'  },
-  { id: 'r6', name: 'الشيخ محمد أيوب',                style: 'muallam',  styleLabel: 'المصحف المعلّم' },
-  { id: 'r7', name: 'الشيخ ماهر المعيقلي',            style: 'qiraat',   styleLabel: 'قراءات'          },
+  { id: 'r1',  name: 'الشيخ عبد الباسط عبد الصمد',    style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
+  { id: 'r2',  name: 'الشيخ محمود خليل الحصري',        style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
+  { id: 'r8',  name: 'الشيخ مصطفى إسماعيل',            style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
+  { id: 'r9',  name: 'الشيخ أبو العينين شعيشع',        style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
+  { id: 'r10', name: 'الشيخ محمود علي البنا',          style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
+  { id: 'r11', name: 'الشيخ الشحات محمد أنور',         style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
+  { id: 'r3',  name: 'الشيخ محمد صديق المنشاوي',       style: 'murattal', styleLabel: 'المصحف المرتل'  },
+  { id: 'r4',  name: 'الشيخ عبد الرحمن السديس',        style: 'murattal', styleLabel: 'المصحف المرتل'  },
+  { id: 'r5',  name: 'الشيخ سعد الغامدي',              style: 'murattal', styleLabel: 'المصحف المرتل'  },
+  { id: 'r12', name: 'الشيخ مشاري راشد العفاسي',       style: 'murattal', styleLabel: 'المصحف المرتل'  },
+  { id: 'r13', name: 'الشيخ أحمد بن علي العجمي',       style: 'murattal', styleLabel: 'المصحف المرتل'  },
+  { id: 'r14', name: 'الشيخ ياسر الدوسري',             style: 'murattal', styleLabel: 'المصحف المرتل'  },
+  { id: 'r6',  name: 'الشيخ محمد أيوب',                style: 'muallam',  styleLabel: 'المصحف المعلّم' },
+  { id: 'r15', name: 'الشيخ عبد الله بصفر',            style: 'muallam',  styleLabel: 'المصحف المعلّم' },
+  { id: 'r16', name: 'الشيخ خليفة الطنيجي',            style: 'muallam',  styleLabel: 'المصحف المعلّم' },
+  { id: 'r7',  name: 'الشيخ ماهر المعيقلي',            style: 'qiraat',   styleLabel: 'قراءات'          },
 ];
 
 // ---------------------------------------------------------------------------

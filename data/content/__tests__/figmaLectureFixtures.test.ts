@@ -4,6 +4,7 @@ import {
   QUEEN_LECTURES,
   RADIO_PROGRAMS,
 } from '../lectures';
+import { RECITER_TABS, RECITERS } from '../quran';
 import { LECTURES_BY_SCHOLAR, SCHOLARS } from '../scholars';
 
 const LISTS = {
@@ -85,6 +86,38 @@ describe('Scholar fixtures', () => {
       (lectures ?? []).forEach((lecture) => {
         expect([lecture.id, lecture.scholarId]).toEqual([lecture.id, scholarId]);
       });
+    });
+  });
+});
+
+
+/**
+ * Figma nodes 2031:6193 (Mujawwad) and 2102:3187 (Murattal) each show six
+ * reciter rows. Exception E5 in the QA record was exactly this: the mock was
+ * short, so the frames could not be compared row for row.
+ */
+describe('Reciter list depth', () => {
+  const byStyle = (style: string) => RECITERS.filter((r) => r.style === style);
+
+  it('fills the Mujawwad tab to the reference six rows', () => {
+    expect(byStyle('tajweed')).toHaveLength(6);
+  });
+
+  it('fills the Murattal tab to the reference six rows', () => {
+    expect(byStyle('murattal')).toHaveLength(6);
+  });
+
+  it('gives every reciter tab at least one row', () => {
+    RECITER_TABS.forEach((tab) => {
+      expect([tab.key, byStyle(tab.key).length > 0]).toEqual([tab.key, true]);
+    });
+  });
+
+  it('has unique reciter ids and a label matching the tab', () => {
+    expect(new Set(RECITERS.map((r) => r.id)).size).toBe(RECITERS.length);
+    const labels = new Map(RECITER_TABS.map((t) => [t.key, t.label]));
+    RECITERS.forEach((r) => {
+      expect([r.id, r.styleLabel]).toEqual([r.id, labels.get(r.style)]);
     });
   });
 });
