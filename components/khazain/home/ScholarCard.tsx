@@ -4,6 +4,7 @@ import { SvgXml } from 'react-native-svg';
 import { KhazainColors } from '@/constants/theme';
 import { responsiveCarouselCardWidth } from '@/constants/layout';
 import { BookmarkButton } from '../primitives';
+import { svgAspect } from './svgAspect';
 
 // Figma source-of-truth values (frame "العلماء والمشايخ"):
 //   216.1 × 88.37, radius 6.355, padding 8.911, shadow 3.178/0.794/12.712 navy@24%.
@@ -14,10 +15,10 @@ import { BookmarkButton } from '../primitives';
 const F_W = 216.1;
 const F_H = 88.37;
 
-// SVG natural aspect: she5-2/3 are 179:71, she5-1 is 152:62. Both ≈ 2.5:1.
-// The SVG already bakes in both الشيخ and name with the right internal gap,
-// so we just scale-to-width-of-inner-area and let height fall out naturally.
-const SVG_RATIO = 71 / 179; // matches she5-2/she5-3 exactly; she5-1 is within ~3%
+// The bundled SVGs do not share a natural size — she5-2/3 are 179:71 but
+// she5-1 is 152:62 — so each one is sized from its own viewBox. A single
+// shared ratio compressed the first card's calligraphy by 2.8%.
+const FALLBACK_SVG_RATIO = 71 / 179;
 
 // Navy ribbon card whose interior is a bundled SVG (calligraphic الشيخ +
 // scholar name baked together). The gold stripe is a separate <View> so
@@ -34,7 +35,8 @@ export function ScholarCard({
   onPress?: () => void;
 }) {
   const { width: windowWidth } = useWindowDimensions();
-  const cardWidth = responsiveCarouselCardWidth(windowWidth);
+  const cardWidth = responsiveCarouselCardWidth(windowWidth, 'scholar');
+  const svgRatio = svgAspect(svg, FALLBACK_SVG_RATIO);
   const scale = cardWidth / F_W;
   const cardHeight = F_H * scale;
   const padding = 8.91139 * scale;
@@ -66,7 +68,7 @@ export function ScholarCard({
           },
         ]}
       />
-      <SvgXml xml={svg} width={innerWidth} height={innerWidth * SVG_RATIO} />
+      <SvgXml xml={svg} width={innerWidth} height={innerWidth * svgRatio} />
       <View style={styles.bookmarkSlot} pointerEvents="box-none">
         <BookmarkButton
           type="scholar"

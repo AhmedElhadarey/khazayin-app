@@ -39,21 +39,45 @@ export function shouldShowMainTabBar(pathname: string): boolean {
   return MAIN_TAB_PATHS.has(normalized);
 }
 
-const FIGMA_CAROUSEL_CARD_WIDTH = 216.1;
+/**
+ * Carousel card widths as Figma node 2001:940 states them. The two rows are
+ * not the same size: the scholar ribbon is 216.1 wide and the book card 192.
+ */
+export const FIGMA_CAROUSEL_CARD_WIDTH = Object.freeze({
+  scholar: 216.1,
+  book: 192,
+} as const);
+
+export type CarouselCardKind = keyof typeof FIGMA_CAROUSEL_CARD_WIDTH;
+
+/** Gap between two cards in a Home carousel (Figma 2001:940, both rows). */
+export const CAROUSEL_CARD_GAP = 12;
+
 const COMPACT_CAROUSEL_CARD_WIDTH = 150;
 
+/** Content column at the reference width, i.e. 393 less the 16pt page padding. */
+const REFERENCE_CONTENT_WIDTH = 361;
+
 /**
- * Preserve the Figma carousel proportion on phones without allowing cards to
- * become unusably narrow or tablet-wide.
+ * The width a Home carousel card renders at.
+ *
+ * At and above the 393pt reference the designed width is held exactly, and the
+ * next card is allowed to run off the screen edge — which is what Figma does.
+ * The previous formula scaled the card with the window and only reached the
+ * designed size at a 430pt window, so every shipping phone drew it ~10% narrow.
+ *
+ * Below the reference the card scales with the content column so the row keeps
+ * its proportion, with a floor so a 320pt screen stays usable.
  */
-export function responsiveCarouselCardWidth(windowWidth: number): number {
-  const pagePadding = 16 * 2;
-  const cardGap = 12;
-  const proportionalWidth = (windowWidth - pagePadding - cardGap) / 1.8;
-  return Math.min(
-    FIGMA_CAROUSEL_CARD_WIDTH,
-    Math.max(COMPACT_CAROUSEL_CARD_WIDTH, proportionalWidth),
-  );
+export function responsiveCarouselCardWidth(
+  windowWidth: number,
+  kind: CarouselCardKind = 'scholar',
+): number {
+  const designWidth = FIGMA_CAROUSEL_CARD_WIDTH[kind];
+  if (windowWidth >= REFERENCE_WIDTH) return designWidth;
+  const contentWidth = windowWidth - 16 * 2;
+  const scaled = designWidth * (contentWidth / REFERENCE_CONTENT_WIDTH);
+  return Math.max(COMPACT_CAROUSEL_CARD_WIDTH, scaled);
 }
 
 // ---------------------------------------------------------------------------

@@ -42,20 +42,50 @@ describe('responsive layout helpers', () => {
   });
 
   describe('responsiveCarouselCardWidth', () => {
-    it('keeps cards usable on a 320-point screen', () => {
-      expect(responsiveCarouselCardWidth(320)).toBeCloseTo(153.33, 1);
+    // Figma node 2001:940 states two different carousel card widths: the
+    // scholar ribbon is 216.1 wide and the book card 192, both with a 12 gap
+    // inside the 16pt page padding. The reference device is 393pt, so the
+    // designed size has to be reachable there — the old formula only reached
+    // it at 430pt and no shipping phone is that wide.
+    it('renders the designed scholar card at the reference width', () => {
+      expect(responsiveCarouselCardWidth(REFERENCE_WIDTH, 'scholar')).toBeCloseTo(216.1, 2);
     });
 
-    it('matches the existing proportion on an iPhone 16', () => {
-      expect(responsiveCarouselCardWidth(393)).toBeCloseTo(193.89, 1);
+    it('renders the designed book card at the reference width', () => {
+      expect(responsiveCarouselCardWidth(REFERENCE_WIDTH, 'book')).toBeCloseTo(192, 2);
     });
 
-    it('caps cards on tablets and large windows', () => {
-      expect(responsiveCarouselCardWidth(1024)).toBe(216.1);
+    it('defaults to the scholar card, which is what the old callers meant', () => {
+      expect(responsiveCarouselCardWidth(REFERENCE_WIDTH)).toBe(
+        responsiveCarouselCardWidth(REFERENCE_WIDTH, 'scholar'),
+      );
+    });
+
+    it('holds the designed width above the reference rather than growing', () => {
+      // Figma lets the second card run off the screen edge; it does not
+      // stretch the card to fill a wider window.
+      expect(responsiveCarouselCardWidth(430, 'scholar')).toBeCloseTo(216.1, 2);
+      expect(responsiveCarouselCardWidth(1024, 'scholar')).toBeCloseTo(216.1, 2);
+      expect(responsiveCarouselCardWidth(1024, 'book')).toBeCloseTo(192, 2);
+    });
+
+    it('scales down proportionally below the reference width', () => {
+      // 320pt has 288 of content against the reference's 361.
+      expect(responsiveCarouselCardWidth(320, 'scholar')).toBeCloseTo(216.1 * 288 / 361, 1);
+      expect(responsiveCarouselCardWidth(320, 'book')).toBeCloseTo(192 * 288 / 361, 1);
     });
 
     it('does not shrink below the supported compact width', () => {
-      expect(responsiveCarouselCardWidth(240)).toBe(150);
+      expect(responsiveCarouselCardWidth(240, 'scholar')).toBe(150);
+      expect(responsiveCarouselCardWidth(240, 'book')).toBe(150);
+    });
+
+    it('keeps the scholar card wider than the book card at every width', () => {
+      [320, 360, 375, 393, 411, 430].forEach((w) => {
+        expect(responsiveCarouselCardWidth(w, 'scholar')).toBeGreaterThan(
+          responsiveCarouselCardWidth(w, 'book'),
+        );
+      });
     });
   });
 });

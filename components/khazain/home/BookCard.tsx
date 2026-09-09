@@ -4,8 +4,20 @@ import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { responsiveCarouselCardWidth } from '@/constants/layout';
 import { BookmarkButton } from '../primitives';
 
-// Cream card with navy stripe top and centered Amiri navy title.
-// Port of design_source/app/home.jsx BookCard.
+// Figma source-of-truth values (frame "الكتب العلمية", node 2001:940):
+//   card 192 x 81, navy stripe 113.77 x 3.86 centred at top -1.93.
+const F_W = 192;
+const F_H = 81;
+const F_STRIPE_W = 113.77;
+const F_STRIPE_H = 3.86;
+
+// Cream card with navy stripe top and centered navy title.
+//
+// Figma node 2001:940 states 192 x 81 with a 113.77 x 3.86 navy stripe. The
+// height is fixed rather than a minimum so a title that wraps to two lines
+// does not make the card — and therefore the whole row — taller than the
+// card beside it, which is what made the row a different height on Android
+// than on iOS.
 export function BookCard({
   id,
   name,
@@ -16,17 +28,31 @@ export function BookCard({
   onPress?: () => void;
 }) {
   const { width: windowWidth } = useWindowDimensions();
-  const cardWidth = responsiveCarouselCardWidth(windowWidth);
+  const cardWidth = responsiveCarouselCardWidth(windowWidth, 'book');
+  const scale = cardWidth / F_W;
 
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
-        { width: cardWidth, transform: [{ scale: pressed ? 0.97 : 1 }] },
+        {
+          width: cardWidth,
+          height: F_H * scale,
+          transform: [{ scale: pressed ? 0.97 : 1 }],
+        },
       ]}
     >
-      <View style={styles.navyStripe} />
+      <View
+        style={[
+          styles.navyStripe,
+          {
+            width: F_STRIPE_W * scale,
+            height: F_STRIPE_H * scale,
+            top: -(F_STRIPE_H / 2) * scale,
+          },
+        ]}
+      />
       <Text style={styles.name} numberOfLines={2}>
         {name}
       </Text>
@@ -44,7 +70,6 @@ export function BookCard({
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 81,
     backgroundColor: KhazainColors.heroCream,
     borderRadius: KhazainRadius.sm,
     padding: 22,
@@ -59,10 +84,7 @@ const styles = StyleSheet.create({
   },
   navyStripe: {
     position: 'absolute',
-    top: -2,
-    left: 40,
-    right: 40,
-    height: 4,
+    alignSelf: 'center',
     backgroundColor: KhazainColors.navy,
   },
   name: {
