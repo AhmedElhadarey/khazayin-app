@@ -93,6 +93,68 @@ export const DAWAH_POSTERS: DawahPoster[] = [
     body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
     month: 'dhul-qadah-dhul-hijjah',
   },
+  // ── Month-detail reference rows for node 2120:1857 ──
+  // The frame shows four identical "دعاء ليلة القدر" rows under
+  // "من شوال إلى رمضان". Before this, no poster carried the
+  // `shawwal-ramadan` slug at all and the route rendered an empty state.
+  {
+    id: 'sr1',
+    tone:  '#E8DDD0',
+    title: 'دعاء ليلة القدر',
+    body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    month: 'shawwal-ramadan',
+  },
+  {
+    id: 'sr2',
+    tone:  '#E1D4BE',
+    title: 'دعاء ليلة القدر',
+    body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    month: 'shawwal-ramadan',
+  },
+  {
+    id: 'sr3',
+    tone:  '#DBC9B0',
+    title: 'دعاء ليلة القدر',
+    body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    month: 'shawwal-ramadan',
+  },
+  {
+    id: 'sr4',
+    tone:  '#E8DDD0',
+    title: 'دعاء ليلة القدر',
+    body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    month: 'shawwal-ramadan',
+  },
+  // Every month the list declares must resolve to at least one poster, or its
+  // card routes to an empty state that reads as a bug.
+  {
+    id: 'rr1',
+    tone:  '#E1D4BE',
+    title: 'من سيرة النبي ﷺ',
+    body:  'وكان خُلقه القرآن',
+    month: 'rabi1-rabi2',
+  },
+  {
+    id: 'rr2',
+    tone:  '#DBC9B0',
+    title: 'شمائل محمدية',
+    body:  'صلّوا عليه وسلّموا تسليمًا',
+    month: 'rabi1-rabi2',
+  },
+  {
+    id: 'sq1',
+    tone:  '#E8DDD0',
+    title: 'ذكرٌ وشكر',
+    body:  'فاذكروني أذكركم\nواشكروا لي ولا تكفرون',
+    month: 'shawwal-dhul-qadah',
+  },
+  {
+    id: 'sq2',
+    tone:  '#E1D4BE',
+    title: 'صيام الستّ من شوال',
+    body:  'كان كصيام الدهر',
+    month: 'shawwal-dhul-qadah',
+  },
 ];
 
 // ---------------------------------------------------------------------------

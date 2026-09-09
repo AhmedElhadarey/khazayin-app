@@ -1,14 +1,14 @@
 import { AsyncContent, InlineHeader, MoonMountainBadge, SkeletonCardList } from '@/components/khazain';
 import { OrnamentPattern } from '@/components/khazain/patterns';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useDawahMonthsStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { I18nManager, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // JSX order is [text, badge]. Want text on left, badge on right.
-const HEAD_FLEX: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row-reverse' : 'row';
 
 // Page 29: تصميمات دعوية — month-pair cards.
 // Data sourced from useDawahMonthsStore (content service layer).
@@ -50,17 +50,15 @@ export default function DawahScreen() {
                 { transform: [{ scale: pressed ? 0.98 : 1 }] },
               ]}
             >
-              {/* Right edge: icon + title (absolute-positioned for RTL safety). */}
-              <View style={styles.headBlock}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {g.title}
-                </Text>
-                <MoonMountainBadge size={44} />
-              </View>
-              {/* Left edge: count chip. */}
+              {/* Physical left → right: count, title, month badge
+                  (Figma node 2120:942). */}
               <View style={styles.countBlock}>
                 <Text style={styles.count}>{g.count}</Text>
               </View>
+              <Text style={styles.title} numberOfLines={1}>
+                {g.title}
+              </Text>
+              <MoonMountainBadge size={CARD_DENSITY.lectureBadgeDisc} />
             </Pressable>
           ))}
         </AsyncContent>
@@ -74,29 +72,23 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    gap: 10,
+    gap: CARD_DENSITY.listGap,
   },
   row: {
-    minHeight: 70,
-    borderRadius: 16,
+    ...PHYSICAL_ROW,
+    minHeight: CARD_DENSITY.lectureCardMinHeight,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.08)',
-    paddingVertical: 12,
+    borderColor: KhazainColors.cardBorder,
+    paddingVertical: 10,
     paddingHorizontal: 14,
-    position: 'relative',
-    justifyContent: 'center',
-  },
-  headBlock: {
-    position: 'absolute',
-    right: 14,
-    top: 0,
-    bottom: 0,
-    flexDirection: HEAD_FLEX,
     alignItems: 'center',
     gap: 12,
   },
   title: {
+    flex: 1,
+    minWidth: 0,
     fontFamily: 'Amiri-Bold',
     fontSize: 17,
     fontWeight: '700',
@@ -105,11 +97,8 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   countBlock: {
-    position: 'absolute',
-    left: 14,
-    top: 0,
-    bottom: 0,
     justifyContent: 'center',
+    flexShrink: 0,
   },
   count: {
     fontFamily: 'TheSansArabic',
