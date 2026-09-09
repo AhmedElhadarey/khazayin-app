@@ -1,0 +1,269 @@
+[
+  {
+    "nodeId": "2001:835",
+    "name": "Splash — patterned launch state",
+    "width": 393,
+    "height": 852,
+    "appRoute": null,
+    "status": "transition",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/01-2001-835.png"
+  },
+  {
+    "nodeId": "2001:888",
+    "name": "Splash — background and wordmark phase",
+    "width": 393,
+    "height": 852,
+    "appRoute": null,
+    "status": "transition",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/02-2001-888.png"
+  },
+  {
+    "nodeId": "2001:914",
+    "name": "Splash — centre emblem phase",
+    "width": 393,
+    "height": 852,
+    "appRoute": null,
+    "status": "transition",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/03-2001-914.png"
+  },
+  {
+    "nodeId": "2007:511",
+    "name": "Splash — exit hold before Home",
+    "width": 393,
+    "height": 852,
+    "appRoute": null,
+    "status": "transition",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/04-2007-511.png"
+  },
+  {
+    "nodeId": "2001:940",
+    "name": "Home",
+    "width": 393,
+    "height": 1321,
+    "appRoute": "/",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/05-2001-940.png"
+  },
+  {
+    "nodeId": "2031:4659",
+    "name": "Library",
+    "width": 393,
+    "height": 1891,
+    "appRoute": "/library",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/06-2031-4659.png"
+  },
+  {
+    "nodeId": "2031:5675",
+    "name": "Sections root — nine section cards",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/07-2031-5675.png"
+  },
+  {
+    "nodeId": "2031:6193",
+    "name": "Reciters — default (Mujawwad) tab",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/reciter",
+    "state": {
+      "tab": "tajweed"
+    },
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/08-2031-6193.png"
+  },
+  {
+    "nodeId": "2102:2975",
+    "name": "Scholars list",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/scholar",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/09-2102-2975.png"
+  },
+  {
+    "nodeId": "2102:3187",
+    "name": "Reciters — Murattal tab",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/reciter",
+    "state": {
+      "tab": "murattal"
+    },
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/10-2102-3187.png"
+  },
+  {
+    "nodeId": "2120:942",
+    "name": "Dawah design — month list",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/dawah",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/11-2120-942.png"
+  },
+  {
+    "nodeId": "2120:1857",
+    "name": "Dawah design — Shawwal and Ramadan posters",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/dawah/shawwal-ramadan",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/12-2120-1857.png"
+  },
+  {
+    "nodeId": "2207:5270",
+    "name": "Reciter audio — surah list for a selected reciter",
+    "width": 393,
+    "height": 844,
+    "appRoute": null,
+    "state": {
+      "reciterId": "r1"
+    },
+    "status": "missing-route",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/13-2207-5270.png"
+  },
+  {
+    "nodeId": "2207:17898",
+    "name": "Mushaf — surah index",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/mushaf",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/14-2207-17898.png"
+  },
+  {
+    "nodeId": "2349:829",
+    "name": "Mushaf reader — loading and transition state",
+    "width": 393,
+    "height": 844,
+    "appRoute": null,
+    "state": {
+      "surah": "1"
+    },
+    "status": "transition",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/15-2349-829.png"
+  },
+  {
+    "nodeId": "2349:982",
+    "name": "Mushaf reader — loaded surah",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/mushaf",
+    "state": {
+      "surah": "1"
+    },
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/16-2349-982.png"
+  },
+  {
+    "nodeId": "2457:954",
+    "name": "Qiraat — ten qiraa rows",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/qiraat",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/17-2457-954.png"
+  },
+  {
+    "nodeId": "2465:1911",
+    "name": "Prophet biography lectures",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/prophet",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/18-2465-1911.png"
+  },
+  {
+    "nodeId": "2510:1990",
+    "name": "Scholar detail — lectures for one scholar",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/scholar/s1",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/19-2510-1990.png"
+  },
+  {
+    "nodeId": "2589:1772",
+    "name": "Queens of the Quran",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/queen",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/20-2589-1772.png"
+  },
+  {
+    "nodeId": "2597:2552",
+    "name": "Scientific books",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/books",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/21-2597-2552.png"
+  },
+  {
+    "nodeId": "2606:3830",
+    "name": "Radio",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/sections/radio",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/22-2606-3830.png"
+  },
+  {
+    "nodeId": "2869:2088",
+    "name": "Audiobooks",
+    "width": 393,
+    "height": 844,
+    "appRoute": null,
+    "status": "missing-route",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/23-2869-2088.png"
+  },
+  {
+    "nodeId": "2869:2306",
+    "name": "Exclusive content",
+    "width": 393,
+    "height": 844,
+    "appRoute": null,
+    "status": "missing-route",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/24-2869-2306.png"
+  },
+  {
+    "nodeId": "2102:2711",
+    "name": "More root",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/more",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/25-2102-2711.png"
+  },
+  {
+    "nodeId": "2106:2598",
+    "name": "Contact us",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/more/contact",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/26-2106-2598.png"
+  },
+  {
+    "nodeId": "2106:2712",
+    "name": "About the foundation",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/more/about",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/27-2106-2712.png"
+  },
+  {
+    "nodeId": "2558:1334",
+    "name": "Archive",
+    "width": 393,
+    "height": 844,
+    "appRoute": "/more/archive",
+    "status": "implemented",
+    "referenceImage": "docs/audit/2026-09-09/figma-reference/28-2558-1334.png"
+  }
+]
