@@ -139,3 +139,34 @@ export function contentWidth(width: number): number {
   const columnWidth = Math.min(width, CONTENT_MAX_WIDTH);
   return columnWidth - horizontalGutter(columnWidth) * 2;
 }
+
+// ---------------------------------------------------------------------------
+// Bottom navigation geometry (Figma node 2031:5675, design spec section 5.2)
+// ---------------------------------------------------------------------------
+
+export const TAB_BAR = Object.freeze({
+  background: '#184B76',
+  /** Controls row only. The safe-area inset is added on top, exactly once. */
+  controlsHeight: 49,
+  /** iPhone home-indicator inset the 83pt reference bar was measured with. */
+  referenceSafeArea: 34,
+  itemWidth: 67,
+  itemHeight: 49,
+  itemRadius: 8,
+  /** Translucent gold over navy — not an opaque cream panel. */
+  activeFill: 'rgba(215, 185, 149, 0.16)',
+  activeInk: '#F1E7DD',
+  inactiveInk: 'rgba(241, 231, 221, 0.85)',
+  indicatorWidth: 40,
+  indicatorHeight: 4,
+  indicatorColor: '#C1A584',
+  iconSize: 24,
+} as const);
+
+/**
+ * Total tab-bar height for a device. React Navigation measures the rendered
+ * bar and insets every screen by it, so screens must not add this again.
+ */
+export function tabBarHeight(safeAreaBottom: number): number {
+  return TAB_BAR.controlsHeight + Math.max(0, safeAreaBottom);
+}

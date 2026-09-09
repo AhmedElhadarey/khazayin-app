@@ -4,7 +4,9 @@ import {
   PHYSICAL_ROW,
   REFERENCE_WIDTH,
   RTL_TEXT,
+  TAB_BAR,
   TAB_PHYSICAL_ORDER,
+  tabBarHeight,
   contentWidth,
   horizontalGutter,
   responsiveCarouselCardWidth,
@@ -118,5 +120,50 @@ describe('width profiles', () => {
       expect(contentWidth(768)).toBe(448);
       expect(contentWidth(1024)).toBe(448);
     });
+  });
+});
+
+describe('bottom navigation geometry', () => {
+  // Every figure below is quoted from design specification section 5.2 and
+  // measured against Figma node 2031:5675.
+  it('uses the Figma navy and gold', () => {
+    expect(TAB_BAR.background).toBe('#184B76');
+    expect(TAB_BAR.indicatorColor).toBe('#C1A584');
+    expect(TAB_BAR.activeFill).toBe('rgba(215, 185, 149, 0.16)');
+  });
+
+  it('sizes the active item and its indicator to the reference frame', () => {
+    expect(TAB_BAR.itemWidth).toBe(67);
+    expect(TAB_BAR.itemHeight).toBe(49);
+    expect(TAB_BAR.itemRadius).toBe(8);
+    expect(TAB_BAR.indicatorWidth).toBe(40);
+    expect(TAB_BAR.indicatorHeight).toBe(4);
+    expect(TAB_BAR.iconSize).toBe(24);
+  });
+
+  it('keeps the active item at or above the minimum touch target', () => {
+    expect(TAB_BAR.itemHeight).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+    expect(TAB_BAR.itemWidth).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+  });
+
+  it('adds the safe-area inset exactly once', () => {
+    // 49pt controls + 34pt iPhone home-indicator inset = the audited 83pt bar.
+    expect(tabBarHeight(34)).toBe(83);
+    expect(TAB_BAR.controlsHeight).toBe(49);
+  });
+
+  it('collapses to the controls row on devices without a bottom inset', () => {
+    expect(tabBarHeight(0)).toBe(49);
+  });
+
+  it('never subtracts a negative inset', () => {
+    expect(tabBarHeight(-10)).toBe(49);
+  });
+});
+
+describe('root route tab-bar visibility', () => {
+  it('shows the bar on exactly the four Figma tab roots', () => {
+    const roots = TAB_PHYSICAL_ORDER.map((tab) => (tab === 'index' ? '/' : `/${tab}`));
+    expect(roots.every(shouldShowMainTabBar)).toBe(true);
   });
 });
