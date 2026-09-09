@@ -1,4 +1,4 @@
-import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -87,6 +87,9 @@ function BellGlyph() {
 
 const styles = StyleSheet.create({
   list: {
+    // PHYSICAL_BOX so the manage link's `flex-end` means the physical right,
+    // not the RTL end.
+    ...PHYSICAL_BOX,
     gap: CARD_DENSITY.listGap,
   },
   card: {

@@ -24,7 +24,7 @@ import {
   type LibrarySummaryCardKey,
   visibleLibrarySections,
 } from '@/constants/libraryPresentation';
-import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
+import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import {
@@ -236,10 +236,11 @@ export default function LibraryScreen() {
   // Reminder categories that are both shipped and switched on. Derived from the
   // notification registry, so the Library never advertises a reminder that has
   // no scheduler behind it.
-  const notificationSettings = useSettingsStore((st) => st.notifications);
+  // Subscribe to the notifications slice so the list re-renders on a toggle;
+  // `isCategoryEnabled` owns the backfill semantics for unregistered ids.
+  useSettingsStore((st) => st.notifications);
   const activeReminders = NOTIFICATION_CATEGORIES.filter(
-    (category) =>
-      category.available && (notificationSettings?.[category.id] ?? category.defaultOn),
+    (category) => category.available && isCategoryEnabled(category.id),
   );
 
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.

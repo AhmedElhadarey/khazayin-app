@@ -101,6 +101,21 @@ describe('Library filter visibility', () => {
     expect(isLibrarySectionVisible('quickNote', 'saved')).toBe(false);
   });
 
+  it('keeps the audiobook, reminder, and suggestion sections as visible as before', () => {
+    // These were unconditional before this track; repositioning them must not
+    // also hide them.
+    (['audiobookProgress', 'smartReminders', 'wirdSuggestion', 'completedLectures'] as const)
+      .forEach((key) => {
+        (['all', 'saved', 'notes', 'history'] as LibraryFilter[]).forEach((filter) => {
+          expect([key, filter, isLibrarySectionVisible(key, filter)]).toEqual([
+            key,
+            filter,
+            true,
+          ]);
+        });
+      });
+  });
+
   it('confines the trend, history, and insight extras to the history filter', () => {
     (['wirdHistory', 'wirdTrend', 'insights'] as const).forEach((key) => {
       expect([key, isLibrarySectionVisible(key, 'history')]).toEqual([key, true]);

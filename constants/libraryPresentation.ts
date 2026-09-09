@@ -73,17 +73,15 @@ export type LibraryFilter = 'all' | 'saved' | 'notes' | 'history';
  * page furniture and always visible.
  */
 const SECTION_FILTERS: Partial<Record<LibrarySectionKey, readonly LibraryFilter[]>> = {
+  // Gated before this track and still gated — behaviour preserved.
   quickNote: ['all', 'notes'],
   savedList: ['all', 'saved'],
-  audiobookProgress: ['all', 'saved'],
-  smartReminders: ['all'],
-  // The added analytics live behind History so they never displace the
-  // reference hierarchy on the default view.
+  // The added analytics move behind History so they never displace the
+  // reference hierarchy on the default view. Nothing else is newly hidden:
+  // every other section keeps the visibility it had before this track.
   wirdHistory: ['history'],
   wirdTrend: ['history'],
   insights: ['history'],
-  wirdSuggestion: ['all', 'history'],
-  completedLectures: ['all', 'history'],
 };
 
 export function isLibrarySectionVisible(
