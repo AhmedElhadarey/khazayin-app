@@ -1,8 +1,8 @@
 import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
 import { OrnamentPattern } from '@/components/khazain/patterns';
-import { SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
+import { PHYSICAL_BOX, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
-import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
+import { MORE_EXTENSION_ROWS, MORE_EXTERNAL_URLS } from '@/data/content/sections';
 import { useMoreRowsStore } from '@/store';
 import type { MoreRow as MoreRowData } from '@/types/content';
 import { useRouter } from 'expo-router';
@@ -58,20 +58,8 @@ export default function MoreScreen() {
           <Text style={styles.h1}>المزيد</Text>
         </View>
         <View style={styles.list}>
-          {/* Local-state entry rows render immediately — no need to wait
-              on the More-rows fetch (they don't depend on remote data). */}
-          <ListRowCard
-            title="الإعدادات"
-            subtitle="التلاوة · القراءة · الإشعارات · البيانات"
-            icon={<RowGlyph id="settings" />}
-            onPress={() => router.push('/(tabs)/more/settings' as any)}
-          />
-          <ListRowCard
-            title="إعدادات التقدّم"
-            subtitle="هدف الورد اليومي · إعادة تعيين"
-            icon={<RowGlyph id="progress" />}
-            onPress={() => router.push('/(tabs)/more/settings-progress' as any)}
-          />
+          {/* The Figma reference group first, so the initial viewport starts
+              with the website row exactly as node 2102:2711 does. */}
           <AsyncContent
             status={status}
             error={error}
@@ -82,6 +70,7 @@ export default function MoreScreen() {
             {data.map((r) => (
               <ListRowCard
                 key={r.id}
+                compact
                 title={r.title}
                 subtitle={r.subtitle}
                 icon={<RowGlyph id={r.id} />}
@@ -89,6 +78,18 @@ export default function MoreScreen() {
               />
             ))}
           </AsyncContent>
+          {/* This app's own entry rows follow. They are local state, so they
+              render immediately and never wait on the More-rows fetch. */}
+          {MORE_EXTENSION_ROWS.map((row) => (
+            <ListRowCard
+              key={row.id}
+              compact
+              title={row.title}
+              subtitle={row.subtitle}
+              icon={<RowGlyph id={row.id} />}
+              onPress={() => router.push(row.route as any)}
+            />
+          ))}
         </View>
         <View style={styles.footer}>
           <Wordmark size={16} />
@@ -102,7 +103,8 @@ export default function MoreScreen() {
 // chip proportionally (matches the section icons via SECTION_ICONS).
 function RowGlyph({ id }: { id: string }) {
   const c = KhazainColors.navy800;
-  const size = 32;
+  // Sized for the compact 40pt disc used by the More list.
+  const size = 20;
   switch (id) {
     case 'web':
       return (
@@ -220,6 +222,8 @@ function RowGlyph({ id }: { id: string }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   headerBlock: {
+    // PHYSICAL_BOX so `flex-end` means the physical right, not the RTL end.
+    ...PHYSICAL_BOX,
     paddingHorizontal: 18,
     paddingTop: 14,
     paddingBottom: 6,

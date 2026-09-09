@@ -18,6 +18,7 @@ export function ListRowCard({
   subtitle,
   count,
   chevron = true,
+  compact,
   onPress,
 }: {
   icon: React.ReactNode;
@@ -25,6 +26,11 @@ export function ListRowCard({
   subtitle?: string;
   count?: string | null;
   chevron?: boolean;
+  /**
+   * The More list (node 2102:2711) uses the same row without a count line, at
+   * the shared lecture density rather than the 96pt section-card height.
+   */
+  compact?: boolean;
   onPress?: () => void;
 }) {
   const slots: Record<ListRowSlot, React.ReactNode> = {
@@ -44,7 +50,9 @@ export function ListRowCard({
         {count ? <Text style={styles.count}>{count}</Text> : null}
       </View>
     ),
-    iconBadge: <View style={styles.iconChip}>{icon}</View>,
+    iconBadge: (
+      <View style={[styles.iconChip, compact && styles.iconChipCompact]}>{icon}</View>
+    ),
   };
 
   return (
@@ -54,6 +62,7 @@ export function ListRowCard({
       accessibilityLabel={listRowAccessibilityLabel({ title, subtitle, count })}
       style={({ pressed }) => [
         styles.card,
+        compact && styles.cardCompact,
         KhazainShadows.card,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
@@ -77,6 +86,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: KhazainColors.cardBorder,
   },
+  cardCompact: {
+    minHeight: CARD_DENSITY.lectureCardMinHeight,
+    paddingVertical: 8,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
+  },
+  iconChipCompact: {
+    width: CARD_DENSITY.lectureBadgeDisc,
+    height: CARD_DENSITY.lectureBadgeDisc,
+    borderRadius: CARD_DENSITY.lectureBadgeDisc / 2,
+  },
   iconChip: {
     width: CARD_DENSITY.sectionIconDisc,
     height: CARD_DENSITY.sectionIconDisc,
@@ -93,16 +112,16 @@ const styles = StyleSheet.create({
   },
   title: {
     fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    lineHeight: 24,
+    fontSize: 15,
+    lineHeight: 20,
     fontWeight: '600',
     color: KhazainColors.inkTitle,
     ...RTL_TEXT,
   },
   subtitle: {
     fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    lineHeight: 20,
+    fontSize: 12,
+    lineHeight: 16,
     color: KhazainColors.inkSubtle,
     ...RTL_TEXT,
   },

@@ -112,6 +112,11 @@ export const PENDING_SECTION_ROUTES: readonly string[] = [];
 // MORE_ROWS — More tab list (more/index.tsx)
 // ---------------------------------------------------------------------------
 
+/**
+ * The eight rows Figma node 2102:2711 opens with, in frame order. The audit
+ * found the tab opening with two settings rows the frame does not have, which
+ * pushed this whole group off the initial viewport.
+ */
 export const MORE_ROWS: MoreRow[] = [
   { id: 'web',       title: 'الموقع الإلكتروني',   subtitle: 'زيارة الموقع الرسمي للمؤسسة',   iconKey: 'web',       isExternal: true,  externalKey: 'web'       },
   { id: 'youtube',   title: 'قنوات اليوتيوب',      subtitle: '٦٥ قناة للأعمال والمشايخ',       iconKey: 'youtube',   isExternal: false, route: '/youtube-sheet'  },
@@ -121,6 +126,33 @@ export const MORE_ROWS: MoreRow[] = [
   { id: 'archive',   title: 'الأرشيف',             subtitle: 'أرشيف المؤسسة',                   iconKey: 'archive',   isExternal: false, route: '/more/archive'   },
   { id: 'contact',   title: 'تواصل معنا',          subtitle: 'راسلنا أو اتصل بنا مباشرة',      iconKey: 'contact',   isExternal: false, route: '/more/contact'   },
   { id: 'about',     title: 'نبذة عن المؤسسة',    subtitle: 'تعرّف على رؤيتنا وأهدافنا',      iconKey: 'about',     isExternal: false, route: '/more/about'     },
+];
+
+/** The reference order, asserted separately so a reorder is a test failure. */
+export const MORE_REFERENCE_ORDER: readonly string[] = MORE_ROWS.map((row) => row.id);
+
+/**
+ * Rows this app added after the design. They stay available but render after
+ * the reference group, so the initial viewport matches the frame.
+ */
+export const MORE_EXTENSION_ROWS: readonly {
+  id: string;
+  title: string;
+  subtitle: string;
+  route: string;
+}[] = [
+  {
+    id: 'settings',
+    title: 'الإعدادات',
+    subtitle: 'التلاوة · القراءة · الإشعارات · البيانات',
+    route: '/(tabs)/more/settings',
+  },
+  {
+    id: 'progress',
+    title: 'إعدادات التقدّم',
+    subtitle: 'هدف الورد اليومي · إعادة تعيين',
+    route: '/(tabs)/more/settings-progress',
+  },
 ];
 
 // ---------------------------------------------------------------------------
