@@ -88,21 +88,27 @@ function SkipButton({ dir, onPress, label }: { dir: 'back' | 'fwd'; onPress: () 
 }
 
 // Triangle + bar skip-back / skip-forward glyphs (small, gold/copper outline-ish per Figma).
+//
+// The glyphs are drawn in physical space and mirror the transport's physical
+// order, which is Arabic reading order: السابق sits on the physical right and
+// points right, التالي sits on the physical left and points left. Drawing them
+// the other way round — the Latin convention — left each button pointing at
+// its neighbour instead of at the track it moves to.
 function SkipGlyph({ dir }: { dir: 'back' | 'fwd' }) {
-  // back = play triangle pointing left, with a vertical bar to its left
-  // fwd  = play triangle pointing right, with a vertical bar to its right
+  // back (السابق) = triangle pointing right, with a vertical bar to its right
+  // fwd  (التالي) = triangle pointing left,  with a vertical bar to its left
   const stroke = KhazainColors.ink400;
   return (
     <Svg width={20} height={16} viewBox="0 0 20 16" fill="none">
       {dir === 'back' ? (
         <>
-          <Rect x={2} y={3} width={1.5} height={10} fill={stroke} rx={0.5} />
-          <Polygon points="17,2 17,14 5,8" fill="none" stroke={stroke} strokeWidth={1.4} strokeLinejoin="round" />
+          <Polygon points="3,2 3,14 15,8" fill="none" stroke={stroke} strokeWidth={1.4} strokeLinejoin="round" />
+          <Rect x={16.5} y={3} width={1.5} height={10} fill={stroke} rx={0.5} />
         </>
       ) : (
         <>
-          <Polygon points="3,2 3,14 15,8" fill="none" stroke={stroke} strokeWidth={1.4} strokeLinejoin="round" />
-          <Rect x={16.5} y={3} width={1.5} height={10} fill={stroke} rx={0.5} />
+          <Rect x={2} y={3} width={1.5} height={10} fill={stroke} rx={0.5} />
+          <Polygon points="17,2 17,14 5,8" fill="none" stroke={stroke} strokeWidth={1.4} strokeLinejoin="round" />
         </>
       )}
     </Svg>
