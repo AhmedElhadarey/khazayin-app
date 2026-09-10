@@ -1,6 +1,7 @@
-import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
-import { BookmarkButton } from '@/components/khazain/primitives';
+import { textStyle } from '@/constants/typography';
+import { BookmarkButton, SurahStar } from '@/components/khazain/primitives';
 import type { Surah } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,8 +13,13 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
  * a reusable row for free.
  *
  * Physical left → right: bookmark, name and meta, index badge — Figma node
- * 2207:17898. The bookmark is this app's own affordance and is kept, sitting
- * where the frame's trailing edge is.
+ * 2207:17898. `DIV-67` there is the same row 2207:5270 draws for a reciter's
+ * surahs: 60 tall at radius 16 behind a 1pt `#D9D6D3` hairline, inset 12, with
+ * the numbered 36pt star badge at the trailing edge.
+ *
+ * The frame puts a play triangle at the physical left; this app puts its own
+ * bookmark control there, because tapping the row opens the reader rather than
+ * starting audio.
  *
  * Track: khazain-saved_20260511  T13
  */
@@ -55,64 +61,34 @@ export function SurahRow({
         </Text>
       </View>
 
-      {/* Physical right — index badge */}
-      <View style={styles.indexBadge}>
-        <Text style={styles.indexText}>{surah.displayNumber}</Text>
-      </View>
+      {/* Physical right — the numbered star badge, `DIV-79`. */}
+      <SurahStar index={surah.displayNumber} size={SURAH_BADGE_DISC} />
     </Pressable>
   );
 }
 
+/** `DIV-79` — the numbered badge, 36 rather than the shared 40. */
+const SURAH_BADGE_DISC = 36;
+
 const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
-    minHeight: CARD_DENSITY.reciterRowMinHeight,
-    backgroundColor: KhazainColors.cream50,
+    minHeight: 60,
+    backgroundColor: KhazainColors.cardBg,
     borderRadius: CARD_DENSITY.lectureCardRadius,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
-    paddingHorizontal: 16,
+    borderColor: KhazainColors.hairlineWarm,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     alignItems: 'center',
-    marginBottom: CARD_DENSITY.listGap,
+    marginBottom: CARD_DENSITY.lectureListGap,
     gap: 12,
-  },
-  indexBadge: {
-    width: CARD_DENSITY.lectureBadgeDisc,
-    height: CARD_DENSITY.lectureBadgeDisc,
-    borderRadius: CARD_DENSITY.lectureBadgeDisc / 2,
-    backgroundColor: KhazainColors.cream100,
-    borderWidth: 1,
-    borderColor: KhazainColors.gold200,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  indexText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    lineHeight: 18,
-    fontWeight: '700',
-    color: KhazainColors.gold200,
   },
   body: {
     flex: 1,
     minWidth: 0,
     alignItems: 'flex-end',
   },
-  name: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    ...RTL_TEXT,
-  },
-  meta: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    color: KhazainColors.ink500,
-    marginTop: 2,
-    ...RTL_TEXT,
-  },
+  name: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  meta: textStyle('caption', { color: KhazainColors.ink500 }),
 });

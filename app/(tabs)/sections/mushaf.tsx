@@ -10,6 +10,7 @@ import { PHYSICAL_ROW } from '@/constants/layout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
 import { findSurahIdForPage, normalizeSurahParam, surahMetaLine } from '@/services/mushafNavigation';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import {
   surahName,
   surahStartPage,
@@ -32,8 +33,12 @@ import Svg, { Path } from 'react-native-svg';
 // retrigger the auto-jump within the same app session.
 let _autoResumeFired = false;
 
-const MUSHAF_BG = '#FBF3DF';
-const FOOTER_BG = '#F3E4BE';
+// Node 2349:982 has no reading surface of its own — the frame carries only the
+// header, the meta line and the footer, all on the same `#F8F2ED` the rest of
+// the app uses. The parchment the app used to paint here, and the gold footer
+// under it, were this screen's own invention and read as a different product.
+const MUSHAF_BG = KhazainColors.pageBg;
+const FOOTER_BG = KhazainColors.pageBg;
 
 export default function MushafScreen() {
   const router = useRouter();
@@ -273,7 +278,7 @@ function MushafBtn({ label, icon }: { label: string; icon: React.ReactNode }) {
 
 function BookmarkGlyph() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 20 20" fill="none">
       <Path
         d="M5 3v14l5-4 5 4V3H5z"
         stroke={KhazainColors.navy800}
@@ -286,7 +291,7 @@ function BookmarkGlyph() {
 
 function BookmarkFilledGlyph() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 20 20" fill="none">
       <Path
         d="M5 3v14l5-4 5 4V3H5z"
         fill={KhazainColors.navy800}
@@ -300,7 +305,7 @@ function BookmarkFilledGlyph() {
 
 function MenuGlyph() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+    <Svg width={22} height={22} viewBox="0 0 20 20" fill="none">
       <Path
         d="M4 5h12M4 10h12M4 15h12"
         stroke={KhazainColors.navy800}
@@ -324,19 +329,18 @@ const styles = StyleSheet.create({
   surahList: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    gap: 8,
+    // SurahRow carries its own `marginBottom`; the file steps 66 over a 60 row.
+    gap: 0,
   },
   headerBg: {
     paddingBottom: 8,
   },
+  // `DIV-47` — "صفحة ١ من ٦٠٤ • ٧ آيات • مكية", TheMixArab Regular 14 in
+  // `#5F5345`, centred under the title rather than pinned to the right.
   subtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.gold600,
-    textAlign: 'right',
+    ...textStyle('bodyCompact', { color: KhazainColors.ink500, textAlign: 'center' }),
     paddingHorizontal: 16,
     paddingTop: 6,
-    writingDirection: 'rtl',
   },
   pageContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 16 },
   ornamentWrap: {
@@ -389,28 +393,24 @@ const styles = StyleSheet.create({
     color: KhazainColors.gold600,
     fontFamily: 'Amiri-Bold',
   },
+  // `btn` — three radius-8 buttons on the page ground, no rule above them.
   footer: {
     ...PHYSICAL_ROW,
-    justifyContent: 'space-around',
-    gap: 10,
-    paddingVertical: 10,
+    justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 14,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(141,107,52,0.15)',
+    paddingBottom: 8,
     backgroundColor: FOOTER_BG,
   },
   footerBtn: {
-    flex: 1,
+    height: 68,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
-    paddingHorizontal: 4,
-    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
   },
-  footerBtnLabel: {
-    fontSize: 11,
-    fontFamily: 'TheSansArabic',
-    fontWeight: '600',
-    color: KhazainColors.navy800,
-  },
+  footerBtnLabel: textStyle('caption', {
+    color: KhazainColors.ink500,
+    textAlign: 'center',
+  }),
 });

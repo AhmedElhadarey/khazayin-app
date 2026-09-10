@@ -7,7 +7,7 @@ import {
   SegmentTabs,
   SkeletonRibbonList,
 } from '@/components/khazain';
-import { PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
@@ -125,7 +125,7 @@ const styles = StyleSheet.create({
     paddingRight: RESERVED_COLUMNS.letterRailInset,
   },
   listContent: {
-    gap: 8,
+    gap: CARD_DENSITY.lectureListGap,
   },
   rail: {
     // LETTER_INDEX_EDGE — the alphabet rail lives on the physical right edge.

@@ -48,7 +48,7 @@ describe('findSurahIdForPage', () => {
 describe('surahMetaLine', () => {
   it('reads revelation type, ayah count, then page — as in the frame', () => {
     expect(surahMetaLine({ revelationType: 'meccan', ayahCount: 7, page: 1 })).toBe(
-      'مكية  ·  ٧ آية  ·  صفحة ١ من ٦٠٤',
+      'مكية • ٧ آية • صفحة ١ من ٦٠٤',
     );
   });
 
@@ -60,7 +60,7 @@ describe('surahMetaLine', () => {
 
   it('drops the parts it does not know rather than printing a placeholder', () => {
     expect(surahMetaLine({ page: 1 })).toBe('صفحة ١ من ٦٠٤');
-    expect(surahMetaLine({ ayahCount: 7, page: 1 })).toBe('٧ آية  ·  صفحة ١ من ٦٠٤');
+    expect(surahMetaLine({ ayahCount: 7, page: 1 })).toBe('٧ آية • صفحة ١ من ٦٠٤');
   });
 });
 

@@ -62,5 +62,7 @@ export function surahMetaLine(parts: {
   segments.push(
     `صفحة ${toArabicDigits(parts.page)} من ${toArabicDigits(MUSHAF_PAGE_COUNT)}`,
   );
-  return segments.join('  ·  ');
+  // Node 2349:982 separates the parts with `•`. The middle dot this used
+  // before is easily read as a `٠` between two Arabic-Indic numerals.
+  return segments.join(' • ');
 }
