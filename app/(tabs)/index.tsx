@@ -12,11 +12,6 @@ import {
   SkeletonCardList,
   SkeletonPosterList,
 } from '@/components/khazain';
-import {
-  SCHOLAR_SVG_1,
-  SCHOLAR_SVG_2,
-  SCHOLAR_SVG_3,
-} from '@/components/khazain/home/scholarSvgs';
 import { RtlCarousel } from '@/components/khazain/primitives';
 import {
   HOME_HERO_TOP_GAP,
@@ -40,12 +35,19 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-// Bundled calligraphic SVGs keyed by scholar id.
-// The SVGs bake in the name glyph + gold stripe; ids must match data/content/scholars.ts.
-const SVG_BY_ID: Record<string, string> = {
-  's4': SCHOLAR_SVG_1, // عبد العزيز بن عبد الله بن باز
-  's5': SCHOLAR_SVG_2, // محمد بن صالح العثيمين
-  's1': SCHOLAR_SVG_3, // عبد المحسن العباد البدر
+// The scholar's name as calligraphy, keyed by scholar id; ids must match
+// data/content/scholars.ts, and only scholars with art are featured here.
+//
+// Figma draws all three cards with the same name art — ابن باز is the design's
+// placeholder — so s5 and s1 carry it too, and their cards read the wrong
+// name until the client supplies calligraphy for them. The three bundled SVGs
+// this replaced were byte-identical, so it read the same wrong name before.
+const IBN_BAZ = require('@/assets/khazain/home/scholar-name-ibn-baz.webp');
+
+const NAME_ART_BY_ID: Record<string, number> = {
+  's4': IBN_BAZ, // عبد العزيز بن عبد الله بن باز
+  's5': IBN_BAZ, // TODO: محمد بن صالح العثيمين — awaiting art
+  's1': IBN_BAZ, // TODO: عبد المحسن العباد البدر — awaiting art
 };
 
 export default function HomeScreen() {
@@ -65,8 +67,8 @@ export default function HomeScreen() {
     fetchDawah();
   }, [fetchScholars, fetchBooks, fetchDawah]);
 
-  // Derive featured scholars — only those with a bundled SVG
-  const featuredScholars = scholarsData.filter((s) => !!SVG_BY_ID[s.id]);
+  // Derive featured scholars — only those whose name art is bundled
+  const featuredScholars = scholarsData.filter((s) => !!NAME_ART_BY_ID[s.id]);
 
   // Rendered from HOME_SECTION_ORDER so the running order lives in one place
   // and is asserted by __tests__/homePresentation.test.ts.
@@ -97,7 +99,7 @@ export default function HomeScreen() {
         >
           <RtlCarousel contentContainerStyle={styles.scrollerPad}>
             {featuredScholars.map((s) => (
-              <ScholarCard key={s.id} id={s.id} svg={SVG_BY_ID[s.id]} name={s.name} />
+              <ScholarCard key={s.id} id={s.id} nameArt={NAME_ART_BY_ID[s.id]} name={s.name} />
             ))}
           </RtlCarousel>
         </AsyncContent>

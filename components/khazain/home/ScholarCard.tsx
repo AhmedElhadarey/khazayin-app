@@ -1,59 +1,38 @@
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { SvgXml } from 'react-native-svg';
+import { Image, type ImageSource } from 'expo-image';
 import { KhazainColors } from '@/constants/theme';
-import { responsiveCarouselCardWidth } from '@/constants/layout';
+import { PHYSICAL_BOX, responsiveCarouselCardWidth } from '@/constants/layout';
 import { BookmarkButton } from '../primitives';
-import { svgAspect } from './svgAspect';
+import { scholarCardLayout } from './scholarCardLayout';
 
-// Figma source-of-truth values (node 2001:940, frame "العلماء والمشايخ"):
-//   card 216.1 × 88.37, radius 6.355, shadow 3.178/0.794/12.712 navy@24%.
-//   Gold stripe: 149.59 × 5.07, top -2.54, centred, colour #C1A584 (goldBar).
+const HONORIFIC = require('@/assets/khazain/home/scholar-honorific.webp');
+
+// Navy card carrying the design's two pieces of art — the shared gold
+// "سماحة الشيخ العلامة" honorific and the scholar's name in calligraphy —
+// over a gold stripe that overhangs the top edge. See scholarCardLayout.ts
+// for where each rect comes from.
 //
-// The design draws the interior as TWO images, centred on the card: the gold
-// سماحة الشيخ العلامة line (74.63 × 22.39) at y 8.91, and the scholar's name
-// (178.23 × 43.69) at y 35.76 — a block 178.23 wide and 70.54 tall.
-//
-// The app cannot use the design's second image, because that is one specific
-// scholar and these names are data; it carries a bundled SVG per scholar
-// instead, which composes the same two lines. Its viewBox (179 × 71) is the
-// design's block almost exactly, so the block's own geometry is right — but
-// it was being stretched to the card's full inner width (198.28) and centred
-// vertically, drawing it about 11% too wide and 4pt too high.
-const F_W = 216.1;
-const F_H = 88.37;
-
-/** The interior block, as the design sizes and places it. */
-const F_BLOCK_W = 178.23;
-const F_BLOCK_TOP = 8.91;
-
-// The bundled SVGs do not share a natural size — she5-2/3 are 179:71 but
-// she5-1 is 152:62 — so each one is sized from its own viewBox. A single
-// shared ratio compressed the first card's calligraphy by 2.8%.
-const FALLBACK_SVG_RATIO = 71 / 179;
-
-// Navy ribbon card whose interior is a bundled SVG (calligraphic الشيخ +
-// scholar name baked together). The gold stripe is a separate <View> so
-// its width can scale with the card; matches Figma's auto-layout export.
+// This used to draw one bundled SVG per scholar instead. Those SVGs paint both
+// images through <pattern patternContentUnits="objectBoundingBox">, which
+// librsvg renders correctly but react-native-svg does not: on device it
+// magnified the name roughly 2.4x and tiled it. The .fig's own two images,
+// placed at the design's own rects, avoid the pattern path entirely.
 export function ScholarCard({
   id,
-  svg,
+  nameArt,
   name,
   onPress,
 }: {
   id: string;
-  svg: string;
+  /** The scholar's name, as calligraphy. */
+  nameArt: ImageSource | number;
   name?: string;
   onPress?: () => void;
 }) {
   const { width: windowWidth } = useWindowDimensions();
   const cardWidth = responsiveCarouselCardWidth(windowWidth, 'scholar');
-  // Parsing the viewBox out of the SVG string is cheap but not free, and this
-  // renders once per card per scroll frame.
-  const svgRatio = useMemo(() => svgAspect(svg, FALLBACK_SVG_RATIO), [svg]);
-  const scale = cardWidth / F_W;
-  const cardHeight = F_H * scale;
-  const blockWidth = F_BLOCK_W * scale;
+  const l = scholarCardLayout(cardWidth);
 
   return (
     <Pressable
@@ -64,24 +43,29 @@ export function ScholarCard({
         styles.card,
         {
           width: cardWidth,
-          height: cardHeight,
-          borderRadius: 6.35592 * scale,
-          paddingTop: F_BLOCK_TOP * scale,
+          height: l.cardHeight,
+          borderRadius: l.radius,
           transform: [{ scale: pressed ? 0.97 : 1 }],
         },
       ]}
     >
-      <View
-        style={[
-          styles.goldStripe,
-          {
-            top: -2.54 * scale,
-            width: 149.59 * scale,
-            height: 5.07 * scale,
-          },
-        ]}
+      <View style={[styles.stripe, l.stripe]} />
+      <Image
+        source={HONORIFIC}
+        style={[styles.layer, l.honorific]}
+        contentFit="fill"
+        cachePolicy="memory-disk"
+        transition={0}
       />
-      <SvgXml xml={svg} width={blockWidth} height={blockWidth * svgRatio} />
+      <View style={[styles.layer, styles.nameBox, l.name]}>
+        <Image
+          source={nameArt}
+          style={[styles.layer, l.nameArt]}
+          contentFit="fill"
+          cachePolicy="memory-disk"
+          transition={0}
+        />
+      </View>
       <View style={styles.bookmarkSlot} pointerEvents="box-none">
         <BookmarkButton
           type="scholar"
@@ -97,10 +81,6 @@ export function ScholarCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: KhazainColors.navy,
-    alignItems: 'center',
-    // The block is placed from the card's top, not centred: the design leaves
-    // more room below it than above.
-    justifyContent: 'flex-start',
     // Figma: 3.17796px 0.79449px 12.7118px rgba(20, 64, 100, 0.24)
     shadowColor: 'rgba(20,64,100,0.24)',
     shadowOffset: { width: 3.17796, height: 0.79449 },
@@ -108,10 +88,22 @@ const styles = StyleSheet.create({
     shadowRadius: 12.7118,
     elevation: 3,
   },
-  goldStripe: {
+  layer: {
     position: 'absolute',
-    alignSelf: 'center',
+  },
+  stripe: {
+    position: 'absolute',
     backgroundColor: KhazainColors.goldBar,
+  },
+  nameBox: {
+    // The design's fill transform pushes the art past this box's LEFT edge,
+    // and Figma clips it there. Under forced RTL, React Native swaps `left`
+    // and `right` on the children of an RTL box, which mirrored that overhang
+    // to the other edge — so the box pins its own direction. See the contract
+    // in constants/layout.ts. The rects above are centred, so they are
+    // unaffected by the swap and do not need pinning.
+    ...PHYSICAL_BOX,
+    overflow: 'hidden',
   },
   bookmarkSlot: {
     position: 'absolute',

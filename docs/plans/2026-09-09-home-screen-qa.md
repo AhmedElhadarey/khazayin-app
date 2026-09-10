@@ -36,7 +36,7 @@ committed; `constants/homePresentation.ts` is unchanged on this branch.
 | D2 | Prophet hero artwork | ✅ | ✅ | Subsumed by D3 — the right-edge emblem is present, from the `.fig` layer rather than an asset swap. |
 | D3 | Heroes as layers | ✅ | ✅ | Artwork, live text, and an independently tappable `المزيد`. |
 | D4 | Bottom navigation | ✅ | ✅ | Vuesax glyphs, outline inactive / solid active, label `TheSansArabic Bold 12`. |
-| D5 | Scholar SVG aspect | ✅ | ✅ | Each SVG sized from its own `viewBox`. |
+| D5 | Scholar SVG aspect | n/a | n/a | Superseded — the card no longer draws an SVG. See below. |
 | D6 | Quick-chip truncation | ⚠️ | ⚠️ | Does not reproduce, and **nothing was changed**. See below. |
 | D7 | Book row height parity | ✅ | ✅ | Card is a fixed 192 × 81, so the row is the same height on both. See the caveat below. |
 | D8 | Dawah fan | ◐ | ◐ | Poster size and step-down match; the outermost pair does not. See below. |
@@ -44,7 +44,7 @@ committed; `constants/homePresentation.ts` is unchanged on this branch.
 | D10 | Decoder tracked | ✅ | — | `scripts/figma/` is in the repo. |
 | T1 | Two faces, one file | ⛔ | ⛔ | Blocked on the licensed fonts. |
 | T2–T5 | Type scale | ✅ | ✅ | Home and the tab bar; the rest of the app is untouched. |
-| — | Scholar card interior | ✅ | ✅ | Not a numbered defect; you spotted it. See below. |
+| — | Scholar card interior | ✅ | ✅ | Not a numbered defect; you spotted it, twice. See below. |
 | — | Queen card dead strip | ✅ | ✅ | Not a numbered defect; you spotted it. See below. |
 
 ### D6 did not reproduce, and nothing was changed for it
@@ -75,15 +75,60 @@ on layout containers. The two defects that were actually visible — the focused
 poster being 56% of the window instead of 39%, and the step-down being too
 shallow — are fixed. The outermost pair is mostly off-screen at that distance.
 
-### The scholar card was drawing its interior 11% too wide
+### The scholar card: react-native-svg was magnifying the name 2.4×
 
-Not in the plan; spotted on device. The design composes that card from two
-images — the gold `سماحة الشيخ العلامة` line (74.63 × 22.39) above the
-scholar's name (178.23 × 43.69) — as a block 178.23 wide, placed 8.91 from the
-card's top. The app carries one bundled SVG per scholar because the names are
-data, and its viewBox is that block almost exactly; but it was being stretched
-to the card's full inner width (198.28) and centred vertically. It now takes
-the design's width and top offset.
+Not in the plan; spotted on device, and it took two passes.
+
+The design composes that card from **two** images — the gold
+`سماحة الشيخ العلامة` honorific (74.63 × 22.39, at y 8.91) above the scholar's
+name in calligraphy (178.23 × 43.69, at y 35.76), both centred. The app drew
+one bundled SVG per scholar instead, sized to the card's full inner width
+(198.28) and centred vertically; the first pass corrected that to the design's
+178.23 and top offset.
+
+That was necessary but not the real fault. Those SVGs paint both images
+through `<pattern patternContentUnits="objectBoundingBox">`. librsvg renders
+them correctly — proving the SVG itself is sound — but **react-native-svg does
+not**: on device it magnified the name roughly 2.4× and tiled it, which is the
+"zoomed in" the second report described.
+
+The fix stops asking react-native-svg to resolve those patterns. The card now
+places the `.fig`'s own two images at the design's own rects, via `expo-image`:
+
+- Honorific `74.6329 × 22.3949` at y `8.91`, centred. Its fill is an identity
+  transform, so it paints flush to its box.
+- Name box `178.228 × 43.6946` at y `35.7606`, centred. Its fill is **not**
+  flush: the `.fig` sets a paint transform which Figma's own SVG export
+  resolves to `matrix(0.00227964 0 0 0.00925926 -0.00699635 0.0548105)` over
+  the 439 × 100 source. So the art is 7.4% shorter than its box, sits 2.4
+  lower, and hangs 1.25 off the leading edge, where Figma clips it.
+  `scholarCardLayout` states that offset and the card clips it.
+
+One RTL trap on the way: under forced RTL, React Native swaps `left` and
+`right` on the children of an RTL box, which mirrored that 1.25 overhang to
+the wrong edge — a 2.36 pt error, visible only in measurement. The clipping
+box now pins its own direction, per the contract in `constants/layout.ts`.
+
+Measured against a render composited straight from the `.fig` images at the
+design's geometry, normalised to a 1000 px-wide card:
+
+| | honorific | name |
+|---|---|---|
+| design | `x 327..672`, h 103 | `x 88..907`, h 187 |
+| iOS | `x 327..673`, h 104 | `x 88..907`, h 189 |
+| Android | `x 328..674`, h 105 | `x 88..908`, h 189 |
+
+**Still open:** Figma draws all three cards with the same name art —
+`عبد العزيز بن عبد الله بن باز` is the design's placeholder — so `s5` and `s1`
+carry it too and their cards read the wrong name. The three bundled SVGs this
+replaced were byte-identical, so they read the same wrong name before; this
+does not regress anything, but `محمد بن صالح العثيمين` and
+`عبد المحسن العباد البدر` need their own calligraphy from the client. Live
+text is not a substitute — the design's name is calligraphy, not type.
+
+`scholarSvgs.ts` (123 KB of base64), `assets/khazain/home/she5-{1,2,3}.svg`
+and `scripts/generate-scholar-svgs.js` are now unreferenced. They are left on
+disk: deleting is the user's call.
 
 ### The queen card had a dead strip
 
