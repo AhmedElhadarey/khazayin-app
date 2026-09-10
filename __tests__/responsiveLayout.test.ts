@@ -239,7 +239,9 @@ describe('segmented tab strip', () => {
   });
 
   it('keeps every tab at least a comfortable touch width but lets it scroll at 320', () => {
-    expect(SEGMENT_TABS.minTabWidth).toBe(88);
+    // 84 is the width node 2031:6193 states: four tabs and three 8pt gaps
+    // fill the 360pt strip exactly at the 393pt reference width.
+    expect(SEGMENT_TABS.minTabWidth).toBe(84);
     const stripWidth = 4 * SEGMENT_TABS.minTabWidth + 3 * SEGMENT_TABS.gap;
     // Wider than the narrowest supported screen — so the strip must scroll
     // horizontally rather than wrap onto a second line.

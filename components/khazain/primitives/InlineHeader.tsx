@@ -1,10 +1,11 @@
-import { MIN_TOUCH_TARGET, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { MIN_TOUCH_TARGET, PHYSICAL_ROW, SECTION_CHROME } from '@/constants/layout';
 import {
   INLINE_HEADER_ORDER,
   type InlineHeaderSlot,
   backAccessibilityLabel,
 } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -18,6 +19,11 @@ import Svg, { Path } from 'react-native-svg';
 // inside a PHYSICAL_ROW, so the two children keep their authored order on
 // every platform. Height is content-driven so a larger font scale grows the
 // header rather than clipping the title.
+//
+// The title is set in the *body* face at 18, not the calligraphic one: every
+// header in the file — all seventeen Sections frames, plus Home, Library and
+// More — states TheMixArab Regular 18 in `#281E13`. The app had been setting
+// Amiri Bold in navy, which read as a different screen family entirely.
 export function InlineHeader({
   title,
   onBack,
@@ -69,6 +75,7 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     minHeight: MIN_TOUCH_TARGET,
     paddingHorizontal: 16,
+    paddingTop: SECTION_CHROME.headerPaddingTop,
     alignItems: 'center',
     justifyContent: 'flex-end',
   },
@@ -81,12 +88,7 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    lineHeight: 28,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    ...RTL_TEXT,
+    ...textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
     flexShrink: 1,
   },
 });

@@ -1,10 +1,16 @@
+import { SECTION_CHROME } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 
-// Right-rail Arabic letter index. Used on reciter / surah-listing / scholar screens.
-// Each chip is 22px square; the rail scrolls vertically on shorter phones.
-// Active chip → navy fill + white letter.
+// Right-rail Arabic letter index — node "DIV-97" on 2031:6193, 2102:2975,
+// 2869:2088 and 2869:2306. A 20pt column at the physical right holding 16 x 22
+// chips 4 apart, lettered in the body face at 12.
+//
+// The active chip does two things, not one: it fills navy with a cream letter
+// AND widens to 20 at a harder radius, so it reads as selected even where the
+// rail is small.
 //
 // RTL note: this component is *visually* pinned to the screen's RIGHT edge
 // (the start-side in RTL). Place it inside the parent screen's right padding.
@@ -55,41 +61,37 @@ export function LetterIndex({ active = 'م', onLetterPress, letters = LETTERS }:
 
 const styles = StyleSheet.create({
   rail: {
-    width: 26,
+    width: SECTION_CHROME.letterChipActiveWidth,
     flex: 1,
   },
   railContent: {
-    gap: 2,
+    gap: SECTION_CHROME.letterChipGap,
     alignItems: 'center',
     paddingBottom: 2,
   },
   chip: {
-    width: 22,
-    height: 22,
-    borderRadius: 6,
+    width: SECTION_CHROME.letterChipWidth,
+    height: SECTION_CHROME.letterChipHeight,
+    borderRadius: SECTION_CHROME.letterChipRadius,
     alignItems: 'center',
     justifyContent: 'center',
   },
   chipIdle: {
-    backgroundColor: KhazainColors.cream50,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.10)',
+    // The file gives the idle chip a flat `#FCFAF8` and no stroke.
+    backgroundColor: KhazainColors.cardBg,
   },
   chipActive: {
+    width: SECTION_CHROME.letterChipActiveWidth,
+    borderRadius: SECTION_CHROME.letterChipActiveRadius,
     backgroundColor: KhazainColors.navy800,
   },
   letter: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    lineHeight: 14,
-    writingDirection: 'rtl',
+    ...textStyle('caption', { textAlign: 'center' }),
   },
   letterIdle: {
-    color: KhazainColors.ink700,
-    fontWeight: '500',
+    color: KhazainColors.inkTitle,
   },
   letterActive: {
-    color: '#FFFFFF',
-    fontWeight: '700',
+    color: KhazainColors.navLabel,
   },
 });

@@ -238,7 +238,7 @@ export const SEGMENT_TABS = Object.freeze({
   strip: Object.freeze({ flexGrow: 0, flexShrink: 0 } as const),
   stripPaddingVertical: 6,
   gap: 8,
-  minTabWidth: 88,
+  minTabWidth: 84,
 } as const);
 
 /**
@@ -263,26 +263,39 @@ export function physicalTabOrder<T>(tabs: readonly T[]): T[] {
 // MIN_TOUCH_TARGET of height, and smaller controls inside them use hitSlop.
 
 export const CARD_DENSITY = Object.freeze({
-  // Section/root list card — node 2031:5675.
+  // Section/root list card — node 2031:5675, `DIV-43`.
   sectionCardHeight: 96,
   sectionCardPaddingVertical: 16,
+  sectionCardPaddingHorizontal: 12,
   sectionIconDisc: 64,
   sectionCardRadius: 20,
 
-  // Lecture-style card — nodes 2465:1911, 2589:1772, 2597:2552, 2606:3830.
-  lectureCardMinHeight: 66,
-  lectureCardRadius: 12,
+  // Lecture-style card — nodes 2465:1911, 2589:1772, 2597:2552, 2606:3830,
+  // all of which draw `DIV-139` identically: 64 tall, radius 16, inset 8.
+  lectureCardMinHeight: 64,
+  lectureCardRadius: 16,
+  lectureCardPaddingHorizontal: 8,
   lectureBadgeDisc: 40,
 
-  // Reciter, qiraa, and scholar rows — nodes 2031:6193, 2457:954, 2102:2975.
-  reciterRowMinHeight: 60,
+  // Reciter and qiraa rows — nodes 2031:6193, 2102:3187, 2457:954. The same
+  // row one step tighter: 56 tall at radius 12.
+  reciterRowMinHeight: 56,
+  reciterRowRadius: 12,
+
+  // The two lists that sit beside the letter rail — nodes 2102:2975 (scholars,
+  // 64 tall) and 2869:2088 / 2869:2306 (audiobooks and exclusives, 56). They
+  // are the only rows in the file drawn at radius 20 with no stroke.
+  railRowRadius: 20,
   scholarRowMinHeight: 64,
 
+  /** Rail lists and the section root sit 8 apart … */
   listGap: 8,
+  /** … every row that carries a hairline sits 6 apart (a 70 step over 64). */
+  lectureListGap: 6,
 
   // Skeletons stand in for real rows, so the page must not jump on load.
-  skeletonRowHeight: 66,
-  skeletonRibbonHeight: 60,
+  skeletonRowHeight: 64,
+  skeletonRibbonHeight: 56,
   skeletonGap: 8,
 
   /**
@@ -290,6 +303,52 @@ export const CARD_DENSITY = Object.freeze({
    * before; 1 keeps a card lifted without the separator the audit flagged.
    */
   cardElevation: 1,
+} as const);
+
+// ---------------------------------------------------------------------------
+// Section page chrome
+// ---------------------------------------------------------------------------
+//
+// The header, search field, letter rail and tab strip are redrawn identically
+// in all seventeen Sections frames, so their numbers belong here rather than
+// in each primitive. Every value is stated by `docs/KHAZAYIN.fig`.
+
+export const SECTION_CHROME = Object.freeze({
+  /** The title box starts at y=53 under a 45pt status bar. */
+  headerPaddingTop: 8,
+
+  /**
+   * Node "Inputs" — 361 x 40 at radius 12, a `#D9D6D3` hairline and a soft
+   * drop shadow (y+4, blur 16, black at 8%). It is under the 44pt touch
+   * minimum by design, so the control keeps a 44pt target through hitSlop
+   * rather than by growing.
+   */
+  searchHeight: 40,
+  searchRadius: 12,
+
+  /**
+   * The letter rail — node "DIV-97". A 20pt column at the physical right
+   * holding 16 x 22 chips 4 apart; the active chip widens to 20 and rounds
+   * harder instead of only changing colour.
+   */
+  railWidth: 20,
+  letterChipWidth: 16,
+  letterChipHeight: 22,
+  letterChipRadius: 4,
+  letterChipGap: 4,
+  letterChipActiveWidth: 20,
+  letterChipActiveRadius: 8,
+
+  /**
+   * The reciter tab strip — node "\u0661" on 2031:6193. Four 84 x 45 tabs 8
+   * apart, each with a 70 x 4 navy bar pinned to its bottom edge.
+   */
+  tabWidth: 84,
+  tabHeight: 45,
+  tabRadius: 7.5,
+  tabGap: 8,
+  tabUnderlineWidth: 70,
+  tabUnderlineHeight: 4,
 } as const);
 
 // ---------------------------------------------------------------------------
@@ -303,9 +362,13 @@ export const RESERVED_COLUMNS = Object.freeze({
   disclosure: 20,
   iconBadge: CARD_DENSITY.lectureBadgeDisc,
   sectionIconDisc: CARD_DENSITY.sectionIconDisc,
-  /** The letter rail itself, and the inset a list must leave beside it. */
-  letterRail: 26,
-  letterRailInset: 36,
+  /**
+   * The letter rail itself, and the inset a list must leave beside it. The
+   * file puts the rail at x=357..377 — hard against the 16pt page margin — and
+   * ends the list at x=349, so the list gives up 44 on the physical right.
+   */
+  letterRail: SECTION_CHROME.letterChipActiveWidth,
+  letterRailInset: 44,
 } as const);
 
 /**

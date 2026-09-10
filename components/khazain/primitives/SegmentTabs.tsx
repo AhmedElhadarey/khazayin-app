@@ -1,10 +1,21 @@
-import { PHYSICAL_ROW, RTL_TEXT, SEGMENT_TABS, physicalTabOrder } from '@/constants/layout';
+import {
+  PHYSICAL_ROW,
+  SECTION_CHROME,
+  SEGMENT_TABS,
+  physicalTabOrder,
+} from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-// Pill-segmented tabs with an active underline + bold title.
-// Used on the reciter / mushaf tabs strip (Figma nodes 2031:6193, 2102:3187).
+// The reciter tab strip — node "\u0661" on 2031:6193. Four 84 x 45 tabs 8
+// apart on `#EDE0D1`, each labelled in the display face at 10 in navy, with a
+// 70 x 4 navy bar pinned to the bottom edge of the selected one.
+//
+// The file draws the bar on every tab, because it only ever models the strip
+// in one state; keeping it on the active tab alone is what makes the control
+// legible, and the label colour stays navy either way, as stated.
 //
 // `tabs` are authored in RTL reading order (right-most first, so the default
 // tab is index 0). `physicalTabOrder` reverses that into left → right and
@@ -71,39 +82,29 @@ const styles = StyleSheet.create({
     gap: SEGMENT_TABS.gap,
   },
   tab: {
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 8,
+    height: SECTION_CHROME.tabHeight,
+    paddingHorizontal: 7,
+    paddingTop: 16,
     minWidth: SEGMENT_TABS.minTabWidth,
     alignItems: 'center',
-    borderRadius: 12,
-    backgroundColor: KhazainColors.cream200,
+    borderRadius: SECTION_CHROME.tabRadius,
+    backgroundColor: KhazainColors.heroCream,
     overflow: 'hidden',
   },
   tabActive: {
-    backgroundColor: KhazainColors.cream200,
+    backgroundColor: KhazainColors.heroCream,
   },
   label: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    ...RTL_TEXT,
-    textAlign: 'center',
+    ...textStyle('labelSmall', { textAlign: 'center' }),
+    color: KhazainColors.navy800,
   },
-  labelIdle: {
-    color: KhazainColors.ink700,
-    fontWeight: '500',
-  },
-  labelActive: {
-    color: KhazainColors.ink900,
-    fontWeight: '700',
-  },
+  labelIdle: {},
+  labelActive: {},
   underline: {
     position: 'absolute',
-    left: 8,
-    right: 8,
     bottom: 0,
-    height: 3,
+    width: SECTION_CHROME.tabUnderlineWidth,
+    height: SECTION_CHROME.tabUnderlineHeight,
     backgroundColor: KhazainColors.navy800,
-    borderRadius: 2,
   },
 });

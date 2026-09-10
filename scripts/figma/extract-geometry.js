@@ -11,6 +11,12 @@ const { openFig } = require(path.join(__dirname, 'kiwi.js'));
 
 const key = (g) => g && `${g.sessionID}:${g.localID}`;
 
+// Figma stores colour channels as 0..1 floats; opacity rides on the paint.
+const hex = (p) =>
+  '#' + [p.color.r, p.color.g, p.color.b]
+    .map((c) => Math.round(c * 255).toString(16).padStart(2, '0')).join('')
+  + (p.opacity !== undefined && p.opacity < 1 ? `@${p.opacity.toFixed(2)}` : '');
+
 // Figma stores an affine transform per node, relative to its parent.
 function compose(parent, t) {
   if (!t) return parent;
@@ -75,10 +81,25 @@ function main() {
       fontSize: n.fontSize,
       lineHeight: n.lineHeight && n.lineHeight.value,
       text: (n.textData && n.textData.characters) || undefined,
-      fill: (n.fillPaints || []).filter((p) => p.color).map((p) =>
-        '#' + [p.color.r, p.color.g, p.color.b].map((c) =>
-          Math.round(c * 255).toString(16).padStart(2, '0')).join('')
-          + (p.opacity !== undefined && p.opacity < 1 ? `@${p.opacity.toFixed(2)}` : '')),
+      fill: (n.fillPaints || []).filter((p) => p.color).map(hex),
+      // A card's stroke, shadow and per-corner radii are as much of the spec as
+      // its size is, and reading them from the file is the only way to settle
+      // "does this one have a shadow" without squinting at an export.
+      stroke: (n.strokePaints || []).filter((p) => p.color).map(hex),
+      strokeWeight: n.strokeWeight,
+      // Figma writes one `cornerRadius` when all four agree, and four separate
+      // fields when they do not.
+      radii: n.rectangleCornerRadiiIndependent
+        ? [n.rectangleTopLeftCornerRadius, n.rectangleTopRightCornerRadius,
+           n.rectangleBottomRightCornerRadius, n.rectangleBottomLeftCornerRadius]
+        : undefined,
+      effects: (n.effects || []).map((e) => ({
+        type: e.type,
+        radius: e.radius,
+        offset: e.offset && [e.offset.x, e.offset.y],
+        color: e.color ? hex({ color: e.color }) : undefined,
+        visible: e.visible !== false,
+      })),
       // Image paints key straight into the archive's `images/` directory by
       // content hash, which is how real client art gets out of the file
       // rather than being recovered from a flattened frame export.
