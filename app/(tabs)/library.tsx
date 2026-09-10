@@ -36,6 +36,7 @@ import {
   LIBRARY_SECTION_GAP,
   NOTE_FIELD,
   QUICK_NOTE_CARD,
+  RECENT_NOTE_ROW,
   STAT_CARD,
   WIRD_CARD,
 } from '@/components/khazain/library/libraryLayout';
@@ -390,7 +391,7 @@ export default function LibraryScreen() {
               <CircularProgress pct={todayPct} size={WIRD_CARD.ring} />
             </Pressable>
             <View style={{ flex: 1 }}>
-              <Text style={styles.wirdTitle}>وردُ القرآن اليومي</Text>
+              <Text style={styles.wirdTitle}>ورد القرآن اليومي</Text>
             </View>
           </View>
           {/* Physical left → right: "بدء الورد", then the reading summary. */}
@@ -513,8 +514,13 @@ export default function LibraryScreen() {
                 onPress={() => setFilter(f.id as LibraryFilter)}
                 style={[styles.filterPill, active && styles.filterPillActive]}
               >
+                {/* The frame sets the label at 14 and the count at 12, with a
+                    12pt gap — physical left → right: count, then label. */}
+                <Text style={[styles.filterCount, active && styles.filterLabelActive]}>
+                  {f.count}
+                </Text>
                 <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
-                  {f.label} {f.count}
+                  {f.label}
                 </Text>
               </Pressable>
             );
@@ -845,6 +851,7 @@ const styles = StyleSheet.create({
   quickNoteCard: {
     padding: QUICK_NOTE_CARD.padding,
     paddingTop: 17,
+    paddingBottom: QUICK_NOTE_CARD.paddingBottom,
     borderRadius: QUICK_NOTE_CARD.radius,
     backgroundColor: KhazainColors.pageBg,
     borderWidth: 1,
@@ -864,8 +871,8 @@ const styles = StyleSheet.create({
   noteToolbar: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 4,
-    marginTop: 8,
+    gap: 8,
+    marginTop: 12,
   },
   noteSaveBtn: {
     height: 36,
@@ -876,21 +883,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   noteSaveLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
+  // DIV-122 carries no rule; the design separates the block with space.
   recentBlock: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(141,107,52,0.1)',
     marginTop: 12,
-    paddingTop: 10,
+    paddingBottom: 16,
   },
   recentHeader: {
     ...textStyle('cardTitle', { color: KhazainColors.ink500 }),
     marginBottom: 8,
   },
   // Physical left → right: relative time, then the note title at the right.
+  // DIV-127/134: each recent note is its own 36pt card, not a bare row.
   recentRow: {
     ...PHYSICAL_ROW,
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 5,
+    height: 36,
+    marginBottom: RECENT_NOTE_ROW.gap,
+    paddingHorizontal: 8,
+    borderRadius: RECENT_NOTE_ROW.radius,
+    backgroundColor: KhazainColors.cardBg,
   },
   recentTitle: textStyle('cardTitle', { color: KhazainColors.ink500 }),
   recentTime: textStyle('label', { color: KhazainColors.ink500 }),
@@ -909,9 +921,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   filterPill: {
+    ...PHYSICAL_ROW,
     height: FILTER_CHIP.height,
-    justifyContent: 'center',
-    paddingHorizontal: 16,
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 12,
     borderRadius: FILTER_CHIP.radius,
     backgroundColor: KhazainColors.iconChipBg,
   },
@@ -919,11 +933,12 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.navy800,
   },
   filterLabel: textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  filterCount: textStyle('label', { color: KhazainColors.ink500 }),
   filterLabelActive: { color: KhazainColors.pageBg },
   sectionTitle: {
     ...textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
     paddingHorizontal: LIBRARY_DESIGN.sideMargin,
-    paddingBottom: 12,
+    paddingBottom: 8,
   },
   historyLoading: {
     fontFamily: 'TheSansArabic',
@@ -936,11 +951,12 @@ const styles = StyleSheet.create({
 });
 
 const formatStyles = StyleSheet.create({
+  // BUTTON-113/116/119: 32 x 32 discs on the card's lighter surface.
   btn: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: KhazainColors.cream100,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: KhazainColors.cardBg,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -50,14 +50,18 @@ export const WIRD_CARD = Object.freeze({
   padding: 14,
   /** The progress ring, 48 x 48 at the card's leading edge. */
   ring: 48,
-  toggle: Object.freeze({ width: 44, height: 24 }),
 });
 
 export const QUICK_NOTE_CARD = Object.freeze({
   radius: LIBRARY_CARD_RADIUS,
   /** The textarea sits at x=24 in a card at x=16. */
   padding: 8,
+  /** `DIV-122` ends at y=846 in a card that ends at 870. */
+  paddingBottom: 24,
 });
+
+/** A recent-note row: `DIV-127` / `DIV-134`, 345 x 36 at radius 8. */
+export const RECENT_NOTE_ROW = Object.freeze({ height: 36, radius: 8, gap: 8 });
 
 /** The quick-note textarea: 345 x 86 at radius 16. */
 export const NOTE_FIELD = Object.freeze({ height: 86, radius: 16 });
