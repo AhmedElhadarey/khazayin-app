@@ -1,6 +1,7 @@
-import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { LECTURE_CARD_ORDER, type LectureCardSlot } from '@/constants/rtlContracts';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import type { Lecture } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -12,9 +13,12 @@ import { BookmarkButton } from './BookmarkButton';
 // Figma nodes 2465:1911, 2589:1772, 2597:2552, 2606:3830. LECTURE_CARD_ORDER
 // drives it inside a PHYSICAL_ROW container, so forceRTL cannot reverse it.
 //
-// Every lecture-like frame in the Figma file uses one row density, so the card
-// height comes from CARD_DENSITY and `compact` now only tightens the type and
-// clamps the title to a single line for the radio programme list (page 35).
+// `DIV-139` is the same node in 2465:1911, 2589:1772, 2597:2552 and 2606:3830:
+// 64 tall at radius 16, `#FCFAF8` behind a 1pt `#D9D6D3` hairline, inset 8, and
+// — like every card in these frames — casting no shadow at all.
+//
+// `compact` is the shape the two rail lists use (2869:2088, 2869:2306): 56
+// tall at radius 20 with no stroke, because the rail supplies the edge.
 // `pretitleSmall` renders an optional pretitle line above the title (e.g. "فضيلة الشيخ").
 // `iconNode` lets each section slot a different glyph badge.
 export function LectureCard({
@@ -40,10 +44,9 @@ export function LectureCard({
   showBookmark?: boolean;
   onPress?: () => void;
 }) {
+  // `compact` now only changes the card's shape: the file sets the same type
+  // on both, so the text styles no longer fork.
   const heightStyle = compact ? styles.cardCompact : styles.card;
-  const iconWrapStyle = compact ? styles.iconWrapCompact : styles.iconWrap;
-  const titleStyle = compact ? styles.titleCompact : styles.title;
-  const scholarStyle = compact ? styles.scholarCompact : styles.scholar;
 
   const slots: Record<LectureCardSlot, React.ReactNode> = {
     // Physical left: duration plus an opt-in save affordance.
@@ -62,24 +65,24 @@ export function LectureCard({
         </View>
       ) : null,
     text: (
-      <View style={[styles.textBlock, compact && styles.textBlockCompact]}>
+      <View style={styles.textBlock}>
         {pretitleSmall ? (
           <Text style={styles.pretitle} numberOfLines={1}>
             {pretitleSmall}
           </Text>
         ) : null}
-        <Text style={titleStyle} numberOfLines={compact ? 1 : 2}>
+        <Text style={styles.title} numberOfLines={compact ? 1 : 2}>
           {title}
         </Text>
         {scholar ? (
-          <Text style={scholarStyle} numberOfLines={1}>
+          <Text style={styles.scholar} numberOfLines={1}>
             {scholar}
           </Text>
         ) : null}
       </View>
     ),
     // Physical right: the section badge disc.
-    badge: <View style={iconWrapStyle}>{iconNode}</View>,
+    badge: <View style={styles.iconWrap}>{iconNode}</View>,
   };
 
   return (
@@ -88,7 +91,6 @@ export function LectureCard({
       style={({ pressed }) => [
         styles.cardBase,
         heightStyle,
-        KhazainShadows.card,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
@@ -103,28 +105,23 @@ const styles = StyleSheet.create({
   cardBase: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 10,
-    borderRadius: CARD_DENSITY.lectureCardRadius,
+    gap: 8,
     backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.08)',
     justifyContent: 'center',
-    paddingHorizontal: 12,
-    minHeight: CARD_DENSITY.lectureCardMinHeight,
-  },
-  card: {
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
     paddingVertical: 8,
   },
+  card: {
+    minHeight: CARD_DENSITY.lectureCardMinHeight,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
+    borderWidth: 1,
+    borderColor: KhazainColors.hairlineWarm,
+  },
   cardCompact: {
-    paddingVertical: 6,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
+    borderRadius: CARD_DENSITY.railRowRadius,
   },
   iconWrap: {
-    width: CARD_DENSITY.lectureBadgeDisc,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  iconWrapCompact: {
     width: CARD_DENSITY.lectureBadgeDisc,
     justifyContent: 'center',
     alignItems: 'center',
@@ -136,61 +133,19 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 2,
   },
-  textBlockCompact: {
-    gap: 1,
-  },
-  pretitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    lineHeight: 14,
-    fontWeight: '500',
-    color: KhazainColors.ink500,
-    ...RTL_TEXT,
-  },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    ...RTL_TEXT,
-  },
-  titleCompact: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 14,
-    lineHeight: 19,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    ...RTL_TEXT,
-  },
-  scholar: {
-    // Arabic faces carry tall ascenders/descenders, so an unset lineHeight
-    // silently inflates every row. Every text style here pins one.
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    color: KhazainColors.ink500,
-    ...RTL_TEXT,
-  },
-  scholarCompact: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    lineHeight: 15,
-    color: KhazainColors.ink500,
-    ...RTL_TEXT,
-  },
+  // `H3-145` is TheMixArab Regular 14 and `P-148` TheMixArab Regular 12 in
+  // every one of these frames — the body face, not the calligraphic one the
+  // app had been reaching for.
+  pretitle: textStyle('caption', { color: KhazainColors.ink500 }),
+  title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  scholar: textStyle('caption', { color: KhazainColors.ink500 }),
   endCluster: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 6,
     flexShrink: 0,
   },
-  duration: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-  },
+  // `45 دقيقة-143` is TheSansArabic Bold 12 in `#5F5345` — the same warm ink
+  // as the subtitle, not the navy the app had been using.
+  duration: textStyle('label', { color: KhazainColors.ink500 }),
 });

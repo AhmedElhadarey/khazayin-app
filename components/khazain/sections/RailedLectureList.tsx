@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     top: 8,
     bottom: 0,
     // LETTER_INDEX_EDGE — the alphabet rail lives on the physical right edge.
-    [LETTER_INDEX_EDGE]: 4,
+    [LETTER_INDEX_EDGE]: 16,
     width: RESERVED_COLUMNS.letterRail,
     alignItems: 'center',
   },

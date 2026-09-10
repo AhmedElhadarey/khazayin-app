@@ -1,7 +1,8 @@
 import { AsyncContent, InlineHeader, MoonMountainBadge, SkeletonCardList } from '@/components/khazain';
 import { OrnamentPattern } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { useDawahMonthsStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -46,7 +47,6 @@ export default function DawahScreen() {
               onPress={() => openDetail(g.id)}
               style={({ pressed }) => [
                 styles.row,
-                KhazainShadows.card,
                 { transform: [{ scale: pressed ? 0.98 : 1 }] },
               ]}
             >
@@ -72,39 +72,31 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    gap: CARD_DENSITY.listGap,
+    // `DIV-139` steps 60 over a 56 row.
+    gap: 4,
   },
+  // Node 2120:942 `DIV-139` — 361 x 56 at radius 16 behind a 1pt `#D9D6D3`
+  // hairline, inset 8, casting no shadow.
   row: {
     ...PHYSICAL_ROW,
-    minHeight: CARD_DENSITY.lectureCardMinHeight,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
     borderRadius: CARD_DENSITY.lectureCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    borderColor: KhazainColors.hairlineWarm,
+    paddingVertical: 8,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   title: {
+    ...textStyle('cardTitle', { color: KhazainColors.inkTitle }),
     flex: 1,
     minWidth: 0,
-    fontFamily: 'Amiri-Bold',
-    fontSize: 17,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
   countBlock: {
     justifyContent: 'center',
     flexShrink: 0,
   },
-  count: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '500',
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-  },
+  count: textStyle('label', { color: KhazainColors.ink500 }),
 });

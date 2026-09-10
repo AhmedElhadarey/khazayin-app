@@ -7,7 +7,7 @@ import {
   SearchPill,
   SkeletonRibbonList,
 } from '@/components/khazain';
-import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { useScholarsStore } from '@/store';
 import { useRouter } from 'expo-router';
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
     paddingLeft: 16,
-    paddingRight: 36,
+    paddingRight: RESERVED_COLUMNS.letterRailInset,
   },
   listContent: {
     gap: CARD_DENSITY.listGap,
@@ -97,8 +97,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     bottom: 0,
-    right: 4,
-    width: 26,
+    // The file puts the rail hard against the 16pt page margin.
+    right: 16,
+    width: RESERVED_COLUMNS.letterRail,
     alignItems: 'center',
   },
 });

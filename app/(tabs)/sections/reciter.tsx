@@ -7,7 +7,7 @@ import {
   SegmentTabs,
   SkeletonRibbonList,
 } from '@/components/khazain';
-import { PHYSICAL_BOX } from '@/constants/layout';
+import { PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
@@ -122,7 +122,7 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
     paddingLeft: 16,
-    paddingRight: 36, // leave room for the right-rail letter index
+    paddingRight: RESERVED_COLUMNS.letterRailInset,
   },
   listContent: {
     gap: 8,
@@ -132,8 +132,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     bottom: 0,
-    right: 4,
-    width: 26,
+    // The file puts the rail hard against the 16pt page margin.
+    right: 16,
+    width: RESERVED_COLUMNS.letterRail,
     alignItems: 'center',
   },
 });

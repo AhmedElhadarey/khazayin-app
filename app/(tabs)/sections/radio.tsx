@@ -6,6 +6,7 @@ import {
   SearchPill,
   SkeletonRibbonList,
 } from '@/components/khazain';
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useRadioProgramsStore } from '@/store';
@@ -46,7 +47,7 @@ export default function RadioScreen() {
             id={item.id}
             category={item.category}
             compact
-            iconNode={<MicBadge size={40} />}
+            iconNode={<MicBadge size={CARD_DENSITY.lectureBadgeDisc} />}
             title={item.title}
             scholar={item.scholar}
             duration={item.duration}
@@ -79,6 +80,6 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 4,
-    gap: 8,
+    gap: CARD_DENSITY.lectureListGap,
   },
 });

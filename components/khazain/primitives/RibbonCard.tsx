@@ -1,10 +1,19 @@
-import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 // Cream card with a thin gold vertical ribbon on the RIGHT edge (start-side in RTL).
 // Used on العلماء والمشايخ (page 26), كل الشرح (page 28).
+//
+// The two frames draw genuinely different cards, so the `badge` branch is a
+// shape switch rather than only a swapped child:
+//   - scholar list, node 2102:2975 `DIV-107` — 64 tall at radius 20, no stroke,
+//     inset 16, with the 40pt disc at the physical right;
+//   - scholar detail, node 2510:1990 `DIV-139` — 56 tall at radius 12 behind a
+//     1pt `#D9D6D3` hairline, inset 8, with a 12 x 54 `#A88051` ribbon rounded
+//     on its outer side only.
 //
 // Physical left → right: duration, title block, trailing adornment. The
 // adornment is a badge disc on the scholar list (node 2102:2975) and the gold
@@ -34,7 +43,7 @@ export function RibbonCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
-        KhazainShadows.card,
+        badge ? styles.cardWithBadge : styles.cardWithRibbon,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
@@ -64,22 +73,33 @@ const styles = StyleSheet.create({
   card: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 12,
-    minHeight: CARD_DENSITY.scholarRowMinHeight,
-    borderRadius: CARD_DENSITY.lectureCardRadius,
+    gap: 8,
     backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.08)',
-    paddingVertical: 10,
-    paddingHorizontal: 14,
     overflow: 'hidden',
+  },
+  cardWithBadge: {
+    minHeight: CARD_DENSITY.scholarRowMinHeight,
+    borderRadius: CARD_DENSITY.railRowRadius,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  cardWithRibbon: {
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
+    borderWidth: 1,
+    borderColor: KhazainColors.hairlineWarm,
+    paddingVertical: 4,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
   },
   ribbon: {
     alignSelf: 'stretch',
-    marginVertical: -2,
-    width: 5,
-    borderRadius: 3,
-    backgroundColor: KhazainColors.goldBar,
+    // The ribbon reaches the card's own edge, past the row's inset.
+    marginVertical: 1,
+    marginRight: -CARD_DENSITY.lectureCardPaddingHorizontal,
+    width: 12,
+    borderTopRightRadius: 11,
+    borderBottomRightRadius: 11,
+    backgroundColor: KhazainColors.goldAccent,
     flexShrink: 0,
   },
   titleBlock: {
@@ -88,37 +108,11 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 2,
   },
-  pretitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    lineHeight: 14,
-    fontWeight: '500',
-    color: KhazainColors.ink500,
-    ...RTL_TEXT,
-  },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    ...RTL_TEXT,
-  },
-  meta: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    color: KhazainColors.ink500,
-    marginTop: 2,
-    ...RTL_TEXT,
-  },
+  pretitle: textStyle('caption', { color: KhazainColors.ink500 }),
+  title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  meta: textStyle('caption', { color: KhazainColors.ink500 }),
   duration: {
+    ...textStyle('label', { color: KhazainColors.ink500 }),
     flexShrink: 0,
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    lineHeight: 15,
-    fontWeight: '600',
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
   },
 });

@@ -1,13 +1,19 @@
-import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { LIST_ROW_ORDER, type ListRowSlot, listRowAccessibilityLabel } from '@/constants/rtlContracts';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../icons';
 
-// Cream list-row card used in SectionsScreen and Dawah group list.
-// Visual spec: bg cardBg, r=20, padding 16/12, 64×64 circular icon chip,
-// title/subtitle/count stack, leading chevron.
+// The section card, node 2031:5675 `DIV-43`: 361 x 96 at radius 20, a flat
+// `#FCFAF8` with no stroke and no shadow, inset 12, and a 64pt circular chip
+// tinted `#D7B995` at 16% behind a 1pt `#A88051` stroke.
+//
+// Its three text lines are the file's only place that titles a row in the
+// *display* face: TheSansArabic Bold at 16 / 14 / 12, the last of them navy.
+// `compact` is the More list (node 2102:2711), which titles the same row in
+// the body face at 14 instead — so the two do not share type.
 //
 // Physical order (left → right) is disclosure, text, icon badge — Figma node
 // 2031:5675. It is driven by LIST_ROW_ORDER inside a PHYSICAL_ROW container so
@@ -39,11 +45,14 @@ export function ListRowCard({
     ) : null,
     text: (
       <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={1}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={styles.subtitle} numberOfLines={1}>
+          <Text
+            style={[styles.subtitle, compact && styles.subtitleCompact]}
+            numberOfLines={1}
+          >
             {subtitle}
           </Text>
         ) : null}
@@ -63,7 +72,6 @@ export function ListRowCard({
       style={({ pressed }) => [
         styles.card,
         compact && styles.cardCompact,
-        KhazainShadows.card,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
@@ -79,17 +87,18 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
+    minHeight: CARD_DENSITY.sectionCardHeight,
     paddingVertical: CARD_DENSITY.sectionCardPaddingVertical,
-    paddingHorizontal: 12,
+    paddingHorizontal: CARD_DENSITY.sectionCardPaddingHorizontal,
     borderRadius: CARD_DENSITY.sectionCardRadius,
     backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
   },
   cardCompact: {
     minHeight: CARD_DENSITY.lectureCardMinHeight,
     paddingVertical: 8,
     borderRadius: CARD_DENSITY.lectureCardRadius,
+    borderWidth: 1,
+    borderColor: KhazainColors.hairlineWarm,
   },
   iconChipCompact: {
     width: CARD_DENSITY.lectureBadgeDisc,
@@ -101,6 +110,8 @@ const styles = StyleSheet.create({
     height: CARD_DENSITY.sectionIconDisc,
     borderRadius: CARD_DENSITY.sectionIconDisc / 2,
     backgroundColor: KhazainColors.iconChipBg,
+    borderWidth: 1,
+    borderColor: KhazainColors.goldAccent,
     alignItems: 'center',
     justifyContent: 'center',
     flexShrink: 0,
@@ -108,30 +119,13 @@ const styles = StyleSheet.create({
   textCol: {
     flex: 1,
     minWidth: 0,
-    gap: 2,
+    // `H3-49` ends at y=186 and `P-52` starts at 192; `P-55` follows 2 later.
+    gap: 4,
   },
-  title: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    lineHeight: 20,
-    fontWeight: '600',
-    color: KhazainColors.inkTitle,
-    ...RTL_TEXT,
-  },
-  subtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    color: KhazainColors.inkSubtle,
-    ...RTL_TEXT,
-  },
-  count: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '500',
-    color: KhazainColors.inkCount,
-    marginTop: 2,
-    ...RTL_TEXT,
-  },
+  title: textStyle('sectionTitle', { color: KhazainColors.inkTitle }),
+  subtitle: textStyle('cardTitle', { color: KhazainColors.inkSubtle }),
+  count: textStyle('label', { color: KhazainColors.inkCount }),
+  // The More list titles the same row in the body face at 14 (node 2102:2711).
+  titleCompact: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  subtitleCompact: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
 });

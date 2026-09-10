@@ -1,6 +1,7 @@
 import { ShareIcon } from '@/components/khazain/icons';
-import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -15,8 +16,10 @@ import { DawahPoster } from '../home/DawahPoster';
 // pinned the two clusters to absolute `left`/`right` edges, which forceRTL
 // swapped, and left the middle unable to shrink.
 //
-// Reuses the existing DawahPoster component, scaled down to a smaller thumb
-// (~80px tall) so it fits the row layout shown in the Figma export.
+// `DIV-139` is 361 x 89 at radius 16 behind a 1pt `#D9D6D3` hairline, inset 8,
+// with a 74 x 73 poster at radius 8 on the physical right and the title set in
+// the display face at 14 — this is one of the two frames that title a row that
+// way rather than in the body face.
 export function DawahPosterRow({
   title,
   quote,
@@ -35,7 +38,6 @@ export function DawahPosterRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        KhazainShadows.card,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
@@ -43,7 +45,7 @@ export function DawahPosterRow({
       <View style={styles.actions}>
         <Pressable
           onPress={onShare}
-          hitSlop={8}
+          hitSlop={12}
           accessibilityLabel="مشاركة"
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
@@ -51,7 +53,7 @@ export function DawahPosterRow({
         </Pressable>
         <Pressable
           onPress={onDownload}
-          hitSlop={8}
+          hitSlop={12}
           accessibilityLabel="تنزيل"
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
@@ -92,27 +94,27 @@ export function DawahPosterRow({
   );
 }
 
-const POSTER_W = 80;
-const POSTER_H = 78;
+const POSTER_W = 74;
+const POSTER_H = 73;
 
 const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
-    minHeight: POSTER_H + 20,
-    borderRadius: 16,
+    minHeight: POSTER_H + 16,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
+    borderColor: KhazainColors.hairlineWarm,
+    paddingVertical: 8,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
     alignItems: 'center',
-    gap: 10,
+    gap: 8,
   },
   thumbWrap: {
     width: POSTER_W,
     height: POSTER_H,
     overflow: 'hidden',
-    borderRadius: 10,
+    borderRadius: 8,
     flexShrink: 0,
   },
   thumbScale: {
@@ -128,23 +130,16 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'center',
   },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 16,
-    lineHeight: 24,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    ...RTL_TEXT,
-  },
+  title: textStyle('cardTitle', { color: KhazainColors.inkTitle }),
   actions: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
     flexShrink: 0,
   },
   actionBtn: {
-    width: 30,
-    height: 30,
+    width: 20,
+    height: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },

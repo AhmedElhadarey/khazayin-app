@@ -1,10 +1,11 @@
-import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import {
   listRowAccessibilityLabel,
   RECITER_ROW_ORDER,
   type ReciterRowSlot,
 } from '@/constants/rtlContracts';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -12,6 +13,9 @@ import { QuranBadge } from './QuranBadge';
 
 // Reciter / Quran-list row used on pages 13/14 (reciter tabs list) and
 // page 16 (qiraat sheet — `chevron` only, no subtitle).
+//
+// `DIV-139` on 2031:6193 and 2457:954: 56 tall at radius 12, `#FCFAF8` behind
+// a 1pt `#D9D6D3` hairline, inset 8, and casting no shadow.
 //
 // Physical order (left → right) is disclosure, text, Quran badge — Figma
 // nodes 2031:6193 and 2457:954, driven by RECITER_ROW_ORDER so the row cannot
@@ -64,7 +68,6 @@ export function ReciterRow({
       accessibilityLabel={listRowAccessibilityLabel({ title, subtitle })}
       style={({ pressed }) => [
         styles.row,
-        KhazainShadows.card,
         isDefault ? styles.rowDefault : null,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
@@ -80,13 +83,13 @@ const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
     minHeight: CARD_DENSITY.reciterRowMinHeight,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    gap: 12,
-    borderRadius: CARD_DENSITY.lectureCardRadius,
+    paddingVertical: 4,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
+    gap: 8,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineWarm,
     alignItems: 'center',
   },
   rowDefault: {
@@ -94,12 +97,7 @@ const styles = StyleSheet.create({
     borderWidth: 1.5,
   },
   defaultBadge: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    lineHeight: 14,
-    fontWeight: '600',
-    color: KhazainColors.goldAccent,
-    ...RTL_TEXT,
+    ...textStyle('label', { color: KhazainColors.goldAccent }),
     marginTop: 2,
   },
   textCol: {
@@ -108,19 +106,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 2,
   },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 17,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    ...RTL_TEXT,
-    lineHeight: 24,
-  },
-  subtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    color: KhazainColors.ink500,
-    ...RTL_TEXT,
-  },
+  // `H3-145` is TheMixArab Regular 14, `P-148` TheMixArab Regular 12.
+  title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  subtitle: textStyle('caption', { color: KhazainColors.ink500 }),
 });

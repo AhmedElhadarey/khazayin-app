@@ -1,5 +1,6 @@
-import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import type { Surah } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -14,6 +15,10 @@ import { SurahStar } from '@/components/khazain/primitives';
  * is a play triangle rather than a save control.
  *
  * Physical left → right: play, name and meta, numbered badge.
+ *
+ * `DIV-67` is 60 tall at radius 16 behind a 1pt `#D9D6D3` hairline, inset 12,
+ * and its numbered badge is a 36pt disc — smaller than the 40 every other row
+ * in the file uses, and the only one drawn without a stroke.
  */
 export function ReciterSurahRow({
   surah,
@@ -47,23 +52,26 @@ export function ReciterSurahRow({
           {surah.meta}
         </Text>
       </View>
-      <SurahStar index={surah.displayNumber} size={CARD_DENSITY.lectureBadgeDisc} />
+      <SurahStar index={surah.displayNumber} size={SURAH_BADGE_DISC} />
     </Pressable>
   );
 }
 
+/** `DIV-79` — the numbered badge, 36 rather than the shared 40. */
+const SURAH_BADGE_DISC = 36;
+
 const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
-    minHeight: CARD_DENSITY.reciterRowMinHeight,
+    minHeight: 60,
     alignItems: 'center',
     gap: 12,
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: CARD_DENSITY.lectureCardRadius,
-    backgroundColor: KhazainColors.cream50,
+    backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineWarm,
   },
   play: {
     width: 20,
@@ -77,19 +85,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 2,
   },
-  name: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    ...RTL_TEXT,
-  },
-  meta: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    color: KhazainColors.ink500,
-    ...RTL_TEXT,
-  },
+  // `H3-73` is TheMixArab Regular 14 in `#281E13`, not navy calligraphy.
+  name: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  meta: textStyle('caption', { color: KhazainColors.ink500 }),
 });

@@ -1,7 +1,8 @@
 import { AsyncContent, ListRowCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
 import { SECTION_ICONS, SectionIconKey } from '@/components/khazain/icons/sections';
-import { CARD_DENSITY, PHYSICAL_BOX, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_BOX, SECTION_CHROME } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { useSectionsStore } from '@/store';
 import type { SectionEntry } from '@/types/content';
 import { useRouter } from 'expo-router';
@@ -73,18 +74,12 @@ const styles = StyleSheet.create({
     // PHYSICAL_BOX so `flex-end` means the physical right, not the RTL end.
     ...PHYSICAL_BOX,
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: SECTION_CHROME.headerPaddingTop,
     paddingBottom: 8,
     alignItems: 'flex-end',
   },
-  h1: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 18,
-    lineHeight: 28,
-    fontWeight: '700',
-    color: KhazainColors.inkTitle,
-    ...RTL_TEXT,
-  },
+  // The file sets every page title in the body face at 18, not the display one.
+  h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
   searchBlock: {
     paddingHorizontal: 16,
     paddingBottom: 12,

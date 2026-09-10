@@ -46,7 +46,7 @@ export default function ProphetScreen() {
           <LectureCard
             id={item.id}
             category={item.category}
-            iconNode={<ProphetMedallionBadge size={48} />}
+            iconNode={<ProphetMedallionBadge size={CARD_DENSITY.lectureBadgeDisc} />}
             title={item.title}
             scholar={item.scholar}
             duration={item.duration}
@@ -79,6 +79,6 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 4,
-    gap: CARD_DENSITY.listGap,
+    gap: CARD_DENSITY.lectureListGap,
   },
 });

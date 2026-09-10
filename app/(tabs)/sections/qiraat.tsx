@@ -1,5 +1,6 @@
 import { AsyncContent, ReciterRow, SkeletonRibbonList } from '@/components/khazain';
 import { CARD_DENSITY } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
 import { useQiratStore, useSettingsStore } from '@/store';
@@ -71,25 +72,21 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 4,
   },
+  // Node 2457:954 draws this screen as a sheet: a 36 x 4 `#D9D6D3` grabber
+  // under the top edge, then a centred title in the body face at 16.
   handle: {
-    width: 44,
+    width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(40,30,19,0.18)',
+    backgroundColor: KhazainColors.hairlineWarm,
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('body', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   list: {
     paddingHorizontal: 16,
-    gap: CARD_DENSITY.listGap,
+    gap: CARD_DENSITY.lectureListGap,
   },
 });

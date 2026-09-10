@@ -1,5 +1,7 @@
 import { AsyncContent, InlineHeader, RibbonCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useScholarLecturesStore, useScholarsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -87,21 +89,13 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     alignItems: 'center',
   },
-  preName: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
+  // Node 2510:1990 has no name block — its rows carry the scholar's name on
+  // every subtitle instead. This one is the app's own, kept because it is the
+  // only place the screen says whose lectures these are, but set on the scale
+  // so it reads as page furniture rather than a second title.
+  preName: textStyle('caption', { color: KhazainColors.ink500, textAlign: 'center' }),
   name: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    lineHeight: 32,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     marginTop: 2,
   },
   searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
@@ -109,6 +103,6 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 4,
-    gap: 10,
+    gap: CARD_DENSITY.lectureListGap,
   },
 });

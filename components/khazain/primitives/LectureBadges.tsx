@@ -12,24 +12,12 @@ import Svg, { Circle, Path, Text as SvgText } from 'react-native-svg';
 //  - OpenBookBadge         → open-book outline (page 34 الكتب العلمية)
 //  - MicBadge              → mic + waves (page 35 برامج إذاعية)
 
-const Disc = ({
-  size,
-  children,
-  border,
-}: {
-  size: number;
-  children: React.ReactNode;
-  border?: boolean;
-}) => (
+// `DIV-58` is the same node in every frame: a circle filled `#D7B995` at 16%
+// with a 1pt `#A88051` stroke. The stroke was optional here, and only one
+// badge asked for it, so most rows drew a bare tint.
+const Disc = ({ size, children }: { size: number; children: React.ReactNode }) => (
   <View
-    style={[
-      styles.disc,
-      { width: size, height: size, borderRadius: size / 2 },
-      border && {
-        borderWidth: 1,
-        borderColor: KhazainColors.gold300,
-      },
-    ]}
+    style={[styles.disc, { width: size, height: size, borderRadius: size / 2 }]}
   >
     {children}
   </View>
@@ -37,7 +25,7 @@ const Disc = ({
 
 export function ProphetMedallionBadge({ size = 48 }: { size?: number }) {
   return (
-    <Disc size={size} border>
+    <Disc size={size}>
       <Svg width={size * 0.7} height={size * 0.7} viewBox="0 0 36 36" fill="none">
         {/* dotted ring */}
         <Circle
@@ -275,6 +263,8 @@ export function SparkleBadge({ size = 48 }: { size?: number }) {
 const styles = StyleSheet.create({
   disc: {
     backgroundColor: KhazainColors.iconChipBg,
+    borderWidth: 1,
+    borderColor: KhazainColors.goldAccent,
     alignItems: 'center',
     justifyContent: 'center',
   },
