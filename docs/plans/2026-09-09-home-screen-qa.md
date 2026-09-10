@@ -128,30 +128,21 @@ disk: deleting is the user's call.
 Figma carries exactly **one** scholar lockup (`عبد العزيز بن عبد الله بن باز`)
 and **one** book lockup (`إضاءات على زاد المعاد`), and reuses each across every
 card in its row. Reading every image fill in the file confirms it: of 129
-distinct images, only those two are name art. The app's names are data, so the
-rest had to be set rather than drawn.
+distinct images, only those two are name art.
 
-**Decision (yours):** set them in **Diwan Thuluth**, which ships with macOS —
-the same script family as the design's hand, though a lighter one, so a
-same-colour stroke fattens it toward the design's weight. Only the raster
-ships; the font file is never bundled. Amiri, the licence-clean alternative
-already in the repo, is Naskh and reads as plain type beside the design's
-Jali Thuluth.
+For books that settles it — the app extracts the lockup and reuses it the same
+way. For scholars it cannot, because those are three different people, so
+setting the two missing names in a typeface was tried: **Diwan Thuluth**, which
+ships with macOS, is the same script family as the design's hand, thickened
+with a same-colour stroke. It is a thinner hand with none of the interlocking
+composition, and on device it did not read as the same art.
 
-`scripts/figma/generate-calligraphy.js` is that pipeline — one entry per name, run
-`node scripts/figma/generate-calligraphy.js` to regenerate and `--check` to verify
-the committed assets still match a fresh render. It needs macOS for the face
-and `sharp`, which is already a devDependency. **Replace any entry the day a
-calligrapher delivers the real lockup:** drop the file in and delete its row.
-
-Generated: `scholar-name-{othaimeen,abbad}.webp` at the design's 439 × 100
-canvas. Near-lossless webp — plain lossy came out *larger*, because the art is
-mostly transparent and lossy webp encodes noise into the RGB of those pixels.
-
-Book titles are **not** generated. The design draws every card in that row with
-its one lockup, so the app extracts and reuses that lockup the same way; the
-first pass set all seven titles in Diwan Thuluth instead, and it did not read
-as the same art.
+**Ruling (yours): use the extracted lockup on all three cards, as the design
+does.** The other two cards read `ابن باز` until a calligrapher delivers their
+names. The generator (`scripts/figma/generate-calligraphy.js`) and its two
+assets were removed with that ruling; commit `c62e967` has them if the question
+reopens. Live text is not a substitute — the design's name is calligraphy, not
+type.
 
 ### The book card draws calligraphy too
 

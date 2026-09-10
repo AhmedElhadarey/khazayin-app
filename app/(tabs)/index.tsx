@@ -38,16 +38,17 @@ import Svg, { Path, Rect } from 'react-native-svg';
 // The scholar's name as calligraphy, keyed by scholar id; ids must match
 // data/content/scholars.ts, and only scholars with art are featured here.
 //
-// Figma carries one lockup (ابن باز) and reuses it on all three cards, so the
-// other two names are set in Diwan Thuluth rather than drawn — see
-// scripts/figma/generate-calligraphy.js. Replace any of them the day a calligrapher
-// delivers the real thing.
+// The .fig carries exactly one lockup — عبد العزيز بن عبد الله بن باز — and
+// draws all three cards with it. So does the app: the other two cards read
+// that name until the client supplies calligraphy for محمد بن صالح العثيمين
+// and عبد المحسن العباد البدر. Setting them in a typeface was tried and did
+// not read as the same art (see the QA record).
+const IBN_BAZ = require('@/assets/khazain/home/scholar-name-ibn-baz.webp');
+
 const NAME_ART_BY_ID: Record<string, number> = {
-  // The .fig's own lockup.
-  's4': require('@/assets/khazain/home/scholar-name-ibn-baz.webp'),
-  // Set in Diwan Thuluth — see scripts/figma/generate-calligraphy.js.
-  's5': require('@/assets/khazain/home/scholar-name-othaimeen.webp'),
-  's1': require('@/assets/khazain/home/scholar-name-abbad.webp'),
+  's4': IBN_BAZ, // عبد العزيز بن عبد الله بن باز
+  's5': IBN_BAZ, // awaiting art: محمد بن صالح العثيمين
+  's1': IBN_BAZ, // awaiting art: عبد المحسن العباد البدر
 };
 
 // The design's own book lockup. Figma draws every card in the "الكتب العلمية"
