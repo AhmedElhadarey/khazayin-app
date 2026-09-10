@@ -38,17 +38,22 @@ import Svg, { Path, Rect } from 'react-native-svg';
 // The scholar's name as calligraphy, keyed by scholar id; ids must match
 // data/content/scholars.ts, and only scholars with art are featured here.
 //
-// Figma draws all three cards with the same name art — ابن باز is the design's
-// placeholder — so s5 and s1 carry it too, and their cards read the wrong
-// name until the client supplies calligraphy for them. The three bundled SVGs
-// this replaced were byte-identical, so it read the same wrong name before.
-const IBN_BAZ = require('@/assets/khazain/home/scholar-name-ibn-baz.webp');
-
+// Figma carries one lockup (ابن باز) and reuses it on all three cards, so the
+// other two names are set in Diwan Thuluth rather than drawn — see
+// scripts/figma/generate-calligraphy.js. Replace any of them the day a calligrapher
+// delivers the real thing.
 const NAME_ART_BY_ID: Record<string, number> = {
-  's4': IBN_BAZ, // عبد العزيز بن عبد الله بن باز
-  's5': IBN_BAZ, // TODO: محمد بن صالح العثيمين — awaiting art
-  's1': IBN_BAZ, // TODO: عبد المحسن العباد البدر — awaiting art
+  // The .fig's own lockup.
+  's4': require('@/assets/khazain/home/scholar-name-ibn-baz.webp'),
+  // Set in Diwan Thuluth — see scripts/figma/generate-calligraphy.js.
+  's5': require('@/assets/khazain/home/scholar-name-othaimeen.webp'),
+  's1': require('@/assets/khazain/home/scholar-name-abbad.webp'),
 };
+
+// The design's own book lockup. Figma draws every card in the "الكتب العلمية"
+// row with this one image — `إضاءات على زاد المعاد` — so the app does too, and
+// every card reads that title until the client supplies per-title art.
+const BOOK_TITLE_ART = require('@/assets/khazain/home/book-title.webp');
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -118,7 +123,7 @@ export default function HomeScreen() {
         >
           <RtlCarousel contentContainerStyle={styles.scrollerPad}>
             {bookLectures.slice(0, 3).map((b) => (
-              <BookCard key={b.id} id={b.id} name={b.title} />
+              <BookCard key={b.id} id={b.id} name={b.title} titleArt={BOOK_TITLE_ART} />
             ))}
           </RtlCarousel>
         </AsyncContent>

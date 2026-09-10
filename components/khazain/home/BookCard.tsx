@@ -1,62 +1,67 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
-import { KhazainColors, KhazainRadius } from '@/constants/theme';
+import { Image, type ImageSource } from 'expo-image';
+import { KhazainColors } from '@/constants/theme';
 import { responsiveCarouselCardWidth } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { BookmarkButton } from '../primitives';
+import { bookCardLayout } from './bookCardLayout';
 
-// Figma source-of-truth values (frame "الكتب العلمية", node 2001:940):
-//   card 192 x 81, navy stripe 113.77 x 3.86 centred at top -1.93.
-const F_W = 192;
-const F_H = 81;
-const F_STRIPE_W = 113.77;
-const F_STRIPE_H = 3.86;
-
-// Cream card with navy stripe top and centered navy title.
+// Cream card with a navy stripe straddling its top edge and the title as
+// calligraphy — the scholar card's treatment inverted. See bookCardLayout.ts
+// for where each rect comes from.
 //
-// Figma node 2001:940 states 192 x 81 with a 113.77 x 3.86 navy stripe. The
-// height is fixed rather than a minimum so a title that wraps to two lines
-// does not make the card — and therefore the whole row — taller than the
-// card beside it, which is what made the row a different height on Android
-// than on iOS.
+// `titleArt` is optional: a book with no lockup falls back to live text in the
+// Naskh stand-in, which is how every card used to render.
 export function BookCard({
   id,
   name,
+  titleArt,
   onPress,
 }: {
   id: string;
   name: string;
+  /** The title, as calligraphy. Falls back to live text when absent. */
+  titleArt?: ImageSource | number;
   onPress?: () => void;
 }) {
   const { width: windowWidth } = useWindowDimensions();
   const cardWidth = responsiveCarouselCardWidth(windowWidth, 'book');
-  const scale = cardWidth / F_W;
+  const l = bookCardLayout(cardWidth);
 
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={name}
       style={({ pressed }) => [
         styles.card,
         {
           width: cardWidth,
-          height: F_H * scale,
+          height: l.cardHeight,
+          borderRadius: l.radius,
           transform: [{ scale: pressed ? 0.97 : 1 }],
         },
       ]}
     >
-      <View
-        style={[
-          styles.navyStripe,
-          {
-            width: F_STRIPE_W * scale,
-            height: F_STRIPE_H * scale,
-            top: -(F_STRIPE_H / 2) * scale,
-          },
-        ]}
-      />
-      <Text style={styles.name} numberOfLines={2}>
-        {name}
-      </Text>
+      <View style={[styles.stripe, l.stripe]} />
+      {titleArt ? (
+        <Image
+          source={titleArt}
+          style={[styles.title, l.title]}
+          // The design's fill is STRETCH with an identity transform: the
+          // 450 x 108 lockup is squeezed into the 160 x 37 rect.
+          contentFit="fill"
+          cachePolicy="memory-disk"
+          transition={0}
+        />
+      ) : (
+        <View style={[styles.title, styles.fallback, l.title]}>
+          <Text style={styles.name} numberOfLines={2}>
+            {name}
+          </Text>
+        </View>
+      )}
       <View style={styles.bookmarkSlot} pointerEvents="box-none">
         <BookmarkButton
           type="book"
@@ -72,25 +77,26 @@ export function BookCard({
 const styles = StyleSheet.create({
   card: {
     backgroundColor: KhazainColors.heroCream,
-    borderRadius: KhazainRadius.sm,
-    padding: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
     shadowColor: 'rgba(20,64,100,0.24)',
     shadowOffset: { width: 2.67, height: 0.67 },
     shadowOpacity: 1,
     shadowRadius: 10.66,
     elevation: 3,
   },
-  navyStripe: {
+  stripe: {
     position: 'absolute',
-    alignSelf: 'center',
     backgroundColor: KhazainColors.navy,
   },
+  title: {
+    position: 'absolute',
+  },
+  fallback: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   name: {
-    // The design renders these titles as calligraphy images. The app's titles
-    // are data, so a Naskh face stands in — see CALLIGRAPHY_FAMILY.
+    // Only reached by a book with no lockup. The design renders these titles
+    // as calligraphy, so a Naskh face stands in — see CALLIGRAPHY_FAMILY.
     ...textStyle('calligraphyTitle', { color: KhazainColors.navy, textAlign: 'center' }),
   },
   bookmarkSlot: {

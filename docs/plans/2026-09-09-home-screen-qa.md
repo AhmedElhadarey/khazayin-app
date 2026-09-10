@@ -45,6 +45,7 @@ committed; `constants/homePresentation.ts` is unchanged on this branch.
 | T1 | Two faces, one file | ⛔ | ⛔ | Blocked on the licensed fonts. |
 | T2–T5 | Type scale | ✅ | ✅ | Home and the tab bar; the rest of the app is untouched. |
 | — | Scholar card interior | ✅ | ✅ | Not a numbered defect; you spotted it, twice. See below. |
+| — | Book card calligraphy | ✅ | ✅ | Not a numbered defect; you spotted it. See below. |
 | — | Queen card dead strip | ✅ | ✅ | Not a numbered defect; you spotted it. See below. |
 
 ### D6 did not reproduce, and nothing was changed for it
@@ -118,17 +119,57 @@ design's geometry, normalised to a 1000 px-wide card:
 | iOS | `x 327..673`, h 104 | `x 88..907`, h 189 |
 | Android | `x 328..674`, h 105 | `x 88..908`, h 189 |
 
-**Still open:** Figma draws all three cards with the same name art —
-`عبد العزيز بن عبد الله بن باز` is the design's placeholder — so `s5` and `s1`
-carry it too and their cards read the wrong name. The three bundled SVGs this
-replaced were byte-identical, so they read the same wrong name before; this
-does not regress anything, but `محمد بن صالح العثيمين` and
-`عبد المحسن العباد البدر` need their own calligraphy from the client. Live
-text is not a substitute — the design's name is calligraphy, not type.
-
 `scholarSvgs.ts` (123 KB of base64), `assets/khazain/home/she5-{1,2,3}.svg`
 and `scripts/generate-scholar-svgs.js` are now unreferenced. They are left on
 disk: deleting is the user's call.
+
+### The names the design never drew
+
+Figma carries exactly **one** scholar lockup (`عبد العزيز بن عبد الله بن باز`)
+and **one** book lockup (`إضاءات على زاد المعاد`), and reuses each across every
+card in its row. Reading every image fill in the file confirms it: of 129
+distinct images, only those two are name art. The app's names are data, so the
+rest had to be set rather than drawn.
+
+**Decision (yours):** set them in **Diwan Thuluth**, which ships with macOS —
+the same script family as the design's hand, though a lighter one, so a
+same-colour stroke fattens it toward the design's weight. Only the raster
+ships; the font file is never bundled. Amiri, the licence-clean alternative
+already in the repo, is Naskh and reads as plain type beside the design's
+Jali Thuluth.
+
+`scripts/figma/generate-calligraphy.js` is that pipeline — one entry per name, run
+`node scripts/figma/generate-calligraphy.js` to regenerate and `--check` to verify
+the committed assets still match a fresh render. It needs macOS for the face
+and `sharp`, which is already a devDependency. **Replace any entry the day a
+calligrapher delivers the real lockup:** drop the file in and delete its row.
+
+Generated: `scholar-name-{othaimeen,abbad}.webp` at the design's 439 × 100
+canvas. Near-lossless webp — plain lossy came out *larger*, because the art is
+mostly transparent and lossy webp encodes noise into the RGB of those pixels.
+
+Book titles are **not** generated. The design draws every card in that row with
+its one lockup, so the app extracts and reuses that lockup the same way; the
+first pass set all seven titles in Diwan Thuluth instead, and it did not read
+as the same art.
+
+### The book card draws calligraphy too
+
+You spotted this: the design gives book titles the scholar card's treatment
+inverted — navy `#0d5779` calligraphy on cream `#ede0d1` instead of cream on
+navy. Node 2001:940 states a 192 × 81 card, radius 7.71, a 113.77 × 3.86 navy
+stripe straddling the top edge, and the title as one image centred in a
+160 × 37 rect with an identity fill transform (so, unlike the scholar name,
+no inset to model). The app was rendering live Naskh text there.
+
+`BookCard` now draws that lockup, extracted from the `.fig` at its native
+450 × 108 and squeezed into the rect with `contentFit="fill"`, which is what
+the design's STRETCH fill does. Every card reads `إضاءات على زاد المعاد`, as
+every card in the design does. A book with no lockup still falls back to live
+text, which is how every card rendered before.
+
+Measured on Android: the card comes out 504 × 213 px, aspect 2.366 against the
+design's 2.370.
 
 ### The queen card had a dead strip
 
