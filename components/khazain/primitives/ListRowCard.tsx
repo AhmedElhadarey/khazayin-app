@@ -93,17 +93,25 @@ const styles = StyleSheet.create({
     borderRadius: CARD_DENSITY.sectionCardRadius,
     backgroundColor: KhazainColors.cardBg,
   },
+  // The More list is the one card in either frame that *does* cast a shadow —
+  // `websiteLink-13` states a 2pt blur at y+1 — and its chip carries no stroke.
   cardCompact: {
     minHeight: CARD_DENSITY.lectureCardMinHeight,
     paddingVertical: 8,
     borderRadius: CARD_DENSITY.lectureCardRadius,
     borderWidth: 1,
-    borderColor: KhazainColors.hairlineWarm,
+    borderColor: KhazainColors.cardBorder,
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   iconChipCompact: {
     width: CARD_DENSITY.lectureBadgeDisc,
     height: CARD_DENSITY.lectureBadgeDisc,
     borderRadius: CARD_DENSITY.lectureBadgeDisc / 2,
+    borderWidth: 0,
   },
   iconChip: {
     width: CARD_DENSITY.sectionIconDisc,
