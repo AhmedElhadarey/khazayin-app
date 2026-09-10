@@ -31,8 +31,6 @@
  * floor at `MIN_BODY_SIZE`. Any role that had to be raised says so.
  */
 
-import { KhazainColors } from './theme';
-
 /**
  * Smallest size we will set live Arabic text at. Below roughly this, Arabic
  * diacritics stop resolving on a phone screen. Apple's own guidance floors
@@ -77,7 +75,7 @@ export type TextRole =
   | 'calligraphyTitle'
   | 'calligraphyBody';
 
-export type TextStyle = {
+export type RoleTextStyle = {
   fontFamily: string;
   fontSize: number;
   fontWeight: '400' | '700';
@@ -88,7 +86,7 @@ export type TextStyle = {
  * Every size below appears in the Figma file, and every line height is either
  * stated there or derived from the ratio it states for that size.
  */
-export const TEXT_ROLES: Readonly<Record<TextRole, TextStyle>> = Object.freeze({
+export const TEXT_ROLES: Readonly<Record<TextRole, RoleTextStyle>> = Object.freeze({
   displayLarge: { fontFamily: DISPLAY_FAMILY, fontSize: 32, fontWeight: '700', lineHeight: 42 },
   display: { fontFamily: DISPLAY_FAMILY, fontSize: 28, fontWeight: '700', lineHeight: 38 },
   screenTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 24, fontWeight: '700', lineHeight: 32 },
@@ -132,6 +130,3 @@ export function textStyle(
 ) {
   return { ...RTL, ...TEXT_ROLES[role], ...overrides };
 }
-
-/** Default ink for body copy, so the common case does not repeat the token. */
-export const TEXT_INK = KhazainColors.navy;

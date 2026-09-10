@@ -110,4 +110,57 @@ function makeDecoder(defs) {
   return { byName, readDef, defs };
 }
 
-module.exports = { Reader, parseSchema, makeDecoder };
+/**
+ * Split a `canvas.fig` payload into its chunks.
+ *
+ * The format is a "fig-kiwi" magic, a uint32 version, then length-prefixed
+ * chunks: the Kiwi schema first, the document second. Older files deflate
+ * both; current ones zstd the document.
+ */
+function readFig(file) {
+  const fs = require('fs');
+  const zlib = require('zlib');
+  const b = fs.readFileSync(file);
+  if (b.slice(0, 8).toString() !== 'fig-kiwi') throw new Error('not a fig-kiwi payload');
+  let off = 12;
+  const chunks = [];
+  while (off + 4 <= b.length) {
+    const len = b.readUInt32LE(off);
+    off += 4;
+    if (!len || off + len > b.length) break;
+    const raw = b.slice(off, off + len);
+    off += len;
+    let out = null;
+    try {
+      out = zlib.inflateRawSync(raw);
+    } catch {
+      try {
+        out = zlib.zstdDecompressSync(raw);
+      } catch {
+        out = null;
+      }
+    }
+    chunks.push(out);
+  }
+  return chunks;
+}
+
+/** Unzip `canvas.fig` out of a .fig archive and decode its document. */
+function openFig(figPath) {
+  const fs = require('fs');
+  const path = require('path');
+  const tmp = fs.mkdtempSync('/tmp/fig-');
+  require('child_process').execSync(
+    `unzip -oq ${JSON.stringify(figPath)} canvas.fig -d ${tmp}`,
+  );
+  const [schemaBuf, dataBuf] = readFig(path.join(tmp, 'canvas.fig'));
+  const defs = parseSchema(schemaBuf);
+  const dec = makeDecoder(defs);
+  const message = dec.readDef(
+    new Reader(dataBuf),
+    defs.findIndex((d) => d.name === 'Message'),
+  );
+  return { defs, dec, message };
+}
+
+module.exports = { Reader, parseSchema, makeDecoder, readFig, openFig };

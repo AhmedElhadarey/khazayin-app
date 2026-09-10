@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   LayoutChangeEvent,
   NativeScrollEvent,
@@ -36,6 +36,9 @@ import { SCALE_STEPS, dawahLayout } from './dawahLayout';
 
 type WrappedEntry = { item: DawahPosterModel; realIndex: number };
 
+/** Distances from the focused slot that the fan interpolates between. */
+const STEPS = [-2, -1, 0, 1, 2];
+
 export function DawahCarousel({
   items,
   onItemPress,
@@ -69,8 +72,14 @@ export function DawahCarousel({
   const ref = useRef<ScrollView>(null);
 
   // Measured centre of each slot within the content, filled in by layout.
+  // Cleared whenever the slots change, so a shorter list cannot be matched
+  // against centres left behind by a longer one.
   const centres = useRef<number[]>([]);
   const anchored = useRef(false);
+  useEffect(() => {
+    centres.current = [];
+    anchored.current = false;
+  }, [wrapped.length, windowWidth]);
   const scrollToSlot = useCallback((index: number, animated: boolean) => {
     const centre = centres.current[index];
     if (centre === undefined) return;
@@ -115,13 +124,15 @@ export function DawahCarousel({
     const focus = e.nativeEvent.contentOffset.x + windowWidth / 2;
     let nearest = FIRST_REAL;
     let best = Infinity;
-    centres.current.forEach((centre, i) => {
+    for (let i = 0; i < wrapped.length; i++) {
+      const centre = centres.current[i];
+      if (centre === undefined) continue;
       const gap = Math.abs(centre - focus);
       if (gap < best) {
         best = gap;
         nearest = i;
       }
-    });
+    }
     if (nearest < FIRST_REAL) scrollToSlot(LAST_REAL, false);
     else if (nearest > LAST_REAL) scrollToSlot(FIRST_REAL, false);
   };
@@ -195,7 +206,6 @@ function Slot({
     onMeasure(index, x + width / 2);
   };
 
-  const STEPS = [-2, -1, 0, 1, 2];
   const animatedStyle = useAnimatedStyle(() => {
     if (!measured.value) return { opacity: 0 };
     // Distance in slots between this poster and the middle of the viewport.

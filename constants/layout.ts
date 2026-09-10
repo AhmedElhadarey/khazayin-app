@@ -68,10 +68,13 @@ const REFERENCE_CONTENT_WIDTH = 361;
  *
  * Below the reference the card scales with the content column so the row keeps
  * its proportion, with a floor so a 320pt screen stays usable.
+ *
+ * `kind` is required: the design gives the two rows different widths, so there
+ * is no sensible default to fall back on.
  */
 export function responsiveCarouselCardWidth(
   windowWidth: number,
-  kind: CarouselCardKind = 'scholar',
+  kind: CarouselCardKind,
 ): number {
   const designWidth = FIGMA_CAROUSEL_CARD_WIDTH[kind];
   if (windowWidth >= REFERENCE_WIDTH) return designWidth;

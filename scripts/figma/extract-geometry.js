@@ -6,25 +6,8 @@
 // its root frame's coordinates.
 //
 // Usage: node extract-geometry.js <path-to.fig> <nodeId|nameSubstring> [outdir]
-const fs = require('fs'), zlib = require('zlib'), path = require('path');
-const { Reader, parseSchema, makeDecoder } = require(path.join(__dirname, 'kiwi.js'));
-
-function readFig(file) {
-  const b = fs.readFileSync(file);
-  if (b.slice(0, 8).toString() !== 'fig-kiwi') throw new Error('not a fig-kiwi payload');
-  let off = 12;
-  const chunks = [];
-  while (off + 4 <= b.length) {
-    const len = b.readUInt32LE(off); off += 4;
-    if (!len || off + len > b.length) break;
-    const raw = b.slice(off, off + len); off += len;
-    let out = null;
-    try { out = zlib.inflateRawSync(raw); }
-    catch { try { out = zlib.zstdDecompressSync(raw); } catch { out = null; } }
-    chunks.push(out);
-  }
-  return chunks;
-}
+const fs = require('fs'), path = require('path');
+const { openFig } = require(path.join(__dirname, 'kiwi.js'));
 
 const key = (g) => g && `${g.sessionID}:${g.localID}`;
 
@@ -50,12 +33,7 @@ function main() {
   const figPath = process.argv[2];
   const target = process.argv[3];
   const outDir = process.argv[4] || '.';
-  const tmp = fs.mkdtempSync('/tmp/figg-');
-  require('child_process').execSync(`unzip -oq ${JSON.stringify(figPath)} canvas.fig -d ${tmp}`);
-  const [schemaBuf, dataBuf] = readFig(path.join(tmp, 'canvas.fig'));
-  const defs = parseSchema(schemaBuf);
-  const dec = makeDecoder(defs);
-  const msg = dec.readDef(new Reader(dataBuf), defs.findIndex((d) => d.name === 'Message'));
+  const { message: msg } = openFig(figPath);
 
   const nodes = msg.nodeChanges || [];
   const byGuid = new Map();

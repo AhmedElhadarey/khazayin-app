@@ -1,4 +1,4 @@
-import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
@@ -31,7 +31,7 @@ export function HomeSectionHeader({
           accessibilityLabel={`عرض الكل، ${title}`}
           style={({ pressed }) => [styles.linkAnchor, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <ChevronIcon size={14} color={KhazainColors.goldAccent} direction="start" />
+          <ChevronIcon size={20} color={KhazainColors.goldAccent} direction="start" />
           <Text style={styles.linkLabel}>عرض الكل</Text>
         </Pressable>
       ) : null}
@@ -64,10 +64,8 @@ const styles = StyleSheet.create({
     flexShrink: 1,
   },
   title: {
-    ...textStyle('sectionTitle'),
+    ...textStyle('sectionTitle', { color: KhazainColors.navy }),
     letterSpacing: 0,
-    color: KhazainColors.navy,
-    ...RTL_TEXT,
   },
   goldBar: {
     width: 5,
@@ -82,9 +80,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   linkLabel: {
-    ...textStyle('label'),
+    ...textStyle('label', { color: KhazainColors.goldAccent }),
     letterSpacing: 0,
-    color: KhazainColors.goldAccent,
-    ...RTL_TEXT,
   },
 });

@@ -14,9 +14,9 @@ import path from 'path';
 const REPO_ROOT = path.resolve(__dirname, '..');
 
 /**
- * The Home screen is the first surface migrated onto the scale. A raw
- * `fontFamily` or `fontSize` literal reappearing here is the drift starting
- * again, so it fails rather than merely being untidy.
+ * The Home screen and the navigation are the surfaces migrated onto the scale
+ * so far. A raw `fontFamily` or `fontSize` literal reappearing in one of them
+ * is the drift starting again, so it fails rather than merely being untidy.
  */
 function rawTypographyLiteralsIn(dirs: string[]): string[] {
   const output = execFileSync(
@@ -103,10 +103,14 @@ describe('type scale', () => {
 });
 
 describe('Home is on the scale', () => {
-  it('declares no raw font literals in the Home components or screen', () => {
+  it('declares no raw font literals in the Home components, screen or tab bar', () => {
     let found: string[] = [];
     try {
-      found = rawTypographyLiteralsIn(['components/khazain/home', 'app/(tabs)/index.tsx']);
+      found = rawTypographyLiteralsIn([
+        'components/khazain/home',
+        'app/(tabs)/index.tsx',
+        'components/khazain/primitives/CustomTabBar.tsx',
+      ]);
     } catch {
       // grep exits 1 when it matches nothing, which is the passing case.
       found = [];

@@ -2,7 +2,6 @@ import {
   CENTRE_WIDTH_RATIO,
   SCALE_STEPS,
   dawahLayout,
-  posterOffset,
 } from '@/components/khazain/home/dawahLayout';
 
 // Figma node 2001:940, frame "تصميمات دعوية".
@@ -30,46 +29,20 @@ describe('dawah coverflow layout', () => {
   });
 
   it('spaces neighbours the way the design does', () => {
-    expect(posterOffset(REF, 1)).toBeCloseTo(116.11, 1);
-    expect(posterOffset(REF, -1)).toBeCloseTo(-116.11, 1);
-    expect(posterOffset(REF, 0)).toBe(0);
+    expect(dawahLayout(REF).slot).toBeCloseTo(116.11, 1);
   });
 
   it('keeps the posters overlapping, which is what the design does', () => {
-    const { cardWidth } = dawahLayout(REF);
+    const { cardWidth, slot } = dawahLayout(REF);
     const neighbourWidth = cardWidth * SCALE_STEPS[1];
-    const gap = posterOffset(REF, 1) - cardWidth / 2 - neighbourWidth / 2;
+    const gap = slot - cardWidth / 2 - neighbourWidth / 2;
     expect(gap).toBeLessThan(0);
   });
 
-  it('steps uniformly, one poster per swipe', () => {
-    const { slot } = dawahLayout(REF);
-    expect(posterOffset(REF, 1)).toBeCloseTo(slot, 6);
-    expect(posterOffset(REF, 2)).toBeCloseTo(2 * slot, 6);
-  });
-
-  it('stays symmetric about the focused poster', () => {
-    [1, 2, 3].forEach((d) => {
-      expect(posterOffset(REF, -d)).toBeCloseTo(-posterOffset(REF, d), 6);
-    });
-  });
-
-  it('keeps posters in order outward from the focus', () => {
-    expect(posterOffset(REF, 1)).toBeGreaterThan(0);
-    expect(posterOffset(REF, 2)).toBeGreaterThan(posterOffset(REF, 1));
-  });
-
   it('scales the whole fan with the window', () => {
     [320, 360, 393, 430, 480].forEach((w) => {
       expect(dawahLayout(w).cardWidth / w).toBeCloseTo(CENTRE_WIDTH_RATIO, 6);
-      expect(posterOffset(w, 1) / w).toBeCloseTo(116.11 / REF, 6);
-    });
-  });
-
-  it('scales the whole fan with the window', () => {
-    [320, 360, 393, 430, 480].forEach((w) => {
-      expect(dawahLayout(w).cardWidth / w).toBeCloseTo(CENTRE_WIDTH_RATIO, 6);
-      expect(posterOffset(w, 1) / w).toBeCloseTo(116.11 / REF, 6);
+      expect(dawahLayout(w).slot / w).toBeCloseTo(116.11 / REF, 6);
     });
   });
 

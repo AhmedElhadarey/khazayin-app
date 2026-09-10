@@ -68,7 +68,7 @@ describe('Home carousel width', () => {
   it.each([320, 360, 375, 393, 411, 430, 480])(
     'keeps a usable card width at %ipt',
     (width) => {
-      const cardWidth = responsiveCarouselCardWidth(width);
+      const cardWidth = responsiveCarouselCardWidth(width, 'scholar');
       expect(cardWidth).toBeGreaterThanOrEqual(150);
       // A carousel card must never fill the content column, or it stops
       // reading as a carousel.
@@ -77,8 +77,8 @@ describe('Home carousel width', () => {
   );
 
   it('stops growing once the content column is capped', () => {
-    expect(responsiveCarouselCardWidth(CONTENT_MAX_WIDTH)).toBe(
-      responsiveCarouselCardWidth(1024),
+    expect(responsiveCarouselCardWidth(CONTENT_MAX_WIDTH, 'scholar')).toBe(
+      responsiveCarouselCardWidth(1024, 'scholar'),
     );
   });
 });

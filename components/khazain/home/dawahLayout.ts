@@ -13,8 +13,7 @@
  * keeps its proportions on any screen.
  */
 
-/** Reference frame width the figures above were measured in. */
-const REFERENCE_WIDTH = 393;
+import { REFERENCE_WIDTH } from '@/constants/layout';
 
 /** Centre poster width as a fraction of the window. */
 export const CENTRE_WIDTH_RATIO = 154 / REFERENCE_WIDTH;
@@ -68,9 +67,4 @@ export function dawahLayout(windowWidth: number): DawahLayout {
     slot,
     sidePadding: Math.max(0, (windowWidth - slot) / 2),
   };
-}
-
-/** Where a poster `distance` steps from the focus renders, measured from centre. */
-export function posterOffset(windowWidth: number, distance: number): number {
-  return distance * dawahLayout(windowWidth).slot;
 }

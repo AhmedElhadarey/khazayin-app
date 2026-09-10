@@ -1,38 +1,12 @@
 // Extract every text node's typography from a .fig file.
-// Usage: node fig-text.js <path-to.fig> [outdir]
-const fs = require('fs'), zlib = require('zlib'), path = require('path');
-const { Reader, parseSchema, makeDecoder } = require(path.join(__dirname, 'kiwi.js'));
-
-function readFig(file) {
-  const b = fs.readFileSync(file);
-  if (b.slice(0, 8).toString() !== 'fig-kiwi') throw new Error('not a fig-kiwi payload');
-  let off = 12;
-  const chunks = [];
-  while (off + 4 <= b.length) {
-    const len = b.readUInt32LE(off); off += 4;
-    if (!len || off + len > b.length) break;
-    const raw = b.slice(off, off + len); off += len;
-    // Older files deflate the payload; newer ones use zstd.
-    let out = null;
-    try { out = zlib.inflateRawSync(raw); }
-    catch { try { out = zlib.zstdDecompressSync(raw); } catch { out = null; } }
-    chunks.push(out);
-  }
-  return chunks;
-}
+// Usage: node extract-text-styles.js <path-to.fig> [outdir]
+const fs = require('fs'), path = require('path');
+const { openFig } = require(path.join(__dirname, 'kiwi.js'));
 
 function main() {
   const figPath = process.argv[2];
   const outDir = process.argv[3] || '.';
-  // A .fig is a ZIP whose canvas.fig holds the node graph.
-  const tmp = fs.mkdtempSync('/tmp/figx-');
-  require('child_process').execSync(`unzip -oq ${JSON.stringify(figPath)} canvas.fig -d ${tmp}`);
-  const [schemaBuf, dataBuf] = readFig(path.join(tmp, 'canvas.fig'));
-
-  const defs = parseSchema(schemaBuf);
-  const dec = makeDecoder(defs);
-  const msgIdx = defs.findIndex((d) => d.name === 'Message');
-  const msg = dec.readDef(new Reader(dataBuf), msgIdx);
+  const { message: msg } = openFig(figPath);
 
   const nodes = msg.nodeChanges || [];
   const key = (g) => g && `${g.sessionID}:${g.localID}`;

@@ -31,7 +31,6 @@ export type HeroLayer = {
   width: number;
   height: number;
   left?: number;
-  right?: number;
   top?: number;
   bottom?: number;
 };
@@ -88,7 +87,6 @@ export function HeroShell({
     width: layer.width * scale,
     height: layer.height * scale,
     ...(layer.left !== undefined ? { left: layer.left * scale } : null),
-    ...(layer.right !== undefined ? { right: layer.right * scale } : null),
     ...(layer.top !== undefined ? { top: layer.top * scale } : null),
     ...(layer.bottom !== undefined ? { bottom: layer.bottom * scale } : null),
   });
@@ -105,7 +103,12 @@ export function HeroShell({
         KhazainShadows.hero,
         {
           backgroundColor,
-          minHeight: designHeight * scale,
+          // Before the first layout there is no width to scale by, so the card
+          // holds the design's proportion instead of collapsing to nothing and
+          // jumping once it measures.
+          ...(scale > 0
+            ? { minHeight: designHeight * scale }
+            : { aspectRatio: designWidth / designHeight }),
           transform: [{ scale: pressed ? 0.98 : 1 }],
         },
       ]}

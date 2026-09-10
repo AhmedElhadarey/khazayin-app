@@ -55,12 +55,6 @@ describe('responsive layout helpers', () => {
       expect(responsiveCarouselCardWidth(REFERENCE_WIDTH, 'book')).toBeCloseTo(192, 2);
     });
 
-    it('defaults to the scholar card, which is what the old callers meant', () => {
-      expect(responsiveCarouselCardWidth(REFERENCE_WIDTH)).toBe(
-        responsiveCarouselCardWidth(REFERENCE_WIDTH, 'scholar'),
-      );
-    });
-
     it('holds the designed width above the reference rather than growing', () => {
       // Figma lets the second card run off the screen edge; it does not
       // stretch the card to fill a wider window.

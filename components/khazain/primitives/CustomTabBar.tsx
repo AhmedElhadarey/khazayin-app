@@ -2,7 +2,8 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PHYSICAL_ROW, RTL_TEXT, TAB_BAR, TAB_PHYSICAL_ORDER } from '@/constants/layout';
+import { PHYSICAL_ROW, TAB_BAR, TAB_PHYSICAL_ORDER } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import {
   NavHomeIcon,
   NavLibraryIcon,
@@ -151,12 +152,9 @@ const styles = StyleSheet.create({
     backgroundColor: TAB_BAR.indicatorColor,
   },
   label: {
-    ...RTL_TEXT,
-    // Figma 2001:17457: TheSansArabic Bold 12, not 11 at weight 500.
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '700',
-    color: TAB_BAR.inactiveInk,
+    // Figma 2001:17457 sets this in TheSansArabic Bold 12; `label` is that
+    // role. It was 11 at weight 500.
+    ...textStyle('label', { color: TAB_BAR.inactiveInk }),
   },
   labelActive: {
     color: TAB_BAR.activeInk,
