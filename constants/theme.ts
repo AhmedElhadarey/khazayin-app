@@ -196,7 +196,17 @@ export const KhazainColors = {
   navPillBg: 'rgba(215, 185, 149, 0.16)',
   navLabel: '#F1E7DD',
 
+  // Hairlines. Every card in the Library frame (node 2031:4659) is a flat fill
+  // with a 1pt stroke and no shadow; these are the three widths of stroke it
+  // uses, stated by the file.
+  hairline: '#E5E7EB',
+  hairlineWarm: '#D9D6D3',
+  hairlineFaint: '#F3F4F6',
+
   // Ink (text)
+  /** Headings inside cards. Distinct from `inkTitle`, which the design keeps
+   *  for the page title and for prose set in the body face. */
+  inkHeading: '#111827',
   inkTitle: '#281E13',
   ink900: '#281E13',
   ink700: '#3D2E1D',

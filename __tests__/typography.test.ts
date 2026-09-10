@@ -139,3 +139,41 @@ describe('textStyle', () => {
     expect(style.fontWeight).toBe(TEXT_ROLES.body.fontWeight);
   });
 });
+
+/**
+ * React Native clips a Text's glyph box to `lineHeight`, and Arabic hangs marks
+ * — the madda on آ, the dots on ة — well above the Latin cap height. Rendering
+ * the design's own line heights on device cut those marks off: at the label
+ * role's 12/16, `٠ ملاحظة ... القرآن آخر` came out as `٠ ملاحظه ... القران اخر`.
+ *
+ * Measured on an iPhone 16 simulator, mark by mark: 12/16 and 14/20 clip,
+ * 12/18 and 14/21 do not; 16/24 is clean and 20/28 is not. The boundary is a
+ * ratio, not a size, and it sits at 1.5.
+ */
+describe('Arabic marks are not clipped by the line height', () => {
+  const MIN_RATIO = 1.5;
+
+  it('gives every role at least 1.5x its size', () => {
+    for (const [role, style] of Object.entries(TEXT_ROLES)) {
+      expect({ role, ratio: style.lineHeight / style.fontSize }).toEqual({
+        role,
+        ratio: expect.any(Number),
+      });
+      expect(style.lineHeight).toBeGreaterThanOrEqual(style.fontSize * MIN_RATIO);
+    }
+  });
+
+  it('keeps the roles that were already clear of the floor unchanged', () => {
+    // The design states these, and they already clear 1.5.
+    expect(TEXT_ROLES.sectionTitle.lineHeight).toBe(24);
+    expect(TEXT_ROLES.body.lineHeight).toBe(24);
+    expect(TEXT_ROLES.caption.lineHeight).toBe(18);
+  });
+
+  it('raises the roles that clipped on device', () => {
+    expect(TEXT_ROLES.label.lineHeight).toBe(18);
+    expect(TEXT_ROLES.cardTitle.lineHeight).toBe(21);
+    expect(TEXT_ROLES.labelSmall.lineHeight).toBe(15);
+    expect(TEXT_ROLES.heroTitle.lineHeight).toBe(30);
+  });
+});

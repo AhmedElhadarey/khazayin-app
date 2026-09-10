@@ -2,6 +2,7 @@ import {
   AsyncContent,
   AudioProgressCard,
   CircularProgress,
+  RtlCarousel,
   SearchPill,
   SkeletonPillList,
   StatCard,
@@ -16,7 +17,7 @@ import {
   WirdHistory,
   WirdSuggestionBanner,
 } from '@/components/khazain/library';
-import { PHYSICAL_BOX, PHYSICAL_ROW, physicalTabOrder } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import {
   LIBRARY_SUMMARY_CARD_ORDER,
   type LibrarySectionKey,
@@ -26,7 +27,18 @@ import {
 } from '@/constants/libraryPresentation';
 import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import {
+  FILTER_CHIP,
+  LIBRARY_CARD_RADIUS,
+  LIBRARY_DESIGN,
+  LIBRARY_SECTION_GAP,
+  NOTE_FIELD,
+  QUICK_NOTE_CARD,
+  STAT_CARD,
+  WIRD_CARD,
+} from '@/components/khazain/library/libraryLayout';
 import {
   SURAH_NAMES_AR,
   SURAH_START_PAGES,
@@ -331,7 +343,7 @@ export default function LibraryScreen() {
 
     search: (
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="ابحث في مكتبتك..." onPress={() => router.push('/search' as any)} />
+        <SearchPill onPress={() => router.push('/search' as any)} />
       </View>
     ),
 
@@ -364,7 +376,9 @@ export default function LibraryScreen() {
 
     dailyWird: (
       <View style={styles.block}>
-        <View style={[styles.card, KhazainShadows.card]}>
+        {/* Three rows, as the frame draws them: ring + title, then the start
+            button beside the reading summary, then the toggle on its own. */}
+        <View style={styles.wirdCard}>
           <View style={styles.wirdTop}>
             {/* The ring is the goal area — tap it to edit the daily target. */}
             <Pressable
@@ -373,19 +387,13 @@ export default function LibraryScreen() {
               hitSlop={8}
               onPress={() => router.push('/settings-wird-goal' as any)}
             >
-              <CircularProgress pct={todayPct} />
+              <CircularProgress pct={todayPct} size={WIRD_CARD.ring} />
             </Pressable>
             <View style={{ flex: 1 }}>
               <Text style={styles.wirdTitle}>وردُ القرآن اليومي</Text>
-              <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
-              <Text style={styles.wirdHighlight}>
-                {lastSurah
-                  ? `سورة ${lastSurah.name} — صفحة ${toArNum(lastReadPage)}`
-                  : 'لم تبدأ القراءة بعد'}
-              </Text>
             </View>
           </View>
-          {/* Actions row: "بدء الورد" navy pill, then the reminder toggle. */}
+          {/* Physical left → right: "بدء الورد", then the reading summary. */}
           <View style={styles.wirdActions}>
             <Pressable
               accessibilityRole="button"
@@ -401,20 +409,33 @@ export default function LibraryScreen() {
               <Text style={styles.startBtnLabel}>بدء الورد</Text>
             </Pressable>
             <View style={{ flex: 1 }} />
-            <View style={styles.reminderInline}>
-              <Toggle on={reminder.armed} onChange={onToggleWirdReminder} label="التذكير اليومي" />
-              <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
+            <View>
+              <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
+              <Text style={styles.wirdHighlight}>
+                {lastSurah
+                  ? `سورة ${lastSurah.name} — صفحة ${toArNum(lastReadPage)}`
+                  : 'لم تبدأ القراءة بعد'}
+              </Text>
             </View>
           </View>
-          {/* Shows a time ONLY when the reminder is genuinely armed. */}
-          <Text style={styles.wirdReminderNext}>{reminder.caption}</Text>
+          {/* Physical left → right: the toggle, then its label. */}
+          <View style={styles.reminderInline}>
+            <Toggle on={reminder.armed} onChange={onToggleWirdReminder} label="التذكير اليومي" />
+            <View style={{ flex: 1 }} />
+            <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
+          </View>
+          {/* The design has no frame for a blocked reminder, so this line is
+              drawn only when there is something the reader has to act on. */}
+          {reminder.caption ? (
+            <Text style={styles.wirdReminderNext}>{reminder.caption}</Text>
+          ) : null}
         </View>
       </View>
     ),
 
     quickNote: (
       <View style={styles.block}>
-        <View style={[styles.card, KhazainShadows.card]}>
+        <View style={styles.quickNoteCard}>
           <Text style={styles.quickNoteTitle}>ملاحظة سريعة</Text>
           <Pressable
             accessibilityRole="button"
@@ -467,42 +488,46 @@ export default function LibraryScreen() {
     ),
 
     filters: (
-      <View style={styles.filtersRow}>
-        <AsyncContent
-          status={filtersStatus}
-          error={filtersError}
-          onRetry={refreshFilters}
-          skeleton={<SkeletonPillList count={3} />}
-          emptyMessage="لا توجد تصنيفات"
-        >
-          <>
-            {physicalTabOrder(realFilters).map((f) => {
-              const active = filter === f.id;
-              return (
-                <Pressable
-                  key={f.id}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  accessibilityLabel={f.label}
-                  onPress={() => setFilter(f.id as LibraryFilter)}
-                  style={[styles.filterPill, active && styles.filterPillActive]}
-                >
-                  <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
-                    {f.label} {f.count}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </>
-        </AsyncContent>
-      </View>
+      <AsyncContent
+        status={filtersStatus}
+        error={filtersError}
+        onRetry={refreshFilters}
+        skeleton={<SkeletonPillList count={3} />}
+        emptyMessage="لا توجد تصنيفات"
+      >
+        {/* The frame's chips run out past the leading edge, so the rail
+            scrolls rather than wrapping. The row style has to sit on the
+            content container: AsyncContent renders its children inside a view
+            of its own, which would otherwise stack the chips vertically. */}
+        {/* Logical order, not physical: RtlCarousel puts the first child at
+            the visual right, which is where the frame puts الكل. */}
+        <RtlCarousel contentContainerStyle={styles.filtersRow}>
+          {realFilters.map((f) => {
+            const active = filter === f.id;
+            return (
+              <Pressable
+                key={f.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={f.label}
+                onPress={() => setFilter(f.id as LibraryFilter)}
+                style={[styles.filterPill, active && styles.filterPillActive]}
+              >
+                <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
+                  {f.label} {f.count}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </RtlCarousel>
+      </AsyncContent>
     ),
 
     savedList: <MySavedSection />,
 
     audiobookProgress: (
       <>
-        <Text style={styles.sectionTitle}>تقدّم الكتب المسموعة</Text>
+        <Text style={styles.sectionTitle}>تقدم الكتب المسموعة</Text>
         <View style={styles.block}>{audiobookProgressCard}</View>
       </>
     ),
@@ -544,7 +569,7 @@ export default function LibraryScreen() {
 
     wirdTrend: (
       <View style={styles.block}>
-        <View style={[styles.card, KhazainShadows.card]}>
+        <View style={styles.card}>
           <Text style={styles.quickNoteTitle}>آخر ٢٨ يومًا</Text>
           <View style={styles.sparklineBlock}>
             <TrendSparkline points={trendLast28} wirdTarget={wirdTarget} />
@@ -703,17 +728,18 @@ function ListGlyph() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   // Figma node 2031:4659 anchors the page title at the physical right.
-  headerBlock: { ...PHYSICAL_BOX, paddingHorizontal: 18, paddingTop: 14, paddingBottom: 8, alignItems: 'flex-end' },
-  h1: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    lineHeight: 30,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+  headerBlock: {
+    ...PHYSICAL_BOX,
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
+    paddingTop: 8,
+    paddingBottom: 16,
+    alignItems: 'flex-end',
   },
-  searchBlock: { paddingHorizontal: 18, paddingBottom: 14 },
+  // The frame sets the page title in the body face, not the display face:
+  // TheMixArab Regular 18 in ink, where every heading below it is
+  // TheSansArabic Bold.
+  h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
+  searchBlock: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, paddingBottom: 8 },
   dbErrorBanner: {
     marginHorizontal: 14,
     marginBottom: 14,
@@ -748,115 +774,92 @@ const styles = StyleSheet.create({
   },
   statsRow: {
     ...PHYSICAL_ROW,
-    gap: 8,
-    paddingHorizontal: 14,
-    marginBottom: 16,
+    gap: STAT_CARD.gap,
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
+    marginBottom: LIBRARY_SECTION_GAP,
   },
-  block: { paddingHorizontal: 14, marginBottom: 14 },
+  block: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, marginBottom: LIBRARY_SECTION_GAP },
   sparklineBlock: {
     marginTop: 12,
     alignItems: 'stretch',
   },
+  // Every card in the frame is a flat fill with a 1pt hairline. None of them
+  // casts a shadow, so none is drawn with one.
   card: {
     padding: 16,
-    borderRadius: 20,
-    backgroundColor: KhazainColors.cream50,
+    borderRadius: LIBRARY_CARD_RADIUS,
+    backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.1)',
+    borderColor: KhazainColors.hairline,
+  },
+  // The daily-wird card is the one card the frame tints, which is what makes
+  // it read as the page's focal card rather than another white panel.
+  // The frame's vertical rhythm inside the card: 16 above the 48pt ring, 14
+  // to the 36pt button row, 14 to the toggle, 12 below.
+  wirdCard: {
+    paddingHorizontal: WIRD_CARD.padding,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderRadius: WIRD_CARD.radius,
+    backgroundColor: KhazainColors.iconChipBg,
   },
   // Physical left → right: progress ring, then the reading summary.
   wirdTop: { ...PHYSICAL_ROW, alignItems: 'center', gap: 14 },
-  wirdTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  wirdMeta: {
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    marginTop: 4,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  wirdTitle: textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
+  wirdMeta: textStyle('cardTitle', { color: KhazainColors.inkTitle }),
   wirdHighlight: {
-    fontSize: 12,
-    color: KhazainColors.ink700,
-    marginTop: 2,
-    fontWeight: '600',
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('label', { color: KhazainColors.ink500 }),
+    marginTop: 4,
   },
   // Physical left → right: بدء الورد, spacer, daily-reminder toggle.
   wirdActions: {
     ...PHYSICAL_ROW,
-    gap: 8,
     marginTop: 14,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   startBtn: {
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    borderRadius: 10,
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  startBtnLabel: {
-    color: '#fff',
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  startBtnLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
   reminderInline: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 4,
+    marginTop: 14,
   },
-  reminderInlineLabel: {
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-  },
+  reminderInlineLabel: textStyle('cardTitle', { color: KhazainColors.ink500 }),
   wirdReminderNext: {
-    fontSize: 11,
-    color: KhazainColors.gold600,
-    marginTop: 10,
-    fontWeight: '500',
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('label', { color: KhazainColors.gold600 }),
+    marginTop: 8,
   },
   quickNoteTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 15,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    marginBottom: 8,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
+    marginBottom: 12,
+  },
+  // The frame inverts the usual pairing here: the card takes the page colour
+  // and the field inside it is the lighter surface.
+  quickNoteCard: {
+    padding: QUICK_NOTE_CARD.padding,
+    paddingTop: 17,
+    borderRadius: QUICK_NOTE_CARD.radius,
+    backgroundColor: KhazainColors.pageBg,
+    borderWidth: 1,
+    borderColor: KhazainColors.hairline,
   },
   noteBody: {
-    backgroundColor: KhazainColors.cream100,
-    borderRadius: 12,
-    padding: 10,
+    backgroundColor: KhazainColors.cardBg,
+    borderRadius: NOTE_FIELD.radius,
+    borderWidth: 1,
+    borderColor: KhazainColors.hairlineWarm,
+    height: NOTE_FIELD.height,
     paddingHorizontal: 12,
-    minHeight: 56,
-    justifyContent: 'center',
+    paddingTop: 12,
   },
-  noteBodyPlaceholder: {
-    fontSize: 12,
-    color: KhazainColors.ink400,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  noteBodyPlaceholder: textStyle('cardTitle', { color: KhazainColors.ink400 }),
   // Physical left → right: حفظ, spacer, then the format buttons at the right.
   noteToolbar: {
     ...PHYSICAL_ROW,
@@ -865,17 +868,14 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   noteSaveBtn: {
-    paddingVertical: 7,
+    height: 36,
     paddingHorizontal: 16,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  noteSaveLabel: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'TheSansArabic',
-  },
+  noteSaveLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
   recentBlock: {
     borderTopWidth: 1,
     borderTopColor: 'rgba(141,107,52,0.1)',
@@ -883,12 +883,8 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   recentHeader: {
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    marginBottom: 6,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('cardTitle', { color: KhazainColors.ink500 }),
+    marginBottom: 8,
   },
   // Physical left → right: relative time, then the note title at the right.
   recentRow: {
@@ -896,18 +892,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 5,
   },
-  recentTitle: {
-    color: KhazainColors.ink900,
-    fontWeight: '500',
-    fontSize: 12,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-  },
-  recentTime: {
-    color: KhazainColors.ink400,
-    fontSize: 12,
-    fontFamily: 'TheSansArabic',
-  },
+  recentTitle: textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  recentTime: textStyle('label', { color: KhazainColors.ink500 }),
   recentEmpty: {
     color: KhazainColors.ink400,
     fontSize: 12,
@@ -917,40 +903,27 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   filtersRow: {
-    ...PHYSICAL_ROW,
-    gap: 8,
-    paddingHorizontal: 18,
-    paddingBottom: 10,
+    gap: FILTER_CHIP.gap,
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
+    paddingBottom: LIBRARY_SECTION_GAP,
+    alignItems: 'center',
   },
   filterPill: {
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 999,
+    height: FILTER_CHIP.height,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    borderRadius: FILTER_CHIP.radius,
+    backgroundColor: KhazainColors.iconChipBg,
   },
   filterPillActive: {
     backgroundColor: KhazainColors.navy800,
   },
-  filterPillInactive: {
-    backgroundColor: KhazainColors.cream50,
-  },
-  filterLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: KhazainColors.ink700,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-  },
-  filterLabelActive: { color: '#fff' },
+  filterLabel: textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  filterLabelActive: { color: KhazainColors.pageBg },
   sectionTitle: {
-    paddingHorizontal: 18,
-    paddingBottom: 8,
-    marginTop: 4,
-    fontSize: 14,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
+    paddingBottom: 12,
   },
   historyLoading: {
     fontFamily: 'TheSansArabic',

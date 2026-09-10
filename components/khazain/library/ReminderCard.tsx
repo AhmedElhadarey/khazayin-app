@@ -1,5 +1,7 @@
-import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import { LIST_CARD } from './libraryLayout';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -18,7 +20,7 @@ export type ReminderSummary = {
  */
 export function ReminderCard({ reminder }: { reminder: ReminderSummary }) {
   return (
-    <View style={[styles.card, KhazainShadows.card]}>
+    <View style={styles.card}>
       <View style={styles.text}>
         <Text style={styles.title} numberOfLines={1}>
           {reminder.labelAr}
@@ -99,10 +101,11 @@ const styles = StyleSheet.create({
     gap: 12,
     paddingVertical: 10,
     paddingHorizontal: 14,
-    borderRadius: CARD_DENSITY.lectureCardRadius,
+    // Figma node 2031:4659: 360 x 114 at radius 20, flat, hairline, no shadow.
+    borderRadius: LIST_CARD.radius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairline,
   },
   text: {
     flex: 1,
@@ -110,21 +113,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 2,
   },
-  title: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '600',
-    color: KhazainColors.ink900,
-    ...RTL_TEXT,
-  },
-  subtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    color: KhazainColors.ink500,
-    ...RTL_TEXT,
-  },
+  title: textStyle('cardTitle', { color: KhazainColors.inkHeading }),
+  subtitle: textStyle('label', { color: KhazainColors.ink500 }),
   badge: {
     width: CARD_DENSITY.lectureBadgeDisc,
     height: CARD_DENSITY.lectureBadgeDisc,
@@ -134,25 +124,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
-  empty: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    lineHeight: 18,
-    color: KhazainColors.ink500,
-    ...RTL_TEXT,
-  },
+  empty: textStyle('cardTitle', { color: KhazainColors.ink500 }),
   manage: {
     alignSelf: 'flex-end',
     paddingVertical: 8,
     minHeight: 44,
     justifyContent: 'center',
   },
-  manageLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '700',
-    color: KhazainColors.goldAccent,
-    ...RTL_TEXT,
-  },
+  manageLabel: textStyle('label', { color: KhazainColors.goldAccent }),
 });

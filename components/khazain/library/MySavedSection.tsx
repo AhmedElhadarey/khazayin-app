@@ -1,6 +1,7 @@
 import { BookmarkIcon } from '@/components/khazain/icons';
 import { BookmarkButton } from '@/components/khazain/primitives';
 import { SearchGroupHeader, SearchResultRow } from '@/components/khazain/search';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { rowPropsForSavedItem } from '@/services/search';
 import { useSavedStore } from '@/store';
@@ -108,13 +109,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 8,
   },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-  },
+  title: textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
   totalCountChip: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -123,12 +118,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: KhazainColors.gold200,
   },
-  totalCountText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '700',
-    color: KhazainColors.gold200,
-  },
+  totalCountText: textStyle('label', { color: KhazainColors.gold200 }),
   rowContainer: {
     position: 'relative',
   },
@@ -154,20 +144,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
+  emptyTitle: textStyle('sectionTitle', {
+    color: KhazainColors.inkHeading,
     textAlign: 'center',
-    writingDirection: 'rtl',
-  },
-  emptyBody: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
+  }),
+  emptyBody: textStyle('bodyCompact', {
     color: KhazainColors.ink500,
     textAlign: 'center',
-    writingDirection: 'rtl',
-    lineHeight: 22,
-  },
+  }),
 });

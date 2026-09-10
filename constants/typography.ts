@@ -83,34 +83,64 @@ export type RoleTextStyle = {
 };
 
 /**
+ * The smallest line height, as a multiple of the size, that does not clip
+ * Arabic.
+ *
+ * React Native clips a Text's glyph box to `lineHeight`, and Arabic hangs its
+ * marks — the madda on آ, the dots on ة — far above the Latin cap height the
+ * design's line heights were authored against. Setting the file's own numbers
+ * therefore cut the marks off: at 12/16, `٠ ملاحظة نشطة القرآن آخر` rendered on
+ * device as `٠ ملاحظه نشطه القران اخر`.
+ *
+ * Measured on an iPhone 16 simulator, one role at a time: 12/16 and 14/20 clip,
+ * 12/18 and 14/21 do not; 16/24 is clean and 20/28 is not. The boundary is a
+ * ratio rather than a size, and it sits here.
+ *
+ * This raises leading above what Figma states for six of the fourteen roles.
+ * That is the honest port: the design's line heights come from a browser, where
+ * `line-height` positions a line without cropping the glyphs inside it.
+ */
+export const MIN_LINE_HEIGHT_RATIO = 1.5;
+
+/** The design's line height for a size, floored so Arabic marks survive. */
+const leading = (fontSize: number, stated: number) =>
+  Math.max(stated, Math.ceil(fontSize * MIN_LINE_HEIGHT_RATIO));
+
+/**
  * Every size below appears in the Figma file, and every line height is either
- * stated there or derived from the ratio it states for that size.
+ * stated there or derived from the ratio it states for that size — then floored
+ * by `leading` so the marks are not cropped.
  */
 export const TEXT_ROLES: Readonly<Record<TextRole, RoleTextStyle>> = Object.freeze({
-  displayLarge: { fontFamily: DISPLAY_FAMILY, fontSize: 32, fontWeight: '700', lineHeight: 42 },
-  display: { fontFamily: DISPLAY_FAMILY, fontSize: 28, fontWeight: '700', lineHeight: 38 },
-  screenTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 24, fontWeight: '700', lineHeight: 32 },
+  displayLarge: { fontFamily: DISPLAY_FAMILY, fontSize: 32, fontWeight: '700', lineHeight: leading(32, 42) },
+  display: { fontFamily: DISPLAY_FAMILY, fontSize: 28, fontWeight: '700', lineHeight: leading(28, 38) },
+  screenTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 24, fontWeight: '700', lineHeight: leading(24, 32) },
   /** The Quran hero's `القرآن حــياة`, the one place the design sets 20. */
-  heroTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 20, fontWeight: '700', lineHeight: 28 },
+  heroTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 20, fontWeight: '700', lineHeight: leading(20, 28) },
   /** Home's `العلماء والمشايخ` / `الكتب العلمية` row headings. */
-  sectionTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 16, fontWeight: '700', lineHeight: 24 },
-  cardTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 14, fontWeight: '700', lineHeight: 20 },
+  sectionTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 16, fontWeight: '700', lineHeight: leading(16, 24) },
+  cardTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 14, fontWeight: '700', lineHeight: leading(14, 20) },
   /** Nav labels, quick chips, `عرض الكل`. */
-  label: { fontFamily: DISPLAY_FAMILY, fontSize: 12, fontWeight: '700', lineHeight: 16 },
-  labelSmall: { fontFamily: DISPLAY_FAMILY, fontSize: 10, fontWeight: '700', lineHeight: 14 },
+  label: { fontFamily: DISPLAY_FAMILY, fontSize: 12, fontWeight: '700', lineHeight: leading(12, 16) },
+  labelSmall: { fontFamily: DISPLAY_FAMILY, fontSize: 10, fontWeight: '700', lineHeight: leading(10, 14) },
 
-  bodyLarge: { fontFamily: BODY_FAMILY, fontSize: 18, fontWeight: '400', lineHeight: 28 },
-  body: { fontFamily: BODY_FAMILY, fontSize: 16, fontWeight: '400', lineHeight: 24 },
-  bodyCompact: { fontFamily: BODY_FAMILY, fontSize: 14, fontWeight: '400', lineHeight: 20 },
+  bodyLarge: { fontFamily: BODY_FAMILY, fontSize: 18, fontWeight: '400', lineHeight: leading(18, 28) },
+  body: { fontFamily: BODY_FAMILY, fontSize: 16, fontWeight: '400', lineHeight: leading(16, 24) },
+  bodyCompact: { fontFamily: BODY_FAMILY, fontSize: 14, fontWeight: '400', lineHeight: leading(14, 20) },
   /**
    * The design's smallest prose. Figma states 9pt for the Prophet hero and
    * 8pt for the queen card; both are raised to `MIN_BODY_SIZE` because at
    * their stated size they are artwork, not readable text.
    */
-  caption: { fontFamily: BODY_FAMILY, fontSize: MIN_BODY_SIZE, fontWeight: '400', lineHeight: 18 },
+  caption: {
+    fontFamily: BODY_FAMILY,
+    fontSize: MIN_BODY_SIZE,
+    fontWeight: '400',
+    lineHeight: leading(MIN_BODY_SIZE, 18),
+  },
 
-  calligraphyTitle: { fontFamily: CALLIGRAPHY_FAMILY, fontSize: 16, fontWeight: '700', lineHeight: 18.5 },
-  calligraphyBody: { fontFamily: CALLIGRAPHY_FAMILY, fontSize: 14, fontWeight: '700', lineHeight: 20 },
+  calligraphyTitle: { fontFamily: CALLIGRAPHY_FAMILY, fontSize: 16, fontWeight: '700', lineHeight: leading(16, 18.5) },
+  calligraphyBody: { fontFamily: CALLIGRAPHY_FAMILY, fontSize: 14, fontWeight: '700', lineHeight: leading(14, 20) },
 });
 
 /** RTL text direction, spread by every role. There is no LTR copy in this app. */
