@@ -258,10 +258,14 @@ describe('shared card density', () => {
     expect(CARD_DENSITY.sectionCardRadius).toBe(20);
   });
 
-  it('derives the section card height from its padding and disc', () => {
-    expect(CARD_DENSITY.sectionCardPaddingVertical * 2 + CARD_DENSITY.sectionIconDisc).toBe(
-      CARD_DENSITY.sectionCardHeight,
-    );
+  it('derives the section card height from its inner box and disc', () => {
+    // `DIV-43` is 96 = 16 + `DIV-44` + 16, and `DIV-44` is exactly the 64pt
+    // disc's height. The text beside the disc overflows that box in the file
+    // too, which is why the rendered inset (`sectionCardPaddingVertical`) is
+    // 14 rather than 16.
+    expect(CARD_DENSITY.sectionCardInnerBox).toBe(CARD_DENSITY.sectionIconDisc);
+    expect(16 * 2 + CARD_DENSITY.sectionCardInnerBox).toBe(CARD_DENSITY.sectionCardHeight);
+    expect(CARD_DENSITY.sectionCardPaddingVertical).toBeLessThan(16);
   });
 
   it('targets 64-68pt for a one-line lecture card, not the old 84pt floor', () => {

@@ -265,7 +265,14 @@ export function physicalTabOrder<T>(tabs: readonly T[]): T[] {
 export const CARD_DENSITY = Object.freeze({
   // Section/root list card — node 2031:5675, `DIV-43`.
   sectionCardHeight: 96,
-  sectionCardPaddingVertical: 16,
+  /**
+   * `DIV-44`, the card's inner box, is 64 tall inset 16 — but the text block
+   * inside it (`DIV-48`) is 68 and overflows symmetrically, so the inset the
+   * file actually renders from the card edge to the first line of type is 14
+   * (`H3-49` sits at y=162 in a card that starts at 148).
+   */
+  sectionCardPaddingVertical: 14,
+  sectionCardInnerBox: 64,
   sectionCardPaddingHorizontal: 12,
   sectionIconDisc: 64,
   sectionCardRadius: 20,

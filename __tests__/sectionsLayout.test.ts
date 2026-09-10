@@ -13,7 +13,7 @@ describe('the section root card — node 2031:5675, `DIV-43`', () => {
   it('is 96 tall at radius 20, inset 12 with a 64 disc', () => {
     expect(CARD_DENSITY.sectionCardHeight).toBe(96);
     expect(CARD_DENSITY.sectionCardRadius).toBe(20);
-    expect(CARD_DENSITY.sectionCardPaddingVertical).toBe(16);
+    expect(CARD_DENSITY.sectionCardPaddingVertical).toBe(14);
     expect(CARD_DENSITY.sectionCardPaddingHorizontal).toBe(12);
     expect(CARD_DENSITY.sectionIconDisc).toBe(64);
   });

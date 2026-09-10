@@ -51,14 +51,20 @@ export default function QiraatScreen() {
           skeleton={<SkeletonRibbonList count={10} />}
           emptyMessage="لا توجد قراءات متاحة"
         >
-          {data.map((q) => (
-            <ReciterRow
-              key={q.id}
-              title={q.name}
-              isDefault={q.id === defaultQiraaId}
-              onPress={() => router.back()}
-            />
-          ))}
+          {/* The gap has to sit on a view of our own: AsyncContent renders its
+              children inside a wrapper, so a `gap` on the scroll container
+              never reaches the rows and they stacked flush against each
+              other, strokes touching. */}
+          <View style={styles.rows}>
+            {data.map((q) => (
+              <ReciterRow
+                key={q.id}
+                title={q.name}
+                isDefault={q.id === defaultQiraaId}
+                onPress={() => router.back()}
+              />
+            ))}
+          </View>
         </AsyncContent>
       </ScrollView>
     </SafeAreaView>
@@ -87,6 +93,8 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 16,
+  },
+  rows: {
     gap: CARD_DENSITY.lectureListGap,
   },
 });

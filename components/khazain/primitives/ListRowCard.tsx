@@ -127,13 +127,22 @@ const styles = StyleSheet.create({
   textCol: {
     flex: 1,
     minWidth: 0,
-    // `H3-49` ends at y=186 and `P-52` starts at 192; `P-55` follows 2 later.
-    gap: 4,
   },
   title: textStyle('sectionTitle', { color: KhazainColors.inkTitle }),
-  subtitle: textStyle('cardTitle', { color: KhazainColors.inkSubtle }),
-  count: textStyle('label', { color: KhazainColors.inkCount }),
-  // The More list titles the same row in the body face at 14 (node 2102:2711).
+  // `H3-49` ends at y=186 and `P-52` starts at 192; `P-55` follows 2 later.
+  subtitle: {
+    ...textStyle('cardTitle', { color: KhazainColors.inkSubtle }),
+    marginTop: 6,
+  },
+  count: {
+    ...textStyle('label', { color: KhazainColors.inkCount }),
+    marginTop: 2,
+  },
+  // The More list titles the same row in the body face at 14 (node 2102:2711),
+  // and sets its two lines flush — `H3-18` ends where `P-21` starts.
   titleCompact: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
-  subtitleCompact: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
+  subtitleCompact: {
+    ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
+    marginTop: 0,
+  },
 });
