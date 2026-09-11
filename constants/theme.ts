@@ -202,6 +202,13 @@ export const KhazainColors = {
   hairline: '#E5E7EB',
   hairlineWarm: '#D9D6D3',
   hairlineFaint: '#F3F4F6',
+  /**
+   * The More frame's stroke. Node 2102:2711 `websiteLink-13` outlines its card
+   * in `#F1E7DD` — a warm cream rather than the grey `hairlineWarm` the
+   * Sections rows use. It shares a hex with `navLabel`, but a border and a nav
+   * label are not the same token: renaming either must not move the other.
+   */
+  hairlineCream: '#F1E7DD',
 
   // Ink (text)
   /** Headings inside cards. Distinct from `inkTitle`, which the design keeps

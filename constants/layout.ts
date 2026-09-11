@@ -309,6 +309,19 @@ export const CARD_DENSITY = Object.freeze({
   railRowRadius: 20,
   scholarRowMinHeight: 64,
 
+  // The More row — node 2102:2711 `websiteLink-13`, redrawn eight times in the
+  // frame and again on every More sub-screen. It is its own box, not a
+  // variation on the lecture row: taller, inset twice as far, and carrying a
+  // rounded *square* chip where every Sections row carries a disc.
+  moreCardHeight: 82,
+  moreCardRadius: 16,
+  moreCardPaddingHorizontal: 16,
+  /** `DIV-24` — 48 x 48 at radius 16, so it reads as a squircle, not a circle. */
+  moreChipSize: 48,
+  moreChipRadius: 16,
+  /** Each `margin-wrap` is 94 over an 82 card, and the cards step 94 apart. */
+  moreListGap: 12,
+
   /** Rail lists and the section root sit 8 apart … */
   listGap: 8,
   /** … every row that carries a hairline sits 6 apart (a 70 step over 64) … */

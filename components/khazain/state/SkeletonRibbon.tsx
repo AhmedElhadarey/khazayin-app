@@ -24,7 +24,7 @@ import Animated, {
 const WIDTH = 400;
 const SHIMMER_W = Math.round(WIDTH * 0.3);
 
-export function SkeletonRibbon() {
+export function SkeletonRibbon({ height = CARD_DENSITY.skeletonRibbonHeight }: { height?: number } = {}) {
   const translateX = useSharedValue(WIDTH);
   const reduceMotion = useReducedMotion();
 
@@ -47,7 +47,7 @@ export function SkeletonRibbon() {
   }));
 
   return (
-    <View style={styles.base}>
+    <View style={[styles.base, { height }]}>
       <Animated.View style={[styles.shimmer, shimmerStyle]}>
         <LinearGradient
           colors={['transparent', 'rgba(252,250,248,0.6)', 'transparent']}
@@ -60,13 +60,22 @@ export function SkeletonRibbon() {
   );
 }
 
-export type SkeletonRibbonListProps = { count?: number; gap?: number };
+/**
+ * `height` and `gap` default to the reciter/qiraa rhythm. A list whose rows are
+ * a different box passes its own, so the page does not jump when the real rows
+ * replace the placeholders — the More list is 82 at 12, not 56 at 8.
+ */
+export type SkeletonRibbonListProps = { count?: number; gap?: number; height?: number };
 
-export function SkeletonRibbonList({ count = 3, gap = CARD_DENSITY.skeletonGap }: SkeletonRibbonListProps) {
+export function SkeletonRibbonList({
+  count = 3,
+  gap = CARD_DENSITY.skeletonGap,
+  height = CARD_DENSITY.skeletonRibbonHeight,
+}: SkeletonRibbonListProps) {
   return (
     <View style={{ gap }}>
       {Array.from({ length: count }).map((_, i) => (
-        <SkeletonRibbon key={i} />
+        <SkeletonRibbon key={i} height={height} />
       ))}
     </View>
   );
@@ -74,8 +83,6 @@ export function SkeletonRibbonList({ count = 3, gap = CARD_DENSITY.skeletonGap }
 
 const styles = StyleSheet.create({
   base: {
-    // Same height as the reciter/qiraa row it stands in for.
-    height: CARD_DENSITY.skeletonRibbonHeight,
     width: '100%',
     borderRadius: KhazainRadius.sm,
     backgroundColor: KhazainColors.skeleton,

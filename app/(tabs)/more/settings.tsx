@@ -159,12 +159,14 @@ export default function SettingsScreen() {
         </View>
         <SettingsSection title="التلاوة">
           <ListRowCard
+            variant="more"
             title="القراءة الافتراضية"
             subtitle={qiraaName}
             icon={<QiraaIcon />}
             onPress={() => router.push('/settings-qiraa' as any)}
           />
           <ListRowCard
+            variant="more"
             title="القارئ المفضّل"
             subtitle={reciterName}
             icon={<ReciterIcon />}
@@ -173,6 +175,7 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="القراءة">
           <ListRowCard
+            variant="more"
             title="حجم خط القرآن"
             subtitle={FONT_LEVEL_LABELS[fontSizeLevel]}
             icon={<FontSizeIcon />}
@@ -187,6 +190,7 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="الإشعارات">
           <ListRowCard
+            variant="more"
             title="الإشعارات"
             subtitle={notificationsSummary}
             icon={<BellIcon />}
@@ -195,6 +199,7 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="مواقيت الصلاة">
           <ListRowCard
+            variant="more"
             title="مواقيت الصلاة"
             subtitle={prayerSubtitle}
             icon={<PrayerTimesIcon />}
@@ -203,6 +208,7 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="التطبيق">
           <ListRowCard
+            variant="more"
             title="اللغة"
             subtitle="العربية"
             icon={<GlobeIcon />}
@@ -211,6 +217,7 @@ export default function SettingsScreen() {
             }
           />
           <ListRowCard
+            variant="more"
             title="حول التطبيق"
             subtitle="الإصدار والمؤسسة"
             icon={<AboutIcon />}
@@ -219,12 +226,14 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="البيانات">
           <ListRowCard
+            variant="more"
             title="تفريغ الذاكرة المؤقتة"
             subtitle=""
             icon={<TrashIcon />}
             onPress={onClearCache}
           />
           <ListRowCard
+            variant="more"
             title="تصدير الملاحظات"
             subtitle=""
             icon={<ExportIcon />}
@@ -233,6 +242,7 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="قانوني">
           <ListRowCard
+            variant="more"
             title="سياسة الخصوصية"
             subtitle=""
             icon={<PrivacyIcon />}
@@ -242,12 +252,14 @@ export default function SettingsScreen() {
         {__DEV__ ? (
           <SettingsSection title="مطوّر (Dev)">
             <ListRowCard
+            variant="more"
               title="إعادة الإعداد الأولي"
               subtitle="عرض شاشة الترحيب من جديد"
               icon={<AboutIcon />}
               onPress={onResetOnboarding}
             />
             <ListRowCard
+            variant="more"
               title="إرسال حدث تجريبي إلى Sentry"
               subtitle="للتحقق من تسجيل الأعطال"
               icon={<AboutIcon />}

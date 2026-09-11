@@ -1,7 +1,8 @@
 import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
 import { OrnamentPattern } from '@/components/khazain/patterns';
-import { PHYSICAL_BOX, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
+import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { MORE_EXTENSION_ROWS, MORE_EXTERNAL_URLS } from '@/data/content/sections';
 import { useMoreRowsStore } from '@/store';
 import type { MoreRow as MoreRowData } from '@/types/content';
@@ -64,13 +65,19 @@ export default function MoreScreen() {
             status={status}
             error={error}
             onRetry={refresh}
-            skeleton={<SkeletonRibbonList count={8} />}
+            skeleton={
+              <SkeletonRibbonList
+                count={8}
+                height={CARD_DENSITY.moreCardHeight}
+                gap={CARD_DENSITY.moreListGap}
+              />
+            }
             emptyMessage="لا توجد عناصر"
           >
             {data.map((r) => (
               <ListRowCard
                 key={r.id}
-                compact
+                variant="more"
                 title={r.title}
                 subtitle={r.subtitle}
                 icon={<RowGlyph id={r.id} />}
@@ -83,7 +90,7 @@ export default function MoreScreen() {
           {MORE_EXTENSION_ROWS.map((row) => (
             <ListRowCard
               key={row.id}
-              compact
+              variant="more"
               title={row.title}
               subtitle={row.subtitle}
               icon={<RowGlyph id={row.id} />}
@@ -99,11 +106,10 @@ export default function MoreScreen() {
   );
 }
 
-// Icon glyph for the More-row chip. Sized to fill the 64×64 ListRowCard
-// chip proportionally (matches the section icons via SECTION_ICONS).
+// Icon glyph for the More-row chip. Node 2102:2711 draws each one at roughly
+// 20pt inside the 48pt squircle, in navy.
 function RowGlyph({ id }: { id: string }) {
   const c = KhazainColors.navy800;
-  // Sized for the compact 40pt disc used by the More list.
   const size = 20;
   switch (id) {
     case 'web':
@@ -221,26 +227,21 @@ function RowGlyph({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
+  // Node 2102:2711 `Header` — a 35pt band under the 45pt status bar, with the
+  // title box starting at y=53. Identical to the Sections root.
   headerBlock: {
     // PHYSICAL_BOX so `flex-end` means the physical right, not the RTL end.
     ...PHYSICAL_BOX,
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 6,
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.headerPaddingTop,
+    paddingBottom: 8,
     alignItems: 'flex-end',
   },
-  h1: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  // Match sections/index.tsx list spacing so the two screens read identically.
+  // The file sets every page title in the body face at 18, not the display one.
+  h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
   list: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: CARD_DENSITY.moreListGap,
   },
   footer: {
     paddingHorizontal: 18,
