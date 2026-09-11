@@ -70,6 +70,7 @@ export const DAWAH_POSTERS: DawahPoster[] = [
     tone:  '#E8DDD0',
     title: 'دعاء ليلة القدر',
     body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    imageSource: DAWAH_LAYLAT,
     month: 'ramadan-shawwal',
   },
   {
@@ -77,6 +78,7 @@ export const DAWAH_POSTERS: DawahPoster[] = [
     tone:  '#E1D4BE',
     title: 'دعاء ليلة القدر',
     body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    imageSource: DAWAH_LAYLAT,
     month: 'ramadan-shawwal',
   },
   {
@@ -84,6 +86,7 @@ export const DAWAH_POSTERS: DawahPoster[] = [
     tone:  '#DBC9B0',
     title: 'دعاء ليلة القدر',
     body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    imageSource: DAWAH_LAYLAT,
     month: 'muharram-safar',
   },
   {
@@ -91,6 +94,7 @@ export const DAWAH_POSTERS: DawahPoster[] = [
     tone:  '#E8DDD0',
     title: 'دعاء ليلة القدر',
     body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    imageSource: DAWAH_LAYLAT,
     month: 'dhul-qadah-dhul-hijjah',
   },
   // ── Month-detail reference rows for node 2120:1857 ──
@@ -102,6 +106,7 @@ export const DAWAH_POSTERS: DawahPoster[] = [
     tone:  '#E8DDD0',
     title: 'دعاء ليلة القدر',
     body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    imageSource: DAWAH_LAYLAT,
     month: 'shawwal-ramadan',
   },
   {
@@ -109,6 +114,7 @@ export const DAWAH_POSTERS: DawahPoster[] = [
     tone:  '#E1D4BE',
     title: 'دعاء ليلة القدر',
     body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    imageSource: DAWAH_LAYLAT,
     month: 'shawwal-ramadan',
   },
   {
@@ -116,6 +122,7 @@ export const DAWAH_POSTERS: DawahPoster[] = [
     tone:  '#DBC9B0',
     title: 'دعاء ليلة القدر',
     body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    imageSource: DAWAH_LAYLAT,
     month: 'shawwal-ramadan',
   },
   {
@@ -123,6 +130,7 @@ export const DAWAH_POSTERS: DawahPoster[] = [
     tone:  '#E8DDD0',
     title: 'دعاء ليلة القدر',
     body:  'اللهم إنك عفوٌّ كريمٌ\nتحب العفو فاعفُ عنّي',
+    imageSource: DAWAH_LAYLAT,
     month: 'shawwal-ramadan',
   },
   // Every month the list declares must resolve to at least one poster, or its

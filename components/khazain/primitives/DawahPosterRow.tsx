@@ -6,7 +6,7 @@ import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
-import { DawahPoster } from '../home/DawahPoster';
+import { Image } from 'expo-image';
 
 // تصميمات دعوية → month detail (Figma node 2120:1857).
 //
@@ -84,11 +84,20 @@ export function DawahPosterRow({
         </Text>
       </View>
 
-      {/* Physical right — poster thumbnail */}
-      <View style={styles.thumbWrap} pointerEvents="none">
-        <View style={styles.thumbScale}>
-          <DawahPoster quote={quote} />
-        </View>
+      {/* Physical right — `43 ليله القدر دعاء`, a plain 74 x 73 image at
+          radius 8. Not the 3D `DawahPoster`: the frame draws no bevel, sheen
+          or shadow here, and at thumbnail size on Android that component's
+          elevation layer swallowed the artwork and left only its tone. */}
+      <View style={[styles.thumbWrap, { backgroundColor: quote.tone ?? undefined }]} pointerEvents="none">
+        {quote.imageSource ? (
+          <Image
+            source={quote.imageSource}
+            style={styles.thumb}
+            contentFit="cover"
+            cachePolicy="memory-disk"
+            transition={0}
+          />
+        ) : null}
       </View>
     </Pressable>
   );
@@ -117,12 +126,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     flexShrink: 0,
   },
-  thumbScale: {
-    // The DawahPoster is 154x149; shrink it to ~POSTER_W × POSTER_H using transform-scale.
-    width: 154,
-    height: 149,
-    transform: [{ scale: POSTER_W / 154 }],
-    transformOrigin: 'top left' as any,
+  thumb: {
+    width: POSTER_W,
+    height: POSTER_H,
   },
   titleWrap: {
     flex: 1,
