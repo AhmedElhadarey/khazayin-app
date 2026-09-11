@@ -1,4 +1,4 @@
-import { MIN_TOUCH_TARGET, PHYSICAL_ROW, SECTION_CHROME } from '@/constants/layout';
+import { MIN_TOUCH_TARGET, PAGE_CHROME, PHYSICAL_ROW } from '@/constants/layout';
 import {
   INLINE_HEADER_ORDER,
   type InlineHeaderSlot,
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     minHeight: MIN_TOUCH_TARGET,
     paddingHorizontal: 16,
-    paddingTop: SECTION_CHROME.headerPaddingTop,
+    paddingTop: PAGE_CHROME.headerPaddingTop,
     alignItems: 'center',
     justifyContent: 'flex-end',
   },

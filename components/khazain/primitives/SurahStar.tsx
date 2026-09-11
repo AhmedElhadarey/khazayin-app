@@ -1,21 +1,15 @@
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-// 8-point gold-stroked star with the surah index in Arabic-Indic numerals
-// inside (e.g. ٠١, ٠٢, ٠٧). Used in surah-listing rows on pages 15 / 21.
-export function SurahStar({
-  index,
-  size = 44,
-  outlined = false,
-}: {
-  index: string;
-  size?: number;
-  // outlined → matches Figma page 21 (mushaf list) which uses a thinner
-  // outlined-only star. Default is filled cream backdrop (page 15 reciter).
-  outlined?: boolean;
-}) {
+// `DIV-79` on nodes 2207:5270 and 2207:17898 — the numbered badge on a surah
+// row. A 36pt tinted star in `#D7B995` at 16% carrying a `#A88051` mark, with
+// the index over it in Arabic-Indic numerals set in the display face at 12.
+//
+// Both frames draw it identically, so there is no outlined variant.
+export function SurahStar({ index, size = 44 }: { index: string; size?: number }) {
   // 8-point star: union of two squares rotated 45°
   const r = size / 2;
   const c = size / 2;
@@ -39,8 +33,8 @@ export function SurahStar({
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
         <Path
           d={d}
-          fill={outlined ? 'transparent' : KhazainColors.iconChipBg}
-          stroke={KhazainColors.gold500}
+          fill={KhazainColors.iconChipBg}
+          stroke={KhazainColors.goldAccent}
           strokeWidth={1.4}
           strokeLinejoin="round"
         />
@@ -58,13 +52,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
+    ...textStyle('label', { color: KhazainColors.goldAccent, textAlign: 'center' }),
     position: 'absolute',
-    fontFamily: 'Amiri-Bold',
-    fontSize: 13,
-    fontWeight: '700',
-    color: KhazainColors.gold600,
-    writingDirection: 'rtl',
-    textAlign: 'center',
     includeFontPadding: false,
   },
 });

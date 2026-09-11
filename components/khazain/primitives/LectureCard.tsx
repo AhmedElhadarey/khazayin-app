@@ -44,8 +44,9 @@ export function LectureCard({
   showBookmark?: boolean;
   onPress?: () => void;
 }) {
-  // `compact` now only changes the card's shape: the file sets the same type
-  // on both, so the text styles no longer fork.
+  // `compact` changes the card's shape and clamps the title to one line — the
+  // rail lists are single-line in the file. It no longer forks the text
+  // styles: both frames set the same faces and sizes.
   const heightStyle = compact ? styles.cardCompact : styles.card;
 
   const slots: Record<LectureCardSlot, React.ReactNode> = {

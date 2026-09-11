@@ -64,6 +64,6 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 4,
-    gap: CARD_DENSITY.listGap,
+    gap: CARD_DENSITY.lectureListGap,
   },
 });

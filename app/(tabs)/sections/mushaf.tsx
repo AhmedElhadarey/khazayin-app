@@ -6,7 +6,7 @@ import {
   SkeletonRowList,
   SurahRow,
 } from '@/components/khazain';
-import { PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
 import { findSurahIdForPage, normalizeSurahParam, surahMetaLine } from '@/services/mushafNavigation';
 import { KhazainColors } from '@/constants/theme';
@@ -38,7 +38,6 @@ let _autoResumeFired = false;
 // the app uses. The parchment the app used to paint here, and the gold footer
 // under it, were this screen's own invention and read as a different product.
 const MUSHAF_BG = KhazainColors.pageBg;
-const FOOTER_BG = KhazainColors.pageBg;
 
 export default function MushafScreen() {
   const router = useRouter();
@@ -329,8 +328,8 @@ const styles = StyleSheet.create({
   surahList: {
     paddingHorizontal: 16,
     paddingTop: 8,
-    // SurahRow carries its own `marginBottom`; the file steps 66 over a 60 row.
-    gap: 0,
+    // node 2207:17898 steps 66 over a 60 row.
+    gap: CARD_DENSITY.lectureListGap,
   },
   headerBg: {
     paddingBottom: 8,
@@ -399,7 +398,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingBottom: 8,
-    backgroundColor: FOOTER_BG,
+    backgroundColor: MUSHAF_BG,
   },
   footerBtn: {
     height: 68,

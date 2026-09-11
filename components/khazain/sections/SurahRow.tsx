@@ -62,18 +62,15 @@ export function SurahRow({
       </View>
 
       {/* Physical right — the numbered star badge, `DIV-79`. */}
-      <SurahStar index={surah.displayNumber} size={SURAH_BADGE_DISC} />
+      <SurahStar index={surah.displayNumber} size={CARD_DENSITY.surahBadgeDisc} />
     </Pressable>
   );
 }
 
-/** `DIV-79` — the numbered badge, 36 rather than the shared 40. */
-const SURAH_BADGE_DISC = 36;
-
 const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
-    minHeight: 60,
+    minHeight: CARD_DENSITY.surahRowMinHeight,
     backgroundColor: KhazainColors.cardBg,
     borderRadius: CARD_DENSITY.lectureCardRadius,
     borderWidth: 1,
@@ -81,7 +78,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     alignItems: 'center',
-    marginBottom: CARD_DENSITY.lectureListGap,
     gap: 12,
   },
   body: {

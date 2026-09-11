@@ -45,7 +45,7 @@ export function DawahPosterRow({
       <View style={styles.actions}>
         <Pressable
           onPress={onShare}
-          hitSlop={12}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 4 }}
           accessibilityLabel="مشاركة"
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
@@ -53,7 +53,7 @@ export function DawahPosterRow({
         </Pressable>
         <Pressable
           onPress={onDownload}
-          hitSlop={12}
+          hitSlop={{ top: 12, bottom: 12, left: 4, right: 12 }}
           accessibilityLabel="تنزيل"
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
@@ -131,6 +131,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: textStyle('cardTitle', { color: KhazainColors.inkTitle }),
+  // The two icons are 20pt and 8 apart, so their hitSlop is asymmetric: each
+  // reaches out to the row's edge but stops short of its neighbour, or taps in
+  // the band between them would resolve by z-order.
   actions: {
     ...PHYSICAL_ROW,
     alignItems: 'center',

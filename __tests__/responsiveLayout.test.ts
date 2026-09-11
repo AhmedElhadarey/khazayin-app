@@ -258,13 +258,12 @@ describe('shared card density', () => {
     expect(CARD_DENSITY.sectionCardRadius).toBe(20);
   });
 
-  it('derives the section card height from its inner box and disc', () => {
+  it('insets the section card less than its own disc box implies', () => {
     // `DIV-43` is 96 = 16 + `DIV-44` + 16, and `DIV-44` is exactly the 64pt
-    // disc's height. The text beside the disc overflows that box in the file
-    // too, which is why the rendered inset (`sectionCardPaddingVertical`) is
-    // 14 rather than 16.
-    expect(CARD_DENSITY.sectionCardInnerBox).toBe(CARD_DENSITY.sectionIconDisc);
-    expect(16 * 2 + CARD_DENSITY.sectionCardInnerBox).toBe(CARD_DENSITY.sectionCardHeight);
+    // disc. But the text beside the disc (`DIV-48`) is 68 and overflows that
+    // box in the file too, so the inset the frame renders from the card edge
+    // to its first line of type is 14, not 16.
+    expect(16 * 2 + CARD_DENSITY.sectionIconDisc).toBe(CARD_DENSITY.sectionCardHeight);
     expect(CARD_DENSITY.sectionCardPaddingVertical).toBeLessThan(16);
   });
 

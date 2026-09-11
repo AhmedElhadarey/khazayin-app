@@ -238,7 +238,17 @@ export const SEGMENT_TABS = Object.freeze({
   strip: Object.freeze({ flexGrow: 0, flexShrink: 0 } as const),
   stripPaddingVertical: 6,
   gap: 8,
+  /**
+   * Node "\u0661" on 2031:6193 — four 84 x 45 tabs 8 apart fill the 360pt
+   * strip exactly at the 393pt reference width, each with a 70 x 4 navy bar
+   * pinned to its bottom edge and a label inset 16 from the top.
+   */
   minTabWidth: 84,
+  tabHeight: 45,
+  tabRadius: 7.5,
+  tabLabelPaddingTop: 16,
+  underlineWidth: 70,
+  underlineHeight: 4,
 } as const);
 
 /**
@@ -272,7 +282,6 @@ export const CARD_DENSITY = Object.freeze({
    * (`H3-49` sits at y=162 in a card that starts at 148).
    */
   sectionCardPaddingVertical: 14,
-  sectionCardInnerBox: 64,
   sectionCardPaddingHorizontal: 12,
   sectionIconDisc: 64,
   sectionCardRadius: 20,
@@ -289,6 +298,11 @@ export const CARD_DENSITY = Object.freeze({
   reciterRowMinHeight: 56,
   reciterRowRadius: 12,
 
+  // The surah row — nodes 2207:17898 and 2207:5270 draw the same `DIV-67`:
+  // 60 tall, inset 12, with a badge one step smaller than the shared disc.
+  surahRowMinHeight: 60,
+  surahBadgeDisc: 36,
+
   // The two lists that sit beside the letter rail — nodes 2102:2975 (scholars,
   // 64 tall) and 2869:2088 / 2869:2306 (audiobooks and exclusives, 56). They
   // are the only rows in the file drawn at radius 20 with no stroke.
@@ -297,8 +311,10 @@ export const CARD_DENSITY = Object.freeze({
 
   /** Rail lists and the section root sit 8 apart … */
   listGap: 8,
-  /** … every row that carries a hairline sits 6 apart (a 70 step over 64). */
+  /** … every row that carries a hairline sits 6 apart (a 70 step over 64) … */
   lectureListGap: 6,
+  /** … and the two dawah lists sit 4 apart (nodes 2120:942, 2120:1857). */
+  dawahListGap: 4,
 
   // Skeletons stand in for real rows, so the page must not jump on load.
   skeletonRowHeight: 64,
@@ -320,7 +336,7 @@ export const CARD_DENSITY = Object.freeze({
 // in all seventeen Sections frames, so their numbers belong here rather than
 // in each primitive. Every value is stated by `docs/KHAZAYIN.fig`.
 
-export const SECTION_CHROME = Object.freeze({
+export const PAGE_CHROME = Object.freeze({
   /** The title box starts at y=53 under a 45pt status bar. */
   headerPaddingTop: 8,
 
@@ -332,30 +348,22 @@ export const SECTION_CHROME = Object.freeze({
    */
   searchHeight: 40,
   searchRadius: 12,
+} as const);
 
-  /**
-   * The letter rail — node "DIV-97". A 20pt column at the physical right
-   * holding 16 x 22 chips 4 apart; the active chip widens to 20 and rounds
-   * harder instead of only changing colour.
-   */
-  railWidth: 20,
-  letterChipWidth: 16,
-  letterChipHeight: 22,
-  letterChipRadius: 4,
-  letterChipGap: 4,
-  letterChipActiveWidth: 20,
-  letterChipActiveRadius: 8,
-
-  /**
-   * The reciter tab strip — node "\u0661" on 2031:6193. Four 84 x 45 tabs 8
-   * apart, each with a 70 x 4 navy bar pinned to its bottom edge.
-   */
-  tabWidth: 84,
-  tabHeight: 45,
-  tabRadius: 7.5,
-  tabGap: 8,
-  tabUnderlineWidth: 70,
-  tabUnderlineHeight: 4,
+/**
+ * The alphabet rail — node "DIV-97" on 2031:6193, 2102:2975, 2869:2088 and
+ * 2869:2306. A 20pt column at the physical right, itself outlined in
+ * `#D7B995` at 16%, holding 16 x 22 chips 4 apart.
+ *
+ * The selected chip keeps that box and changes only its colours; the 20 x 22
+ * r8 chip the frames also contain is a different, unselected state.
+ */
+export const LETTER_RAIL = Object.freeze({
+  width: 20,
+  chipWidth: 16,
+  chipHeight: 22,
+  chipRadius: 4,
+  chipGap: 4,
 } as const);
 
 // ---------------------------------------------------------------------------
@@ -374,7 +382,7 @@ export const RESERVED_COLUMNS = Object.freeze({
    * file puts the rail at x=357..377 — hard against the 16pt page margin — and
    * ends the list at x=349, so the list gives up 44 on the physical right.
    */
-  letterRail: SECTION_CHROME.letterChipActiveWidth,
+  letterRail: LETTER_RAIL.width,
   letterRailInset: 44,
 } as const);
 

@@ -1,9 +1,4 @@
-import {
-  PHYSICAL_ROW,
-  SECTION_CHROME,
-  SEGMENT_TABS,
-  physicalTabOrder,
-} from '@/constants/layout';
+import { PHYSICAL_ROW, SEGMENT_TABS, physicalTabOrder } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
@@ -56,9 +51,9 @@ export function SegmentTabs<T extends string>({
                 { opacity: pressed ? 0.8 : 1 },
               ]}
             >
-              <Text style={[styles.label, isActive ? styles.labelActive : styles.labelIdle]}>
-                {t.label}
-              </Text>
+              {/* The file sets every label navy, selected or not — the bar is
+                  the whole of the selected state. */}
+              <Text style={styles.label}>{t.label}</Text>
               {isActive ? <View style={styles.underline} /> : null}
             </Pressable>
           );
@@ -82,12 +77,12 @@ const styles = StyleSheet.create({
     gap: SEGMENT_TABS.gap,
   },
   tab: {
-    height: SECTION_CHROME.tabHeight,
+    minHeight: SEGMENT_TABS.tabHeight,
     paddingHorizontal: 7,
-    paddingTop: 16,
+    paddingTop: SEGMENT_TABS.tabLabelPaddingTop,
     minWidth: SEGMENT_TABS.minTabWidth,
     alignItems: 'center',
-    borderRadius: SECTION_CHROME.tabRadius,
+    borderRadius: SEGMENT_TABS.tabRadius,
     backgroundColor: KhazainColors.heroCream,
     overflow: 'hidden',
   },
@@ -98,13 +93,12 @@ const styles = StyleSheet.create({
     ...textStyle('labelSmall', { textAlign: 'center' }),
     color: KhazainColors.navy800,
   },
-  labelIdle: {},
-  labelActive: {},
   underline: {
     position: 'absolute',
     bottom: 0,
-    width: SECTION_CHROME.tabUnderlineWidth,
-    height: SECTION_CHROME.tabUnderlineHeight,
+    alignSelf: 'center',
+    width: SEGMENT_TABS.underlineWidth,
+    height: SEGMENT_TABS.underlineHeight,
     backgroundColor: KhazainColors.navy800,
   },
 });

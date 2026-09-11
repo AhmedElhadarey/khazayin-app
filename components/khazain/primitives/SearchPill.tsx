@@ -1,4 +1,4 @@
-import { PHYSICAL_ROW, SECTION_CHROME } from '@/constants/layout';
+import { PAGE_CHROME, PHYSICAL_ROW } from '@/constants/layout';
 import { SEARCH_PILL_ORDER, type SearchPillSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -160,8 +160,8 @@ function ClearGlyph({ color }: { color: string }) {
 const styles = StyleSheet.create({
   pill: {
     ...PHYSICAL_ROW,
-    height: SECTION_CHROME.searchHeight,
-    borderRadius: SECTION_CHROME.searchRadius,
+    minHeight: PAGE_CHROME.searchHeight,
+    borderRadius: PAGE_CHROME.searchRadius,
     borderWidth: 1,
     alignItems: 'center',
     gap: 8,

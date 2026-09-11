@@ -15,7 +15,9 @@ import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Page 35: برامج إذاعية — paginated denser radio program cards (compact LectureCard variant).
+// Page 35: برامج إذاعية — paginated radio programme cards. Node 2606:3830
+// draws the same `DIV-139` as prophet, queen and books: 64 tall at radius 16
+// behind a `#D9D6D3` hairline. It is NOT the rail-list row.
 // FlatList for virtualisation + onEndReached infinite scroll.
 // onEndReachedThreshold = 0.4: trigger fetchMore when 40% of viewport remains
 // scrolled past the last rendered item. Tuned for finger-flick momentum on
@@ -46,7 +48,6 @@ export default function RadioScreen() {
           <LectureCard
             id={item.id}
             category={item.category}
-            compact
             iconNode={<MicBadge size={CARD_DENSITY.lectureBadgeDisc} />}
             title={item.title}
             scholar={item.scholar}

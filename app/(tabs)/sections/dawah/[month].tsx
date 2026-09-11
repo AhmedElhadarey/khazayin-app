@@ -1,4 +1,5 @@
 import { AsyncContent, DawahPosterRow, InlineHeader, SkeletonPosterList } from '@/components/khazain';
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { useDawahByMonthStore, useDawahMonthsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -75,6 +76,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   gap: {
-    gap: 10,
+    gap: CARD_DENSITY.dawahListGap,
   },
 });

@@ -41,6 +41,10 @@ export default function DawahScreen() {
           skeleton={<SkeletonCardList count={5} />}
           emptyMessage="لا يوجد ملصقات دعوية"
         >
+          {/* The gap sits on a view of our own: AsyncContent renders its
+              children inside a wrapper, so a `gap` on the scroll container
+              never reaches the rows. */}
+          <View style={styles.rows}>
           {data.map((g) => (
             <Pressable
               key={g.id}
@@ -61,6 +65,7 @@ export default function DawahScreen() {
               <MoonMountainBadge size={CARD_DENSITY.lectureBadgeDisc} />
             </Pressable>
           ))}
+          </View>
         </AsyncContent>
       </ScrollView>
     </SafeAreaView>
@@ -72,8 +77,10 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    // `DIV-139` steps 60 over a 56 row.
-    gap: 4,
+  },
+  // node 2120:942 `DIV-139` steps 60 over a 56 row.
+  rows: {
+    gap: CARD_DENSITY.dawahListGap,
   },
   // Node 2120:942 `DIV-139` — 361 x 56 at radius 16 behind a 1pt `#D9D6D3`
   // hairline, inset 8, casting no shadow.

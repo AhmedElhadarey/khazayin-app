@@ -1,6 +1,6 @@
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { LIST_ROW_ORDER, type ListRowSlot, listRowAccessibilityLabel } from '@/constants/rtlContracts';
-import { KhazainColors } from '@/constants/theme';
+import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -101,11 +101,7 @@ const styles = StyleSheet.create({
     borderRadius: CARD_DENSITY.lectureCardRadius,
     borderWidth: 1,
     borderColor: KhazainColors.cardBorder,
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    ...KhazainShadows.listRow,
   },
   iconChipCompact: {
     width: CARD_DENSITY.lectureBadgeDisc,

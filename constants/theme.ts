@@ -264,6 +264,18 @@ export const KhazainShadows = {
     shadowOffset: { width: 0, height: 4 },
     elevation: 1,
   },
+  /**
+   * The More list's card — node 2102:2711 `websiteLink-13` is the one card in
+   * either the Sections or the More frames that casts a shadow at all, and it
+   * is a much tighter one than `card`.
+   */
+  listRow: {
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
   press: {
     shadowColor: '#34240C',
     shadowOpacity: 0.05,

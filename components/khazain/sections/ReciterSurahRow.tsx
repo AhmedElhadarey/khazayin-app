@@ -52,18 +52,15 @@ export function ReciterSurahRow({
           {surah.meta}
         </Text>
       </View>
-      <SurahStar index={surah.displayNumber} size={SURAH_BADGE_DISC} />
+      <SurahStar index={surah.displayNumber} size={CARD_DENSITY.surahBadgeDisc} />
     </Pressable>
   );
 }
 
-/** `DIV-79` — the numbered badge, 36 rather than the shared 40. */
-const SURAH_BADGE_DISC = 36;
-
 const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
-    minHeight: 60,
+    minHeight: CARD_DENSITY.surahRowMinHeight,
     alignItems: 'center',
     gap: 12,
     paddingHorizontal: 12,

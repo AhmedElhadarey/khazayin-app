@@ -1,6 +1,6 @@
 import { AsyncContent, ListRowCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
 import { SECTION_ICONS, SectionIconKey } from '@/components/khazain/icons/sections';
-import { CARD_DENSITY, PHYSICAL_BOX, SECTION_CHROME } from '@/constants/layout';
+import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useSectionsStore } from '@/store';
@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
     // PHYSICAL_BOX so `flex-end` means the physical right, not the RTL end.
     ...PHYSICAL_BOX,
     paddingHorizontal: 16,
-    paddingTop: SECTION_CHROME.headerPaddingTop,
+    paddingTop: PAGE_CHROME.headerPaddingTop,
     paddingBottom: 8,
     alignItems: 'flex-end',
   },

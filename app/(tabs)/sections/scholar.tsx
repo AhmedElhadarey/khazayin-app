@@ -8,6 +8,7 @@ import {
   SkeletonRibbonList,
 } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
+import { LETTER_INDEX_EDGE } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { useScholarsStore } from '@/store';
 import { useRouter } from 'expo-router';
@@ -97,8 +98,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     bottom: 0,
-    // The file puts the rail hard against the 16pt page margin.
-    right: 16,
+    // LETTER_INDEX_EDGE — the rail lives on the physical right edge, hard
+    // against the 16pt page margin.
+    [LETTER_INDEX_EDGE]: 16,
     width: RESERVED_COLUMNS.letterRail,
     alignItems: 'center',
   },

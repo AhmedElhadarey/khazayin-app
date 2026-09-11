@@ -92,10 +92,15 @@ describe('ornament coverage', () => {
 });
 
 describe('Mushaf surface', () => {
-  it('keeps the specialised reader colours local to the reader screen', () => {
+  // The reader used to paint its own `#FBF3DF` parchment under a `#F3E4BE`
+  // footer, and this test only checked those stayed out of the shared palette.
+  // Node 2349:982 states neither: the frame is header, meta line and footer on
+  // the same `#F8F2ED` as every other screen, so the reader now has no surface
+  // colour of its own to keep local.
+  it('draws on the shared page ground rather than a surface of its own', () => {
     const source = readFileSync(path.join(REPO_ROOT, 'app/(tabs)/sections/mushaf.tsx'), 'utf8');
-    expect(source).toContain('const FOOTER_BG');
-    // ...and out of the shared palette.
+    expect(source).toContain('const MUSHAF_BG = KhazainColors.pageBg;');
+    expect(source).not.toMatch(/const \w*BG\s*=\s*'#/);
     expect(Object.keys(KhazainColors)).not.toContain('mushafFooterBg');
   });
 });
