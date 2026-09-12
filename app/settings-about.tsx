@@ -3,6 +3,7 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 
 function resolveVersion(): string {
@@ -48,13 +49,13 @@ export default function SettingsAboutScreen() {
           <Text style={styles.appName}>خزائن الرحمن</Text>
           <Text style={styles.foundation}>مؤسسة خزائن الرحمن العالمية</Text>
           <View style={styles.versionRow}>
-            <Text style={styles.versionLabel}>الإصدار</Text>
             <Text style={styles.versionValue}>{version}</Text>
+            <Text style={styles.versionLabel}>الإصدار</Text>
           </View>
           {build ? (
             <View style={styles.versionRow}>
-              <Text style={styles.versionLabel}>رقم البناء</Text>
               <Text style={styles.versionValue}>{build}</Text>
+              <Text style={styles.versionLabel}>رقم البناء</Text>
             </View>
           ) : null}
         </View>
@@ -101,6 +102,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 20,
     paddingHorizontal: 18,
+    // PHYSICAL_BOX so `flex-end` is the physical right. Unpinned, the card is
+    // RTL and `flex-end` stacked every line against the physical left.
+    ...PHYSICAL_BOX,
     alignItems: 'flex-end',
     gap: 8,
   },
@@ -121,7 +125,8 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   versionRow: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: value, label.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 8,
     width: '100%',
@@ -148,6 +153,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     paddingVertical: 16,
     paddingHorizontal: 18,
+    ...PHYSICAL_BOX,
     alignItems: 'flex-end',
     gap: 4,
   },

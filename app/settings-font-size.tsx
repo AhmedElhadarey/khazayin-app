@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { FontSizePreview } from '@/components/khazain/settings';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { FONT_SIZE_SCALE } from '@/constants/settings';
 import type { FontSizeLevel } from '@/types/settings';
@@ -89,9 +90,6 @@ function LevelRow({
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <Text style={[styles.rowLabel, { fontSize }]} numberOfLines={1}>
-        {label}
-      </Text>
       {selected ? (
         <Svg width={18} height={18} viewBox="0 0 18 18">
           <Path
@@ -104,6 +102,9 @@ function LevelRow({
           />
         </Svg>
       ) : null}
+      <Text style={[styles.rowLabel, { fontSize }]} numberOfLines={1}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -130,7 +131,11 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 16, gap: 16 },
   list: { gap: 8 },
   row: {
-    flexDirection: 'row-reverse',
+    // PHYSICAL_ROW, not `row-reverse`: an unpinned row is already RTL under
+    // forceRTL, so `row-reverse` rendered left->right and put the label on the
+    // physical left with the tick on the right. Children are authored physical
+    // left -> right: tick, label.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     minHeight: 56,

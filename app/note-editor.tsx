@@ -1,3 +1,4 @@
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -132,15 +133,12 @@ export default function NoteEditor() {
 
               {/*
                 Toolbar: format buttons on the RIGHT (RTL leading), حفظ on the LEFT.
-                JSX-first lands visually on the right under forceRTL+row.
+                Authored physical left -> right inside PHYSICAL_ROW, so the order
+                is fixed rather than left to forceRTL's row auto-flip — which
+                CLAUDE.md bans because it differs between a cold start, Fast
+                Refresh and web.
               */}
               <View style={styles.toolbar}>
-                <FormatBtn bold>B</FormatBtn>
-                <FormatBtn italic>I</FormatBtn>
-                <FormatBtn>
-                  <ListGlyph />
-                </FormatBtn>
-                <View style={{ flex: 1 }} />
                 <Pressable
                   onPress={save}
                   style={({ pressed }) => [styles.saveBtn, { opacity: pressed ? 0.85 : 1 }]}
@@ -148,6 +146,12 @@ export default function NoteEditor() {
                 >
                   <Text style={styles.saveLabel}>حفظ</Text>
                 </Pressable>
+                <View style={{ flex: 1 }} />
+                <FormatBtn>
+                  <ListGlyph />
+                </FormatBtn>
+                <FormatBtn italic>I</FormatBtn>
+                <FormatBtn bold>B</FormatBtn>
               </View>
 
               {editingId ? (
@@ -166,15 +170,12 @@ export default function NoteEditor() {
                   <Text style={styles.recentHeader}>آخر الملاحظات</Text>
                   {recentNotes.map((n) => (
                     <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
-                      {/*
-                        JSX-first → visual RIGHT under forceRTL+row. Figma shows title on the RIGHT,
-                        relative time on the LEFT — so title goes first.
-                      */}
-                      <Text style={styles.recentTitle} numberOfLines={1}>
-                        {n.title || 'ملاحظة بلا عنوان'}
-                      </Text>
+                      {/* Physical left -> right: relative time, title. */}
                       <Text style={styles.recentTime} numberOfLines={1}>
                         {formatRelativeAr(n.updatedAt)}
+                      </Text>
+                      <Text style={styles.recentTitle} numberOfLines={1}>
+                        {n.title || 'ملاحظة بلا عنوان'}
                       </Text>
                     </View>
                   ))}
@@ -257,6 +258,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(120,100,80,0.25)',
   },
   scrollContent: {
+    // Pinned so the sheet title and the "آخر الملاحظات" heading resolve
+    // `textAlign: 'right'` to the physical right. Unpinned they rendered left.
+    ...PHYSICAL_BOX,
     paddingHorizontal: 18,
     paddingTop: 12,
     paddingBottom: 24,
@@ -288,7 +292,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   toolbar: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 8,
   },
@@ -308,6 +312,7 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
   deleteRow: {
+    ...PHYSICAL_BOX,
     paddingVertical: 4,
     alignItems: 'flex-end',
   },
@@ -330,10 +335,10 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
-  // Recent row visual: title right, relative time left.
-  // JSX-first → visual right under forceRTL+row, so we put time first, title after.
+  // Recent row visual: title right, relative time left — authored physical
+  // left -> right inside PHYSICAL_ROW.
   recentRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     backgroundColor: KhazainColors.cream50,
     borderRadius: KhazainRadius.md,

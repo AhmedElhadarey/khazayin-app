@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import {
   JUZ_PRESET_PAGES,
@@ -90,6 +91,7 @@ export default function SettingsWirdGoalScreen() {
         <View style={styles.customBlock}>
           <Text style={styles.customLabel}>عدد مخصّص من الصفحات</Text>
           <View style={[styles.customField, KhazainShadows.card]}>
+            <Text style={styles.customUnit}>صفحة</Text>
             <TextInput
               style={styles.customInput}
               value={toArNum(draft)}
@@ -100,7 +102,6 @@ export default function SettingsWirdGoalScreen() {
               placeholder={toArNum(JUZ_PRESET_PAGES.half)}
               placeholderTextColor={KhazainColors.ink400}
             />
-            <Text style={styles.customUnit}>صفحة</Text>
           </View>
         </View>
       </ScrollView>
@@ -141,10 +142,6 @@ function PresetRow({
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <Text style={styles.rowLabel} numberOfLines={1}>
-        {label}
-      </Text>
-      <Text style={styles.rowPages}>{`${toArNum(pages)} صفحة`}</Text>
       {selected ? (
         <Svg width={18} height={18} viewBox="0 0 18 18">
           <Path
@@ -157,6 +154,10 @@ function PresetRow({
           />
         </Svg>
       ) : null}
+      <Text style={styles.rowPages}>{`${toArNum(pages)} صفحة`}</Text>
+      <Text style={styles.rowLabel} numberOfLines={1}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -183,7 +184,8 @@ const styles = StyleSheet.create({
   body: { paddingHorizontal: 16, gap: 16 },
   list: { gap: 8 },
   row: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: tick, page count, label.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     minHeight: 56,
@@ -214,7 +216,7 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
-  customBlock: { gap: 8 },
+  customBlock: { ...PHYSICAL_BOX, gap: 8 },
   customLabel: {
     fontFamily: 'TheSansArabic',
     fontSize: 14,
@@ -224,7 +226,8 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   customField: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: unit word, input.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     paddingVertical: 10,

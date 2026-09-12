@@ -1,5 +1,6 @@
 import { ListRowCard } from '@/components/khazain';
 import { HeaderArt } from '@/components/khazain/patterns';
+import { PAGE_CHROME, PHYSICAL_BOX } from '@/constants/layout';
 import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
 import { toArabicDigits as toArNum } from '@/constants/progress';
 import { PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
@@ -450,10 +451,14 @@ function ExportIcon() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
+  // PHYSICAL_BOX so `flex-end` means the physical right. Without it, forceRTL
+  // makes the container RTL and `flex-end` lands the title on the left — which
+  // is exactly what this screen was doing.
   headerBlock: {
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 6,
+    ...PHYSICAL_BOX,
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.headerPaddingTop,
+    paddingBottom: 24,
     alignItems: 'flex-end',
   },
   // Every page title in the file is the body face at 18 in `#281E13`. This one

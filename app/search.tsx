@@ -5,6 +5,7 @@ import {
   SearchResultRow,
   SuggestionChips,
 } from '@/components/khazain/search';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { rowPropsForSearchResult } from '@/services/search';
 import {
@@ -176,11 +177,12 @@ function EmptyState({
         <>
           {recents.length > 0 ? (
             <>
+              {/* Physical left -> right: the clear action, then the heading. */}
               <View style={styles.recentsHeaderRow}>
-                <Text style={styles.recentsTitle}>البحث الأخير</Text>
                 <Pressable onPress={onClearAllRecents} hitSlop={8}>
                   <Text style={styles.clearAllText}>مسح</Text>
                 </Pressable>
+                <Text style={styles.recentsTitle}>البحث الأخير</Text>
               </View>
               {recents.map((r) => (
                 <RecentSearchRow
@@ -265,10 +267,10 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   scroll: { flex: 1 },
-  scrollContent: { paddingHorizontal: 16, paddingBottom: 24 },
+  scrollContent: { ...PHYSICAL_BOX, paddingHorizontal: 16, paddingBottom: 24 },
 
   recentsHeaderRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingTop: 8,

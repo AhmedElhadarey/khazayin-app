@@ -1,3 +1,4 @@
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { formatRelativeAr, Note, useNotesStore } from '@/store/notesStore';
 import { useRouter } from 'expo-router';
@@ -66,15 +67,12 @@ function NoteRow({ note, onPress }: { note: Note; onPress: () => void }) {
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      {/*
-        JSX-first → visual RIGHT under forceRTL+row. Figma shows title on the RIGHT,
-        relative time on the LEFT — so title goes first.
-      */}
-      <Text style={styles.rowTitle} numberOfLines={1}>
-        {note.title || 'ملاحظة بلا عنوان'}
-      </Text>
+      {/* Physical left -> right: relative time, title. */}
       <Text style={styles.rowTime} numberOfLines={1}>
         {formatRelativeAr(note.updatedAt)}
+      </Text>
+      <Text style={styles.rowTitle} numberOfLines={1}>
+        {note.title || 'ملاحظة بلا عنوان'}
       </Text>
     </Pressable>
   );
@@ -116,11 +114,12 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   listContent: {
+    ...PHYSICAL_BOX,
     paddingHorizontal: 18,
     paddingBottom: 12,
   },
   row: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 16,

@@ -1,5 +1,6 @@
-import { DetailHeader } from '@/components/khazain';
+import { InlineHeader } from '@/components/khazain';
 import { HeaderArt } from '@/components/khazain/patterns';
+import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import {
   MAX_WIRD,
@@ -82,7 +83,11 @@ export default function SettingsProgressScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <HeaderArt />
-      <DetailHeader title="إعدادات التقدّم" onBack={() => router.back()} />
+      {/* Every other sub-screen in the app — all twelve under Sections and the
+          other three under More — uses InlineHeader, which puts the title at the
+          physical right in the body face. This screen was the last one still on
+          InlineHeader, whose Amiri title is centred. */}
+      <InlineHeader title="إعدادات التقدّم" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -151,7 +156,12 @@ export default function SettingsProgressScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
+  // PHYSICAL_BOX so the cards below keep their authored edges: an unpinned
+  // container under forceRTL resolves `textAlign: 'right'` to the physical
+  // left, which is what put every heading and paragraph on this screen on the
+  // wrong side.
   content: {
+    ...PHYSICAL_BOX,
     paddingHorizontal: 16,
     paddingTop: 8,
     paddingBottom: 24,

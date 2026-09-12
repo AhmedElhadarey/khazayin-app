@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useRecitersStore, useSettingsStore } from '@/store';
 
@@ -75,16 +76,6 @@ function SelectableReciterRow({
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <View style={styles.textCol}>
-        <Text style={styles.rowTitle} numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={styles.rowSubtitle} numberOfLines={1}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
       {selected ? (
         <Svg width={18} height={18} viewBox="0 0 18 18">
           <Path
@@ -97,6 +88,16 @@ function SelectableReciterRow({
           />
         </Svg>
       ) : null}
+      <View style={styles.textCol}>
+        <Text style={styles.rowTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text style={styles.rowSubtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -122,7 +123,8 @@ const styles = StyleSheet.create({
   },
   list: { paddingHorizontal: 16, gap: 8 },
   row: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: tick, text column.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     minHeight: 64,

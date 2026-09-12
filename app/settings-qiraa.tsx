@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useQiratStore, useSettingsStore } from '@/store';
 
@@ -72,9 +73,6 @@ function SelectableRow({
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <Text style={styles.rowTitle} numberOfLines={1}>
-        {title}
-      </Text>
       {selected ? (
         <Svg width={18} height={18} viewBox="0 0 18 18">
           <Path
@@ -87,6 +85,9 @@ function SelectableRow({
           />
         </Svg>
       ) : null}
+      <Text style={styles.rowTitle} numberOfLines={1}>
+        {title}
+      </Text>
     </Pressable>
   );
 }
@@ -112,7 +113,9 @@ const styles = StyleSheet.create({
   },
   list: { paddingHorizontal: 16, gap: 8 },
   row: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: tick, title. See settings-font-size for why
+    // `row-reverse` on an unpinned row lands them the wrong way round.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     minHeight: 56,

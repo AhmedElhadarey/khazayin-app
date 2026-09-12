@@ -18,6 +18,7 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { CALCULATION_METHOD_IDS, PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
 import { toArabicDigits as toArNum, toLocalDay } from '@/constants/progress';
@@ -150,8 +151,8 @@ export default function SettingsPrayerScreen() {
                 key={row.id}
                 style={[styles.timeRow, i < rows.length - 1 ? styles.timeRowDivider : null]}
               >
-                <Text style={styles.timeName}>{row.labelAr}</Text>
                 <Text style={styles.timeValue}>{row.time}</Text>
+                <Text style={styles.timeName}>{row.labelAr}</Text>
               </View>
             ))
           )}
@@ -161,8 +162,8 @@ export default function SettingsPrayerScreen() {
         <Text style={styles.sectionTitle}>الموقع</Text>
         <View style={[styles.card, KhazainShadows.card]}>
           <View style={styles.locationRow}>
-            <Text style={styles.locationLabelText}>الموقع الحالي</Text>
             <Text style={styles.locationValue}>{locationLabel}</Text>
+            <Text style={styles.locationLabelText}>الموقع الحالي</Text>
           </View>
           <Pressable
             onPress={onLocate}
@@ -237,10 +238,10 @@ function SelectRow({
         { opacity: pressed ? 0.7 : 1 },
       ]}
     >
+      {selected ? <CheckMark /> : null}
       <Text style={[styles.selectLabel, selected ? styles.selectLabelActive : null]}>
         {label}
       </Text>
-      {selected ? <CheckMark /> : null}
     </Pressable>
   );
 }
@@ -278,7 +279,7 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     writingDirection: 'rtl',
   },
-  body: { paddingHorizontal: 16, gap: 8 },
+  body: { ...PHYSICAL_BOX, paddingHorizontal: 16, gap: 8 },
   sectionTitle: {
     fontFamily: 'TheSansArabic',
     fontSize: 15,
@@ -299,6 +300,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   emptyState: {
+    ...PHYSICAL_BOX,
     paddingVertical: 20,
     alignItems: 'flex-end',
     gap: 6,
@@ -320,7 +322,8 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   timeRow: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: time, prayer name.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: 52,
@@ -346,7 +349,8 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
   locationRow: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: value, label.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: 52,
@@ -383,7 +387,8 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
   selectRow: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: tick, label.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: 52,
