@@ -63,7 +63,8 @@ export default function ArchiveScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   container: { paddingTop: 0 },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 },
+  // `Inputs` ends at 129 and `DIV-59` starts at 148.
+  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 19 },
   list: {
     paddingHorizontal: 16,
     // `DIV-59` ends at 260 and `DIV-75` starts at 268.

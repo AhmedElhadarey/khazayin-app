@@ -39,6 +39,7 @@
     { "name": "MoreWeb",        "node": "2106:2219", "from": "2102:2711 row 1 — الموقع الإلكتروني" },
     { "name": "MoreYoutube",    "node": "2106:2237", "from": "2102:2711 row 2 — قنوات اليوتيوب" },
     { "name": "MoreTelegram",   "node": "2106:2255", "from": "2102:2711 row 3 — قنوات التليجرام" },
+    { "name": "MoreWhatsapp",   "node": "2548:1405", "from": "2102:2711 row 4 — قنوات الواتساب. The glyph inside the `Yu` instance; the instance also draws a thin ring of its own, which the app's squircle chip replaces." },
     { "name": "MoreSoundcloud", "node": "2548:1451", "from": "2102:2711 row 5 — ساوند كلاود" },
     { "name": "MoreArchive",    "node": "2558:1325", "from": "2102:2711 row 6 — الارشيف" },
     { "name": "MoreContact",    "node": "2106:2273", "from": "2102:2711 row 7 — تواصل معنا" },
@@ -74,11 +75,6 @@
     { "name": "HomeAudio",      "node": "2093:1775", "from": "2001:940 `audio` — the حصريات carousel mark" }
   ],
   "notDrawn": [
-    {
-      "name": "MoreWhatsapp",
-      "node": "2548:1411",
-      "why": "The file's whatsapp row carries an INSTANCE named `Yu` — a 16x16 disc at radius 16 filled #9F9178 behind a 1pt #184B76 stroke, with no glyph inside it. It is a placeholder the designer never replaced, not an icon, so the app keeps its own drawn mark."
-    },
     {
       "name": "HomeAudioBook",
       "node": "2093:1760",

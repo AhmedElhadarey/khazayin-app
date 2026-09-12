@@ -21,7 +21,7 @@ export default function AboutScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt />
+      <HeaderArt corners="single" />
       <InlineHeader title="مؤسسة خزائن الرحمن" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}

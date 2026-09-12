@@ -1,7 +1,8 @@
 import { Image } from 'expo-image';
 import React from 'react';
 import { View } from 'react-native';
-import { FigmaIcon, type FigmaIconName } from './FigmaIcon';
+import { PHYSICAL_BOX } from '@/constants/layout';
+import { FigmaIcon, figmaIcon } from './FigmaIcon';
 
 /**
  * The nine marks on the Sections root, node 2031:5675.
@@ -23,19 +24,14 @@ type Props = { size?: number };
  * the size the file states. Forcing them all to one number was what made the
  * books mark 30% small and squashed the ملكة mark to 15 x 34.
  */
-const fromFile = (name: FigmaIconName) =>
-  function SectionIconFromFile({ size }: Props) {
-    return <FigmaIcon name={name} size={size} />;
-  };
-
-export const QuranSectionIcon = fromFile('SectionQuran');
-export const ProphetSectionIcon = fromFile('SectionProphet');
-export const ScholarSectionIcon = fromFile('SectionScholars');
-export const BookSectionIcon = fromFile('SectionBooks');
-export const CrownSectionIcon = fromFile('SectionQueen');
-export const HeadphonesSectionIcon = fromFile('SectionAudiobooks');
-export const MicSectionIcon = fromFile('SectionRadio');
-export const DesignSectionIcon = fromFile('SectionDawah');
+export const QuranSectionIcon = figmaIcon('SectionQuran');
+export const ProphetSectionIcon = figmaIcon('SectionProphet');
+export const ScholarSectionIcon = figmaIcon('SectionScholars');
+export const BookSectionIcon = figmaIcon('SectionBooks');
+export const CrownSectionIcon = figmaIcon('SectionQueen');
+export const HeadphonesSectionIcon = figmaIcon('SectionAudiobooks');
+export const MicSectionIcon = figmaIcon('SectionRadio');
+export const DesignSectionIcon = figmaIcon('SectionDawah');
 
 /**
  * حصريات خزائن الرحمن — the one card whose mark the file does not state
@@ -52,11 +48,12 @@ export const DesignSectionIcon = fromFile('SectionDawah');
 export function SparkleSectionIcon({ size = 47 }: Props) {
   const scale = size / 47; // the frame's longer edge, which `size` sets
   return (
-    <View style={{ width: 46 * scale, height: 47 * scale }}>
+    <View style={{ ...PHYSICAL_BOX, width: 46 * scale, height: 47 * scale }}>
       <FigmaIcon name="SectionExclusive" size={size} />
       <Image
         source={require('@/assets/figma/seal-khazain.png')}
         // `حصرى` is 42 x 47 at the frame's origin — flush left, full height.
+        // PHYSICAL_BOX above is what keeps `left` meaning left under forceRTL.
         style={{ position: 'absolute', left: 0, top: 0, width: 42 * scale, height: 47 * scale }}
         contentFit="contain"
         // A bundled asset, so this never needs a round trip after first paint.

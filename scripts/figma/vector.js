@@ -62,6 +62,17 @@ function compose(a, t) {
 
 const guidKey = (g) => g && `${g.sessionID}:${g.localID}`;
 
+/**
+ * The identity `symbolOverrides` and `derivedSymbolData` address a node by.
+ *
+ * It is **not** the node's `guid`. When a component is copied, its nodes get
+ * fresh guids but keep an `overrideKey` pointing at the original definition,
+ * and the override paths are written in those. Matching on `guid` silently
+ * finds nothing — the override is dropped and the master's own paint is used,
+ * which is how the whatsapp row's mark came out cream-on-cream instead of navy.
+ */
+const overrideKeyOf = (node) => guidKey(node.overrideKey) || guidKey(node.guid);
+
 const solidHex = (paints) => {
   const p = (paints || []).find((q) => q.visible !== false && q.color);
   if (!p) return null;
@@ -94,8 +105,9 @@ function collectPaths(root, { byGuid, childrenOf }) {
 
   const walk = (node, abs, inherited) => {
     if (node.visible === false) return;
-    const over = inherited.overrides.get(guidKey(node.guid));
-    const derived = inherited.derived.get(guidKey(node.guid));
+    const key = overrideKeyOf(node);
+    const over = inherited.overrides.get(key);
+    const derived = inherited.derived.get(key);
 
     const fillPaints = (over && over.fillPaints) || node.fillPaints;
     const strokePaints = (over && over.strokePaints) || node.strokePaints;
@@ -153,8 +165,12 @@ function collectPaths(root, { byGuid, childrenOf }) {
       return;
     }
 
-    // A boolean's own outline is the finished shape; its operands are not.
-    if (node.type === 'BOOLEAN_OPERATION' && (fillGeom || []).length) return;
+    // A boolean's own outline is the finished shape; its operands are not, so
+    // walking them would draw the union twice. A stroke-only boolean has no
+    // fill geometry, so both lists have to be checked.
+    if (node.type === 'BOOLEAN_OPERATION' && ((fillGeom || []).length || (strokeGeom || []).length)) {
+      return;
+    }
 
     const next = { ...inherited, opacity: inherited.opacity * nodeOpacity };
     for (const c of childrenOf(guidKey(node.guid))) walk(c, compose(abs, c.transform), next);
@@ -184,8 +200,15 @@ function indexNodes(message) {
     kids.get(p).push(n);
   }
   for (const list of kids.values()) {
-    list.sort((a, b) =>
-      String(a.parentIndex.position).localeCompare(String(b.parentIndex.position)));
+    // Sibling order is paint order, and Figma's `position` is a fractional
+    // index compared byte by byte. `localeCompare` collates — it would reorder
+    // keys that differ only in case or punctuation, and silently repaint the
+    // icon in the wrong order.
+    list.sort((a, b) => {
+      const x = String(a.parentIndex.position);
+      const y = String(b.parentIndex.position);
+      return x < y ? -1 : x > y ? 1 : 0;
+    });
   }
   return { nodes, byGuid, childrenOf: (k) => kids.get(k) || [] };
 }

@@ -190,7 +190,9 @@ const styles = StyleSheet.create({
     ...PHYSICAL_BOX,
     paddingHorizontal: 16,
     paddingTop: PAGE_CHROME.headerPaddingTop,
-    paddingBottom: 8,
+    // The title box starts 8 into the header band and the first card at 60.
+    // The app's line box is 28 where the file's is 19, so this is what is left.
+    paddingBottom: 24,
     alignItems: 'flex-end',
   },
   // The file sets every page title in the body face at 18, not the display one.

@@ -3,7 +3,7 @@ import { LIST_ROW_ORDER, type ListRowSlot, listRowAccessibilityLabel } from '@/c
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { FigmaIcon } from '../icons/FigmaIcon';
 
 /**
@@ -104,7 +104,9 @@ const styles = StyleSheet.create({
   cardBase: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 12,
+    // The text column ends 16 short of the chip in all three frames: 285 -> 301
+    // on the section and archive cards, 296 -> 312 on the More row.
+    gap: 16,
     backgroundColor: KhazainColors.cardBg,
   },
   cardSection: {
@@ -175,4 +177,4 @@ const VARIANT_CARD = {
   section: styles.cardSection,
   archive: styles.cardArchive,
   more: styles.cardMore,
-} satisfies Record<ListRowVariant, unknown>;
+} satisfies Record<ListRowVariant, ViewStyle>;

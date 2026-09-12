@@ -29,6 +29,12 @@ import Svg, { Path } from 'react-native-svg';
 // Real phone / email values to be supplied by the foundation. Defaults match
 // the Figma mock.
 const CONTACT_PHONE = '01228888888';
+/**
+ * The same number as the file states it — node 2548:1631 reads
+ * `٠١٢٢٨٨٨٨٨٨٨٨٨٨`. The Latin form above is what `wa.me` needs, so the two
+ * cannot be one constant.
+ */
+const CONTACT_PHONE_AR = '٠١٢٢٨٨٨٨٨٨٨٨٨٨';
 const CONTACT_EMAIL = 'khazayin@email.com';
 
 /** `Icon` inside `DIV-66` is 21 x 20; both chips draw at that size. */
@@ -70,7 +76,7 @@ export default function ContactScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt />
+      <HeaderArt corners="single" />
       <InlineHeader title="تواصل معنا" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -88,7 +94,7 @@ export default function ContactScreen() {
             variant="more"
             chevron={false}
             title="إرسال رسالة"
-            subtitle={CONTACT_PHONE}
+            subtitle={CONTACT_PHONE_AR}
             icon={<WhatsappGlyph />}
             onPress={onWhatsApp}
           />
@@ -213,7 +219,9 @@ const styles = StyleSheet.create({
   // hairline, inset 16. It sits 9 further in than the rows above it.
   formCard: {
     ...PHYSICAL_BOX,
-    marginTop: 4,
+    // `contactUs-55` ends at 269 and `DIV-126` starts at 293, so the gap over
+    // the 12 the rows already carry is 12 more.
+    marginTop: 12,
     marginHorizontal: 9,
     padding: 16,
     backgroundColor: KhazainColors.cardBg,
@@ -241,7 +249,7 @@ const styles = StyleSheet.create({
   fieldInput: {
     ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
     minHeight: 46,
-    backgroundColor: KhazainColors.cream100,
+    backgroundColor: KhazainColors.cardBg,
     borderRadius: CARD_DENSITY.lectureCardRadius,
     paddingVertical: 12,
     paddingHorizontal: 13,

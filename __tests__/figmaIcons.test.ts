@@ -1,7 +1,10 @@
 import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
-import { FIGMA_ICONS } from '@/components/khazain/icons/generated/figmaIcons';
+import {
+  FIGMA_ICONS,
+  type FigmaIcon,
+} from '@/components/khazain/icons/generated/figmaIcons';
 import { KhazainColors } from '@/constants/theme';
 
 const ROOT = path.join(__dirname, '..');
@@ -33,10 +36,41 @@ describe('the generated icon set', () => {
     }
   });
 
-  it('flags multi-colour art so a caller cannot flatten it with a tint', () => {
-    for (const icon of Object.values(FIGMA_ICONS)) {
-      const distinct = new Set(icon.paths.map((p) => p.fill));
-      expect(icon.monochrome).toBe(distinct.size === 1);
+  it('knows which marks are art and which are glyphs', () => {
+    // Re-deriving `monochrome` from the same paths the generator counted would
+    // only restate the generator's own rule. What is worth asserting is the
+    // answer: a row badge is a tinted disc behind a gold mark and cannot be
+    // retinted, while a chrome glyph is one colour and must be, because the
+    // same node is drawn navy on a card and warm-ink in a header.
+    for (const name of ['BadgeQuran', 'BadgeMic', 'SurahStar'] as const) {
+      expect([name, FIGMA_ICONS[name].monochrome]).toEqual([name, false]);
+    }
+    for (const name of ['Back', 'Search', 'NavHome', 'MoreWeb', 'DisclosureCircle'] as const) {
+      expect([name, FIGMA_ICONS[name].monochrome]).toEqual([name, true]);
+    }
+  });
+
+  it('paints each glyph in the order the file lists its siblings', () => {
+    // Sibling order is paint order, and Figma's `position` is a fractional
+    // index meant to be compared byte by byte. Sorting it with `localeCompare`
+    // collated instead, and really did reverse two of these. Pinning the
+    // sequence per icon catches that; deriving it from the paths would not.
+    const ORDER: Record<string, readonly string[]> = {
+      Back: ['@0.4', 'solid'],
+      Search: ['@0.4', 'solid'],
+      DisclosureCircle: ['@0.4', 'solid'],
+      // The play mark is the one that goes the other way: its solid triangle
+      // is listed first and the dimmed disc after it.
+      Play: ['solid', '@0.4'],
+      DawahDownload: ['@0.4', 'solid', 'solid'],
+      NavSectionsActive: ['@0.4', '@0.4', 'solid', 'solid'],
+    };
+    for (const [name, want] of Object.entries(ORDER)) {
+      // `as const` narrows each path to its own literal shape, so the optional
+      // key is only readable through the declared type.
+      const icon: FigmaIcon = FIGMA_ICONS[name as keyof typeof FIGMA_ICONS];
+      const got = icon.paths.map((p) => (p.fillOpacity === undefined ? 'solid' : `@${p.fillOpacity}`));
+      expect([name, got]).toEqual([name, want]);
     }
   });
 
@@ -128,10 +162,16 @@ describe('the header art the frames lay over the page', () => {
   });
 
   it('has no More screen still tiling the old ornament', () => {
-    for (const file of ['index', 'archive', 'contact', 'about', 'settings', 'settings-progress']) {
-      const src = fs.readFileSync(path.join(ROOT, `app/(tabs)/more/${file}.tsx`), 'utf8');
-      expect(src).not.toContain('OrnamentPattern');
-      expect(src).toContain('HeaderArt');
+    const screens = [
+      ...['index', 'archive', 'contact', 'about', 'settings', 'settings-progress']
+        .map((f) => `app/(tabs)/more/${f}.tsx`),
+      // 2120:942 lays the same art, so the dawah screen is part of the same set.
+      'app/(tabs)/sections/dawah.tsx',
+    ];
+    for (const file of screens) {
+      const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
+      expect([file, src.includes('OrnamentPattern')]).toEqual([file, false]);
+      expect([file, src.includes('HeaderArt')]).toEqual([file, true]);
     }
   });
 });

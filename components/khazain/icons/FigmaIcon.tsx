@@ -62,11 +62,20 @@ export function FigmaIcon({ name, size, color, opacity }: FigmaIconProps) {
 /**
  * A named wrapper with the `({ size, color })` signature the rest of the icon
  * set uses, so a screen can swap a hand-drawn glyph for the file's own without
- * changing its call site.
+ * changing its call site. Pass `selected` as well to make a two-state control
+ * — the tab bar's idle and active variants are the only pair the file ships.
  */
-export const figmaIcon = (name: FigmaIconName) =>
-  function FigmaIconNamed({ size, color }: { size?: number; color?: string }) {
-    return <FigmaIcon name={name} size={size} color={color} />;
+export const figmaIcon = (idle: FigmaIconName, selected?: FigmaIconName) =>
+  function FigmaIconNamed({
+    size,
+    color,
+    active,
+  }: {
+    size?: number;
+    color?: string;
+    active?: boolean;
+  }) {
+    return <FigmaIcon name={active && selected ? selected : idle} size={size} color={color} />;
   };
 
 export { FIGMA_ICONS };

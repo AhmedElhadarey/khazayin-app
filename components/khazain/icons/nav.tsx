@@ -1,5 +1,5 @@
 import React from 'react';
-import { FigmaIcon, type FigmaIconName } from './FigmaIcon';
+import { figmaIcon } from './FigmaIcon';
 import type { IconProps } from './index';
 
 /**
@@ -23,12 +23,7 @@ export type NavIconProps = IconProps & {
   active?: boolean;
 };
 
-const tab = (idle: FigmaIconName, selected: FigmaIconName) =>
-  function NavIcon({ size = 24, color, active }: NavIconProps) {
-    return <FigmaIcon name={active ? selected : idle} size={size} color={color} />;
-  };
-
-export const NavHomeIcon = tab('NavHome', 'NavHomeActive');
-export const NavLibraryIcon = tab('NavLibrary', 'NavLibraryActive');
-export const NavSectionsIcon = tab('NavSections', 'NavSectionsActive');
-export const NavMoreIcon = tab('NavMore', 'NavMoreActive');
+export const NavHomeIcon = figmaIcon('NavHome', 'NavHomeActive');
+export const NavLibraryIcon = figmaIcon('NavLibrary', 'NavLibraryActive');
+export const NavSectionsIcon = figmaIcon('NavSections', 'NavSectionsActive');
+export const NavMoreIcon = figmaIcon('NavMore', 'NavMoreActive');

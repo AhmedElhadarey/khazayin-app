@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import React from 'react';
 import { View } from 'react-native';
-import { FigmaIcon, type FigmaIconName } from '../icons/FigmaIcon';
+import { FigmaIcon, figmaIcon } from '../icons/FigmaIcon';
 
 /**
  * The leading badge on a lecture row — node `DIV-58`, redrawn in ten of the
@@ -22,18 +22,13 @@ type Props = { size?: number };
 /** `DIV-58` is 40 in every frame that draws it. */
 const BADGE_SIZE = 40;
 
-const badge = (name: FigmaIconName) =>
-  function SectionBadge({ size = BADGE_SIZE }: Props) {
-    return <FigmaIcon name={name} size={size} />;
-  };
-
-export const ProphetMedallionBadge = badge('BadgeProphet');
-export const TulipBadge = badge('BadgeTulip');
-export const OpenBookBadge = badge('BadgeOpenBook');
-export const MicBadge = badge('BadgeMic');
-export const QuillBadge = badge('BadgeQuill');
-export const AudioWaveBadge = badge('BadgeAudioWave');
-export const MoonMountainBadge = badge('BadgeMoonMountain');
+export const ProphetMedallionBadge = figmaIcon('BadgeProphet');
+export const TulipBadge = figmaIcon('BadgeTulip');
+export const OpenBookBadge = figmaIcon('BadgeOpenBook');
+export const MicBadge = figmaIcon('BadgeMic');
+export const QuillBadge = figmaIcon('BadgeQuill');
+export const AudioWaveBadge = figmaIcon('BadgeAudioWave');
+export const MoonMountainBadge = figmaIcon('BadgeMoonMountain');
 
 /**
  * حصريات — the one badge whose mark is not wholly vector.
