@@ -215,8 +215,13 @@ const styles = StyleSheet.create({
     // Each `margin-wrap` is 94 over an 82 card, as on the More root.
     gap: CARD_DENSITY.moreListGap,
   },
-  // `DIV-126` — 343 x 446 at radius 16, `#FCFAF8` behind a 1pt `#D9D6D3`
-  // hairline, inset 16. It sits 9 further in than the rows above it.
+  // `DIV-126` — 343 x 446 at radius 16 behind a 1pt `#D9D6D3` hairline, inset
+  // 16, and sitting 9 further in than the rows above it.
+  //
+  // It has **no fill**: its one paint is `visible: false`, so the page ground
+  // shows through and the `#FCFAF8` fields read as wells inside it. Drawing the
+  // card in `#FCFAF8` instead — which is what the paint says if you do not
+  // check whether it is switched on — makes the fields vanish into it.
   formCard: {
     ...PHYSICAL_BOX,
     // `contactUs-55` ends at 269 and `DIV-126` starts at 293, so the gap over
@@ -224,7 +229,6 @@ const styles = StyleSheet.create({
     marginTop: 12,
     marginHorizontal: 9,
     padding: 16,
-    backgroundColor: KhazainColors.cardBg,
     borderRadius: CARD_DENSITY.lectureCardRadius,
     borderWidth: 1,
     borderColor: KhazainColors.hairlineWarm,

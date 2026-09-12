@@ -1,4 +1,4 @@
-import { MIN_TOUCH_TARGET, PAGE_CHROME, PHYSICAL_ROW } from '@/constants/layout';
+import { MIN_TOUCH_TARGET, PHYSICAL_ROW } from '@/constants/layout';
 import {
   INLINE_HEADER_ORDER,
   type InlineHeaderSlot,
@@ -65,11 +65,17 @@ export function InlineHeader({
 }
 
 const styles = StyleSheet.create({
+  /**
+   * The file's `Header` band is 36 with the title glyph box 8 into it. The row
+   * keeps `MIN_TOUCH_TARGET` instead, which is 8 taller — the deliberate cost
+   * of a 44pt target — and centres the title in it, landing the glyph at about
+   * 12. Adding `headerPaddingTop` on top of that put it at 20, twice as far
+   * down as the file states, and pushed every screen's content with it.
+   */
   row: {
     ...PHYSICAL_ROW,
     minHeight: MIN_TOUCH_TARGET,
     paddingHorizontal: 16,
-    paddingTop: PAGE_CHROME.headerPaddingTop,
     alignItems: 'center',
     justifyContent: 'flex-end',
   },

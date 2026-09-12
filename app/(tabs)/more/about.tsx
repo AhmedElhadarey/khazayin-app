@@ -59,7 +59,9 @@ const styles = StyleSheet.create({
     // PHYSICAL_BOX so the prose column keeps its authored edges under forceRTL.
     ...PHYSICAL_BOX,
     paddingHorizontal: 16,
-    paddingTop: 8,
+    // The header band ends at 81 and `P-135` starts at 124. The header row is
+    // 44 where the file's band is 36, so this is the 43 less that 8.
+    paddingTop: 35,
     // `P-135` ends at 184 and `P-138` starts at 200.
     gap: 16,
   },

@@ -69,6 +69,10 @@ export default function MoreScreen() {
             status={status}
             error={error}
             onRetry={refresh}
+            // The gap goes here, not on `styles.list`: the fade wrapper is a
+            // real layout box, so a gap on the container around it spaces the
+            // wrapper from its siblings and never reaches these rows.
+            style={styles.rows}
             skeleton={
               <SkeletonRibbonList
                 count={8}
@@ -113,20 +117,20 @@ export default function MoreScreen() {
 /**
  * The glyph inside a More row's 48pt squircle.
  *
- * Seven of the eight rows in node 2102:2711 draw a real icon, and those come
- * straight out of the file. The eighth — whatsapp — draws an INSTANCE named
- * `Yu`: a 16x16 disc filled `#9F9178` behind a navy hairline, with nothing
- * inside it. That is a placeholder the designer never replaced, not a mark to
- * port, so the app keeps its own. `scripts/figma/icons.manifest.json` records
- * the same thing next to the node id.
+ * All eight rows in node 2102:2711 draw a real mark, and all eight come out of
+ * the file. The whatsapp one took two passes to find: it sits inside an
+ * INSTANCE named `Yu` whose own paints are a disc, and the glyph under it is
+ * addressed by `overrideKey` rather than by guid — so the first read found the
+ * disc and nothing else, and looked like an unfinished placeholder.
  *
  * The rows below the frame's eight (settings, progress) have no frame at all,
- * so they keep their drawn glyphs too.
+ * so they keep their drawn glyphs.
  */
 const ROW_ICONS: Partial<Record<string, FigmaIconName>> = {
   web: 'MoreWeb',
   youtube: 'MoreYoutube',
   telegram: 'MoreTelegram',
+  whatsapp: 'MoreWhatsapp',
   soundcloud: 'MoreSoundcloud',
   archive: 'MoreArchive',
   contact: 'MoreContact',
@@ -141,22 +145,11 @@ function RowGlyph({ id }: { id: string }) {
   return <DrawnRowGlyph id={id} />;
 }
 
-/** The three marks the design file does not supply. */
+/** The two rows the design file has no frame for. */
 function DrawnRowGlyph({ id }: { id: string }) {
   const c = KhazainColors.navy800;
   const size = MORE_GLYPH;
   switch (id) {
-    case 'whatsapp':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Path
-            d="M3 9a6 6 0 0112 0 6 6 0 01-9 5l-3 1 1-3a6 6 0 01-1-3z"
-            stroke={c}
-            strokeWidth={1.5}
-            strokeLinejoin="round"
-          />
-        </Svg>
-      );
     case 'progress':
       return (
         <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
@@ -201,6 +194,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     gap: CARD_DENSITY.moreListGap,
   },
+  rows: { gap: CARD_DENSITY.moreListGap },
   footer: {
     paddingHorizontal: 18,
     paddingTop: 18,

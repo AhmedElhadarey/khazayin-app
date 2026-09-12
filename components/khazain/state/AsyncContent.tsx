@@ -11,6 +11,7 @@
  */
 import type { LoadState } from '@/types/content';
 import React, { useEffect } from 'react';
+import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -40,6 +41,16 @@ export type AsyncContentProps = {
    * opacity transition (C5c). Set to false for instant render.
    */
   fadeIn?: boolean;
+  /**
+   * Applied to the view that actually holds the children.
+   *
+   * The fade wrapper is a real layout box, so a `gap` on the container *around*
+   * an `<AsyncContent>` spaces the wrapper from its siblings and never reaches
+   * the rows inside it. That has now silently flattened three lists — the
+   * qiraat rows, the dawah months, and the More rows, which stepped 82 where
+   * the frame states 94. Pass the gap here instead.
+   */
+  style?: StyleProp<ViewStyle>;
   /** Rendered when status === 'success'. */
   children: React.ReactNode;
 };
@@ -48,9 +59,13 @@ export type AsyncContentProps = {
 // Internal fade-in wrapper (C5c)
 // ---------------------------------------------------------------------------
 
-type FadeInViewProps = { children: React.ReactNode; enabled: boolean };
+type FadeInViewProps = {
+  children: React.ReactNode;
+  enabled: boolean;
+  style?: StyleProp<ViewStyle>;
+};
 
-function FadeInView({ children, enabled }: FadeInViewProps) {
+function FadeInView({ children, enabled, style }: FadeInViewProps) {
   const opacity = useSharedValue(enabled ? 0 : 1);
 
   useEffect(() => {
@@ -61,7 +76,7 @@ function FadeInView({ children, enabled }: FadeInViewProps) {
 
   const animStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
 
-  return <Animated.View style={animStyle}>{children}</Animated.View>;
+  return <Animated.View style={[style, animStyle]}>{children}</Animated.View>;
 }
 
 // ---------------------------------------------------------------------------
@@ -77,6 +92,7 @@ export function AsyncContent({
   emptyMessage,
   errorMessage,
   fadeIn = true,
+  style,
   children,
 }: AsyncContentProps) {
   // C5a: idle is treated identically to loading
@@ -98,5 +114,9 @@ export function AsyncContent({
   }
 
   // status === 'success'
-  return <FadeInView enabled={fadeIn}>{children}</FadeInView>;
+  return (
+    <FadeInView enabled={fadeIn} style={style}>
+      {children}
+    </FadeInView>
+  );
 }

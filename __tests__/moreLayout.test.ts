@@ -104,3 +104,31 @@ describe('the components read the box rather than restating it', () => {
     expect(settings).not.toContain('compact');
   });
 });
+
+describe('the gap reaches the rows', () => {
+  const read = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+
+  // `AsyncContent` renders its children inside a fade wrapper, and that wrapper
+  // is a real layout box. A `gap` on the container *around* an `<AsyncContent>`
+  // therefore spaces the wrapper from its siblings and never reaches the rows —
+  // which had silently flattened three lists before this: the qiraat rows, the
+  // dawah months, and the More rows, which stepped 82 on device where node
+  // 2102:2711 states 94. The fix is to pass the gap to AsyncContent's own
+  // `style`, so this checks that every screen that could hit it does.
+  const AT_RISK = [
+    'app/(tabs)/more/index.tsx',
+    'app/(tabs)/sections/scholar/[id].tsx',
+  ] as const;
+
+  it.each(AT_RISK)('%s hands its gap to AsyncContent, not to the container', (file) => {
+    const src = read(file);
+    expect(src).toMatch(/<AsyncContent[\s\S]{0,600}?style=\{styles\.rows\}/);
+    expect(src).toMatch(/rows: \{ gap:/);
+  });
+
+  it('AsyncContent forwards that style to the view that holds the children', () => {
+    const src = read('components/khazain/state/AsyncContent.tsx');
+    expect(src).toContain('<FadeInView enabled={fadeIn} style={style}>');
+    expect(src).toContain('style={[style, animStyle]}');
+  });
+});

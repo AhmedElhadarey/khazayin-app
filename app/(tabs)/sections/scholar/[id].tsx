@@ -67,6 +67,7 @@ export default function ScholarDetailScreen() {
       ) : (
         <View style={styles.list}>
           <AsyncContent
+            style={styles.rows}
             status={status}
             error={error}
             onRetry={refresh}
@@ -105,4 +106,5 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     gap: CARD_DENSITY.lectureListGap,
   },
+  rows: { gap: CARD_DENSITY.lectureListGap },
 });

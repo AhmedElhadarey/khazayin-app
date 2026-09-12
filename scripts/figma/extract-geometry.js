@@ -81,11 +81,16 @@ function main() {
       fontSize: n.fontSize,
       lineHeight: n.lineHeight && n.lineHeight.value,
       text: (n.textData && n.textData.characters) || undefined,
-      fill: (n.fillPaints || []).filter((p) => p.color).map(hex),
+      // `visible: false` is a paint the designer switched off, not a colour the
+      // frame renders. Reading it as a fill is how the contact form's card came
+      // out cream when the file draws it as a transparent box with a hairline.
+      fill: (n.fillPaints || []).filter((p) => p.color && p.visible !== false).map(hex),
+      /** Paints that are switched off, so an audit can see they were considered. */
+      fillHidden: (n.fillPaints || []).filter((p) => p.color && p.visible === false).map(hex),
       // A card's stroke, shadow and per-corner radii are as much of the spec as
       // its size is, and reading them from the file is the only way to settle
       // "does this one have a shadow" without squinting at an export.
-      stroke: (n.strokePaints || []).filter((p) => p.color).map(hex),
+      stroke: (n.strokePaints || []).filter((p) => p.color && p.visible !== false).map(hex),
       strokeWeight: n.strokeWeight,
       // Figma writes one `cornerRadius` when all four agree, and four separate
       // fields when they do not.
