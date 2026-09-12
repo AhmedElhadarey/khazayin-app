@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
+import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { useRecitersStore, useSettingsStore } from '@/store';
 
@@ -55,7 +56,10 @@ export function ReciterStep(): React.ReactElement {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 24 },
+  // PHYSICAL_BOX pins the direction so the `textAlign: 'right'` below means the
+  // physical right. Under `forceRTL` alone it resolves to the physical LEFT,
+  // which is what pushed these headings to the wrong edge.
+  container: { ...PHYSICAL_BOX, flex: 1, paddingHorizontal: 24 },
   title: {
     fontFamily: 'Amiri-Bold',
     fontSize: 22,

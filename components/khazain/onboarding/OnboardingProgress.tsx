@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, View } from 'react-native';
 
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 
 type Props = {
@@ -12,8 +13,15 @@ type Props = {
 
 /**
  * RTL-safe step-dots progress indicator for the onboarding flow (track 003).
- * Uses `row-reverse` so the first step's dot sits on the right (RTL reading
- * order) and progress fills right-to-left. Never relies on bare `flexDirection:'row'`.
+ * Step 0's dot sits at the physical RIGHT and progress fills right-to-left,
+ * matching Arabic reading order.
+ *
+ * This used `flexDirection: 'row-reverse'`, which did the opposite. Under
+ * `forceRTL` the row is already RTL, so `row-reverse` renders it left-to-right
+ * and put step 0 on the physical LEFT — on both platforms once RTL had
+ * actually applied. It only ever looked right on a first launch, before
+ * `forceRTL` took effect. `PHYSICAL_ROW` pins the direction, and the indices
+ * are walked high-to-low so the authored order is physical left -> right.
  */
 export function OnboardingProgress({ count, index }: Props): React.ReactElement {
   return (
@@ -22,7 +30,7 @@ export function OnboardingProgress({ count, index }: Props): React.ReactElement 
       accessibilityRole="progressbar"
       accessibilityValue={{ min: 1, max: count, now: index + 1 }}
     >
-      {Array.from({ length: count }).map((_, i) => {
+      {Array.from({ length: count }, (_, n) => count - 1 - n).map((i) => {
         const isActive = i === index;
         const isDone = i < index;
         return (
@@ -42,7 +50,7 @@ export function OnboardingProgress({ count, index }: Props): React.ReactElement 
 
 const styles = StyleSheet.create({
   row: {
-    flexDirection: 'row-reverse',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,

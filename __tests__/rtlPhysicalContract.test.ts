@@ -50,6 +50,16 @@ const PINNED_SCREENS = [
   'app/(tabs)/more/settings-progress.tsx',
   'components/khazain/sheets/SheetRow.tsx',
   'components/khazain/settings/SettingsSection.tsx',
+  // Onboarding. Not in the original sweep because it is the one flow the
+  // captures never reached: the persisted `onboardingComplete` flag meant a
+  // installed-once emulator always booted past it. A release build on a
+  // *fresh* install put it back on screen and it had the same two defects —
+  // step 0's dot on the physical left, and تخطّي on the physical right.
+  'components/khazain/onboarding/OnboardingProgress.tsx',
+  'components/khazain/onboarding/OnboardingFooter.tsx',
+  'components/khazain/onboarding/SelectableRow.tsx',
+  'components/khazain/onboarding/QiraaStep.tsx',
+  'components/khazain/onboarding/ReciterStep.tsx',
 ] as const;
 
 /** Strip `//` and `/* *\/` comments so a prose mention of a banned rule passes. */
@@ -96,5 +106,28 @@ describe('the contract itself cannot drift', () => {
     expect(src).toMatch(/flexDirection: 'row',\s*\n\s*direction: 'ltr',/);
     // Nothing in the contract may branch on runtime RTL state.
     expect(src).not.toMatch(/I18nManager\./);
+  });
+});
+
+describe('onboarding survives the first launch after install', () => {
+  // `forceRTL` flips the layout direction on the very first launch, which
+  // recreates the activity. A native-driven Animated value lives outside the
+  // shadow tree, so the remounted view came back holding the last style JS had
+  // rendered — `anim.setValue(1)`, i.e. opacity 0 — and the animation had
+  // already run, so nothing ever corrected it. Step 0 rendered blank on every
+  // fresh install; the text was mounted, just invisible.
+  it('drives the step transition from JS, not the native driver', () => {
+    const src = code('app/onboarding.tsx');
+    expect(src).toMatch(/useNativeDriver:\s*false/);
+    expect(src).not.toMatch(/useNativeDriver:\s*true/);
+  });
+
+  // The step area is revealed BY the animation, so an interrupted run must
+  // settle to fully-visible rather than leave content parked mid-fade. The
+  // first launch froze it at 0.39 until both of these landed.
+  it('settles to visible when the run is interrupted', () => {
+    const src = code('app/onboarding.tsx');
+    expect(src).toMatch(/if \(!finished\) anim\.setValue\(0\)/);
+    expect(src).toMatch(/animation\.stop\(\);\s*anim\.setValue\(0\);/);
   });
 });
