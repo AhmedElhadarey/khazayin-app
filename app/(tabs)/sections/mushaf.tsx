@@ -175,9 +175,18 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
     };
   }, [currentPage, notePageRead]);
 
-  // Revelation type comes from the surah catalogue; the store is already
-  // cached from the index, so this costs nothing.
-  const { data: surahs } = useSurahsStore();
+  // Revelation type comes from the surah catalogue. The old comment here said
+  // the store "is already cached from the index, so this costs nothing" — true
+  // only if the reader was reached by tapping through the index. It is not:
+  // FR-009 auto-resume opens the reader straight from app start, and a deep
+  // link does the same. On both, `surahs` was empty, `surahRecord` undefined,
+  // and the meta line silently lost its مكية/مدنية token and fell back to the
+  // page's ayah count. Fetching is a cache read when the index has already
+  // run, so the cheap case stays cheap.
+  const { data: surahs, fetch: fetchSurahs } = useSurahsStore();
+  useEffect(() => {
+    fetchSurahs();
+  }, [fetchSurahs]);
   const surahRecord = surahs.find((s) => s.id === surahId);
   const metaLine = surahMetaLine({
     revelationType: surahRecord?.revelationType,

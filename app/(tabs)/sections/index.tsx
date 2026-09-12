@@ -36,7 +36,9 @@ export default function SectionsScreen() {
           <Text style={styles.h1}>الأقسام</Text>
         </View>
         <View style={styles.searchBlock}>
-          <SearchPill placeholder="ابحث في الأقسام.." onPress={() => router.push('/search' as any)} />
+          {/* `بحث..` is what the file sets, on all twelve frames that carry a
+              search pill — this screen was the only one paraphrasing it. */}
+          <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
         </View>
         <AsyncContent
           status={status}
