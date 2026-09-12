@@ -2,43 +2,22 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { FigmaIcon } from '../icons/FigmaIcon';
 
-// `DIV-79` on nodes 2207:5270 and 2207:17898 — the numbered badge on a surah
-// row. A 36pt tinted star in `#D7B995` at 16% carrying a `#A88051` mark, with
-// the index over it in Arabic-Indic numerals set in the display face at 12.
-//
-// Both frames draw it identically, so there is no outlined variant.
-export function SurahStar({ index, size = 44 }: { index: string; size?: number }) {
-  // 8-point star: union of two squares rotated 45°
-  const r = size / 2;
-  const c = size / 2;
-  // outer points alternate between full-radius (r) and inset (r * 0.78) on 16 spokes.
-  const points: string[] = [];
-  const spokes = 16;
-  for (let i = 0; i < spokes; i++) {
-    const angle = (Math.PI * 2 * i) / spokes - Math.PI / 2;
-    const radius = i % 2 === 0 ? r - 1.2 : r * 0.78;
-    const x = c + Math.cos(angle) * radius;
-    const y = c + Math.sin(angle) * radius;
-    points.push(`${x.toFixed(2)},${y.toFixed(2)}`);
-  }
-  const d = `M${points[0]} ${points
-    .slice(1)
-    .map((p) => `L${p}`)
-    .join(' ')} Z`;
-
+/**
+ * `DIV-79` on nodes 2207:5270 and 2207:17898 — the numbered badge on a surah
+ * row: a 36pt eight-point star filled `#D7B995` at 16% behind an `#A88051`
+ * outline, with the index over it in Arabic-Indic numerals.
+ *
+ * The star is the file's own outline. It used to be computed here from
+ * sixteen spokes at a guessed 0.78 inset, which produced a rounder, blunter
+ * star than the one the design draws. The numeral stays app-side because it is
+ * data — the file states a single `١`.
+ */
+export function SurahStar({ index, size = 36 }: { index: string; size?: number }) {
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
-      <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <Path
-          d={d}
-          fill={KhazainColors.iconChipBg}
-          stroke={KhazainColors.goldAccent}
-          strokeWidth={1.4}
-          strokeLinejoin="round"
-        />
-      </Svg>
+      <FigmaIcon name="SurahStar" size={size} />
       <Text style={styles.label} numberOfLines={1}>
         {index}
       </Text>

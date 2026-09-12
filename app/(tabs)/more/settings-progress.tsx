@@ -1,5 +1,5 @@
 import { DetailHeader } from '@/components/khazain';
-import { OrnamentPattern } from '@/components/khazain/patterns';
+import { HeaderArt } from '@/components/khazain/patterns';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import {
   MAX_WIRD,
@@ -81,7 +81,7 @@ export default function SettingsProgressScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
+      <HeaderArt />
       <DetailHeader title="إعدادات التقدّم" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}

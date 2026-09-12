@@ -110,9 +110,14 @@ function collectPaths(root, { byGuid, childrenOf }) {
         if (g.commandsBlob === undefined) continue;
         const blob = inherited.blobs[g.commandsBlob];
         if (!blob) continue;
+        // A LINE node has a fill geometry of zero bytes — there is no area to
+        // fill — alongside a real stroke outline. Emitting the empty one would
+        // put a `d=""` path in the output that draws nothing.
+        const d = pathFromBlob(blob.bytes, abs);
+        if (!d) continue;
         const alpha = (colour.opacity === undefined ? 1 : colour.opacity) * nodeOpacity * inherited.opacity;
         paths.push({
-          d: pathFromBlob(blob.bytes, abs),
+          d,
           fill: colour.hex,
           fillRule: g.windingRule === 'ODD' ? 'evenodd' : 'nonzero',
           ...(alpha < 1 ? { fillOpacity: Math.round(alpha * 1000) / 1000 } : {}),

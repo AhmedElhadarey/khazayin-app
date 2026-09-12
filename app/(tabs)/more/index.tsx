@@ -1,6 +1,6 @@
 import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
-import { OrnamentPattern } from '@/components/khazain/patterns';
+import { HeaderArt } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -53,7 +53,7 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
+      <HeaderArt />
       <ScrollView
         // React Navigation already reserves the measured tab-bar height.
         contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_BREATHING }}

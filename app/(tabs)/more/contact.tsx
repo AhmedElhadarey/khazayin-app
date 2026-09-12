@@ -1,6 +1,6 @@
 import { InlineHeader } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
-import { OrnamentPattern } from '@/components/khazain/patterns';
+import { HeaderArt } from '@/components/khazain/patterns';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import {
   CONTACT_INCOMPLETE_ALERT,
@@ -65,7 +65,7 @@ export default function ContactScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
+      <HeaderArt />
       <InlineHeader title="تواصل معنا" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}

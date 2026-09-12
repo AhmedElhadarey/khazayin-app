@@ -1,5 +1,5 @@
 import { InlineHeader } from '@/components/khazain';
-import { OrnamentPattern } from '@/components/khazain/patterns';
+import { HeaderArt } from '@/components/khazain/patterns';
 import { KhazainColors } from '@/constants/theme';
 import { ABOUT_CARDS, ABOUT_PARAGRAPHS } from '@/data/content/about';
 import { useRouter } from 'expo-router';
@@ -12,7 +12,7 @@ export default function AboutScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
+      <HeaderArt />
       <InlineHeader title="مؤسسة خزائن الرحمن" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}

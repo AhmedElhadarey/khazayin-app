@@ -44,8 +44,16 @@
     { "name": "MoreContact",    "node": "2106:2273", "from": "2102:2711 row 7 — تواصل معنا" },
     { "name": "MoreAbout",      "node": "2106:2291", "from": "2102:2711 row 8 — نبذة عن المؤسسة" },
 
-    { "name": "LectureBadge",   "node": "2430:1018", "from": "`quran-01` inside `DIV-58`, the 40pt row badge" },
-    { "name": "SurahStar",      "node": "2345:2011", "from": "`DIV-79`, the 36pt surah row badge" },
+    { "name": "BadgeQuran",     "node": "2430:1017", "from": "`DIV-58` on 2031:6193 / 2457:954 — the reciter and qiraa rows" },
+    { "name": "BadgeProphet",   "node": "2473:2595", "from": "`DIV-58` on 2465:1911 — رسول الله ﷺ" },
+    { "name": "BadgeTulip",     "node": "2589:1784", "from": "`DIV-58` on 2589:1772 — أنتِ ملكة" },
+    { "name": "BadgeOpenBook",  "node": "2597:2743", "from": "`DIV-58` on 2597:2552 — الكتب العلمية" },
+    { "name": "BadgeMic",       "node": "2606:3842", "from": "`DIV-58` on 2606:3830 — برامج إذاعية" },
+    { "name": "BadgeQuill",     "node": "2869:2011", "from": "`DIV-58` on 2102:2975 — العلماء والمشايخ" },
+    { "name": "BadgeAudioWave", "node": "2869:2156", "from": "`DIV-58` on 2869:2088 — كتب صوتية" },
+    { "name": "BadgeMoonMountain", "node": "2606:3777", "from": "`DIV-58` on 2120:942 — تصميمات دعوية" },
+    { "name": "BadgeExclusive", "node": "2869:2374", "from": "`DIV-58` on 2869:2306 — حصريات. Disc and letterforms; the word حصرى over them is a raster paint, overlaid from assets/figma/seal-khazain.png." },
+    { "name": "SurahStar",      "node": "2207:5706", "from": "`DIV-79` on 2207:5270 / 2207:17898 — the 36pt surah row badge, without its index numeral" },
 
     { "name": "LibraryReminders",   "node": "2095:1608", "from": "2031:4659 `DIV-46` — the تذكيراتي stat card" },
     { "name": "LibraryWird",        "node": "2095:1620", "from": "2031:4659 `DIV-56` — the ورد القرآن stat card" },

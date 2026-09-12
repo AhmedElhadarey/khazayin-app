@@ -1,5 +1,5 @@
 import { ListRowCard } from '@/components/khazain';
-import { OrnamentPattern } from '@/components/khazain/patterns';
+import { HeaderArt } from '@/components/khazain/patterns';
 import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
 import { toArabicDigits as toArNum } from '@/constants/progress';
 import { PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
@@ -149,7 +149,7 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
+      <HeaderArt />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}

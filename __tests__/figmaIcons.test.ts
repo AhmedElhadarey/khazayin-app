@@ -2,6 +2,7 @@ import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { FIGMA_ICONS } from '@/components/khazain/icons/generated/figmaIcons';
+import { KhazainColors } from '@/constants/theme';
 
 const ROOT = path.join(__dirname, '..');
 const MANIFEST = JSON.parse(
@@ -104,5 +105,33 @@ describe('the screens draw the file rather than redrawing it', () => {
     const src = read('app/(tabs)/sections/index.tsx');
     expect(src).toContain('<Icon />');
     expect(src).not.toMatch(/<Icon size=/);
+  });
+});
+
+describe('the header art the frames lay over the page', () => {
+  it('bakes the same ground the app paints', () => {
+    // `extract-images.js` pre-composites the OVERLAY blend against the page
+    // ground because React Native has no blend modes. That makes the ground a
+    // build-time constant, so the two must not drift: if `pageBg` moves, the
+    // assets have to be regenerated or the art will sit on a seam.
+    const { PAGE_BG } = require('../scripts/figma/extract-images.js');
+    const hex = '#' + PAGE_BG.map((c: number) => c.toString(16).padStart(2, '0')).join('');
+    expect(hex.toUpperCase()).toBe(KhazainColors.pageBg.toUpperCase());
+  });
+
+  it('draws the file\'s art rather than the prototype\'s CSS tile', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'components/khazain/patterns/HeaderArt.tsx'), 'utf8');
+    expect(src).toContain('pattern-geometric-on-page.png');
+    expect(src).toContain('ornament-corner-on-page.png');
+    // No opacity is guessed: the blend is resolved at build time.
+    expect(src).not.toMatch(/opacity[:=]\s*\{?[\d.]/);
+  });
+
+  it('has no More screen still tiling the old ornament', () => {
+    for (const file of ['index', 'archive', 'contact', 'about', 'settings', 'settings-progress']) {
+      const src = fs.readFileSync(path.join(ROOT, `app/(tabs)/more/${file}.tsx`), 'utf8');
+      expect(src).not.toContain('OrnamentPattern');
+      expect(src).toContain('HeaderArt');
+    }
   });
 });

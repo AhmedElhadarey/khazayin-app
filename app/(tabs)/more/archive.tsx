@@ -6,7 +6,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { InlineHeader, SearchPill } from '@/components/khazain';
 import { ChevronIcon } from '@/components/khazain/icons';
-import { OrnamentPattern } from '@/components/khazain/patterns';
+import { HeaderArt } from '@/components/khazain/patterns';
 import { listRowAccessibilityLabel } from '@/constants/rtlContracts';
 import { ARCHIVE_ROWS, type ArchiveRow } from '@/data/content/archive';
 
@@ -21,7 +21,7 @@ export default function ArchiveScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} coverage="corner" />
+      <HeaderArt />
       <InlineHeader title="الأرشيف" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
