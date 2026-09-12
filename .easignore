@@ -39,3 +39,9 @@ ios/build/
 ios/DerivedData/
 *.apk
 *.aab
+
+# Machine-local SDK path. Generated for the local Gradle build and MUST NOT be
+# uploaded: it names this Mac's SDK directory, which does not exist on the EAS
+# builder, producing "sdk.dir property in local.properties: Directory does not
+# exist" on every cloud build.
+android/local.properties
