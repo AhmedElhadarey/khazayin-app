@@ -80,11 +80,23 @@ screens use it. **37 files do not.** They hand-assemble type and between them
 set weights the design never uses (500, 600, and 400 on `TheSansArabic`, which
 the file only ever pairs with Bold) and sizes it never states (11, 13, 15).
 
-The worst offenders are the settings modals, search, onboarding, and several
-library and search sub-components. This is drift of the same kind the
-typography scale was built to stop, and it is **not fixed here** — it is a
-mechanical but wide refactor (138 declarations), and it is cosmetic rather than
-demo-breaking. Listed as the top follow-up.
+**Twelve of the 37 are now fixed** — the root-level modals (`settings-*`,
+`note-editor`, `notes-viewer`, `search`, `share-sheet`), 53 styles, mapped by
+the scale's own rule rather than by eye, and captured on both platforms after
+the change. Sheet titles moved off `Amiri-Bold` (which appears nowhere in the
+file) onto `bodyLarge`, the body face at 18 that every frame-backed page title
+uses. Amiri is kept in four places where the thing drawn really is artwork: the
+foundation wordmark, the reminder clock, the wird page count, and the font-size
+preview labels.
+
+**25 files remain** — onboarding, the library and search sub-components, and
+several shared primitives. Deliberately left: they have no frame to verify
+against, and because `TheSansArabic` and `TheMixArab` both still resolve to
+`NotoSansArabic-VF.ttf` through `FONT_SUBSTITUTIONS`, the family half of the
+fix is invisible until the licensed files land. What a wide rewrite buys today
+is about one point of size and one weight step, against real layout-shift risk
+across 25 files on the day of a demo. Top follow-up; do it when the fonts
+arrive, and re-verify then.
 
 ## 4. Navigation — one real gap
 
@@ -158,9 +170,14 @@ the demo clock.
 
 1. **Typography drift in 37 files** (§3). Largest remaining parity item.
 2. **`MiniPlayerDock` is not tap-verified on iOS.** The simulator here runs
-   headless — `simctl` has no touch API and the Simulator app exposes no
-   window — so it is verified by type and by shared code path, and by device on
-   Android. Worth one manual tap before the demo.
+   headless — `simctl` has no touch API, and the Simulator app exposes no
+   window even after a clean `shutdown`/`boot`/`open -a Simulator`. It is
+   verified by type, by shared code path, and on Android by device. Two things
+   to check with one manual tap before the demo: that the dock appears on a
+   nested route during playback, and that it does not overlap the last list
+   row — the dock adds `8 + insets.bottom`, which is 34 pt on an iPhone 16
+   against roughly 16 dp on the Android emulator, so iOS is where an overlap
+   would show.
 3. Reference exports for Archive (2558:1334), Exclusive (2869:2306) and the
    Mushaf reader (2349:982) are black or blank, so those three frames are
    compared structurally rather than pixel-wise. Known since the 2026-09-09 audit.

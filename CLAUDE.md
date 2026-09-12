@@ -111,12 +111,22 @@ For every task in the plan:
 
 ## Design source is the spec
 
-Authority order, highest first: **`KHAZAYIN.fig` node → `design_source/` mock → `handoff.md`.**
+Authority order, highest first: **`KHAZAYIN.fig` node → the in-repo contracts.**
+
+> **`design_source/` and `handoff.md` do not exist.** They are named throughout
+> this file as the second and third authorities, but neither is in the working
+> tree and neither is in git history — checked 2026-09-12. Treat every mention
+> of them below as historical. For a screen the 28 frames do not cover there is
+> **no external spec at all**; the authority is `constants/layout.ts` (RTL and
+> geometry), `constants/typography.ts` (the type scale, itself derived from the
+> file's 1,153 text nodes) and `constants/rtlContracts.ts` (physical slot
+> order). Say which one you used — never write "matches Figma" for a screen
+> with no frame.
 
 - **The Figma file is on disk at `docs/KHAZAYIN.fig`** — no cloud URL is needed, and no MCP round-trip. It is a ZIP: `unzip -l docs/KHAZAYIN.fig` lists `canvas.fig` (the binary node graph), `thumbnail.png`, `meta.json`, and `images/` — 181 raw, full-resolution source images keyed by content hash, with alpha intact. When a screen needs real client art, extract it from there rather than deriving it from a flattened frame export or redrawing it as SVG. Rendered frame exports live in `docs/audit/<date>/figma-reference/` (untracked).
 - The 28 top-level mobile frames in `KHAZAYIN.fig` are the current spec for every screen they cover. `docs/visual-regression/figma-mobile-screen-map.json` maps node → route, and `docs/plans/2026-09-09-figma-style-remediation-{design,implementation-plan,qa}.md` record what was measured against them and where the export is unusable.
-- `design_source/app/{home,sections,library,more,shared}.jsx` + `styles.css` + `mobile.html` is a faithful HTML/React prototype, and remains the spec for anything the 28 frames do not cover.
-- **The mocks win over `handoff.md` whenever they disagree** (handoff copy sometimes lags the mock). Dimensions, colors, Arabic copy — port verbatim.
+- ~~`design_source/app/*.jsx` is the spec for anything the 28 frames do not cover.~~ **Missing — see the note above.** The 28 frames cover Home, Library, Sections and its twelve sub-screens, and More and its three. They cover none of the settings modals, the note screens, search, or the sheets.
+- Where the file's *stated* values and its *rendered* export disagree, the render wins — proved twice, in opposite directions (a component override the export dropped, and a chevron inset the stored transform does not survive auto-layout for).
 - Illustrations (rehl, scroll, crown+book, mosque) are ports of the inline SVGs in the mocks. When real client art arrives they'll replace the SVGs but keep the component API.
 
 ---
@@ -201,7 +211,7 @@ scripts/visual-audit/             ← 28-frame Figma↔app capture harness (iOS 
 docs/visual-regression/           ← figma-mobile-screen-map.json (node → route manifest)
 docs/plans/                       ← designs, implementation plans, QA records
 
-design_source/                    ← HTML/React mocks, treat as the spec
+design_source/                    ← REFERENCED THROUGHOUT THIS FILE BUT ABSENT
 handoff.md                        ← initial client handoff; mocks supersede where they disagree
 conductor/                        ← track-based workflow history (see below)
 ```
@@ -314,6 +324,8 @@ npx tsc --noEmit       # type-check — use this liberally, it's fast
   npm run lint 2>&1 | grep -E "<path-glob>" -A 2
   ```
 - On-device visual QA is the only way to verify RTL layout, font rendering, and the floating MiniPlayer. Typecheck and lint pass doesn't mean it renders correctly.
+- **An icon can be the right geometry and still be wrong.** The file uses one component in two orientations and puts the flip on the *instance* (`transform.m00: -1`), never on the SYMBOL master the generator copies. `FigmaIcon`'s `mirrored` prop carries it; `__tests__/figmaIcons.test.ts` pins which call sites set it.
+- **`alignItems: 'flex-end'` and `textAlign: 'right'` mean the physical LEFT** in a container whose direction is left to `forceRTL`, and `flexDirection: 'row-reverse'` on such a row renders left→right. Spread `PHYSICAL_BOX` / `PHYSICAL_ROW` from `constants/layout.ts`. Guarded by `__tests__/rtlPhysicalContract.test.ts`.
 
 ---
 
@@ -321,7 +333,7 @@ npx tsc --noEmit       # type-check — use this liberally, it's fast
 
 - Don't add dependencies without asking (`authority-matrix.md` marks this USER_ONLY).
 - Don't `git commit` / `git push` unless explicitly told to.
-- Don't rename or delete anything under `design_source/` — it's the spec.
+- Don't rename or delete anything under `design_source/` if it ever arrives — it's the spec. It is not in the repo today.
 - Don't replace `TheSansArabic` / `TheMixArab` font references — the user is intentionally using proprietary names.
 - Don't touch legacy files just to clean up — they're preserved intentionally.
 - Don't add `--no-verify` / `--no-gpg-sign` to any git operation.
@@ -329,7 +341,7 @@ npx tsc --noEmit       # type-check — use this liberally, it's fast
 
 ## Things TO do
 
-- When porting a new screen: read the matching `design_source/app/*.jsx` first, port component-by-component into `components/khazain/`, then assemble in `app/...`.
+- When porting a new screen: find its node in `docs/visual-regression/figma-mobile-screen-map.json` and read the frame out of `docs/KHAZAYIN.fig` with `scripts/figma/extract-geometry.js` / `extract-text-styles.js`. If it has no frame, build from the `constants/*` contracts and say so.
 - When adding a new route: register it in the appropriate layout's `<Stack>` / `<Tabs>`, then test navigation with `router.push(... as any)` until typed routes regenerate.
 - When adding new state: prefer a new small Zustand store over extending `useAppStore`.
 - When adding an external URL or share target: use `Linking.openURL` with a `canOpenURL` check + Arabic Alert fallback (pattern in `app/share-sheet.tsx`).
