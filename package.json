@@ -14,7 +14,10 @@
     "measure:figma": "node scripts/visual-audit/measure.mjs",
     "lint": "expo lint",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "screens:matrix": "node scripts/visual-audit/screen-matrix.mjs",
+    "screens:matrix:quick": "node scripts/visual-audit/screen-matrix.mjs --quick",
+    "screens:sheet": "node scripts/visual-audit/contact-sheet.mjs"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
