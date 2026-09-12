@@ -19,7 +19,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ahmed.elhadarey94.khazayinapp",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       }
     },
     "android": {
@@ -63,7 +65,8 @@
           "locationWhenInUsePermission": "يستخدم التطبيق موقعك لحساب مواقيت الصلاة بدقة في مدينتك."
         }
       ],
-      "./plugins/withExactAlarmPermissions"
+      "./plugins/withExactAlarmPermissions",
+      "./plugins/withSplashWindowBackground"
     ],
     "experiments": {
       "typedRoutes": true,
