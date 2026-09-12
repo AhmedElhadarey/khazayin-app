@@ -1,4 +1,4 @@
-import { textStyle } from '@/constants/typography';
+import { textStyle, CHROME_MAX_FONT_SCALE } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { STAT_CARD } from './libraryLayout';
 import React from 'react';
@@ -21,8 +21,12 @@ export function StatCard({
   return (
     <View style={styles.card}>
       <View style={styles.iconChip}>{icon}</View>
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.sub}>{subtitle}</Text>
+      <Text style={styles.title} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>
+        {title}
+      </Text>
+      <Text style={styles.sub} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>
+        {subtitle}
+      </Text>
     </View>
   );
 }
@@ -30,7 +34,12 @@ export function StatCard({
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    height: STAT_CARD.height,
+    // minHeight, not height. The Figma card is 122 tall, but the caption is two
+    // lines of scaled type: at a raised system font scale the subtitle rendered
+    // BELOW the card, on the page background. The card has to be free to grow
+    // past its design height so its own text stays inside it.
+    minHeight: STAT_CARD.height,
+    paddingBottom: 12,
     borderRadius: STAT_CARD.radius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,

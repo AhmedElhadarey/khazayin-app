@@ -68,7 +68,20 @@ export function HeroProphet({ onPress, onMore }: { onPress?: () => void; onMore?
             cachePolicy="memory-disk"
             transition={0}
           />
-          <Text style={[styles.body, { marginTop: 5.8 * scale }]}>{BODY}</Text>
+          {/* The hero copy sits inside an artwork frame whose height is a fixed
+            proportion of its width (HeroShell scales every layer by
+            measuredWidth / designWidth). Letting the type grow with the system
+            font scale re-wraps the prose and pushes the card past that
+            proportion — on a Galaxy A30 at 384dp the prophet card went from
+            ~18% of the screen to ~46%, which read as "the hero is too big".
+            Pinned at 1 so the composition holds; the surrounding UI still
+            scales to the app-wide 1.2 ceiling. */}
+          <Text
+            style={[styles.body, { marginTop: 5.8 * scale }]}
+            maxFontSizeMultiplier={1}
+          >
+            {BODY}
+          </Text>
           <View style={[styles.pillRow, { marginTop: 8.6 * scale }]}>
             <SmallMoreButton onPress={onMore ?? onPress} />
           </View>
