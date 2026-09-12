@@ -115,6 +115,7 @@ describe('the screens draw the file rather than redrawing it', () => {
     'components/khazain/primitives/ListRowCard.tsx',
     'components/khazain/settings/SettingsValueRow.tsx',
     'components/khazain/sections/ReciterSurahRow.tsx',
+    'components/khazain/primitives/ReciterRow.tsx',
   ];
 
   it.each(NO_LONGER_DRAW)('%s draws no Svg of its own', (file) => {

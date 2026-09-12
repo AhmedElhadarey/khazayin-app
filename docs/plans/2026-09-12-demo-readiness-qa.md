@@ -152,6 +152,17 @@ iOS covers 393 pt only. No iPhone SE image is installed, there is no built
 `.app` to install on another simulator, and a fresh `expo run:ios` was not worth
 the demo clock.
 
+### The one place the two devices disagreed
+
+Library's daily-reminder card rendered differently: iOS showed the toggle on
+with `التذكير القادم: اليوم ٨:٠٠ م`, Android showed it off with a gold
+`التذكير متوقف: يلزم السماح بالإشعارات`. **Not a layout difference** — the
+Android emulator had never been granted `POST_NOTIFICATIONS`, so it was drawing
+the denied branch. After
+`adb shell pm grant com.ahmed.elhadarey94.khazayinapp android.permission.POST_NOTIFICATIONS`
+it matches iOS. Both branches render correctly; worth granting on any device
+used for the demo so the card shows the scheduled time.
+
 ## 7. Deliberate deviations from the file, left in place
 
 * `SurahRow` puts a bookmark where frame 2207:17898 puts a play triangle —
