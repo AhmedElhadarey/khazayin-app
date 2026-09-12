@@ -25,7 +25,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
 
 // Once per app session: when the user opens the Mushaf index with no surah
 // param AND has a saved last_read_page > 1, route them to the matching surah.
@@ -247,9 +247,13 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
 }
 
 const FOOTER_BUTTONS: Record<MushafFooterSlot, { label: string; icon: () => React.ReactNode }> = {
-  index: { label: 'الفهرس', icon: () => <MenuGlyph /> },
-  goToBookmark: { label: 'الانتقال للعلامة', icon: () => <BookmarkFilledGlyph /> },
-  saveBookmark: { label: 'حفظ علامة', icon: () => <BookmarkGlyph /> },
+  // Node 2349:982 draws `DIV-116` and two copies of `DIV-130` in its footer,
+  // and the two bookmark buttons carry an identical mark — the distinction
+  // between them is the label, not a filled-vs-outline glyph. The app had been
+  // drawing a filled variant for one of them, which the file does not state.
+  index: { label: 'الفهرس', icon: () => <FooterGlyph name="MushafIndex" /> },
+  goToBookmark: { label: 'الانتقال للعلامة', icon: () => <FooterGlyph name="MushafBookmark" /> },
+  saveBookmark: { label: 'حفظ علامة', icon: () => <FooterGlyph name="MushafBookmark" /> },
 };
 
 function AyahNum({ n }: { n: string }) {
@@ -275,50 +279,9 @@ function MushafBtn({ label, icon }: { label: string; icon: React.ReactNode }) {
   );
 }
 
-function BookmarkGlyph() {
-  return (
-    <Svg width={22} height={22} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M5 3v14l5-4 5 4V3H5z"
-        stroke={KhazainColors.navy800}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function BookmarkFilledGlyph() {
-  return (
-    <Svg width={22} height={22} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M5 3v14l5-4 5 4V3H5z"
-        fill={KhazainColors.navy800}
-        stroke={KhazainColors.navy800}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function MenuGlyph() {
-  return (
-    <Svg width={22} height={22} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M4 5h12M4 10h12M4 15h12"
-        stroke={KhazainColors.navy800}
-        strokeWidth={1.7}
-        strokeLinecap="round"
-      />
-      <Path
-        d="M2 5h0.5M2 10h0.5M2 15h0.5"
-        stroke={KhazainColors.navy800}
-        strokeWidth={1.7}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
+/** `Icon-118` / `Icon-132` are 22.2 x 21.3 inside a 32pt footer button. */
+function FooterGlyph({ name }: { name: FigmaIconName }) {
+  return <FigmaIcon name={name} size={22} color={KhazainColors.navy800} />;
 }
 
 const styles = StyleSheet.create({

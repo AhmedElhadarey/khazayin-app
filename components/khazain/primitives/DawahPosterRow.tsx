@@ -1,12 +1,14 @@
-import { ShareIcon } from '@/components/khazain/icons';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { Image } from 'expo-image';
+
+/** `DIV-144` on 2120:1857 draws both actions at 20. */
+const ACTION_GLYPH = 20;
 
 // تصميمات دعوية → month detail (Figma node 2120:1857).
 //
@@ -49,7 +51,7 @@ export function DawahPosterRow({
           accessibilityLabel="مشاركة"
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <ShareIcon size={20} color={KhazainColors.ink700} strokeWidth={1.6} />
+          <FigmaIcon name="DawahShare" size={ACTION_GLYPH} color={KhazainColors.ink700} />
         </Pressable>
         <Pressable
           onPress={onDownload}
@@ -57,23 +59,7 @@ export function DawahPosterRow({
           accessibilityLabel="تنزيل"
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
-            {/* Square outline + downward arrow (matches Figma boxed download icon) */}
-            <Path
-              d="M5 5 h11 a3 3 0 0 1 3 3 v11 a3 3 0 0 1 -3 3 H8 a3 3 0 0 1 -3 -3 z"
-              stroke={KhazainColors.ink700}
-              strokeWidth={1.6}
-              strokeLinejoin="round"
-              fill="none"
-            />
-            <Path
-              d="M12 9 v6 M9 13 L12 16 L15 13"
-              stroke={KhazainColors.ink700}
-              strokeWidth={1.6}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </Svg>
+          <FigmaIcon name="DawahDownload" size={ACTION_GLYPH} color={KhazainColors.ink700} />
         </Pressable>
       </View>
 

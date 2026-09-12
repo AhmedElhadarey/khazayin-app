@@ -27,6 +27,7 @@ import {
 } from '@/constants/libraryPresentation';
 import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import {
@@ -87,6 +88,11 @@ function lastReadingLabel(trend: { localDay: string; pagesRead: number }[]): str
   }
   return 'لم تبدأ القراءة بعد';
 }
+
+/** `DIV-46` draws its stat glyph at 22.2 x 21.3 inside a 40pt chip. */
+const STAT_GLYPH = 22;
+/** `BUTTON-113` draws its toolbar mark at 16.7 x 16 inside a 32pt button. */
+const FORMAT_GLYPH = 16;
 
 export default function LibraryScreen() {
   const router = useRouter();
@@ -273,7 +279,7 @@ export default function LibraryScreen() {
             ? 'لا تذكيرات نشطة'
             : `${toArNum(activeReminders.length)} تذكيرات نشطة`
         }
-        icon={<StatBellGlyph />}
+        icon={<FigmaIcon name="LibraryReminders" size={STAT_GLYPH} color={KhazainColors.navy800} />}
       />
     ),
     quranWird: (
@@ -286,14 +292,14 @@ export default function LibraryScreen() {
               ? 'يوم واحد متتالي'
               : `${toArNum(currentStreak)} يوم متتالي`
         }
-        icon={<BookGlyph />}
+        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.navy800} />}
       />
     ),
     notes: (
       <StatCard
         title="ملاحظاتي"
         subtitle={`${toArNum(notes.length)} ملاحظة`}
-        icon={<PencilGlyph />}
+        icon={<FigmaIcon name="LibraryNotes" size={STAT_GLYPH} color={KhazainColors.navy800} />}
       />
     ),
   };
@@ -458,10 +464,14 @@ export default function LibraryScreen() {
             </Pressable>
             <View style={{ flex: 1 }} />
             <FormatBtn>
-              <ListGlyph />
+              <FigmaIcon name="NoteListFormat" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
             </FormatBtn>
-            <FormatBtn italic>I</FormatBtn>
-            <FormatBtn bold>B</FormatBtn>
+            <FormatBtn>
+              <FigmaIcon name="NoteItalic" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+            </FormatBtn>
+            <FormatBtn>
+              <FigmaIcon name="NoteBold" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+            </FormatBtn>
           </View>
           <View style={styles.recentBlock}>
             <Text style={styles.recentHeader}>آخر الملاحظات</Text>
@@ -635,74 +645,17 @@ export default function LibraryScreen() {
 
 // ── Small inline components / glyphs ──
 
-function StatBellGlyph() {
-  return (
-    <Svg width={16} height={16} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M3.44 17.29c-.78 0-1.22-1.05-.66-1.62l1.12-1.12c.3-.3.48-.75.48-1.2v-3.24c0-3.95 3.21-7.16 7.16-7.16 3.94 0 7.16 3.21 7.16 7.16v3.24c0 .45.18.9.48 1.2l1.12 1.12c.57.57.17 1.62-.66 1.62H3.44z"
-        fill={KhazainColors.navy800}
-        opacity={0.4}
-      />
-      <Path
-        d="M14.83 18.3a2.85 2.85 0 0 1-5.66 0"
-        stroke={KhazainColors.navy800}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function FormatBtn({
-  children,
-  bold,
-  italic,
-}: {
-  children: React.ReactNode;
-  bold?: boolean;
-  italic?: boolean;
-}) {
+/**
+ * A button in the quick-note toolbar — nodes `BUTTON-113` / `BUTTON-116` /
+ * `BUTTON-119` on 2031:4659, all 32 at radius 16 on `#FCFAF8`. The file draws
+ * all three marks, including the bold and italic ones the app had been setting
+ * as styled letters.
+ */
+function FormatBtn({ children }: { children: React.ReactNode }) {
   return (
     <Pressable style={({ pressed }) => [formatStyles.btn, { opacity: pressed ? 0.75 : 1 }]}>
-      {typeof children === 'string' ? (
-        <Text
-          style={[
-            formatStyles.label,
-            bold && { fontWeight: '700' },
-            italic && { fontStyle: 'italic' },
-          ]}
-        >
-          {children}
-        </Text>
-      ) : (
-        children
-      )}
+      {children}
     </Pressable>
-  );
-}
-
-function PencilGlyph({ size = 16 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M3 17l1-4 10-10 3 3L7 16l-4 1z"
-        stroke={KhazainColors.gold500}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function BookGlyph({ size = 16 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M4 4h12v14H6a2 2 0 01-2-2V4z"
-        stroke={KhazainColors.gold500}
-        strokeWidth={1.5}
-      />
-    </Svg>
   );
 }
 
@@ -713,19 +666,6 @@ function HeadphonesGlyph({ size = 16 }: { size?: number }) {
         d="M4 10V8a6 6 0 0112 0v2M4 10v3a2 2 0 002 2h1v-5H4zm12 0v3a2 2 0 01-2 2h-1v-5h3z"
         stroke={KhazainColors.navy800}
         strokeWidth={1.5}
-      />
-    </Svg>
-  );
-}
-
-function ListGlyph() {
-  return (
-    <Svg width={12} height={12} viewBox="0 0 14 14">
-      <Path
-        d="M2 3h10M2 7h10M2 11h10"
-        stroke={KhazainColors.ink700}
-        strokeWidth={1.3}
-        strokeLinecap="round"
       />
     </Svg>
   );
