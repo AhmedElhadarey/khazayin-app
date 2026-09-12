@@ -21,3 +21,21 @@ dist/
 **/__tests__/
 **/*.test.ts
 **/*.test.tsx
+
+# Native BUILD OUTPUTS. The native sources themselves are deliberately NOT
+# excluded: android/ and ios/ are gitignored, but EAS is told to build from
+# them so the cloud build is the same project that was verified on device,
+# rather than a fresh cloud prebuild that could differ. Only the generated
+# artefacts are dropped — EAS runs `pod install` and Gradle itself.
+#
+# Without this the archive was 978MB (android/app/build alone is ~2.4GB).
+android/app/build/
+android/app/.cxx/
+android/build/
+android/.gradle/
+android/.kotlin/
+ios/Pods/
+ios/build/
+ios/DerivedData/
+*.apk
+*.aab
