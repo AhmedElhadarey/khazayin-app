@@ -1,6 +1,6 @@
 import { Tabs, usePathname } from 'expo-router';
 import React from 'react';
-import { CustomTabBar } from '@/components/khazain';
+import { CustomTabBar, MiniPlayerDock } from '@/components/khazain';
 import { shouldShowMainTabBar } from '@/constants/layout';
 
 // 4-tab shell. Home is the group's `index.tsx`, so expo-router lands there by default.
@@ -13,7 +13,10 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{ headerShown: false }}
-      tabBar={(props) => (showTabBar ? <CustomTabBar {...props} /> : null)}
+      // A nested route drops the navy bar but keeps the player: audio starts on
+      // these screens, so this is exactly where a transport control has to be.
+      // `MiniPlayerDock` renders nothing when nothing is playing.
+      tabBar={(props) => (showTabBar ? <CustomTabBar {...props} /> : <MiniPlayerDock />)}
     >
       {/* Visible tabs (RTL order: home is rendered first → appears on the right). */}
       <Tabs.Screen name="index" options={{ title: 'الرئيسية' }} />

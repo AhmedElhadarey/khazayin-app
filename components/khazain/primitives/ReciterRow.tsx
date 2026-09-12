@@ -8,7 +8,7 @@ import {
 import { KhazainColors } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { FigmaIcon } from '../icons/FigmaIcon';
 import { QuranBadge } from './QuranBadge';
 
 // Reciter / Quran-list row used on pages 13/14 (reciter tabs list) and
@@ -33,17 +33,12 @@ export function ReciterRow({
   isDefault?: boolean;
 }) {
   const slots: Record<ReciterRowSlot, React.ReactNode> = {
+    // `vuesax/bulk/arrow-right` at 20, mirrored — 10 instances on 2457:954 and
+    // 7 on 2031:6193, every one of them carrying `transform.m00: -1`. This
+    // replaces a hand-drawn stroked chevron, which was both the wrong shape
+    // (an outline where the file draws a filled wedge) and the wrong size.
     disclosure: (
-      <Svg width={12} height={14} viewBox="0 0 12 14">
-        <Path
-          d="M9 1 L3 7 L9 13"
-          stroke={KhazainColors.navy800}
-          strokeWidth={2}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-      </Svg>
+      <FigmaIcon name="Back" size={20} color={KhazainColors.navy800} mirrored />
     ),
     text: (
       <View style={styles.textCol}>

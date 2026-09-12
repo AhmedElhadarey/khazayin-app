@@ -11,6 +11,7 @@ import {
   NavSectionsIcon,
   type NavIconProps,
 } from '../icons/nav';
+import { usePlayerStore as usePlayerStoreLocal } from '@/store/playerStore';
 import { MiniPlayer } from './MiniPlayer';
 
 // "index" is the home tab (expo-router's default route name within the (tabs) group).
@@ -34,6 +35,35 @@ const TAB_META: Record<
 //
 // Left → right: More, Sections, Library, Home — matching the `navigation`
 // instance in Figma node 2031:5675 (the Sections frame that carries the bar).
+
+/**
+ * The MiniPlayer on its own, for the routes that do not carry the navy bar.
+ *
+ * The bar is a four-root control — `shouldShowMainTabBar` keeps it to `/`,
+ * `/library`, `/sections` and `/more`, which is what the frames draw. But the
+ * MiniPlayer used to live *inside* it, and playback always starts on a nested
+ * route (a scholar's lectures, a reciter's surahs). So audio would start, the
+ * foreground service would come up, and the screen would show no player at
+ * all: nothing to pause, nothing naming the track. Verified on device —
+ * `MusicService` foregrounded and `AudioTrack` running with no control on
+ * screen.
+ *
+ * Rendering the dock instead of `null` puts the player wherever it is playing
+ * without putting the bar where the design does not want it. It returns `null`
+ * when nothing is playing, so React Navigation measures no inset and a quiet
+ * nested screen is laid out exactly as before.
+ */
+export function MiniPlayerDock() {
+  const insets = useSafeAreaInsets();
+  const isVisible = usePlayerStoreLocal((s) => s.isVisible);
+  const track = usePlayerStoreLocal((s) => s.track);
+  if (!isVisible || !track) return null;
+  return (
+    <View style={[styles.miniPlayerWrap, { marginBottom: 8 + insets.bottom }]}>
+      <MiniPlayer />
+    </View>
+  );
+}
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();

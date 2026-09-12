@@ -6,7 +6,7 @@ export { SectionHeader } from './SectionHeader';
 export { PillButton } from './PillButton';
 export { Toggle } from './Toggle';
 export { MiniPlayer } from './MiniPlayer';
-export { CustomTabBar } from './CustomTabBar';
+export { CustomTabBar, MiniPlayerDock } from './CustomTabBar';
 export { DetailHeader } from './DetailHeader';
 export { CornerOrnament } from './CornerOrnament';
 export { ListRowCard } from './ListRowCard';
