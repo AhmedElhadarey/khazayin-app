@@ -173,6 +173,17 @@ export const FIGMA_ICONS = {
       { d: "M18.09 15.46L14.04 17.8L10 20.13C8.09 21.23 5.84 20.57 4.72 18.96L5.14 18.71L19.58 10.05C20.58 11.85 20.09 14.31 18.09 15.46Z", fill: "#A0AEBA", fillRule: "nonzero", fillOpacity: 0.4 },
     ],
   },
+  Pause: {
+    node: "2001:15578",
+    from: "vuesax/bulk/pause — the MiniPlayer transport, paired with Play",
+    width: 24,
+    height: 24,
+    monochrome: true,
+    paths: [
+      { d: "M10.65 19.11L10.65 4.89C10.65 3.54 10.08 3 8.64 3L5.01 3C3.57 3 3 3.54 3 4.89L3 19.11C3 20.46 3.57 21 5.01 21L8.64 21C10.08 21 10.65 20.46 10.65 19.11Z", fill: "#A0AEBA", fillRule: "nonzero" },
+      { d: "M21 19.11L21 4.89C21 3.54 20.43 3 18.99 3L15.36 3C13.93 3 13.35 3.54 13.35 4.89L13.35 19.11C13.35 20.46 13.92 21 15.36 21L18.99 21C20.43 21 21 20.46 21 19.11Z", fill: "#A0AEBA", fillRule: "nonzero", fillOpacity: 0.4 },
+    ],
+  },
   ArrowLeftStick: {
     node: "49:131",
     from: "vuesax/outline/arrow-left-stick — Home's عرض الكل",

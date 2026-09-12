@@ -1,5 +1,5 @@
 import React from 'react';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { G, Path } from 'react-native-svg';
 import { FIGMA_ICONS, type FigmaIcon as FigmaIconData, type FigmaIconName } from './generated/figmaIcons';
 
 export type FigmaIconProps = {
@@ -19,6 +19,29 @@ export type FigmaIconProps = {
    */
   color?: string;
   opacity?: number;
+  /**
+   * Draw the mark flipped horizontally, because that is how the file's own
+   * *instances* place it.
+   *
+   * The flip lives on the instance (`transform.m00: -1`), never on the SYMBOL
+   * master, so the generated geometry stays a faithful copy of the master and
+   * the orientation is a decision the call site makes — which is right, because
+   * the design uses both orientations of the same component to mean two
+   * different things:
+   *
+   *   `Back` (`vuesax/bulk/arrow-right`) — 23 upright instances, exactly one
+   *   per frame: the header back control, which points right in RTL. 42
+   *   mirrored instances: the list-row disclosures on Sections (9), Qiraat
+   *   (10), both reciter tabs (6 each) and Archive (3), which point left
+   *   because they lead deeper.
+   *
+   *   `Play` (`vuesax/bulk/play`) — 16 of 16 instances mirrored. Playback runs
+   *   right to left here, so the triangle does too.
+   *
+   * Applied as an SVG transform rather than an RN `style.transform` so that
+   * nothing about it can interact with `I18nManager.forceRTL`.
+   */
+  mirrored?: boolean;
 };
 
 /**
@@ -29,7 +52,7 @@ export type FigmaIconProps = {
  * here approximates the design — the only decisions this component makes are
  * how large to draw it and, for a single-colour glyph, in what colour.
  */
-export function FigmaIcon({ name, size, color, opacity }: FigmaIconProps) {
+export function FigmaIcon({ name, size, color, opacity, mirrored }: FigmaIconProps) {
   // `as const` in the generated file narrows each path to its own literal
   // shape; widening here is what makes the optional `fillOpacity` readable.
   const icon: FigmaIconData = FIGMA_ICONS[name];
@@ -46,15 +69,17 @@ export function FigmaIcon({ name, size, color, opacity }: FigmaIconProps) {
       viewBox={`0 0 ${icon.width} ${icon.height}`}
       opacity={opacity}
     >
-      {icon.paths.map((p, i) => (
-        <Path
-          key={i}
-          d={p.d}
-          fill={tint ?? p.fill}
-          fillRule={p.fillRule}
-          fillOpacity={p.fillOpacity}
-        />
-      ))}
+      <G transform={mirrored ? `translate(${icon.width},0) scale(-1,1)` : undefined}>
+        {icon.paths.map((p, i) => (
+          <Path
+            key={i}
+            d={p.d}
+            fill={tint ?? p.fill}
+            fillRule={p.fillRule}
+            fillOpacity={p.fillOpacity}
+          />
+        ))}
+      </G>
     </Svg>
   );
 }
@@ -65,7 +90,11 @@ export function FigmaIcon({ name, size, color, opacity }: FigmaIconProps) {
  * changing its call site. Pass `selected` as well to make a two-state control
  * — the tab bar's idle and active variants are the only pair the file ships.
  */
-export const figmaIcon = (idle: FigmaIconName, selected?: FigmaIconName) =>
+export const figmaIcon = (
+  idle: FigmaIconName,
+  selected?: FigmaIconName,
+  { mirrored }: { mirrored?: boolean } = {},
+) =>
   function FigmaIconNamed({
     size,
     color,
@@ -75,7 +104,14 @@ export const figmaIcon = (idle: FigmaIconName, selected?: FigmaIconName) =>
     color?: string;
     active?: boolean;
   }) {
-    return <FigmaIcon name={active && selected ? selected : idle} size={size} color={color} />;
+    return (
+      <FigmaIcon
+        name={active && selected ? selected : idle}
+        size={size}
+        color={color}
+        mirrored={mirrored}
+      />
+    );
   };
 
 export { FIGMA_ICONS };

@@ -1,10 +1,10 @@
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import type { Surah } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 import { SurahStar } from '@/components/khazain/primitives';
 
 /**
@@ -40,9 +40,12 @@ export function ReciterSurahRow({
       ]}
     >
       <View style={styles.play}>
-        <Svg width={14} height={16} viewBox="0 0 14 16" fill="none">
-          <Path d="M11 1 L3 8 L11 15 Z" fill={KhazainColors.navy800} />
-        </Svg>
+        {/*
+          `vuesax/bulk/play` as frame 2207:5270 instances it — mirrored, like
+          all 16 of the file's play instances, because playback runs right to
+          left. This replaces a hand-drawn triangle.
+        */}
+        <FigmaIcon name="Play" size={16} color={KhazainColors.navy800} mirrored />
       </View>
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={1}>

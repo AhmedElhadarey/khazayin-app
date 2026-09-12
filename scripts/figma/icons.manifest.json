@@ -24,6 +24,7 @@
     { "name": "Search",         "node": "2001:8415",  "from": "vuesax/bulk/search-normal — the search pill, instanced 24 times" },
     { "name": "DisclosureCircle","node": "2001:15085","from": "vuesax/bulk/arrow-circle-left — the More row disclosure" },
     { "name": "Play",           "node": "2001:15652", "from": "vuesax/bulk/play — surah and reciter rows" },
+    { "name": "Pause",         "node": "2001:15578", "from": "vuesax/bulk/pause — the MiniPlayer transport, paired with Play" },
     { "name": "ArrowLeftStick", "node": "49:131",     "from": "vuesax/outline/arrow-left-stick — Home's عرض الكل" },
 
     { "name": "SectionQuran",      "node": "2355:1399", "from": "2031:5675 card 1 — القرآن حــياة" },

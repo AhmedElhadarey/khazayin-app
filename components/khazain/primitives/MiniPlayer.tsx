@@ -2,9 +2,10 @@ import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { skipNext, skipPrev, togglePlayback } from '@/services/audioEngine';
 import { usePlayerStore } from '@/store/playerStore';
+import { FigmaIcon } from '../icons/FigmaIcon';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path, Polygon, Rect } from 'react-native-svg';
+import Svg, { Polygon, Rect } from 'react-native-svg';
 import { LogoBadge } from './LogoBadge';
 
 // Compact MiniPlayer — Figma page-09.
@@ -115,20 +116,21 @@ function SkipGlyph({ dir }: { dir: 'back' | 'fwd' }) {
   );
 }
 
+// `vuesax/bulk/play` and `vuesax/bulk/pause` straight out of the file, rather
+// than the two hand-drawn polygons that used to sit here.
+//
+// No frame among the 28 draws a MiniPlayer — this bar predates them — so the
+// file cannot state its orientation directly. It does state the mark's, and
+// unanimously: all 16 `play` instances in the file carry `transform.m00: -1`.
+// Playback runs right to left, so the triangle does too, and the hand-drawn
+// one pointed the other way. `pause` is symmetric, so the flip is moot there
+// and is not applied.
 function PlayGlyph() {
-  return (
-    <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
-      <Polygon points="3,2 3,10 10,6" fill="#FFFFFF" />
-    </Svg>
-  );
+  return <FigmaIcon name="Play" size={14} color="#FFFFFF" mirrored />;
 }
 
 function PauseGlyph() {
-  return (
-    <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
-      <Path d="M3 2v8M9 2v8" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" />
-    </Svg>
-  );
+  return <FigmaIcon name="Pause" size={14} color="#FFFFFF" />;
 }
 
 const MIN_BAR_HEIGHT = 80;

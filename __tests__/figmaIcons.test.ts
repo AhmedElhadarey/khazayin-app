@@ -114,6 +114,7 @@ describe('the screens draw the file rather than redrawing it', () => {
     'components/khazain/primitives/SearchPill.tsx',
     'components/khazain/primitives/ListRowCard.tsx',
     'components/khazain/settings/SettingsValueRow.tsx',
+    'components/khazain/sections/ReciterSurahRow.tsx',
   ];
 
   it.each(NO_LONGER_DRAW)('%s draws no Svg of its own', (file) => {
@@ -173,5 +174,63 @@ describe('the header art the frames lay over the page', () => {
       expect([file, src.includes('OrnamentPattern')]).toEqual([file, false]);
       expect([file, src.includes('HeaderArt')]).toEqual([file, true]);
     }
+  });
+});
+
+/**
+ * Orientation is part of "the icon the file draws".
+ *
+ * `vuesax/bulk/arrow-right` and `vuesax/bulk/play` are each used in both
+ * orientations, or in only the flipped one, and the flip lives on the
+ * *instance* (`transform.m00: -1`) rather than on the SYMBOL master the
+ * generator copies. So a consumer that names the right icon can still draw it
+ * backwards — which is exactly what the section, qiraat, reciter and archive
+ * list rows were doing, and what the MiniPlayer's hand-drawn triangle did.
+ *
+ * Pinning the name alone would not have caught either.
+ */
+describe('the consumers draw each mark the way the file instances it', () => {
+  const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+
+  it('mirrors the list-row disclosure but not the More one', () => {
+    const src = read('components/khazain/primitives/ListRowCard.tsx');
+    // 42 mirrored instances across Sections, Qiraat, both reciter tabs, Archive.
+    expect(src).toMatch(/name="Back"[^/>]*mirrored/);
+    // `arrow-circle-left` has no mirrored instance anywhere in the file.
+    const circle = src.match(/name="DisclosureCircle"[^/>]*/)?.[0] ?? '';
+    expect(circle).not.toMatch(/mirrored/);
+  });
+
+  it('mirrors the play triangle everywhere it is drawn', () => {
+    // All 16 `play` instances in the file are mirrored; none are upright.
+    for (const file of [
+      'components/khazain/sections/ReciterSurahRow.tsx',
+      'components/khazain/primitives/MiniPlayer.tsx',
+    ]) {
+      expect(read(file)).toMatch(/name="Play"[^/>]*mirrored/);
+    }
+  });
+
+  it('leaves the header back control upright', () => {
+    // The 23 upright instances are one per frame: the header control, which
+    // points right in RTL because it goes back.
+    const back = read('components/khazain/primitives/InlineHeader.tsx').match(
+      /name="Back"[^/>]*/,
+    )?.[0] ?? '';
+    expect(back).not.toMatch(/mirrored/);
+  });
+
+  it('does not mirror the symmetric pause mark', () => {
+    const pause = read('components/khazain/primitives/MiniPlayer.tsx').match(
+      /name="Pause"[^/>]*/,
+    )?.[0] ?? '';
+    expect(pause).not.toMatch(/mirrored/);
+  });
+
+  it('applies the flip as an SVG transform, not an RN style transform', () => {
+    // An RN `style.transform` is a layout-space transform and forceRTL is
+    // entitled to have an opinion about it. An SVG `<G transform>` is not.
+    const src = read('components/khazain/icons/FigmaIcon.tsx');
+    expect(src).toMatch(/<G transform=\{mirrored \? `translate\(\$\{icon\.width\},0\) scale\(-1,1\)`/);
   });
 });

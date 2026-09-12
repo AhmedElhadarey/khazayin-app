@@ -57,11 +57,19 @@ export function ListRowCard({
     // instances `vuesax/bulk/arrow-right` at 20, the More row
     // `vuesax/bulk/arrow-circle-left` at 24 — a bare chevron against a
     // circled one.
+    //
+    // `mirrored` on the bare chevron is not a style choice. Every one of the
+    // section/archive instances carries `transform.m00: -1` — 9 on Sections,
+    // 10 on Qiraat, 6 on each reciter tab, 3 on Archive — so the file draws
+    // this arrow pointing LEFT, into the row. Only the header back control
+    // (one per frame, `InlineHeader`) is left upright. The app had been
+    // drawing the master unflipped, so every list disclosure pointed the
+    // wrong way. `DisclosureCircle` has no mirrored instance and stays as-is.
     disclosure: chevron ? (
       isMore ? (
         <FigmaIcon name="DisclosureCircle" size={24} color={KhazainColors.navy800} />
       ) : (
-        <FigmaIcon name="Back" size={20} color={KhazainColors.inkTitle} />
+        <FigmaIcon name="Back" size={20} color={KhazainColors.inkTitle} mirrored />
       )
     ) : null,
     text: (
