@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Constants from 'expo-constants';
 import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 
 function resolveVersion(): string {
@@ -85,14 +86,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,30,19,0.18)',
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   body: { paddingHorizontal: 16, gap: 12 },
   card: {
@@ -117,11 +113,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   foundation: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
     marginBottom: 8,
   },
   versionRow: {
@@ -132,20 +124,10 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   versionLabel: {
+    ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
     flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
-  versionValue: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '600',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-  },
+  versionValue: textStyle('cardTitle', { color: KhazainColors.ink900 }),
   linkCard: {
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
@@ -157,19 +139,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 4,
   },
-  linkTitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '600',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  linkValue: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.goldAccent,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  linkTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+  linkValue: textStyle('bodyCompact', { color: KhazainColors.goldAccent }),
 });

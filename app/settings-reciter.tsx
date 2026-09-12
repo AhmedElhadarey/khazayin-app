@@ -5,6 +5,7 @@ import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
 import { PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useRecitersStore, useSettingsStore } from '@/store';
 
@@ -112,14 +113,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,30,19,0.18)',
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   list: { paddingHorizontal: 16, gap: 8 },
   row: {
@@ -148,11 +144,5 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
-  rowSubtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  rowSubtitle: textStyle('bodyCompact', { color: KhazainColors.ink500 }),
 });

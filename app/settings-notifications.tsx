@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { SettingsToggleRow, SettingsValueRow } from '@/components/khazain/settings';
 import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
@@ -256,14 +257,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,30,19,0.18)',
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   body: { paddingHorizontal: 16, gap: 16 },
   list: { gap: 8 },
@@ -275,14 +271,7 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
   },
-  noteText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12.5,
-    lineHeight: 20,
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  noteText: textStyle('caption', { color: KhazainColors.ink700 }),
   banner: {
     backgroundColor: '#FCE9D6',
     borderWidth: 1,
@@ -293,19 +282,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 4,
   },
-  bannerTitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  bannerBody: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  bannerTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+  bannerBody: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
 });

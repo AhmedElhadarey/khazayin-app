@@ -6,6 +6,7 @@ import {
   SuggestionChips,
 } from '@/components/khazain/search';
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { rowPropsForSearchResult } from '@/services/search';
 import {
@@ -276,28 +277,13 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 4,
   },
-  recentsTitle: {
-    fontFamily: 'TheMixArab',
-    fontSize: 16,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-  },
-  clearAllText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.gold200,
-    fontWeight: '600',
-  },
+  recentsTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+  clearAllText: textStyle('cardTitle', { color: KhazainColors.gold200 }),
 
   suggestionsTitle: {
-    fontFamily: 'TheMixArab',
-    fontSize: 16,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
+    ...textStyle('sectionTitle', { color: KhazainColors.ink900 }),
     paddingTop: 16,
     paddingBottom: 8,
-    textAlign: 'right',
-    writingDirection: 'rtl',
   },
 
   noResultsWrap: {
@@ -306,21 +292,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 32,
   },
-  noResultsTitle: {
-    fontFamily: 'TheMixArab',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
-    writingDirection: 'rtl',
-  },
+  noResultsTitle: textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
   noResultsSubtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.inkSubtle,
+    ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle, textAlign: 'center' }),
     marginTop: 8,
-    textAlign: 'center',
-    writingDirection: 'rtl',
   },
   sectionsButton: {
     marginTop: 24,
@@ -329,10 +304,5 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.gold200,
     borderRadius: 999,
   },
-  sectionsButtonText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.cream50,
-    fontWeight: '700',
-  },
+  sectionsButtonText: textStyle('cardTitle', { color: KhazainColors.cream50 }),
 });

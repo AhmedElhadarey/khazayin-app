@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useSettingsStore } from '@/store';
 import { applyWirdReminderTime } from '@/services/wirdReminderToggle';
@@ -213,14 +214,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,30,19,0.18)',
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   body: { paddingHorizontal: 16, gap: 12 },
   preview: {
@@ -255,13 +251,8 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.cardBorder,
   },
   stepperLabel: {
+    ...textStyle('sectionTitle', { color: KhazainColors.ink900 }),
     flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '600',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
   stepperControls: {
     ...PHYSICAL_ROW,
@@ -299,13 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
     borderColor: KhazainColors.cardBorder,
   },
-  periodLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    fontWeight: '600',
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-  },
+  periodLabel: textStyle('sectionTitle', { color: KhazainColors.ink700 }),
   periodLabelActive: { color: '#fff' },
   footer: {
     paddingHorizontal: 16,
@@ -322,11 +307,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  applyBtnLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    writingDirection: 'rtl',
-  },
+  applyBtnLabel: textStyle('sectionTitle', { color: '#fff' }),
 });

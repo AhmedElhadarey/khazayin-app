@@ -1,5 +1,6 @@
 import { SheetShell } from '@/components/khazain/sheets';
 import { PHYSICAL_BOX } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -239,13 +240,8 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -16 }],
   },
   label: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '600',
-    color: KhazainColors.ink900,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-    // Leave room on the right for the 32-wide disc + its 12 inset + 12 gap.
+    ...textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+    // Leave room on the right for the 32-wide disc + its 12 inset + 12 gap.,
     paddingRight: 56,
   },
 });

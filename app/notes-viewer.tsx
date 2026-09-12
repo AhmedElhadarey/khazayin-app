@@ -1,4 +1,5 @@
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { formatRelativeAr, Note, useNotesStore } from '@/store/notesStore';
 import { useRouter } from 'expo-router';
@@ -104,12 +105,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(120,100,80,0.25)',
   },
   sheetTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 20,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
-    writingDirection: 'rtl',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 4,
     paddingBottom: 16,
   },
@@ -130,39 +126,16 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.cardBorder,
   },
   rowTitle: {
+    ...textStyle('sectionTitle', { color: KhazainColors.ink900 }),
     flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
-  rowTime: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    color: KhazainColors.ink400,
-    writingDirection: 'rtl',
-  },
+  rowTime: textStyle('caption', { color: KhazainColors.ink400 }),
   empty: {
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 32,
     gap: 8,
   },
-  emptyTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-  },
-  emptyBody: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.ink500,
-    lineHeight: 20,
-    textAlign: 'center',
-    writingDirection: 'rtl',
-  },
+  emptyTitle: textStyle('bodyLarge', { color: KhazainColors.navy800 }),
+  emptyBody: textStyle('bodyCompact', { color: KhazainColors.ink500, textAlign: 'center' }),
 });

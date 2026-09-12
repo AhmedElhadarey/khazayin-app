@@ -19,6 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { CALCULATION_METHOD_IDS, PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
 import { toArabicDigits as toArNum, toLocalDay } from '@/constants/progress';
@@ -270,23 +271,13 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,30,19,0.18)',
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   body: { ...PHYSICAL_BOX, paddingHorizontal: 16, gap: 8 },
   sectionTitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    fontWeight: '700',
-    color: KhazainColors.navy900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('sectionTitle', { color: KhazainColors.navy900 }),
     marginTop: 12,
     marginBottom: 2,
     paddingHorizontal: 4,
@@ -305,22 +296,8 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 6,
   },
-  emptyTitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  emptyBody: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    lineHeight: 22,
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  emptyTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+  emptyBody: textStyle('bodyCompact', { color: KhazainColors.ink700 }),
   timeRow: {
     // Physical left -> right: time, prayer name.
     ...PHYSICAL_ROW,
@@ -333,14 +310,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(141,107,52,0.12)',
   },
-  timeName: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '600',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  timeName: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
   timeValue: {
     fontFamily: 'Amiri-Bold',
     fontSize: 18,
@@ -356,20 +326,8 @@ const styles = StyleSheet.create({
     minHeight: 52,
     paddingVertical: 12,
   },
-  locationLabelText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '600',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  locationValue: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-  },
+  locationLabelText: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+  locationValue: textStyle('body', { color: KhazainColors.ink700 }),
   locateBtn: {
     backgroundColor: KhazainColors.navy800,
     borderRadius: 999,
@@ -379,13 +337,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
     marginTop: 4,
   },
-  locateBtnLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-    writingDirection: 'rtl',
-  },
+  locateBtnLabel: textStyle('sectionTitle', { color: '#fff' }),
   selectRow: {
     // Physical left -> right: tick, label.
     ...PHYSICAL_ROW,
@@ -399,24 +351,15 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(141,107,52,0.12)',
   },
   selectLabel: {
+    ...textStyle('body', { color: KhazainColors.ink900 }),
     flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
   selectLabelActive: {
     fontWeight: '700',
     color: KhazainColors.navy800,
   },
   caption: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    lineHeight: 20,
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('bodyCompact', { color: KhazainColors.ink700 }),
     paddingHorizontal: 4,
     marginTop: 6,
   },

@@ -1,4 +1,5 @@
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -266,14 +267,7 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     gap: 14,
   },
-  sheetTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  sheetTitle: textStyle('bodyLarge', { color: KhazainColors.ink900 }),
   bodyCard: {
     backgroundColor: KhazainColors.cream50,
     borderRadius: KhazainRadius.lg,
@@ -284,12 +278,8 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   bodyInput: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.ink900,
+    ...textStyle('bodyCompact', { color: KhazainColors.ink900 }),
     minHeight: 110,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
   toolbar: {
     ...PHYSICAL_ROW,
@@ -304,37 +294,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveLabel: {
-    color: '#fff',
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '700',
-    writingDirection: 'rtl',
-  },
+  saveLabel: textStyle('cardTitle', { color: '#fff' }),
   deleteRow: {
     ...PHYSICAL_BOX,
     paddingVertical: 4,
     alignItems: 'flex-end',
   },
-  deleteLabel: {
-    color: '#B43838',
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '600',
-    writingDirection: 'rtl',
-  },
+  deleteLabel: textStyle('label', { color: '#B43838' }),
   recentBlock: {
     marginTop: 4,
     gap: 8,
   },
-  recentHeader: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '700',
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  recentHeader: textStyle('cardTitle', { color: KhazainColors.ink700 }),
   // Recent row visual: title right, relative time left — authored physical
   // left -> right inside PHYSICAL_ROW.
   recentRow: {
@@ -348,20 +319,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 8,
   },
-  recentTime: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    color: KhazainColors.ink400,
-    writingDirection: 'rtl',
-  },
+  recentTime: textStyle('caption', { color: KhazainColors.ink400 }),
   recentTitle: {
+    ...textStyle('cardTitle', { color: KhazainColors.ink900 }),
     flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'right',
-    writingDirection: 'rtl',
   },
 });
 
