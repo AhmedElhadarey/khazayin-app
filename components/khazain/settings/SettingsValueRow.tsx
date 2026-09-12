@@ -49,7 +49,8 @@ const styles = StyleSheet.create({
   card: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 12,
+    // The same 16 the rows beside it use.
+    gap: 16,
     minHeight: CARD_DENSITY.moreCardHeight,
     paddingHorizontal: CARD_DENSITY.moreCardPaddingHorizontal,
     borderRadius: CARD_DENSITY.moreCardRadius,

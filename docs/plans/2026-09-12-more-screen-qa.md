@@ -178,6 +178,21 @@ glyphs instanced across every screen, all 9 section marks, all 8 More row
 glyphs, 10 row badges, the surah star, the Library stat and note-toolbar icons,
 the Mushaf reader footer, and the dawah poster actions.
 
+**3 extracted but not yet drawn anywhere.** They are in the set and re-derivable,
+but no screen references them, and the record should say so rather than let "54
+icons" read as "54 icons on screen":
+
+| | why not |
+|---|---|
+| `LibraryProgressRing` (2031:4659 `svg-78`) | the app draws an **animated** ring (`CircularProgress`); the file's is a static 70% snapshot |
+| `LibraryWirdReminder` (2031:4659 `DIV-274`) | the تذكير ورد القرآن card's mark; the app's reminder card uses the تذكيراتي bell instead |
+| `HomeAudio` (2001:940 `audio`) | the Home حصريات carousel mark; that carousel does not draw a badge today |
+
+**Home is the least-covered page.** Two marks in 2001:940 are not in the
+manifest at all: `Frame 3` 32 × 32 (2001:16819) and `Artboard 1 2` 39 × 54
+(2001:942, the foundation emblem — `LogoBadge` in the app). Neither is an icon
+in the chrome sense, and neither was touched.
+
 **2 recorded as not drawn**, in the manifest's `notDrawn` with the reason:
 
 - `SectionExclusiveSeal` (2355:1480) — the word خزائن الرحمن on the حصريات
@@ -232,8 +247,18 @@ fields read as wells inside it.
 
 Drawing the card in `#FCFAF8` — what the paint says if you do not check whether
 it is switched on — **made the fields vanish into it**, and that is how it
-shipped. `extract-geometry.js` now separates `fill` from `fillHidden`;
-re-checking all four More frames found no other misread.
+shipped. `extract-geometry.js` now separates `fill` from `fillHidden`.
+
+**All 28 frames were then re-swept with the fixed dump**, not just the four More
+ones — the 2026-09-11 Sections record was written with the old one. Excluding
+the white backings behind artwork and inside icon instances, which nobody would
+read as a surface, exactly two structural nodes carry a switched-off fill:
+
+- `DIV-126`, above.
+- The **Mushaf reader frame itself** (2349:982), whose `#F8F2ED` is switched
+  off. That *supports* the judgement call recorded on 2026-09-11: the reader's
+  ground is genuinely unstated, and its header bands are `#F8F2ED`, so
+  `MUSHAF_BG = pageBg` stands. No other colour in that record is affected.
 
 ### 5.3 Two icons painted in the wrong order
 
@@ -242,7 +267,29 @@ the category tab's active variant and the dawah download, so their dimmed
 backing shape painted over the solid one. Now a codepoint compare, with the
 sequence pinned per icon in a test.
 
-### 5.4 The list gap never reached the rows
+### 5.4 A finding rejected, with the measurement that rejected it
+
+The spec review read node 2558:1334 as putting the disclosure **32** from the
+card's left edge (`DIV-59 @16` → `arrow-right @48`) against the app's 12, and
+the Sections root states the same. That would have moved the Sections tab too,
+so it was measured before acting.
+
+| | ink offset from the card's left edge |
+|---|---|
+| reference export `07-2031-5675.png` | **21.5 pt** |
+| the app | **19.0 pt** |
+| what the node's stored transform implies | ~39 pt |
+
+The stored `x=48` does not survive the frame's auto-layout — the rendered export
+disagrees with it by 18pt. Applying it would have pushed the disclosure two and
+a half times further in than the design shows. **Left at 12**, with a 2.5pt
+residual against the export.
+
+*The general lesson, and it is the same one as §5.1: a node's stored transform
+is a hypothesis about where auto-layout will put it. Where the two disagree, the
+render wins.*
+
+### 5.5 The list gap never reached the rows
 
 **Measured on device: the More rows stepped 82 where the frame states 94.** The
 cards were butted, with only their 1pt strokes between them.
@@ -340,6 +387,14 @@ New tests worth knowing about:
   the Arabic label. The app's old filled-vs-outline variant was invented.
 - **`InlineHeader` is 44, the file's band is 36.** The cost of a 44pt touch
   target. Each screen absorbs the 8pt below it.
+
+  > **This supersedes part of `2026-09-11-sections-screen-qa.md`.** That pass
+  > measured the header and search offsets with `InlineHeader` carrying an extra
+  > 8pt of top padding, which put its title 20 into a band the file puts it 8
+  > into. Dropping it moved **all 15 InlineHeader screens** up by ~8pt —
+  > *toward* the frame, not away: the Sections search field now lands at 48
+  > against the file's 44, where it was at 56. Any header or search number in
+  > that record is 8pt stale; every card and row number in it still holds.
 - **Arabic-Indic digits.** The file writes `65`; the app writes `٦٥`
   throughout. An app-wide convention, not a miss.
 - **Design typos not copied**: `خزان` → `خزائن`, `الارشيف` → `الأرشيف`,

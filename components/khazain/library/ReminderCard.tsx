@@ -4,7 +4,7 @@ import { textStyle } from '@/constants/typography';
 import { LIST_CARD } from './libraryLayout';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 
 export type ReminderSummary = {
   id: string;
@@ -69,22 +69,12 @@ export function ReminderList({
   );
 }
 
+/**
+ * Node 2031:4659 `DIV-46` — the تذكيراتي mark. A vuesax bell whose backing
+ * shape sits at 40%; the app had a hand-copy of the same idea.
+ */
 function BellGlyph() {
-  return (
-    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M3.44 17.29c-.78 0-1.22-1.05-.66-1.62l1.12-1.12c.3-.3.48-.75.48-1.2v-3.24c0-3.95 3.21-7.16 7.16-7.16 3.94 0 7.16 3.21 7.16 7.16v3.24c0 .45.18.9.48 1.2l1.12 1.12c.57.57.17 1.62-.66 1.62H3.44z"
-        fill={KhazainColors.navy800}
-        opacity={0.4}
-      />
-      <Path
-        d="M14.83 18.3a2.85 2.85 0 0 1-5.66 0"
-        stroke={KhazainColors.navy800}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
+  return <FigmaIcon name="LibraryReminders" size={18} color={KhazainColors.navy800} />;
 }
 
 const styles = StyleSheet.create({

@@ -6,6 +6,7 @@ import { PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
 import { useWirdStore } from '@/store/wirdStore';
 import { KhazainConfig } from '@/constants/config';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { clearAppCache } from '@/services/cacheFacade';
 import { shareNotes } from '@/services/notesExporter';
 import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
@@ -455,12 +456,7 @@ const styles = StyleSheet.create({
     paddingBottom: 6,
     alignItems: 'flex-end',
   },
-  h1: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  // Every page title in the file is the body face at 18 in `#281E13`. This one
+  // has no frame of its own, but it is one tap from `/more`, which does.
+  h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
 });

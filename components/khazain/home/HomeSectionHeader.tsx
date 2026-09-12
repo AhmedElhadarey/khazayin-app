@@ -3,11 +3,14 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { ChevronIcon } from '../icons';
+import { FigmaIcon } from '../icons/FigmaIcon';
 
 // Home-specific section header (Figma node 2001:940).
 //
-// Physical left → right: [chevron][عرض الكل] ......... [title][goldBar]
+// Physical left → right: [arrow][عرض الكل] ......... [title][goldBar]
+//
+// The arrow is `vuesax/outline/arrow-left-stick`, the mark node 2001:940
+// instances beside every عرض الكل — a stemmed arrow, not a bare chevron.
 //
 // Authored in that order inside PHYSICAL_ROW containers, so neither group can
 // swap sides under forceRTL. Height is content-driven so a larger font scale
@@ -31,7 +34,7 @@ export function HomeSectionHeader({
           accessibilityLabel={`عرض الكل، ${title}`}
           style={({ pressed }) => [styles.linkAnchor, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <ChevronIcon size={20} color={KhazainColors.goldAccent} direction="start" />
+          <FigmaIcon name="ArrowLeftStick" size={20} color={KhazainColors.goldAccent} />
           <Text style={styles.linkLabel}>عرض الكل</Text>
         </Pressable>
       ) : null}
