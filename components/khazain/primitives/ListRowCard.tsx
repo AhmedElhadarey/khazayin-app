@@ -20,6 +20,8 @@ import { FigmaIcon } from '../icons/FigmaIcon';
  *    `#FCFAF8` with no stroke and no shadow, inset 12, and a 64pt *circular*
  *    chip tinted `#D7B995` at 16% behind a 1pt `#A88051` stroke. Its three
  *    lines are the file's only place that titles a row in the display face.
+ *  - `archive` — node 2558:1334 `DIV-59`. The same card 16 taller, the extra
+ *    height spent on the inset rather than on the type.
  *  - `more` — node 2102:2711 `websiteLink-13`. 361 x 82 at radius 16, the
  *    same fill behind a 1pt `#F1E7DD` stroke and a 2pt shadow at y+1 (the one
  *    card in either frame that casts one), inset 16, and a 48pt rounded
@@ -29,7 +31,7 @@ import { FigmaIcon } from '../icons/FigmaIcon';
  * LIST_ROW_ORDER inside a PHYSICAL_ROW container so React Native cannot
  * reverse it under forceRTL.
  */
-export type ListRowVariant = 'section' | 'more';
+export type ListRowVariant = 'section' | 'archive' | 'more';
 
 export function ListRowCard({
   icon,
@@ -87,7 +89,7 @@ export function ListRowCard({
       accessibilityLabel={listRowAccessibilityLabel({ title, subtitle, count })}
       style={({ pressed }) => [
         styles.cardBase,
-        isMore ? styles.cardMore : styles.cardSection,
+        VARIANT_CARD[variant],
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
@@ -108,6 +110,14 @@ const styles = StyleSheet.create({
   cardSection: {
     minHeight: CARD_DENSITY.sectionCardHeight,
     paddingVertical: CARD_DENSITY.sectionCardPaddingVertical,
+    paddingHorizontal: CARD_DENSITY.sectionCardPaddingHorizontal,
+    borderRadius: CARD_DENSITY.sectionCardRadius,
+  },
+  // `DIV-59` — the same card 16 taller, with the extra height spent on the
+  // inset rather than on the type.
+  cardArchive: {
+    minHeight: CARD_DENSITY.archiveCardHeight,
+    paddingVertical: CARD_DENSITY.archiveCardPaddingVertical,
     paddingHorizontal: CARD_DENSITY.sectionCardPaddingHorizontal,
     borderRadius: CARD_DENSITY.sectionCardRadius,
   },
@@ -160,3 +170,9 @@ const styles = StyleSheet.create({
   titleMore: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   subtitleMore: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
 });
+
+const VARIANT_CARD = {
+  section: styles.cardSection,
+  archive: styles.cardArchive,
+  more: styles.cardMore,
+} satisfies Record<ListRowVariant, unknown>;

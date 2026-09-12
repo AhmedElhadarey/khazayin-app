@@ -67,6 +67,7 @@ export type TextRole =
   | 'label'
   | 'labelSmall'
   // TheMixArab Regular — prose.
+  | 'bodyTitle'
   | 'bodyLarge'
   | 'body'
   | 'bodyCompact'
@@ -124,6 +125,12 @@ export const TEXT_ROLES: Readonly<Record<TextRole, RoleTextStyle>> = Object.free
   label: { fontFamily: DISPLAY_FAMILY, fontSize: 12, fontWeight: '700', lineHeight: leading(12, 16) },
   labelSmall: { fontFamily: DISPLAY_FAMILY, fontSize: 10, fontWeight: '700', lineHeight: leading(10, 14) },
 
+  /**
+   * The contact form's own heading — node 2106:2598 `DIV-126`, the one place
+   * the file sets the body face at 20. Every other title on a More screen is
+   * 18 (the page title) or 14 (a card's).
+   */
+  bodyTitle: { fontFamily: BODY_FAMILY, fontSize: 20, fontWeight: '400', lineHeight: leading(20, 21) },
   bodyLarge: { fontFamily: BODY_FAMILY, fontSize: 18, fontWeight: '400', lineHeight: leading(18, 28) },
   body: { fontFamily: BODY_FAMILY, fontSize: 16, fontWeight: '400', lineHeight: leading(16, 24) },
   bodyCompact: { fontFamily: BODY_FAMILY, fontSize: 14, fontWeight: '400', lineHeight: leading(14, 20) },

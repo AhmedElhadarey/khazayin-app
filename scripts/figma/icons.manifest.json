@@ -43,6 +43,7 @@
     { "name": "MoreArchive",    "node": "2558:1325", "from": "2102:2711 row 6 — الارشيف" },
     { "name": "MoreContact",    "node": "2106:2273", "from": "2102:2711 row 7 — تواصل معنا" },
     { "name": "MoreAbout",      "node": "2106:2291", "from": "2102:2711 row 8 — نبذة عن المؤسسة" },
+    { "name": "ContactMail",    "node": "2548:1645", "from": "2106:2598 `DIV-66` — the إرسال بريد اليكتروني row" },
 
     { "name": "BadgeQuran",     "node": "2430:1017", "from": "`DIV-58` on 2031:6193 / 2457:954 — the reciter and qiraa rows" },
     { "name": "BadgeProphet",   "node": "2473:2595", "from": "`DIV-58` on 2465:1911 — رسول الله ﷺ" },

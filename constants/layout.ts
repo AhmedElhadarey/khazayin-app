@@ -309,6 +309,15 @@ export const CARD_DENSITY = Object.freeze({
   railRowRadius: 20,
   scholarRowMinHeight: 64,
 
+  /**
+   * The Archive row — node 2558:1334 `DIV-59`. The section card's box at a
+   * looser density: the same radius 20, the same 64pt gold-ringed disc and the
+   * same three-line display type, but 112 tall with the first line inset 22
+   * rather than 96 and 14.
+   */
+  archiveCardHeight: 112,
+  archiveCardPaddingVertical: 22,
+
   // The More row — node 2102:2711 `websiteLink-13`, redrawn eight times in the
   // frame and again on every More sub-screen. It is its own box, not a
   // variation on the lecture row: taller, inset twice as far, and carrying a

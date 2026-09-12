@@ -1,19 +1,31 @@
-import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
-import Svg, { Circle, Path } from 'react-native-svg';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { InlineHeader, SearchPill } from '@/components/khazain';
-import { ChevronIcon } from '@/components/khazain/icons';
+import { InlineHeader, ListRowCard, SearchPill } from '@/components/khazain';
+import {
+  BookSectionIcon,
+  HeadphonesSectionIcon,
+  ScholarSectionIcon,
+} from '@/components/khazain/icons/sections';
 import { HeaderArt } from '@/components/khazain/patterns';
-import { listRowAccessibilityLabel } from '@/constants/rtlContracts';
+import { CARD_DENSITY } from '@/constants/layout';
+import { KhazainColors } from '@/constants/theme';
 import { ARCHIVE_ROWS, type ArchiveRow } from '@/data/content/archive';
+import { useRouter } from 'expo-router';
+import React from 'react';
+import { ScrollView, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+// Node 2558:1334. The three cards are `DIV-59` — the Sections root's card at a
+// looser density (112 rather than 96, inset 22 rather than 14) with the same
+// radius 20, the same flat `#FCFAF8` with no stroke or shadow, the same 64pt
+// gold-ringed disc and the same three lines of display type.
+//
+// The app had been drawing its own card here: radius 18, a wide shadow, a 56pt
+// disc, and three hand-drawn glyphs. The file reuses three of the nine section
+// marks instead, so this reuses them too — the archive is a second door onto
+// those sections, and the design says so by drawing the same mark.
 const GLYPH_BY_ID: Record<ArchiveRow['id'], React.ReactNode> = {
-  scholars: <ScholarsGlyph />,
-  books: <BookGlyph />,
-  audio: <AudioBookGlyph />,
+  scholars: <ScholarSectionIcon />,
+  books: <BookSectionIcon />,
+  audio: <HeadphonesSectionIcon />,
 };
 
 export default function ArchiveScreen() {
@@ -32,8 +44,9 @@ export default function ArchiveScreen() {
         </View>
         <View style={styles.list}>
           {ARCHIVE_ROWS.map((it) => (
-            <ArchiveCard
+            <ListRowCard
               key={it.id}
+              variant="archive"
               title={it.title}
               subtitle={it.subtitle}
               count={it.count}
@@ -47,175 +60,13 @@ export default function ArchiveScreen() {
   );
 }
 
-// Archive card per Figma page-41: cream card, 18 radius, soft shadow, 56×56
-// gold-stroked cream disc anchored to the right (RTL start), title + subtitle
-// + navy count chip stacked, small chevron pinned to the left.
-function ArchiveCard({
-  title,
-  subtitle,
-  count,
-  icon,
-  onPress,
-}: {
-  title: string;
-  subtitle: string;
-  count: string;
-  icon: React.ReactNode;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={listRowAccessibilityLabel({ title, subtitle, count })}
-      style={({ pressed }) => [
-        styles.card,
-        KhazainShadows.card,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      <View style={styles.disc}>{icon}</View>
-      <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-        <Text style={styles.subtitle} numberOfLines={1}>
-          {subtitle}
-        </Text>
-        <Text style={styles.count}>{count}</Text>
-      </View>
-      <View style={styles.chevron}>
-        <ChevronIcon size={14} color={KhazainColors.ink400} direction="start" />
-      </View>
-    </Pressable>
-  );
-}
-
-function ScholarsGlyph() {
-  // Quill / inkwell — port of the inline SVG referenced in the Figma archive
-  // page where each card's disc is gold-stroked and the glyph is a quill.
-  return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M5 19l3-3m0 0l8-8a3 3 0 014 4l-8 8H8v-1zM14 6l4 4"
-        stroke={KhazainColors.gold500}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M6 19h2"
-        stroke={KhazainColors.gold500}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function BookGlyph() {
-  // Stack of books — gold-stroked.
-  return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M5 5h3v14H5zM10 5h3v14h-3zM15 7l3-1 3 13-3 1z"
-        stroke={KhazainColors.gold500}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M5 8h3M10 9h3M15.4 10l3-1"
-        stroke={KhazainColors.gold500}
-        strokeWidth={1}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function AudioBookGlyph() {
-  // Open-book audio glyph (per Figma — not headphones).
-  return (
-    <Svg width={26} height={26} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M4 6c2.5 0 4 .8 4 2.5V19c0-1.7-1.5-2.5-4-2.5V6zM20 6c-2.5 0-4 .8-4 2.5V19c0-1.7 1.5-2.5 4-2.5V6z"
-        stroke={KhazainColors.gold500}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-      <Circle cx={12} cy={12} r={1.6} fill={KhazainColors.gold500} />
-    </Svg>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  container: {
-    paddingTop: 0,
-  },
-  searchBlock: { paddingHorizontal: 14, paddingVertical: 8 },
-  list: { paddingHorizontal: 14, paddingTop: 4, gap: 12 },
-  card: {
-    position: 'relative',
-    backgroundColor: KhazainColors.cream50,
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.12)',
-    minHeight: 96,
-    paddingVertical: 16,
-    paddingLeft: 32, // chevron column
-    paddingRight: 84, // disc 56 + 12 inset + 16 gap
-    justifyContent: 'center',
-  },
-  disc: {
-    position: 'absolute',
-    right: 14,
-    top: '50%',
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: KhazainColors.cream100,
-    borderWidth: 1.2,
-    borderColor: 'rgba(141,107,52,0.30)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateY: -28 }],
-  },
-  textCol: {
-    gap: 4,
-  },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  subtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12.5,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  count: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    marginTop: 4,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  chevron: {
-    position: 'absolute',
-    left: 12,
-    top: '50%',
-    width: 14,
-    height: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateY: -7 }],
+  container: { paddingTop: 0 },
+  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 12 },
+  list: {
+    paddingHorizontal: 16,
+    // `DIV-59` ends at 260 and `DIV-75` starts at 268.
+    gap: CARD_DENSITY.listGap,
   },
 });
