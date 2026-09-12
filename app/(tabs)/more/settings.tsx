@@ -1,13 +1,11 @@
-import { ListRowCard } from '@/components/khazain';
+import { InlineHeader, ListRowCard } from '@/components/khazain';
 import { HeaderArt } from '@/components/khazain/patterns';
-import { PAGE_CHROME, PHYSICAL_BOX } from '@/constants/layout';
 import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
 import { toArabicDigits as toArNum } from '@/constants/progress';
 import { PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
 import { useWirdStore } from '@/store/wirdStore';
 import { KhazainConfig } from '@/constants/config';
 import { KhazainColors } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
 import { clearAppCache } from '@/services/cacheFacade';
 import { shareNotes } from '@/services/notesExporter';
 import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
@@ -26,7 +24,7 @@ import type { FontSizeLevel } from '@/types/settings';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
@@ -156,9 +154,14 @@ export default function SettingsScreen() {
         contentContainerStyle={{ paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerBlock}>
-          <Text style={styles.h1}>الإعدادات</Text>
-        </View>
+        {/*
+          InlineHeader, not a bare title: this is a nested route under the More
+          stack and it was the one live screen in the app with no way back on
+          screen at all — only the system gesture. Its four siblings
+          (about, archive, contact, settings-progress) all use it, so this is
+          the header they already share rather than a new one.
+        */}
+        <InlineHeader title="الإعدادات" onBack={() => router.back()} />
         <SettingsSection title="التلاوة">
           <ListRowCard
             variant="more"
@@ -451,17 +454,4 @@ function ExportIcon() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  // PHYSICAL_BOX so `flex-end` means the physical right. Without it, forceRTL
-  // makes the container RTL and `flex-end` lands the title on the left — which
-  // is exactly what this screen was doing.
-  headerBlock: {
-    ...PHYSICAL_BOX,
-    paddingHorizontal: 16,
-    paddingTop: PAGE_CHROME.headerPaddingTop,
-    paddingBottom: 24,
-    alignItems: 'flex-end',
-  },
-  // Every page title in the file is the body face at 18 in `#281E13`. This one
-  // has no frame of its own, but it is one tap from `/more`, which does.
-  h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
 });

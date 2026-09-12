@@ -27,7 +27,14 @@ import path from 'path';
 
 const ROOT = path.resolve(__dirname, '..');
 
-/** Screens whose layout is authored directly rather than via a khazain primitive. */
+/**
+ * Screens whose layout is authored directly rather than via a khazain
+ * primitive, so the pin has to be on the screen itself.
+ *
+ * A screen leaves this list when it stops hand-rolling its chrome:
+ * `app/(tabs)/more/settings.tsx` did, when its bare title became an
+ * `InlineHeader` — which carries the pin, and the back control it was missing.
+ */
 const PINNED_SCREENS = [
   'app/settings-about.tsx',
   'app/settings-font-size.tsx',
@@ -40,7 +47,6 @@ const PINNED_SCREENS = [
   'app/notes-viewer.tsx',
   'app/search.tsx',
   'app/share-sheet.tsx',
-  'app/(tabs)/more/settings.tsx',
   'app/(tabs)/more/settings-progress.tsx',
   'components/khazain/sheets/SheetRow.tsx',
   'components/khazain/settings/SettingsSection.tsx',
