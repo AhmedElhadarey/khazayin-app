@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { CrownBookArt, RehlArt, ScrollArt } from '@/components/khazain/art';
 import { BellIcon } from '@/components/khazain/icons';
@@ -13,11 +13,19 @@ export type FeatureStepContent = {
 };
 
 const styles = StyleSheet.create({
+  flex: { flex: 1 },
+  // Scrolls rather than centres-and-overflows. At a large system font scale the
+  // uncapped body text makes this step taller than the screen, and a flex:1 box
+  // with `justifyContent: 'center'` spills its content BOTH ways — on a Galaxy
+  // A30 at font_scale 1.7 the brand mark floated up over the status bar and the
+  // hint was clipped behind the footer button. `flexGrow: 1` keeps the centred
+  // look whenever the content does fit.
   container: {
-    flex: 1,
+    flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
+    paddingVertical: 24,
     gap: 20,
   },
   art: {
@@ -62,11 +70,15 @@ export function FeatureStep({
   description,
 }: Omit<FeatureStepContent, 'key'>): React.ReactElement {
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.flex}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <View style={styles.art}>{illustration}</View>
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.description}>{description}</Text>
-    </View>
+    </ScrollView>
   );
 }
 

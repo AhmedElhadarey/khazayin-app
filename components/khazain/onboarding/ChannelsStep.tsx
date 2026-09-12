@@ -1,5 +1,5 @@
 import React from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PillButton } from '@/components/khazain/primitives';
 import { ONBOARDING_CHANNELS } from '@/constants/settings';
@@ -23,7 +23,11 @@ export function ChannelsStep(): React.ReactElement {
   };
 
   return (
-    <View style={styles.container}>
+    <ScrollView
+      style={styles.flex}
+      contentContainerStyle={styles.container}
+      showsVerticalScrollIndicator={false}
+    >
       <Text style={styles.title}>انضمّ إلى مجتمع المؤسسة</Text>
       <Text style={styles.subtitle}>
         تابِع قنواتنا لتصلك الإصدارات والدروس الجديدة أولاً بأول. (اختياري)
@@ -52,12 +56,19 @@ export function ChannelsStep(): React.ReactElement {
           labelStyle={styles.ctaLabel}
         />
       </View>
-    </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, paddingHorizontal: 24, justifyContent: 'center', gap: 8 },
+  flex: { flex: 1 },
+  // Scrolls rather than centres-and-overflows. At a large system font scale the
+  // uncapped body text makes this step taller than the screen, and a flex:1 box
+  // with `justifyContent: 'center'` spills its content BOTH ways — on a Galaxy
+  // A30 at font_scale 1.7 the brand mark floated up over the status bar and the
+  // hint was clipped behind the footer button. `flexGrow: 1` keeps the centred
+  // look whenever the content does fit.
+  container: { flexGrow: 1, paddingHorizontal: 24, paddingVertical: 24, justifyContent: 'center', gap: 8 },
   title: {
     fontFamily: 'Amiri-Bold',
     fontSize: 22,
