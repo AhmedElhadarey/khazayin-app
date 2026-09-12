@@ -3,7 +3,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PHYSICAL_ROW, TAB_BAR, TAB_PHYSICAL_ORDER } from '@/constants/layout';
-import { textStyle } from '@/constants/typography';
+import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
 import {
   NavHomeIcon,
   NavLibraryIcon,
@@ -119,6 +119,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                   <Text
                     style={[styles.label, active && styles.labelActive]}
                     numberOfLines={1}
+                    maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
                   >
                     {label}
                   </Text>
@@ -149,7 +150,9 @@ const styles = StyleSheet.create({
   },
   row: {
     ...PHYSICAL_ROW,
-    height: TAB_BAR.controlsHeight,
+    // minHeight, not height: at a large system font scale the label's line box
+    // grows and a fixed height clipped the icon straight out of the item.
+    minHeight: TAB_BAR.controlsHeight,
     alignItems: 'center',
     justifyContent: 'space-between',
   },
@@ -161,7 +164,7 @@ const styles = StyleSheet.create({
     maxWidth: TAB_BAR.itemWidth,
   },
   item: {
-    height: TAB_BAR.itemHeight,
+    minHeight: TAB_BAR.itemHeight,
     borderRadius: TAB_BAR.itemRadius,
     alignItems: 'center',
     justifyContent: 'center',

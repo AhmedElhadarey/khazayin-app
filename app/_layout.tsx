@@ -8,7 +8,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { I18nManager, LogBox, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { I18nManager, LogBox, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import { useHorizonReconcile } from '@/hooks/useHorizonReconcile';
@@ -29,6 +29,31 @@ import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
+
+/**
+ * Bound the OS font-size multiplier for the whole app.
+ *
+ * Android multiplies every `fontSize` by the system font scale and nothing
+ * here opted out. Samsung's slider goes far past stock: the Galaxy A30 this
+ * was found on reports `font_scale = 1.7` with Screen zoom also raised
+ * (density override 450 -> 384dp). At 1.7 the 12pt nav label became ~20pt in a
+ * fixed 49pt item — truncating الرئيسية to الرئيس… and pushing the icon out of
+ * its box — the library stat captions spilled off their cards, and onboarding
+ * grew taller than the screen, floating the brand mark over the status bar.
+ *
+ * `maxFontSizeMultiplier` on the Text/TextInput defaults applies the ceiling
+ * once, at the root, instead of per call site. Text still honours the setting
+ * up to 1.2x, so the preference keeps working — it just cannot break a layout.
+ * Individual screens may pass a lower value; none may raise it.
+ */
+const MAX_FONT_SCALE = 1.2;
+type ScalableText = { defaultProps?: Record<string, unknown> };
+for (const Component of [Text, TextInput] as unknown as ScalableText[]) {
+  Component.defaultProps = {
+    ...(Component.defaultProps ?? {}),
+    maxFontSizeMultiplier: MAX_FONT_SCALE,
+  };
+}
 if (__DEV__ && process.env.EXPO_PUBLIC_VISUAL_AUDIT === '1') {
   // Debug LogBox toasts cover the bottom navigation and invalidate visual
   // comparisons. Capture runs opt in explicitly; ordinary development keeps

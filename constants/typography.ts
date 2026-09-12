@@ -103,6 +103,24 @@ export type RoleTextStyle = {
  */
 export const MIN_LINE_HEIGHT_RATIO = 1.5;
 
+/**
+ * Ceiling for the OS font-size multiplier on CHROME text — tab labels, chip
+ * captions, stat sublabels. Pass it as `maxFontSizeMultiplier`.
+ *
+ * Android multiplies every `fontSize` by the system font scale, and nothing in
+ * this app used to opt out. Samsung's slider goes well past stock: the Galaxy
+ * A30 this was found on reports `font_scale = 1.7` with Screen zoom also
+ * raised (density override 450 → 384dp). At 1.7 the 12pt nav label becomes
+ * ~20pt inside a fixed 49pt item, which both truncated the longest label
+ * (الرئيسية → الرئيس…) and pushed the icon out of its box.
+ *
+ * CONTENT is deliberately NOT capped. Someone who raises the system font size
+ * needs the Quran text, prose and titles to grow — that is the setting working.
+ * Chrome sits in fixed boxes beside redundant icons, so bounded growth there
+ * is the accessible trade, not a defeat of it.
+ */
+export const CHROME_MAX_FONT_SCALE = 1.2;
+
 /** The design's line height for a size, floored so Arabic marks survive. */
 const leading = (fontSize: number, stated: number) =>
   Math.max(stated, Math.ceil(fontSize * MIN_LINE_HEIGHT_RATIO));
