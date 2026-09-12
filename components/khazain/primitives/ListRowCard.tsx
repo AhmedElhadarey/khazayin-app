@@ -4,7 +4,7 @@ import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { ChevronIcon } from '../icons';
+import { FigmaIcon } from '../icons/FigmaIcon';
 
 /**
  * The two list rows the design draws with a leading chip, a text column and a
@@ -51,8 +51,16 @@ export function ListRowCard({
   const isMore = variant === 'more';
 
   const slots: Record<ListRowSlot, React.ReactNode> = {
+    // The two rows do not share a disclosure either: the section card
+    // instances `vuesax/bulk/arrow-right` at 20, the More row
+    // `vuesax/bulk/arrow-circle-left` at 24 — a bare chevron against a
+    // circled one.
     disclosure: chevron ? (
-      <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" />
+      isMore ? (
+        <FigmaIcon name="DisclosureCircle" size={24} color={KhazainColors.navy800} />
+      ) : (
+        <FigmaIcon name="Back" size={20} color={KhazainColors.inkTitle} />
+      )
     ) : null,
     text: (
       <View style={styles.textCol}>

@@ -4,11 +4,11 @@ import {
   type InlineHeaderSlot,
   backAccessibilityLabel,
 } from '@/constants/rtlContracts';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
 // Pages 13/14/15/21/25/26/28/29/34: an inline page header that does NOT use
 // the circular back-chip from DetailHeader. The title sits at the physical
@@ -24,6 +24,9 @@ import Svg, { Path } from 'react-native-svg';
 // header in the file — all seventeen Sections frames, plus Home, Library and
 // More — states TheMixArab Regular 18 in `#281E13`. The app had been setting
 // Amiri Bold in navy, which read as a different screen family entirely.
+/** The size every frame instances the back control at. */
+const BACK_GLYPH = 20;
+
 export function InlineHeader({
   title,
   onBack,
@@ -38,19 +41,10 @@ export function InlineHeader({
       </Text>
     ),
     // Back affordance points RIGHT — the standard RTL "back" direction,
-    // unified with DetailHeader (T5.4 / audit A11Y-P2-1).
-    back: (
-      <Svg width={10} height={12} viewBox="0 0 10 12">
-        <Path
-          d="M3 1 L8 6 L3 11"
-          stroke={KhazainColors.navy800}
-          strokeWidth={1.8}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          fill="none"
-        />
-      </Svg>
-    ),
+    // unified with DetailHeader (T5.4 / audit A11Y-P2-1). The glyph is the
+    // file's own `vuesax/bulk/arrow-right` at 20, the control every frame in
+    // the set instances (65 times across the file), not a drawn chevron.
+    back: <FigmaIcon name="Back" size={BACK_GLYPH} color={KhazainColors.navy800} />,
   };
 
   return (

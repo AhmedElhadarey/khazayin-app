@@ -55,7 +55,7 @@ export default function SectionsScreen() {
                   subtitle={s.subtitle}
                   count={s.count ?? undefined}
                   onPress={() => open(s)}
-                  icon={<Icon size={34} />}
+                  icon={<Icon />}
                 />
               );
             })}

@@ -5,8 +5,11 @@ import { FIGMA_ICONS, type FigmaIcon as FigmaIconData, type FigmaIconName } from
 export type FigmaIconProps = {
   name: FigmaIconName;
   /**
-   * Rendered size. The icon keeps the file's own aspect ratio, so `size` sets
-   * the longer edge and the shorter one follows — a 20x44 mark stays 20x44.
+   * Rendered size of the longer edge; the shorter one follows, so a 20x44
+   * mark stays 20x44. Omit it to draw the mark at the size the file states —
+   * which is what a caller should do unless it has a reason not to, since the
+   * design does not draw every mark at one size (the ملكة mark is 20x44 and
+   * the الكتب العلمية one 48x48, both inside the same 64pt disc).
    */
   size?: number;
   /**
@@ -26,11 +29,12 @@ export type FigmaIconProps = {
  * here approximates the design — the only decisions this component makes are
  * how large to draw it and, for a single-colour glyph, in what colour.
  */
-export function FigmaIcon({ name, size = 24, color, opacity }: FigmaIconProps) {
+export function FigmaIcon({ name, size, color, opacity }: FigmaIconProps) {
   // `as const` in the generated file narrows each path to its own literal
   // shape; widening here is what makes the optional `fillOpacity` readable.
   const icon: FigmaIconData = FIGMA_ICONS[name];
-  const scale = size / Math.max(icon.width, icon.height);
+  const natural = Math.max(icon.width, icon.height);
+  const scale = (size ?? natural) / natural;
   const width = icon.width * scale;
   const height = icon.height * scale;
   const tint = icon.monochrome ? color : undefined;

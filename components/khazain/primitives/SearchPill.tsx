@@ -13,7 +13,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { SearchIcon } from '../icons';
+import { FigmaIcon } from '../icons/FigmaIcon';
 
 type Props = Omit<TextInputProps, 'style'> & {
   dark?: boolean;
@@ -52,6 +52,9 @@ type Props = Omit<TextInputProps, 'style'> & {
 //   - Button mode (onPress provided): a Pressable styled identically to the
 //     input. Used by 13 host screens to open the search modal.
 //   - Input mode (onPress omitted): real TextInput. Used only by app/search.tsx.
+/** Node `Inputs` instances `vuesax/bulk/search-normal` at 24. */
+const SEARCH_GLYPH = 24;
+
 export function SearchPill({
   dark,
   containerStyle,
@@ -84,7 +87,7 @@ export function SearchPill({
         ]}
       >
         {renderSlots({
-          icon: <SearchIcon size={20} color={iconColor} />,
+          icon: <FigmaIcon name="Search" size={SEARCH_GLYPH} color={iconColor} />,
           field: (
             <Text
               style={[styles.placeholderText, { color: placeholderColor }]}
@@ -112,7 +115,7 @@ export function SearchPill({
       ]}
     >
       {renderSlots({
-        icon: <SearchIcon size={20} color={iconColor} />,
+        icon: <FigmaIcon name="Search" size={SEARCH_GLYPH} color={iconColor} />,
         field: (
           <TextInput
             {...rest}

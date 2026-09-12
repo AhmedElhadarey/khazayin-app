@@ -84,8 +84,6 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                   <Icon
                     size={TAB_BAR.iconSize}
                     color={active ? TAB_BAR.activeInk : TAB_BAR.inactiveInk}
-                    accentColor={TAB_BAR.indicatorColor}
-                    strokeWidth={1.6}
                     active={active}
                   />
                   <Text

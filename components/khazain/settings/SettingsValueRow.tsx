@@ -1,4 +1,4 @@
-import { ChevronIcon } from '@/components/khazain/icons';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -29,7 +29,7 @@ export function SettingsValueRow({ title, value, icon, onPress }: Props) {
       accessibilityLabel={`${title}، ${value}`}
       style={({ pressed }) => [styles.card, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
     >
-      <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" />
+      <FigmaIcon name="DisclosureCircle" size={24} color={KhazainColors.navy800} />
       <View style={styles.valueWrap}>
         <Text style={styles.value} numberOfLines={1}>
           {value}

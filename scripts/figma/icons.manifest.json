@@ -15,6 +15,11 @@
     { "name": "NavSections",    "node": "2001:4583",  "from": "vuesax/category-2 — tab bar" },
     { "name": "NavMore",        "node": "2001:4612",  "from": "vuesax/more-2 — tab bar" },
 
+    { "name": "NavHomeActive",    "node": "2001:9723",  "from": "vuesax/bulk/home-2 — tab bar, the selected tab" },
+    { "name": "NavLibraryActive", "node": "2001:12208", "from": "vuesax/bulk/book — tab bar, the selected tab" },
+    { "name": "NavSectionsActive","node": "2001:10763", "from": "vuesax/bulk/category-2 — tab bar, the selected tab" },
+    { "name": "NavMoreActive",    "node": "2001:10690", "from": "vuesax/bulk/more-2 — tab bar, the selected tab" },
+
     { "name": "Back",           "node": "2001:15037", "from": "vuesax/bulk/arrow-right — the header back control, instanced 65 times" },
     { "name": "Search",         "node": "2001:8415",  "from": "vuesax/bulk/search-normal — the search pill, instanced 24 times" },
     { "name": "DisclosureCircle","node": "2001:15085","from": "vuesax/bulk/arrow-circle-left — the More row disclosure" },
@@ -29,6 +34,7 @@
     { "name": "SectionAudiobooks", "node": "2365:1606", "from": "2031:5675 card 6 — كتب صوتية" },
     { "name": "SectionRadio",      "node": "2355:1483", "from": "2031:5675 card 8 — برامج إذاعية" },
     { "name": "SectionDawah",      "node": "2599:2864", "from": "2031:5675 card 9 — تصميمات دعوية" },
+    { "name": "SectionExclusive",  "node": "2355:1478", "from": "2031:5675 card 7 — حصريات خزائن الرحمن. The gold disc and its sparkles; the word حصرى over them is a raster paint the walk skips, overlaid from assets/figma/seal-khazain.png." },
 
     { "name": "MoreWeb",        "node": "2106:2219", "from": "2102:2711 row 1 — الموقع الإلكتروني" },
     { "name": "MoreYoutube",    "node": "2106:2237", "from": "2102:2711 row 2 — قنوات اليوتيوب" },
@@ -70,9 +76,9 @@
       "why": "Same raster حصرى wordmark as SectionExclusive, over a gold disc. Extracted as an image asset rather than as vector."
     },
     {
-      "name": "SectionExclusive",
-      "node": "2355:1478",
-      "why": "The حصريات card's mark is a gold disc with the word حصرى set as a raster IMAGE paint over it, not as vector. It is extracted as an image asset instead — see scripts/figma/extract-images.js."
+      "name": "SectionExclusiveSeal",
+      "node": "2355:1480",
+      "why": "The word خزائن الرحمن on the حصريات card is a raster IMAGE paint, not vector, so the geometry walk cannot reach it — `SectionExclusive` carries the gold disc and the vector letterforms around it. The word itself comes out of the archive at its source 139x164 with alpha intact as assets/figma/seal-khazain.png; see scripts/figma/extract-images.js."
     }
   ]
 }
