@@ -65,6 +65,7 @@ import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useProgressStore } from '@/store/progressStore';
 import { useWirdStore } from '@/store/wirdStore';
 import { getRepos, progressRepo } from '@/db';
+import { lectureNoteParamsFromSession } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -349,7 +350,13 @@ export default function LibraryScreen() {
           primaryLabel="متابعة"
           secondaryLabel="إضافة ملاحظة"
           onPrimary={resume}
-          onSecondary={() => openNewNote(lecture.title)}
+          onSecondary={() => {
+            // Linked to the saved second. A session whose id is not an episode
+            // id cannot be linked, so it keeps the old title-seeded note.
+            const linked = lectureNoteParamsFromSession(lecture);
+            if (Object.keys(linked).length === 0) openNewNote(lecture.title);
+            else router.push({ pathname: '/note-editor' as any, params: linked });
+          }}
         />
       );
     })()

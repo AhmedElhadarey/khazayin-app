@@ -85,3 +85,16 @@ describe('mini player', () => {
     expect(src).not.toContain('row-reverse');
   });
 });
+
+describe('library', () => {
+  const src = read('app/(tabs)/library.tsx');
+  it('keeps the frame 6 copy', () => {
+    expect(src).toMatch(/secondaryLabel="إضافة ملاحظة"/);
+  });
+  it('leaves the recent-notes rows unchanged (frame 6 conflict, design 4.8)', () => {
+    expect(src).not.toMatch(/NoteRefLink|linkedNoteRow/);
+  });
+  it('uses the pure params for the in-progress note', () => {
+    expect(src).toMatch(/lectureNoteParamsFromSession\(lecture\)/);
+  });
+});
