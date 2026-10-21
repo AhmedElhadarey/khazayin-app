@@ -21,11 +21,13 @@ import { useFontScale, useSurahsStore, useAyatStore } from '@/store';
 import { usePlayerStore } from '@/store/playerStore';
 import { useProgressStore } from '@/store/progressStore';
 import { getRepos, progressRepo } from '@/db';
+import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import { takeAyahNoteParams } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { AppState, type AppStateStatus, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, type AppStateStatus, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
 
@@ -147,6 +149,7 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
 }
 
 function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string }) {
+  const router = useRouter();
   // Per-surah Zustand store hook. The parent keys this component by surahId so
   // the hook reference is stable across re-renders of the same surah.
   const useAyat = useAyatStore(surahId);
@@ -204,6 +207,19 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
   useEffect(() => {
     fetchAyat();
   }, [fetchAyat]);
+
+  // Long-press an ayah (or the VoiceOver/TalkBack action, which has no ayah)
+  // opens the note editor linked to it. Long-press on an ayah means NOTE; it
+  // is never a save gesture (see CLAUDE.md "Long-press means").
+  const takeAyahNote = useCallback(
+    (n?: number) => {
+      if (Platform.OS !== 'web') {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+      }
+      router.push({ pathname: '/note-editor' as any, params: takeAyahNoteParams(surahId, n) });
+    },
+    [router, surahId],
+  );
 
   // Revelation type comes from the surah catalogue. The old comment here said
   // the store "is already cached from the index, so this costs nothing" — true
@@ -272,10 +288,16 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
                   styles.ayatBody,
                   { fontSize: ayatFontSize, lineHeight: ayatLineHeight },
                 ]}
+                accessibilityActions={[{ name: 'addSurahNote', label: 'إضافة ملاحظة على السورة' }]}
+                onAccessibilityAction={(e) => {
+                  if (e.nativeEvent.actionName === 'addSurahNote') takeAyahNote(undefined);
+                }}
               >
                 {segment.ayat.map((a, i) => (
                   <React.Fragment key={a.number}>
-                    {a.text}
+                    <Text onLongPress={() => takeAyahNote(a.number)} suppressHighlighting>
+                      {a.text}
+                    </Text>
                     <AyahNum n={String(a.number)} />
                     {i < segment.ayat.length - 1 ? ' ' : ''}
                   </React.Fragment>

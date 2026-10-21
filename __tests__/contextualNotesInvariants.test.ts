@@ -32,3 +32,17 @@ describe('notes viewer', () => {
     expect(src).toContain('viewerSourceAction(');
   });
 });
+
+describe('mushaf reader', () => {
+  const src = read('app/(tabs)/sections/mushaf.tsx');
+  it('the footer is still the three Figma slots', () => {
+    expect(src).toMatch(/MUSHAF_FOOTER_ORDER\.map/);
+    expect(src.match(/<MushafBtn/g)).toHaveLength(1);
+  });
+  it('has no save gesture (long-press on an ayah means NOTE)', () => {
+    expect(src).not.toMatch(/saveGestureProps|useSaveGesture/);
+  });
+  it('ayah long-press uses the pure params', () => {
+    expect(src).toMatch(/takeAyahNoteParams\(surahId, /);
+  });
+});
