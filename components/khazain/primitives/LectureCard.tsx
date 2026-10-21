@@ -4,7 +4,7 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { lectureSaveTarget } from '@/services/savedToggle';
 import type { Lecture } from '@/types/content';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BookmarkButton } from './BookmarkButton';
 import { useSaveGesture } from './useSaveGesture';
@@ -54,10 +54,7 @@ export function LectureCard({
   // styles: both frames set the same faces and sizes.
   const heightStyle = compact ? styles.cardCompact : styles.card;
 
-  const saveTarget = useMemo(
-    () => lectureSaveTarget({ id, title, scholar, duration, category }),
-    [id, title, scholar, duration, category],
-  );
+  const saveTarget = lectureSaveTarget({ id, title, scholar, duration, category });
   const { saved, gestureProps } = useSaveGesture(saveTarget);
 
   const slots: Record<LectureCardSlot, React.ReactNode> = {

@@ -65,11 +65,16 @@ describe('toggleSaved', () => {
 describe('saveGestureProps', () => {
   const action = (actionName: string) => ({ nativeEvent: { actionName } }) as AccessibilityActionEvent;
   let announce: jest.SpyInstance;
+  let announceLegacy: jest.SpyInstance;
   beforeEach(() => {
-    announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
-    // jest-expo already mocks this as a jest.fn, so spyOn reuses it and
-    // restoreAllMocks does not reset its calls — clear them per test.
+    announce = jest
+      .spyOn(AccessibilityInfo, 'announceForAccessibilityWithOptions')
+      .mockImplementation(() => undefined);
+    announceLegacy = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
+    // jest-expo already mocks these as jest.fn, so spyOn reuses them and
+    // restoreAllMocks does not reset their calls — clear them per test.
     announce.mockClear();
+    announceLegacy.mockClear();
   });
 
   it('wires long-press to onToggle', () => {
@@ -84,12 +89,27 @@ describe('saveGestureProps', () => {
     const onSave = jest.fn(() => true);
     saveGestureProps(false, onSave).onAccessibilityAction!(action(SAVE_ACTION_NAME));
     expect(onSave).toHaveBeenCalledTimes(1);
-    expect(announce).toHaveBeenLastCalledWith('تمت الإضافة إلى المحفوظات');
+    // Queued so it does not cut off VoiceOver reading the action's own label.
+    expect(announce).toHaveBeenLastCalledWith('تمت الإضافة إلى المحفوظات', { queue: true });
 
     const onUnsave = jest.fn(() => false);
     saveGestureProps(true, onUnsave).onAccessibilityAction!(action(SAVE_ACTION_NAME));
     expect(onUnsave).toHaveBeenCalledTimes(1);
-    expect(announce).toHaveBeenLastCalledWith('تم الحذف من المحفوظات');
+    expect(announce).toHaveBeenLastCalledWith('تم الحذف من المحفوظات', { queue: true });
+    expect(announceLegacy).not.toHaveBeenCalled();
+  });
+
+  it('falls back to announceForAccessibility where the options variant is missing', () => {
+    const original = AccessibilityInfo.announceForAccessibilityWithOptions;
+    // Simulate a platform without the options API.
+    (AccessibilityInfo as { announceForAccessibilityWithOptions?: unknown }).announceForAccessibilityWithOptions =
+      undefined;
+    try {
+      saveGestureProps(false, () => true).onAccessibilityAction!(action(SAVE_ACTION_NAME));
+      expect(announceLegacy).toHaveBeenLastCalledWith('تمت الإضافة إلى المحفوظات');
+    } finally {
+      AccessibilityInfo.announceForAccessibilityWithOptions = original;
+    }
   });
 
   it('activate and longpress actions do not toggle (a double-tap still plays)', () => {
@@ -99,6 +119,7 @@ describe('saveGestureProps', () => {
     props.onAccessibilityAction!(action('longpress'));
     expect(onToggle).not.toHaveBeenCalled();
     expect(announce).not.toHaveBeenCalled();
+    expect(announceLegacy).not.toHaveBeenCalled();
   });
 
   it('labels, hint and value flip with saved state', () => {

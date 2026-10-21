@@ -19,6 +19,15 @@ describe('BookmarkButton', () => {
     // evaluated when onChange is undefined, so the tap would do nothing.
     expect(src).not.toMatch(/\?\.\(\s*toggleSaved/);
   });
+  it('takes its labels from SAVED_COPY, not hard-coded strings', () => {
+    expect(src).toMatch(/SAVED_COPY\.unsaveLabel/);
+    expect(src).toMatch(/SAVED_COPY\.saveLabel/);
+    expect(src).not.toMatch(/'حفظ في المكتبة'|'إزالة من المحفوظات'/);
+  });
+  it('plays the same haptic as the row long-press, and has no long-press of its own', () => {
+    expect(src).toMatch(/playSaveHaptic\(\)/);
+    expect(src).not.toMatch(/onLongPress/);
+  });
   it('no longer re-saves on undo (which restamped savedAt)', () => {
     expect(src).not.toMatch(/\.save\(removed\./);
     expect(src).not.toMatch(/useToastStore/);
@@ -46,7 +55,9 @@ describe('scholar-detail lectures (RibbonCard, frame 2510:1990)', () => {
   const ribbon = read('components/khazain/primitives/RibbonCard.tsx');
   it('RibbonCard takes an optional save target and uses the shared hook', () => {
     expect(ribbon).toMatch(/save\?: SaveTarget/);
-    expect(ribbon).toMatch(/useSaveGesture\(stableSave\)/);
+    expect(ribbon).toMatch(/useSaveGesture\(/);
+    // Target stability lives in the hook (a ref), not in a per-caller memo.
+    expect(ribbon).not.toMatch(/exhaustive-deps/);
   });
   it('only the scholar DETAIL list opts in; the scholar list (frame 2102:2975) does not', () => {
     expect(read('app/(tabs)/sections/scholar/[id].tsx')).toMatch(/save=\{lectureSaveTarget\(l\)\}/);

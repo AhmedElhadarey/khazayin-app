@@ -43,10 +43,10 @@ export const SAVE_ACTION_NAME = 'toggleSave';
 /** Toggles `target` and shows the matching undo toast. Returns the new saved state. */
 export function toggleSaved(target: SaveTarget): boolean {
   const { type, entityId, snapshot } = target;
-  const saved = useSavedStore.getState();
+  const store = useSavedStore.getState();
 
-  if (saved.isSaved(type, entityId)) {
-    const removed = saved.unsave(type, entityId);
+  if (store.isSaved(type, entityId)) {
+    const removed = store.unsave(type, entityId);
     if (removed !== null) {
       useToastStore.getState().show({
         message: SAVED_COPY.removed,
@@ -57,7 +57,7 @@ export function toggleSaved(target: SaveTarget): boolean {
     return false;
   }
 
-  saved.save(type, entityId, snapshot);
+  store.save(type, entityId, snapshot);
   useToastStore.getState().show({
     message: SAVED_COPY.saved,
     durationMs: SAVE_TOAST_MS,
@@ -70,6 +70,15 @@ export type SaveGestureProps = Pick<
   PressableProps,
   'onLongPress' | 'accessibilityActions' | 'onAccessibilityAction' | 'accessibilityHint' | 'accessibilityValue'
 >;
+
+function announce(message: string): void {
+  // Queued (iOS) so it doesn't cut off the screen reader confirming the action.
+  if (typeof AccessibilityInfo.announceForAccessibilityWithOptions === 'function') {
+    AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
+  } else {
+    AccessibilityInfo.announceForAccessibility(message);
+  }
+}
 
 /**
  * Pure builder for a saveable row's Pressable props. `onToggle` performs the
@@ -88,7 +97,7 @@ export function saveGestureProps(saved: boolean, onToggle: () => boolean): SaveG
     onAccessibilityAction: (e: AccessibilityActionEvent) => {
       if (e.nativeEvent.actionName !== SAVE_ACTION_NAME) return;
       const nowSaved = onToggle();
-      AccessibilityInfo.announceForAccessibility(nowSaved ? SAVED_COPY.saved : SAVED_COPY.removed);
+      announce(nowSaved ? SAVED_COPY.saved : SAVED_COPY.removed);
     },
     accessibilityHint: saved ? SAVED_COPY.unsaveHint : SAVED_COPY.saveHint,
     accessibilityValue: { text: saved ? SAVED_COPY.savedValue : undefined },

@@ -1,10 +1,11 @@
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { toggleSaved } from '@/services/savedToggle';
+import { SAVED_COPY, toggleSaved } from '@/services/savedToggle';
 import { useSavedStore } from '@/store';
 import type { SavedSnapshot, SavedType } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { BookmarkIcon } from '../icons';
+import { playSaveHaptic } from './useSaveGesture';
 
 /**
  * BookmarkButton — single bookmark affordance for all 5 saveable surfaces
@@ -19,7 +20,9 @@ import { BookmarkIcon } from '../icons';
  *       dark     — for navy surfaces (ScholarCard)
  *       floating — for image surfaces (DawahPoster); semi-opaque bubble + shadow
  *
- * Behaviour: see services/savedToggle.ts (single toggle path).
+ * Behaviour: see services/savedToggle.ts (single toggle path). Plays the same
+ * light haptic as a lecture row's long-press (useSaveGesture), so both save
+ * affordances feel identical. Deliberately has no long-press of its own.
  *
  * Track: khazain-saved_20260511  T6
  */
@@ -46,6 +49,7 @@ export function BookmarkButton({
   );
 
   const onPress = () => {
+    playSaveHaptic();
     const nowSaved = toggleSaved({ type, entityId, snapshot });
     onChange?.(nowSaved);
   };
@@ -70,7 +74,7 @@ export function BookmarkButton({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={saved ? 'إزالة من المحفوظات' : 'حفظ في المكتبة'}
+      accessibilityLabel={saved ? SAVED_COPY.unsaveLabel : SAVED_COPY.saveLabel}
       hitSlop={8}
       style={({ pressed }) => [
         { width: hitSize, height: hitSize, opacity: pressed ? 0.7 : 1 },

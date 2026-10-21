@@ -1,8 +1,14 @@
 import { saveGestureProps, toggleSaved, type SaveGestureProps, type SaveTarget } from '@/services/savedToggle';
 import { useSavedStore } from '@/store/savedStore';
 import * as Haptics from 'expo-haptics';
-import { useCallback, useMemo } from 'react';
+import { useCallback, useMemo, useRef } from 'react';
 import { Platform } from 'react-native';
+
+/** The light tick every save affordance plays — row long-press and bookmark tap alike. */
+export function playSaveHaptic(): void {
+  if (Platform.OS === 'web') return;
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+}
 
 /**
  * Off-frame save affordance for rows whose Figma frame draws no bookmark
@@ -12,9 +18,16 @@ import { Platform } from 'react-native';
  * BookmarkButton exactly. Props come from the pure saveGestureProps; this hook
  * adds only the store subscription and the haptic. `saved` lets the row show
  * a bookmark once saved.
- * Pass `undefined` to opt out; the hook still has to be called unconditionally.
+ *
+ * Callers may pass a fresh target object every render: the latest one is kept
+ * in a ref, so the returned props only change when `saved` (or opting in/out)
+ * does. Pass `undefined` to opt out; the hook still has to be called
+ * unconditionally.
  */
 export function useSaveGesture(target: SaveTarget | undefined): { saved: boolean; gestureProps: SaveGestureProps } {
+  const targetRef = useRef(target);
+  targetRef.current = target;
+
   const type = target?.type;
   const entityId = target?.entityId;
   const saved = useSavedStore((s) =>
@@ -22,16 +35,16 @@ export function useSaveGesture(target: SaveTarget | undefined): { saved: boolean
   );
 
   const toggle = useCallback((): boolean => {
-    if (!target) return false;
-    if (Platform.OS !== 'web') {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
-    }
-    return toggleSaved(target);
-  }, [target]);
+    playSaveHaptic();
+    // Non-null: toggle is only reachable through gestureProps, which exist
+    // only while a target is set.
+    return toggleSaved(targetRef.current!);
+  }, []);
 
+  const hasTarget = target !== undefined;
   const gestureProps = useMemo<SaveGestureProps>(
-    () => (target ? saveGestureProps(saved, toggle) : {}),
-    [target, saved, toggle],
+    () => (hasTarget ? saveGestureProps(saved, toggle) : {}),
+    [hasTarget, saved, toggle],
   );
 
   return { saved, gestureProps };

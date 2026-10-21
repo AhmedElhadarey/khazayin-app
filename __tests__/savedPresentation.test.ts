@@ -46,6 +46,7 @@ describe('groupSavedItems', () => {
 describe('saved presentation copy', () => {
   it('titles every saved type in Arabic', () => {
     expect(Object.keys(SAVED_GROUP_TITLES).sort()).toEqual(['book', 'dawah', 'lecture', 'scholar', 'surah']);
+    for (const title of Object.values(SAVED_GROUP_TITLES)) expect(title).toMatch(/^[؀-ۿ\s]+$/);
   });
 
   it('empty state is encouraging and teaches the lecture long-press', () => {

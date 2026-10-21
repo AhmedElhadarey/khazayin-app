@@ -2,7 +2,7 @@ import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import type { SaveTarget } from '@/services/savedToggle';
-import React, { useMemo } from 'react';
+import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BookmarkButton } from './BookmarkButton';
 import { useSaveGesture } from './useSaveGesture';
@@ -48,11 +48,7 @@ export function RibbonCard({
   save?: SaveTarget;
   onPress?: () => void;
 }) {
-  // The caller builds a fresh target every render (lectureSaveTarget(l)); key
-  // the memo on the identity that matters so useSaveGesture's memo holds.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const stableSave = useMemo(() => save, [save?.entityId]);
-  const { saved, gestureProps } = useSaveGesture(stableSave);
+  const { saved, gestureProps } = useSaveGesture(save);
   const durationNode = duration ? <Text style={styles.duration}>{duration}</Text> : null;
 
   return (
@@ -66,13 +62,13 @@ export function RibbonCard({
       ]}
     >
       {/* Physical left — duration; plus a bookmark once saved (frame draws none). */}
-      {saved && stableSave ? (
+      {saved && save ? (
         <View style={styles.metaCluster}>
           {durationNode}
           <BookmarkButton
-            type={stableSave.type}
-            entityId={stableSave.entityId}
-            snapshot={stableSave.snapshot}
+            type={save.type}
+            entityId={save.entityId}
+            snapshot={save.snapshot}
             variant="light"
           />
         </View>
