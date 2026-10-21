@@ -7,6 +7,7 @@
     "icon": "./assets/images/icon-khazain.png",
     "scheme": "khazayinapp",
     "userInterfaceStyle": "light",
+    "backgroundColor": "#F4E7DA",
     "extra": {
       "rtl": true,
       "router": {},
@@ -44,11 +45,12 @@
     },
     "plugins": [
       "expo-router",
+      "./plugins/withSplashWindowBackground",
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-emblem.png",
-          "imageWidth": 131,
+          "image": "./assets/images/splash-ground.png",
+          "imageWidth": 288,
           "resizeMode": "contain",
           "backgroundColor": "#F4E7DA"
         }
@@ -65,8 +67,7 @@
           "locationWhenInUsePermission": "يستخدم التطبيق موقعك لحساب مواقيت الصلاة بدقة في مدينتك."
         }
       ],
-      "./plugins/withExactAlarmPermissions",
-      "./plugins/withSplashWindowBackground"
+      "./plugins/withExactAlarmPermissions"
     ],
     "experiments": {
       "typedRoutes": true,
