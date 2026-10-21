@@ -16,6 +16,10 @@ type Props = {
  * Play/stop control for a reciter's Al-Fatiha preview (onboarding, design
  * 2026-10-21 §4.3). A sibling of the row's radio, so VoiceOver reaches it as
  * its own focus stop. The play glyph is not mirrored.
+ *
+ * The active state draws `PauseIcon` although the action is "stop" (the label
+ * says إيقاف): `components/khazain/icons` has no stop glyph, and a preview is
+ * never resumed, so pause/stop read the same here.
  */
 export function PreviewButton({ reciterName, status, onPress }: Props): React.ReactElement {
   const active = status !== 'idle';
@@ -23,7 +27,9 @@ export function PreviewButton({ reciterName, status, onPress }: Props): React.Re
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={active ? 'إيقاف العيّنة' : `استماع إلى عيّنة من تلاوة ${reciterName}`}
+      accessibilityLabel={
+        active ? `إيقاف عيّنة تلاوة ${reciterName}` : `استماع إلى عيّنة من تلاوة ${reciterName}`
+      }
       accessibilityState={{ busy: status === 'loading' }}
       hitSlop={4}
       style={({ pressed }) => [styles.button, active && styles.active, pressed && styles.pressed]}

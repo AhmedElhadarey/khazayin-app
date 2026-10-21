@@ -38,17 +38,17 @@ export function WelcomeStep(): React.ReactElement {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-      <View style={styles.identity}>
-        <FoundationMark width={52} height={72} />
-        <View style={styles.wordmarkWrap}>
-          <Wordmark size={26} color={KhazainColors.navy900} />
+        <View style={styles.identity}>
+          <FoundationMark width={52} height={72} />
+          <View style={styles.wordmarkWrap}>
+            <Wordmark size={26} color={KhazainColors.navy900} />
+          </View>
         </View>
-      </View>
 
-      <Text style={styles.mission}>
-        منصّتك للقرآن الكريم بالقراءات والروايات، ومكتبة العلماء والكتب والدروس،
-        وتصاميم الدعوة — كل ذلك في مكان واحد.
-      </Text>
+        <Text style={styles.mission}>
+          منصّتك للقرآن الكريم بالقراءات والروايات، ومكتبة العلماء والكتب والدروس،
+          وتصاميم الدعوة — كل ذلك في مكان واحد.
+        </Text>
 
         <View style={styles.highlights} accessibilityRole="list">
           {WELCOME_HIGHLIGHTS.map((h) => (

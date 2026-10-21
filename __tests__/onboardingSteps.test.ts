@@ -89,8 +89,9 @@ describe('selectable row with a preview control', () => {
     expect(src).toMatch(/accessibilityRole="button"/);
     expect(src).toMatch(/MIN_TOUCH_TARGET/);
     expect(src).toMatch(/busy/);
-    expect(src).toMatch(/إيقاف العيّنة/);
-    expect(src).toMatch(/استماع إلى عيّنة من تلاوة/);
+    // Both labels name the reciter, so VoiceOver says whose sample it stops.
+    expect(src).toMatch(/`إيقاف عيّنة تلاوة \$\{reciterName\}`/);
+    expect(src).toMatch(/`استماع إلى عيّنة من تلاوة \$\{reciterName\}`/);
   });
 });
 

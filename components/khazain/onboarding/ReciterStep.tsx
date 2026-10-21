@@ -40,6 +40,9 @@ export function ReciterStep(): React.ReactElement {
   useEffect(() => () => { void stopPreview(); }, []);
 
   // Stop when backgrounded: a sample must not keep playing behind the lock screen.
+  // `inactive` counts too, deliberately: on iOS it is the step before
+  // `background` (app switcher, Control Centre, an incoming call), and a
+  // 30-second sample is cheaper to restart than to leave playing under them.
   useEffect(() => {
     const sub = AppState.addEventListener('change', (next) => {
       if (next !== 'active') void stopPreview();
