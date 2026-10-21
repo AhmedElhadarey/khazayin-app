@@ -16,17 +16,30 @@ type Props = {
 };
 
 /**
+ * Border widths of the row frame. The radio's padding and the preview's inset
+ * add these, so the content sits where it did when the border was on the
+ * radio itself — the frame and the insets must never disagree.
+ */
+const BORDER = { idle: 1, selected: 1.5 } as const;
+
+/**
  * Internal selectable list row for onboarding selection steps (track 003).
  * Mirrors the gold-bordered + check-icon pattern used by `app/settings-qiraa.tsx`
  * and `app/settings-reciter.tsx` so onboarding and Settings selection match.
  *
- * Structure (design 2026-10-21 §4.3): the outer View is the card and carries
- * only chrome (border, background, shadow, gold selected border). Its slots run
- * in `SELECTABLE_ROW_ORDER`: the optional `preview` control, then the radio
- * `select` Pressable, which keeps the row's padding and tick → text order
- * (minHeight stays on the card, beside the border). The preview is a SIBLING of the radio, not nested in it, so screen
- * readers reach it as its own focus stop. Without `preview` (the qira'a step)
- * the row renders as it did before.
+ * Structure (design 2026-10-21 §4.3): the outer View is the card (background,
+ * shadow, radius, minHeight). Its slots run in `SELECTABLE_ROW_ORDER`: the
+ * optional `preview` control, then the radio `select` Pressable, which keeps
+ * the tick → text order. The preview is a SIBLING of the radio, not nested in
+ * it, so screen readers reach it as its own focus stop.
+ *
+ * The border is an overlay `frame` drawn after the slots, not a border on the
+ * card. At 0635ea1 the bordered view WAS the radio, so its origin sat on the
+ * pixel grid and the border acted as padding. A 1.5pt border on the card puts
+ * the radio's origin on a half pixel at 3x, and the tick rasterised one device
+ * pixel lower. With the overlay the radio starts at the card's origin and pads
+ * by `12/16 + border`, so the row without a preview (the qira'a step) is
+ * pixel-identical to the base row.
  */
 export function SelectableRow({
   title,
@@ -36,14 +49,20 @@ export function SelectableRow({
   preview,
 }: Props): React.ReactElement {
   const slots: Record<SelectableRowSlot, React.ReactNode> = {
-    preview: preview ? <View style={styles.previewSlot}>{preview}</View> : null,
+    preview: preview ? (
+      <View style={selected ? styles.previewSlotSelected : styles.previewSlot}>{preview}</View>
+    ) : null,
     select: (
       <Pressable
         onPress={onPress}
         accessibilityRole="radio"
         accessibilityState={{ selected }}
         accessibilityLabel={subtitle ? `${title}، ${subtitle}` : title}
-        style={({ pressed }) => [styles.select, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+        style={({ pressed }) => [
+          styles.select,
+          selected ? styles.selectSelected : styles.selectIdle,
+          { transform: [{ scale: pressed ? 0.98 : 1 }] },
+        ]}
       >
         {selected ? (
           <Svg width={18} height={18} viewBox="0 0 18 18">
@@ -72,31 +91,42 @@ export function SelectableRow({
   };
 
   return (
-    <View style={[styles.card, KhazainShadows.card, selected ? styles.cardSelected : null]}>
+    <View style={[styles.card, KhazainShadows.card]}>
       {SELECTABLE_ROW_ORDER.map((slot) => (
         <React.Fragment key={slot}>{slots[slot]}</React.Fragment>
       ))}
+      <View
+        pointerEvents="none"
+        accessible={false}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={[styles.frame, selected ? styles.frameSelected : null]}
+      />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    // Physical left -> right: [preview?] [select]. Chrome plus minHeight;
-    // padding lives on `select`. minHeight must sit here, beside the border:
-    // Yoga applies it to the border-box, so on `select` it made the card
-    // 64 + 2 * border, ~2pt taller than the base row.
+    // Physical left -> right: [preview?] [select]. No border here (see
+    // `frame`), so minHeight 64 gives max(64, 2 * border + 24 + content) —
+    // the base row's height, where the bordered view carried minHeight.
     ...PHYSICAL_ROW,
     alignItems: 'center',
     minHeight: 64,
     borderRadius: 16,
     backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
+  },
+  frame: {
+    // Drawn over the slots, so the radio's origin stays on the pixel grid.
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: 16,
+    borderWidth: BORDER.idle,
     borderColor: KhazainColors.cardBorder,
   },
-  cardSelected: {
+  frameSelected: {
     borderColor: KhazainColors.goldAccent,
-    borderWidth: 1.5,
+    borderWidth: BORDER.selected,
   },
   select: {
     // Physical left -> right: the selected tick, then the text column, so the
@@ -109,12 +139,23 @@ const styles = StyleSheet.create({
     alignSelf: 'stretch',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+  },
+  // The base row's 12 / 16 padding, plus the frame border it sat inside.
+  selectIdle: {
+    paddingVertical: 12 + BORDER.idle,
+    paddingHorizontal: 16 + BORDER.idle,
+  },
+  selectSelected: {
+    paddingVertical: 12 + BORDER.selected,
+    paddingHorizontal: 16 + BORDER.selected,
   },
   previewSlot: {
-    // Physical left inset — legal inside the pinned card row.
-    marginLeft: 12,
+    // Physical left inset, 12pt inside the frame border — legal inside the
+    // pinned card row.
+    marginLeft: 12 + BORDER.idle,
+  },
+  previewSlotSelected: {
+    marginLeft: 12 + BORDER.selected,
   },
   textCol: { flex: 1, gap: 2 },
   rowTitle: {

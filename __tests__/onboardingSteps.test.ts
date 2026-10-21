@@ -73,29 +73,55 @@ describe('selectable row with a preview control', () => {
     expect(row().match(/<Pressable/g)).toHaveLength(1);
     expect(row()).toMatch(/accessibilityRole="radio"/);
   });
-  it('padding stays on the select Pressable; the card View carries the chrome', () => {
-    const src = row();
-    const card = /card:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
-    const select = /select:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
-    expect(select).toMatch(/paddingVertical:\s*12/);
-    expect(select).toMatch(/paddingHorizontal:\s*16/);
-    expect(card).not.toMatch(/padding/);
-    expect(card).toMatch(/borderRadius:\s*16/);
-    expect(card).toMatch(/backgroundColor/);
-  });
-  it('minHeight 64 sits on the bordered card, so the row keeps its base height (A3)', () => {
-    // Yoga applies minHeight to the border-box. At 0635ea1 the single Pressable
-    // carried both the border and minHeight 64; with minHeight on the inner
-    // Pressable the card grew to 64 + 2 * border.
-    const src = row();
-    const card = /card:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
-    const select = /select:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
-    expect(card).toMatch(/borderWidth:\s*1\b/);
-    expect(card).toMatch(/minHeight:\s*64/);
-    expect(select).not.toMatch(/minHeight/);
-    // The radio still fills the card's full height (touch target), even though
-    // the card centres its children.
-    expect(select).toMatch(/alignSelf:\s*'stretch'/);
+  describe('pixel parity with the 0635ea1 row (A3)', () => {
+    /** Body of one `StyleSheet.create` entry, matched on the whole key. */
+    const style = (src: string, key: string) =>
+      new RegExp(`\\b${key}:\\s*\\{([^}]*)\\}`).exec(src)?.[1] ?? '';
+
+    it('one BORDER constant carries both widths', () => {
+      expect(row()).toMatch(/const BORDER = \{ idle: 1, selected: 1\.5 \} as const;/);
+    });
+    it('the card carries background, radius and minHeight 64 but no border', () => {
+      // Yoga applies minHeight to the border-box; with no border on the card
+      // its height is max(64, 2 * border + 24 + content), the base row's.
+      const card = style(row(), 'card');
+      expect(card).toMatch(/minHeight:\s*64/);
+      expect(card).toMatch(/borderRadius:\s*16/);
+      expect(card).toMatch(/backgroundColor/);
+      expect(card).not.toMatch(/border(Width|Color)/);
+      expect(card).not.toMatch(/padding/);
+    });
+    it('the border is a non-interactive overlay frame drawn after the slots', () => {
+      const src = row();
+      const frame = style(src, 'frame');
+      const frameSelected = style(src, 'frameSelected');
+      expect(frame).toMatch(/\.\.\.StyleSheet\.absoluteFillObject/);
+      expect(frame).toMatch(/borderRadius:\s*16/);
+      expect(frame).toMatch(/borderWidth:\s*BORDER\.idle\b/);
+      expect(frameSelected).toMatch(/borderWidth:\s*BORDER\.selected\b/);
+      expect(frameSelected).toMatch(/borderColor:\s*KhazainColors\.goldAccent/);
+      const overlay = /<View\s+pointerEvents="none"[^>]*styles\.frame[^>]*\/>/.exec(src)?.[0] ?? '';
+      expect(overlay).not.toBe('');
+      expect(overlay).toMatch(/accessible=\{false\}/);
+      expect(overlay).toMatch(/importantForAccessibility="no-hide-descendants"/);
+      expect(src.indexOf('SELECTABLE_ROW_ORDER.map')).toBeLessThan(src.indexOf(overlay));
+    });
+    it('the radio pads by 12 / 16 plus the border, so its origin stays on the pixel grid', () => {
+      const src = row();
+      const select = style(src, 'select');
+      expect(select).not.toMatch(/minHeight|padding/);
+      expect(select).toMatch(/alignSelf:\s*'stretch'/);
+      for (const [key, w] of [['selectIdle', 'idle'], ['selectSelected', 'selected']]) {
+        const inset = style(src, key);
+        expect(inset).toMatch(new RegExp(`paddingVertical:\\s*12 \\+ BORDER\\.${w}\\b`));
+        expect(inset).toMatch(new RegExp(`paddingHorizontal:\\s*16 \\+ BORDER\\.${w}\\b`));
+      }
+    });
+    it('the preview keeps its 12pt inset inside the border', () => {
+      const src = row();
+      expect(style(src, 'previewSlot')).toMatch(/marginLeft:\s*12 \+ BORDER\.idle\b/);
+      expect(style(src, 'previewSlotSelected')).toMatch(/marginLeft:\s*12 \+ BORDER\.selected\b/);
+    });
   });
   it('PreviewButton is a labelled 44pt button with busy state', () => {
     const src = code('components/khazain/onboarding/PreviewButton.tsx');
