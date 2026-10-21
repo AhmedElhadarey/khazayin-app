@@ -29,6 +29,12 @@ export const JUZ_PRESET_PAGES: Readonly<Record<JuzPreset, number>> = {
 };
 
 export const COMPLETION_THRESHOLD = 0.95; // spec FR-011
+/**
+ * A lecture counts as "listened" (Library card محاضرات مسموعة) once this much
+ * real forward listening is recorded — or the whole clip, if shorter — or it
+ * reached COMPLETION_THRESHOLD. Design 2026-10-21 §4.5.
+ */
+export const LECTURE_LISTENED_MIN_SEC = 60;
 
 export const SUGGESTION_COOLDOWN_DAYS = 14; // research R7
 export const SUGGESTION_MIN_ACTIVE_DAYS = 14;
@@ -37,9 +43,12 @@ export const SUGGESTION_THRESHOLD_MULTIPLIER = 1.5;
 export const TREND_DAYS = 28; // sparkline window — research R8
 
 /**
- * Cumulative page ranges for the 30 ajzāʾ of the Mushaf (1-based pages).
- * Values follow the standard 604-page Madinah Mushaf division — each juz
- * spans roughly 20 pages. Used by `completedJuzCount()` (FR-005).
+ * Page ranges (1-based, inclusive) of the 30 ajzāʾ of the 604-page Madani
+ * Mushaf. Juz 4, 7, 11 and 26 begin mid-page, so each shares its first page
+ * with the end of the previous juz — a juz is complete only when that shared
+ * page has been read too. Juz 4 opens at 3:93 as in Tanzil (design decision
+ * D1). Pinned to `constants/quranPages.ts` by `__tests__/juz.test.ts`.
+ * Used by `completedJuzCount()` (FR-005).
  */
 export const JUZ_PAGE_RANGES: ReadonlyArray<{
   juz: number;
@@ -48,15 +57,15 @@ export const JUZ_PAGE_RANGES: ReadonlyArray<{
 }> = [
   { juz: 1, startPage: 1, endPage: 21 },
   { juz: 2, startPage: 22, endPage: 41 },
-  { juz: 3, startPage: 42, endPage: 61 },
+  { juz: 3, startPage: 42, endPage: 62 },
   { juz: 4, startPage: 62, endPage: 81 },
   { juz: 5, startPage: 82, endPage: 101 },
   { juz: 6, startPage: 102, endPage: 121 },
-  { juz: 7, startPage: 122, endPage: 141 },
+  { juz: 7, startPage: 121, endPage: 141 },
   { juz: 8, startPage: 142, endPage: 161 },
   { juz: 9, startPage: 162, endPage: 181 },
   { juz: 10, startPage: 182, endPage: 201 },
-  { juz: 11, startPage: 202, endPage: 221 },
+  { juz: 11, startPage: 201, endPage: 221 },
   { juz: 12, startPage: 222, endPage: 241 },
   { juz: 13, startPage: 242, endPage: 261 },
   { juz: 14, startPage: 262, endPage: 281 },
@@ -70,7 +79,7 @@ export const JUZ_PAGE_RANGES: ReadonlyArray<{
   { juz: 22, startPage: 422, endPage: 441 },
   { juz: 23, startPage: 442, endPage: 461 },
   { juz: 24, startPage: 462, endPage: 481 },
-  { juz: 25, startPage: 482, endPage: 501 },
+  { juz: 25, startPage: 482, endPage: 502 },
   { juz: 26, startPage: 502, endPage: 521 },
   { juz: 27, startPage: 522, endPage: 541 },
   { juz: 28, startPage: 542, endPage: 561 },
@@ -82,10 +91,24 @@ export const JUZ_PAGE_RANGES: ReadonlyArray<{
 export const STREAK_MILESTONES: ReadonlyArray<7 | 30 | 100> = [7, 30, 100];
 
 /**
+ * Mushaf page-read detection (design 2026-10-21 §4.3). A page counts as read
+ * once its segment has been in view for PAGE_READ_DWELL_MS in total within one
+ * reader session. "In view" = the visible part is at least
+ * PAGE_IN_VIEW_VIEWPORT_SHARE of the viewport (tall segments) or at least
+ * PAGE_IN_VIEW_SELF_SHARE of the segment itself (short segments).
+ */
+export const PAGE_READ_DWELL_MS = 8000;
+export const PAGE_IN_VIEW_VIEWPORT_SHARE = 0.5;
+export const PAGE_IN_VIEW_SELF_SHARE = 0.9;
+/** Longest gap credited by one tracker update — guards JS stalls/backgrounding. */
+export const PAGE_DWELL_MAX_STEP_MS = 2000;
+
+/**
  * Starting page (1-based) for each surah in the standard 604-page Madinah
- * Mushaf. Index = surah number (1..114). Used by the Mushaf screen to record
- * a page-read event when the user opens a surah, until a real swipable page
- * model lands.
+ * Mushaf. Index = surah number (1..114). Drives the Mushaf reader's meta line
+ * (frame 2349:982) and is the `groupAyatByPage` fallback for an ayah the page
+ * table cannot place. Pages are recorded per page as they are read
+ * (services/mushafPageTracking.ts), not when a surah opens.
  */
 export const SURAH_START_PAGES: ReadonlyArray<number> = [
   0, // index 0 unused
