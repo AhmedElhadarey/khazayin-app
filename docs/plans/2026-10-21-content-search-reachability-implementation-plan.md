@@ -1243,3 +1243,7 @@ git commit -m "docs(qa): record content search reachability QA"
 
 - **Task 1** — the test's mock variable is `mockPush`, not `push`: babel-jest rejects a `jest.mock`
   factory that references an out-of-scope variable unless its name starts with `mock`.
+- **Task 6** — `__tests__/searchStore.test.ts` also stubs `@/services/search/rowProps`. The store
+  imports the `services/search` barrel, which re-exports `rowProps.tsx` and through it the component
+  tree (audio engine → `@sentry/react-native`, untransformed ESM under jest), so the suite would not
+  load. The store does not use the row helpers; production code is unchanged.
