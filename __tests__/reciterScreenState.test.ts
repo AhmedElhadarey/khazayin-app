@@ -121,3 +121,22 @@ describe('reciter.tsx wiring (nodes 2031:6193 / 2102:3187)', () => {
     expect(src).toContain('contentContainerStyle={[styles.listContent, { paddingBottom: 24 }]}');
   });
 });
+
+describe('reciter/[id].tsx wiring (node 2207:5270)', () => {
+  const src = readApp('app/(tabs)/sections/reciter/[id].tsx');
+  it('derives its body from reciterDetailState and renders non-ready states through AsyncContent', () => {
+    expect(src).toContain('reciterDetailState(');
+    expect(src).toContain('reciterDetailAsyncProps(');
+    expect(src).toContain('<AsyncContent');
+  });
+  it('retries only the failed stores', () => {
+    expect(src).toContain('retryTargets(recitersStatus, surahsStatus)');
+  });
+  it('renders the list only when the derived state is ready (not merely when the reciter is found)', () => {
+    expect(src).toContain("state.kind === 'ready'");
+    expect(src).not.toMatch(/\{reciter \? \(/);
+  });
+  it('keeps the loaded FlatList geometry untouched', () => {
+    expect(src).toContain('contentContainerStyle={[styles.list, { paddingBottom: 24 }]}');
+  });
+});
