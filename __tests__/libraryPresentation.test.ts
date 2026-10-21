@@ -1,5 +1,6 @@
 import {
   LIBRARY_EXTENSION_SECTIONS,
+  LIBRARY_PROGRESS_STAT_ORDER,
   LIBRARY_REFERENCE_SECTIONS,
   LIBRARY_SECTION_ORDER,
   LIBRARY_SUMMARY_CARD_ORDER,
@@ -47,8 +48,8 @@ describe('Library reference hierarchy', () => {
 
   it('keeps the newer metrics rather than deleting them', () => {
     expect([...LIBRARY_EXTENSION_SECTIONS].sort()).toEqual([
-      'completedLectures',
       'insights',
+      'progressStats',
       'wirdHistory',
       'wirdSuggestion',
       'wirdTrend',
@@ -69,6 +70,17 @@ describe('Library reference hierarchy', () => {
 describe('Library summary cards', () => {
   it('orders the three cards physical left to right as in the frame', () => {
     expect(LIBRARY_SUMMARY_CARD_ORDER).toEqual(['reminders', 'quranWird', 'notes']);
+  });
+});
+
+describe('Library progress stats row (no frame — design 2026-10-21 §4.4)', () => {
+  it('orders the cards physical left to right so pages read first at the right', () => {
+    expect(LIBRARY_PROGRESS_STAT_ORDER).toEqual(['lectures', 'juz', 'pages']);
+  });
+
+  it('sits where completedLectures sat: last, below the whole frame', () => {
+    expect(LIBRARY_SECTION_ORDER[LIBRARY_SECTION_ORDER.length - 1]).toBe('progressStats');
+    expect(LIBRARY_SECTION_ORDER).not.toContain('completedLectures');
   });
 });
 
@@ -104,7 +116,7 @@ describe('Library filter visibility', () => {
   it('keeps the audiobook, reminder, and suggestion sections as visible as before', () => {
     // These were unconditional before this track; repositioning them must not
     // also hide them.
-    (['audiobookProgress', 'smartReminders', 'wirdSuggestion', 'completedLectures'] as const)
+    (['audiobookProgress', 'smartReminders', 'wirdSuggestion', 'progressStats'] as const)
       .forEach((key) => {
         (['all', 'saved', 'notes', 'history'] as LibraryFilter[]).forEach((filter) => {
           expect([key, filter, isLibrarySectionVisible(key, filter)]).toEqual([
