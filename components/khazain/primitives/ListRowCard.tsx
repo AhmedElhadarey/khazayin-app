@@ -18,8 +18,9 @@ import { FigmaIcon } from '../icons/FigmaIcon';
  *
  *  - `section` — node 2031:5675 `DIV-43`. 361 x 96 at radius 20, a flat
  *    `#FCFAF8` with no stroke and no shadow, inset 12, and a 64pt *circular*
- *    chip tinted `#D7B995` at 16% behind a 1pt `#A88051` stroke. Its three
- *    lines are the file's only place that titles a row in the display face.
+ *    chip tinted `#D7B995` at 16%, with no stroke (the file hides the one it
+ *    carries). Its three lines are the file's only place that titles a row in
+ *    the display face.
  *  - `archive` — node 2558:1334 `DIV-59`. The same card 16 taller, the extra
  *    height spent on the inset rather than on the type.
  *  - `more` — node 2102:2711 `websiteLink-13`. 361 x 82 at radius 16, the
@@ -148,12 +149,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     flexShrink: 0,
   },
+  // `DIV-58` carries a 1pt `#A88051` stroke paint, but it is set
+  // `visible: false` — the disc is its 16% fill alone.
   chipSection: {
     width: CARD_DENSITY.sectionIconDisc,
     height: CARD_DENSITY.sectionIconDisc,
     borderRadius: CARD_DENSITY.sectionIconDisc / 2,
-    borderWidth: 1,
-    borderColor: KhazainColors.goldAccent,
   },
   // A squircle, not a disc, and the file gives it no stroke.
   chipMore: {

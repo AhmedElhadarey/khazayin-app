@@ -60,6 +60,21 @@ describe('the row boxes the frames state', () => {
   });
 });
 
+describe('the section card disc', () => {
+  it('draws no ring, because the file hides the one it carries', () => {
+    // `DIV-58` on 2031:5675 and on the archive card 2558:1334 has a 1pt
+    // `#A88051` stroke paint set `visible: false`. The disc is the 16% fill
+    // alone; the 22-10 device audit caught the app drawing the hidden ring.
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', 'components/khazain/primitives/ListRowCard.tsx'),
+      'utf8',
+    );
+    const chip = src.match(/chipSection:\s*\{([^}]*)\}/);
+    expect(chip).not.toBeNull();
+    expect(chip![1]).not.toMatch(/border(Width|Color)/);
+  });
+});
+
 describe('the page chrome every section frame repeats', () => {
   it('sets the search field 40 tall at radius 12', () => {
     // node "Inputs", 361 x 40, in every one of the seventeen frames
