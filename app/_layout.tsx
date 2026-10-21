@@ -401,10 +401,12 @@ function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="search"
+          name="content-search"
           options={{
             headerShown: false,
-            presentation: 'modal',
+            // Full-screen, not a page sheet: the ticket asks for a full-screen
+            // search view; 'modal' is a card with the previous screen peeking on iOS.
+            presentation: 'fullScreenModal',
             animation: Platform.OS === 'android' ? 'slide_from_left' : 'default',
           }}
         />

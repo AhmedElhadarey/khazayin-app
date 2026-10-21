@@ -1,8 +1,20 @@
+import fs from 'fs';
+import path from 'path';
+
 // `mock` prefix: babel-jest only lets a jest.mock factory reference mock*-named variables.
 const mockPush = jest.fn();
 jest.mock('expo-router', () => ({ router: { push: (...a: unknown[]) => mockPush(...a) } }));
 
 import { SEARCH_ROUTE, openSearch } from '@/services/searchNavigation';
+
+const ROOT = path.resolve(__dirname, '..');
+const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+function walk(dir: string): string[] {
+  return fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true }).flatMap((e) => {
+    const rel = path.join(dir, e.name);
+    return e.isDirectory() ? walk(rel) : [rel];
+  });
+}
 
 describe('search route', () => {
   beforeEach(() => mockPush.mockClear());
@@ -17,5 +29,32 @@ describe('search route', () => {
     openSearch();
     expect(mockPush).toHaveBeenCalledTimes(1);
     expect(mockPush).toHaveBeenCalledWith('/content-search');
+  });
+});
+
+describe('the search screen file and its registration', () => {
+  it('lives at app/content-search.tsx', () => {
+    expect(fs.existsSync(path.join(ROOT, 'app/content-search.tsx'))).toBe(true);
+  });
+
+  it('has no namesake inside a route group, so the path cannot collide', () => {
+    const clashes = walk('app').filter(
+      (f) => /^content-search\.(t|j)sx?$/.test(path.basename(f)) && f !== path.join('app', 'content-search.tsx'),
+    );
+    expect(clashes).toEqual([]);
+  });
+
+  it('is registered on the root stack as a full-screen modal', () => {
+    const block = read('app/_layout.tsx').match(/name="content-search"[\s\S]*?\/>/);
+    expect(block).not.toBeNull();
+    expect(block![0]).toMatch(/presentation: 'fullScreenModal'/);
+  });
+
+  it('no longer registers a root "search" screen (that name is the legacy tab)', () => {
+    expect(read('app/_layout.tsx')).not.toMatch(/name="search"/);
+  });
+
+  it('keeps the legacy hidden tab on disk (CLAUDE.md legacy rule)', () => {
+    expect(fs.existsSync(path.join(ROOT, 'app/(tabs)/search.tsx'))).toBe(true);
   });
 });

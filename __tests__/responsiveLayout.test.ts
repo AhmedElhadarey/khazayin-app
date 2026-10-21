@@ -36,6 +36,7 @@ describe('responsive layout helpers', () => {
       '/more/contact',
       '/more/settings',
       '/search',
+      '/content-search',
     ])('hides the tab bar on the secondary route %s', (pathname) => {
       expect(shouldShowMainTabBar(pathname)).toBe(false);
     });

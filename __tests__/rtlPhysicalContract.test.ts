@@ -45,7 +45,7 @@ const PINNED_SCREENS = [
   'app/settings-wird-reminder.tsx',
   'app/note-editor.tsx',
   'app/notes-viewer.tsx',
-  'app/search.tsx',
+  'app/content-search.tsx',
   'app/share-sheet.tsx',
   'app/(tabs)/more/settings-progress.tsx',
   'components/khazain/sheets/SheetRow.tsx',

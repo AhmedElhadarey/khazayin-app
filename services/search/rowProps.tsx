@@ -2,7 +2,7 @@
  * services/search/rowProps.tsx
  * ----------------------------
  * Shared row-shape helper used by BOTH:
- *   - app/search.tsx — for SearchResultRow rendering of search results
+ *   - app/content-search.tsx — for SearchResultRow rendering of search results
  *   - components/khazain/library/MySavedSection.tsx — for SavedRow rendering
  *
  * Per design §7.4 + §9.4: single source of truth for the per-type icon,
@@ -78,7 +78,7 @@ export interface RowProps {
 
 /**
  * Build row props for a search result group + item.
- * Used by app/search.tsx.
+ * Used by app/content-search.tsx.
  */
 export function rowPropsForSearchResult(
   group: SearchResultGroup,

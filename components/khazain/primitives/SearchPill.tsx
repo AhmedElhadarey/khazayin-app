@@ -51,7 +51,7 @@ type Props = Omit<TextInputProps, 'style'> & {
 // Dual-mode (added 2026-05-11):
 //   - Button mode (onPress provided): a Pressable styled identically to the
 //     input. Used by 13 host screens to open the search modal.
-//   - Input mode (onPress omitted): real TextInput. Used only by app/search.tsx.
+//   - Input mode (onPress omitted): real TextInput. Used only by app/content-search.tsx.
 /** Node `Inputs` instances `vuesax/bulk/search-normal` at 24. */
 const SEARCH_GLYPH = 24;
 
