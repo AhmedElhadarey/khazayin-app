@@ -13,6 +13,16 @@
 - The store gains `restore()` so undo can put an item back with its original timestamp and position.
 - Grouping moves into `constants/savedPresentation.ts` and orders groups by recency.
 
+**Revision:** v2 applies the CTO review (APPROVE WITH CHANGES) and the user's approval of long-press-to-save:
+- **Accessibility:** the hint depends on saved state, the row carries `accessibilityValue`, and the custom action announces its result.
+- **Pure builder:** `saveGestureProps` in `services/savedToggle.ts` is unit-tested, and only one wiring regex remains for `LectureCard`.
+- **QA hygiene:** QA compares against the existing baseline, ends with a teardown step, and the harness README gains a precondition.
+- **Corrected icon position:** the saved icon sits between the duration and the title.
+- **Recorded shift:** the empty-state hint adds one line on frame 06.
+- **Accepted optional changes:**
+  - `RibbonCard` memoises its target
+  - telemetry logs `restore` as its own action
+
 **Design:** `docs/plans/2026-10-21-saved-content-bookmarks-design.md`. Read §1.1 for why lecture rows can't show an always-on icon, and §5/§6 for the surah-list and group-order decisions.
 
 **Tech stack:**
@@ -165,6 +175,7 @@ git commit -m "test(saved): pin savedStore save, unsave, cap and persistence beh
 
 **Files:**
 - Modify: `store/savedStore.ts`
+  - `logSavedToggle` `:95`: widen `action` to `'save' | 'unsave' | 'restore'`
   - interface `:104-125`: add `restore`
   - implementation after `unsave` `:146-153`
   - header JSDoc `:1-16`: mention restore and its behaviour at the cap
@@ -208,6 +219,16 @@ git commit -m "test(saved): pin savedStore save, unsave, cap and persistence beh
     expect(useSavedStore.getState().items).toHaveLength(1);
     expect(useSavedStore.getState().items[0].savedAt).toBe(1);
   });
+
+  it('restore logs its own telemetry action', () => {
+    saveAt(1, 'lecture', 'a', LECTURE);
+    const removed = useSavedStore.getState().unsave('lecture', 'a')!;
+    useSavedStore.getState().restore(removed);
+    expect(console.log).toHaveBeenLastCalledWith(
+      '[khazayin]',
+      { context: 'saved-toggle', action: 'restore', type: 'lecture', total: 1 },
+    );
+  });
 ```
 
 **Step 2: Run** `npx jest __tests__/savedStore.test.ts`. Expected: FAIL with `restore is not a function`. TS may also complain that `restore` does not exist on `SavedState`.
@@ -235,11 +256,13 @@ In the store body, after `unsave`:
             : [...s.items.slice(0, at), item, ...s.items.slice(at)];
           return { items: next.length > MAX_ITEMS ? next.slice(0, MAX_ITEMS) : next };
         });
-        logSavedToggle('save', item.type, get().items.length);
+        logSavedToggle('restore', item.type, get().items.length);
       },
 ```
 
-**Step 4: Run** `npx jest __tests__/savedStore.test.ts`. Expected: 13 passing. Then run `npx tsc --noEmit --pretty false`. Expected: no new errors.
+Widen the logger's signature at `:95`: `function logSavedToggle(action: 'save' | 'unsave' | 'restore', type: SavedType, total: number)`.
+
+**Step 4: Run** `npx jest __tests__/savedStore.test.ts`. Expected: 14 passing. Then run `npx tsc --noEmit --pretty false`. Expected: no new errors.
 
 **Step 5: Commit.**
 ```bash
@@ -249,7 +272,7 @@ git commit -m "feat(saved): restore an unsaved item with its original timestamp 
 
 ---
 
-### Task 3: `services/savedToggle.ts`, one toggle path with undo that restores (G3, UI half)
+### Task 3: `services/savedToggle.ts`: one toggle path with undo that restores, and the pure gesture/a11y builder (G3, UI half)
 
 **Files:**
 - Create: `services/savedToggle.ts`
@@ -270,8 +293,9 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: jest.fn(async () => null), setItem: jest.fn(async () => undefined), removeItem: jest.fn(async () => undefined) },
 }));
 
+import { AccessibilityInfo, type AccessibilityActionEvent } from 'react-native';
 import {
-  lectureSaveTarget, saveAccessibilityActions, SAVE_ACTION_NAME, SAVE_TOAST_MS,
+  lectureSaveTarget, saveGestureProps, SAVE_ACTION_NAME, SAVE_TOAST_MS,
   SAVED_COPY, toggleSaved, UNSAVE_TOAST_MS, type SaveTarget,
 } from '../services/savedToggle';
 import { useSavedStore } from '../store/savedStore';
@@ -328,10 +352,55 @@ describe('toggleSaved', () => {
   });
 });
 
-describe('saveAccessibilityActions', () => {
-  it('offers one custom action labelled by the current state', () => {
-    expect(saveAccessibilityActions(false)).toEqual([{ name: SAVE_ACTION_NAME, label: 'حفظ في المكتبة' }]);
-    expect(saveAccessibilityActions(true)).toEqual([{ name: SAVE_ACTION_NAME, label: 'إزالة من المحفوظات' }]);
+describe('saveGestureProps', () => {
+  const action = (actionName: string) => ({ nativeEvent: { actionName } }) as AccessibilityActionEvent;
+  let announce: jest.SpyInstance;
+  beforeEach(() => {
+    announce = jest.spyOn(AccessibilityInfo, 'announceForAccessibility').mockImplementation(() => undefined);
+    // jest-expo already mocks this as a jest.fn, so spyOn reuses it and
+    // restoreAllMocks does not reset its calls — clear them per test.
+    announce.mockClear();
+  });
+
+  it('wires long-press to onToggle', () => {
+    const onToggle = jest.fn(() => true);
+    const props = saveGestureProps(false, onToggle);
+    expect(props.onLongPress).toBeDefined();
+    props.onLongPress!({} as never);
+    expect(onToggle).toHaveBeenCalledTimes(1);
+  });
+
+  it('the toggleSave custom action calls onToggle exactly once and announces the result', () => {
+    const onSave = jest.fn(() => true);
+    saveGestureProps(false, onSave).onAccessibilityAction!(action(SAVE_ACTION_NAME));
+    expect(onSave).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenLastCalledWith('تمت الإضافة إلى المحفوظات');
+
+    const onUnsave = jest.fn(() => false);
+    saveGestureProps(true, onUnsave).onAccessibilityAction!(action(SAVE_ACTION_NAME));
+    expect(onUnsave).toHaveBeenCalledTimes(1);
+    expect(announce).toHaveBeenLastCalledWith('تم الحذف من المحفوظات');
+  });
+
+  it('activate and longpress actions do not toggle (a double-tap still plays)', () => {
+    const onToggle = jest.fn(() => true);
+    const props = saveGestureProps(false, onToggle);
+    props.onAccessibilityAction!(action('activate'));
+    props.onAccessibilityAction!(action('longpress'));
+    expect(onToggle).not.toHaveBeenCalled();
+    expect(announce).not.toHaveBeenCalled();
+  });
+
+  it('labels, hint and value flip with saved state', () => {
+    const unsaved = saveGestureProps(false, () => true);
+    expect(unsaved.accessibilityActions).toEqual([{ name: SAVE_ACTION_NAME, label: 'حفظ في المكتبة' }]);
+    expect(unsaved.accessibilityHint).toBe('اضغط مطوّلاً للحفظ في المكتبة');
+    expect(unsaved.accessibilityValue).toEqual({ text: undefined });
+
+    const saved = saveGestureProps(true, () => false);
+    expect(saved.accessibilityActions).toEqual([{ name: SAVE_ACTION_NAME, label: 'إزالة من المحفوظات' }]);
+    expect(saved.accessibilityHint).toBe('اضغط مطوّلاً للإزالة من المحفوظات');
+    expect(saved.accessibilityValue).toEqual({ text: 'محفوظة' });
   });
 });
 
@@ -385,7 +454,8 @@ describe('BookmarkButton', () => {
  * -----------------------
  * The ONE save/unsave path. BookmarkButton (tap) and useSaveGesture (long-press
  * and the screen-reader custom action) both call toggleSaved, so the two
- * affordances cannot drift apart.
+ * affordances cannot drift apart. saveGestureProps is the pure builder for a
+ * saveable row's Pressable props (the hook only adds a haptic).
  *
  *   save   → toast SAVED_COPY.saved   (3s) — undo = unsave   (Board condition #3)
  *   unsave → toast SAVED_COPY.removed (5s) — undo = restore  (Board condition #6)
@@ -395,7 +465,7 @@ describe('BookmarkButton', () => {
  *
  * Imports the stores directly (not the @/store barrel) so tests stay off SQLite.
  */
-import type { AccessibilityActionInfo } from 'react-native';
+import { AccessibilityInfo, type AccessibilityActionEvent, type PressableProps } from 'react-native';
 import { useSavedStore } from '@/store/savedStore';
 import { useToastStore } from '@/store/toastStore';
 import type { Lecture, SavedSnapshot, SavedType } from '@/types/content';
@@ -412,7 +482,9 @@ export const SAVED_COPY = Object.freeze({
   undo: 'تراجع',
   saveLabel: 'حفظ في المكتبة',
   unsaveLabel: 'إزالة من المحفوظات',
-  longPressHint: 'اضغط مطوّلاً للحفظ في المكتبة',
+  saveHint: 'اضغط مطوّلاً للحفظ في المكتبة',
+  unsaveHint: 'اضغط مطوّلاً للإزالة من المحفوظات',
+  savedValue: 'محفوظة',
 });
 
 export const SAVE_TOAST_MS = 3000;
@@ -445,8 +517,33 @@ export function toggleSaved(target: SaveTarget): boolean {
   return true;
 }
 
-export function saveAccessibilityActions(saved: boolean): AccessibilityActionInfo[] {
-  return [{ name: SAVE_ACTION_NAME, label: saved ? SAVED_COPY.unsaveLabel : SAVED_COPY.saveLabel }];
+export type SaveGestureProps = Pick<
+  PressableProps,
+  'onLongPress' | 'accessibilityActions' | 'onAccessibilityAction' | 'accessibilityHint' | 'accessibilityValue'
+>;
+
+/**
+ * Pure builder for a saveable row's Pressable props. `onToggle` performs the
+ * toggle and returns the new saved state. Only the `toggleSave` custom action
+ * toggles — `activate` stays the row's own onPress (play). The custom-action
+ * path announces the result because the toast has no live region.
+ */
+export function saveGestureProps(saved: boolean, onToggle: () => boolean): SaveGestureProps {
+  return {
+    onLongPress: () => {
+      onToggle();
+    },
+    accessibilityActions: [
+      { name: SAVE_ACTION_NAME, label: saved ? SAVED_COPY.unsaveLabel : SAVED_COPY.saveLabel },
+    ],
+    onAccessibilityAction: (e: AccessibilityActionEvent) => {
+      if (e.nativeEvent.actionName !== SAVE_ACTION_NAME) return;
+      const nowSaved = onToggle();
+      AccessibilityInfo.announceForAccessibility(nowSaved ? SAVED_COPY.saved : SAVED_COPY.removed);
+    },
+    accessibilityHint: saved ? SAVED_COPY.unsaveHint : SAVED_COPY.saveHint,
+    accessibilityValue: { text: saved ? SAVED_COPY.savedValue : undefined },
+  };
 }
 
 export function lectureSaveTarget(lecture: {
@@ -679,58 +776,34 @@ This covers prophet, queen, books, radio, audiobooks and exclusive. None of the 
 **Step 1: Write the failing tests.** Append:
 
 ```ts
-describe('lecture rows are saveable without changing the Figma default state', () => {
-  const card = read('components/khazain/primitives/LectureCard.tsx');
-  const hook = read('components/khazain/primitives/useSaveGesture.ts');
-
-  it('LectureCard drops the dead opt-in prop that left every lecture unsaveable', () => {
-    expect(card).not.toMatch(/showBookmark/);
-  });
-
-  it('LectureCard wires long-press save through the shared hook', () => {
-    expect(card).toMatch(/useSaveGesture\(saveTarget\)/);
-    expect(card).toMatch(/lectureSaveTarget\(/);
-    expect(card).toMatch(/\{\.\.\.gestureProps\}/);
-  });
-
-  it('LectureCard shows the bookmark only once saved (frames 18, 20-24 draw none)', () => {
-    expect(card).toMatch(/duration \|\| saved/);
-    expect(card).toMatch(/\{saved \? \(\s*<BookmarkButton/);
-  });
-
-  it('the hook offers long-press, a screen-reader action, a hint and a haptic', () => {
-    expect(hook).toMatch(/onLongPress: toggle/);
-    expect(hook).toMatch(/accessibilityActions: saveAccessibilityActions\(saved\)/);
-    expect(hook).toMatch(/actionName === SAVE_ACTION_NAME/);
-    expect(hook).toMatch(/accessibilityHint: SAVED_COPY\.longPressHint/);
-    expect(hook).toMatch(/Haptics\.impactAsync/);
-    expect(hook).toMatch(/toggleSaved\(target\)/);
+describe('lecture rows', () => {
+  it('LectureCard wires the shared save gesture', () => {
+    expect(read('components/khazain/primitives/LectureCard.tsx')).toMatch(/useSaveGesture\(/);
   });
 });
 ```
 
-**Step 2: Run** `npx jest __tests__/savedWiring.test.ts`. Expected: FAIL (`ENOENT … useSaveGesture.ts`).
+This is the only wiring regex for this task. The gesture and accessibility behaviour is unit-tested through `saveGestureProps` in Task 3. The hook adds only a store selector and the haptic. The saved-only icon is verified in QA rows 1–9.
+
+**Step 2: Run** `npx jest __tests__/savedWiring.test.ts`. Expected: FAIL. `LectureCard` does not call `useSaveGesture` yet.
 
 **Step 3: Implement** `components/khazain/primitives/useSaveGesture.ts`:
 
 ```ts
-import { SAVE_ACTION_NAME, SAVED_COPY, saveAccessibilityActions, toggleSaved, type SaveTarget } from '@/services/savedToggle';
+import { saveGestureProps, toggleSaved, type SaveGestureProps, type SaveTarget } from '@/services/savedToggle';
 import { useSavedStore } from '@/store/savedStore';
 import * as Haptics from 'expo-haptics';
 import { useCallback, useMemo } from 'react';
-import { Platform, type AccessibilityActionEvent, type PressableProps } from 'react-native';
-
-export type SaveGestureProps = Pick<
-  PressableProps,
-  'onLongPress' | 'accessibilityActions' | 'onAccessibilityAction' | 'accessibilityHint'
->;
+import { Platform } from 'react-native';
 
 /**
  * Off-frame save affordance for rows whose Figma frame draws no bookmark
  * (lecture lists 2465:1911, 2510:1990, 2589:1772, 2597:2552, 2606:3830,
  * 2869:2088, 2869:2306). Long-press — or the screen-reader custom action —
  * toggles the save through services/savedToggle, so toasts and undo match the
- * BookmarkButton exactly. `saved` lets the row show a bookmark once saved.
+ * BookmarkButton exactly. Props come from the pure saveGestureProps; this hook
+ * adds only the store subscription and the haptic. `saved` lets the row show
+ * a bookmark once saved.
  * Pass `undefined` to opt out; the hook still has to be called unconditionally.
  */
 export function useSaveGesture(target: SaveTarget | undefined): { saved: boolean; gestureProps: SaveGestureProps } {
@@ -740,26 +813,16 @@ export function useSaveGesture(target: SaveTarget | undefined): { saved: boolean
     type !== undefined && s.items.some((it) => it.type === type && it.entityId === entityId),
   );
 
-  const toggle = useCallback(() => {
-    if (!target) return;
+  const toggle = useCallback((): boolean => {
+    if (!target) return false;
     if (Platform.OS !== 'web') {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
     }
-    toggleSaved(target);
+    return toggleSaved(target);
   }, [target]);
 
   const gestureProps = useMemo<SaveGestureProps>(
-    () =>
-      target
-        ? {
-            onLongPress: toggle,
-            accessibilityActions: saveAccessibilityActions(saved),
-            onAccessibilityAction: (e: AccessibilityActionEvent) => {
-              if (e.nativeEvent.actionName === SAVE_ACTION_NAME) toggle();
-            },
-            accessibilityHint: SAVED_COPY.longPressHint,
-          }
-        : {},
+    () => (target ? saveGestureProps(saved, toggle) : {}),
     [target, saved, toggle],
   );
 
@@ -833,8 +896,7 @@ describe('scholar-detail lectures (RibbonCard, frame 2510:1990)', () => {
   const ribbon = read('components/khazain/primitives/RibbonCard.tsx');
   it('RibbonCard takes an optional save target and uses the shared hook', () => {
     expect(ribbon).toMatch(/save\?: SaveTarget/);
-    expect(ribbon).toMatch(/useSaveGesture\(save\)/);
-    expect(ribbon).toMatch(/\{\.\.\.gestureProps\}/);
+    expect(ribbon).toMatch(/useSaveGesture\(stableSave\)/);
   });
   it('only the scholar DETAIL list opts in; the scholar list (frame 2102:2975) does not', () => {
     expect(read('app/(tabs)/sections/scholar/[id].tsx')).toMatch(/save=\{lectureSaveTarget\(l\)\}/);
@@ -859,7 +921,7 @@ describe('surah list decision (design §5)', () => {
 **Step 3: Implement.**
 
 `RibbonCard.tsx`:
-- Import `type SaveTarget` from `@/services/savedToggle`, `useSaveGesture` from `./useSaveGesture`, and `BookmarkButton` from `./BookmarkButton`.
+- Import `useMemo` from React, `type SaveTarget` from `@/services/savedToggle`, `useSaveGesture` from `./useSaveGesture`, and `BookmarkButton` from `./BookmarkButton`.
 - Add the prop:
   ```ts
   /** Opt-in lecture save (long-press + bookmark once saved). Scholar detail only. */
@@ -867,15 +929,19 @@ describe('surah list decision (design §5)', () => {
   ```
 - In the body:
   ```tsx
-  const { saved, gestureProps } = useSaveGesture(save);
+  // The caller builds a fresh target every render (lectureSaveTarget(l)); key
+  // the memo on the identity that matters so useSaveGesture's memo holds.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const stableSave = useMemo(() => save, [save?.entityId]);
+  const { saved, gestureProps } = useSaveGesture(stableSave);
   const durationNode = duration ? <Text style={styles.duration}>{duration}</Text> : null;
   …
   <Pressable onPress={onPress} {...gestureProps} style={…}>
     {/* Physical left — duration; plus a bookmark once saved (frame draws none). */}
-    {saved && save ? (
+    {saved && stableSave ? (
       <View style={styles.metaCluster}>
         {durationNode}
-        <BookmarkButton type={save.type} entityId={save.entityId} snapshot={save.snapshot} variant="light" />
+        <BookmarkButton type={stableSave.type} entityId={stableSave.entityId} snapshot={stableSave.snapshot} variant="light" />
       </View>
     ) : (
       durationNode
@@ -919,34 +985,42 @@ Use argent:
 2. Run `npm run ios` or `npx expo start`.
 3. Use the `argent-device-interact` / `argent-react-native-app-workflow` skills.
 
-Reference PNGs live in the **main** checkout: `/Users/ahmedelhadarey/samer/khazayin-app/docs/audit/2026-09-09/figma-reference/`.
+**Primary comparison target, the pre-change baseline.** The orchestrator captured it before any code changed:
+`/private/tmp/claude-501/-Users-ahmedelhadarey-samer-khazayin-app/ad126e66-b973-46e5-9731-c506a3e034d8/scratchpad/qa/baseline/`
+- Files are named `NN-<node>__<route>.png`, for example `18-2465-1911__sections-prophet.png` and `06-2031-4659__library.png`.
+- Run metadata is in `capture-summary.json`.
+- Every "unchanged" condition below means *matches this baseline*.
 
-**Precondition:** the harness never clears storage. Open `/library` and unsave every lecture before capturing default states.
+The Figma exports are a secondary reference. They live in the **main** checkout: `/Users/ahmedelhadarey/samer/khazayin-app/docs/audit/2026-09-09/figma-reference/`.
+
+**Precondition** (now also a safety rule in `scripts/visual-audit/README.md`): the saved library must be empty. Saved lectures add a bookmark to frames 18–24, and saved Home items fill bookmarks on 05. Open `/library`, unsave everything, and confirm the empty state before capturing default states.
 
 | # | Route | Compare against | Pass condition |
 |---|---|---|---|
-| 1 | `/sections/prophet` (unsaved) | `18-2465-1911.png` | Identical composition to the pre-change capture: badge right, duration left, **no bookmark**. |
+| 1 | `/sections/prophet` (unsaved) | baseline `18-2465-1911__sections-prophet.png` (Figma `18-2465-1911.png`) | Identical to the baseline: badge right, duration left, **no bookmark**. |
 | 2 | `/sections/prophet`: long-press row 1 | no frame (contract `LECTURE_CARD_ORDER` + `PHYSICAL_ROW`) | Toast `تمت الإضافة إلى المحفوظات` with `تراجع`. Gold filled bookmark appears between duration and title. Playback does **not** start. A haptic fires. |
 | 3 | same: tap the new bookmark, then `تراجع` | no frame | Toast `تم الحذف من المحفوظات` (5 s). Undo brings the icon back. In Library the item is in its original position. |
-| 4 | `/sections/queen` (unsaved) | `20-2589-1772.png` | No bookmark; unchanged. |
-| 5 | `/sections/books` (unsaved) | `21-2597-2552.png` | No bookmark; unchanged. |
-| 6 | `/sections/radio` (unsaved) | `22-2606-3830.png` | No bookmark; unchanged. |
-| 7 | `/sections/audiobooks` (unsaved, then long-press while scrolling) | `23-2869-2088.png` | Unchanged. A scroll gesture does not trigger a save. Long-press on a still row saves and the icon sits on the far left. Rail stays on the right. |
-| 8 | `/sections/exclusive` | `24-2869-2306.png` (export is blank, so use the written spec) | As 7. |
-| 9 | `/sections/scholar/s1` (unsaved, then long-press) | `19-2510-1990.png` | Unsaved matches: ribbon right, duration left. Once saved, the bookmark sits beside the duration. |
-| 10 | `/sections/scholar` | `09-2102-2975.png` | **Fully unchanged.** Long-press does nothing. |
-| 11 | `/sections/reciter/r1` | `13-2207-5270.png` | **Fully unchanged.** Play glyph left. |
-| 12 | `/sections/mushaf` | `14-2207-17898.png` | Unchanged. Bookmark tap/undo still works. |
-| 13 | `/` | `05-2001-940.png` | Scholar, book and dawah bookmarks unchanged; tapping shows the save toast. |
-| 14 | `/library` (empty saved) | `06-2031-4659.png` for everything the frame draws; the saved block has **no frame** (contract `constants/savedPresentation.ts`) | Empty state shows title, body and the new hint `لحفظ محاضرة، اضغط عليها مطوّلاً.`, centred, in RTL text. |
+| 4 | `/sections/queen` (unsaved) | baseline `20-2589-1772__sections-queen.png` | No bookmark; identical. |
+| 5 | `/sections/books` (unsaved) | baseline `21-2597-2552__sections-books.png` | No bookmark; identical. |
+| 6 | `/sections/radio` (unsaved) | baseline `22-2606-3830__sections-radio.png` | No bookmark; identical. |
+| 7 | `/sections/audiobooks` (unsaved, then long-press while scrolling) | baseline `23-2869-2088__sections-audiobooks.png` (Figma `23-2869-2088.png`) | Unsaved is identical to the baseline. A scroll gesture does not trigger a save. Long-press on a still row saves, and the icon sits **between the duration and the title**: the meta cluster is `[duration, bookmark]` left to right (`LectureCard.tsx:56-65`), and every audiobook fixture has a duration. The rail stays on the right. |
+| 8 | `/sections/exclusive` | baseline `24-2869-2306__sections-exclusive.png` (the Figma export is blank) | As 7. |
+| 9 | `/sections/scholar/s1` (unsaved, then long-press) | baseline `19-2510-1990__sections-scholar-s1.png` | Unsaved matches: ribbon right, duration left. Once saved, the bookmark sits beside the duration. |
+| 10 | `/sections/scholar` | baseline `09-2102-2975__sections-scholar.png` | **Fully unchanged.** Long-press does nothing. |
+| 11 | `/sections/reciter/r1` | baseline `13-2207-5270__sections-reciter-r1.png` | **Fully unchanged.** Play glyph left. |
+| 12 | `/sections/mushaf` | baseline `14-2207-17898__sections-mushaf.png` | Unchanged. Bookmark tap/undo still works. |
+| 13 | `/` | baseline `05-2001-940__home.png` | With an empty library, scholar, book and dawah bookmarks are identical to the baseline. Tapping one shows the save toast. |
+| 14 | `/library` (empty saved, `all` filter) | baseline `06-2031-4659__library.png`; the saved block has **no frame** (contract `constants/savedPresentation.ts`) | Everything above the saved block is identical to the baseline. The empty state shows the title, the body and the new hint `لحفظ محاضرة، اضغط عليها مطوّلاً.`, centred, in RTL text. **Expected and accepted:** everything below the saved block shifts down by exactly one caption line. Any other difference fails. |
 | 15 | `/library` populated: save a surah, then a dawah poster, then a lecture | no frame (contract `constants/savedPresentation.ts`) | Groups are ordered محاضرات, تصاميم, سور (newest group first), each with a count. Newest-first within each group. The total chip equals the sum. |
 | 16 | Persistence: save 2 items, then terminate and relaunch the app (`restart-app`) | no frame | Both items are still in Library, in the same order. |
-| 17 | VoiceOver on `/sections/prophet` | no frame | The row announces the hint. The custom action `حفظ في المكتبة` saves, and on a saved row it reads `إزالة من المحفوظات`. |
+| 17 | VoiceOver on `/sections/prophet` | no frame | The row reads hint `اضغط مطوّلاً للحفظ في المكتبة`. The custom action `حفظ في المكتبة` saves and VoiceOver **announces** `تمت الإضافة إلى المحفوظات`. The row then reads value `محفوظة`, the hint `اضغط مطوّلاً للإزالة من المحفوظات`, and the action `إزالة من المحفوظات`; using it announces `تم الحذف من المحفوظات`. Double-tap still plays and never toggles. |
 | 18 | Width matrix: `npm run screens:matrix:quick` (320/393) for routes 1, 7, 9 in the **saved** state | contract `CARD_DENSITY` | The title still truncates cleanly at 320 with the bookmark present, with no overlap. |
 
-Save the captures under `docs/audit/2026-10-21/saved-content-bookmarks/` (untracked, like earlier audits). When done, call `stop-all-simulator-servers` with the device used.
+| 19 | **Teardown** (always last) | baseline `06-2031-4659__library.png` | Unsave every item from `/library`. The empty state with the hint is visible, the `المحفوظات` filter count reads ٠, and routes 1 and 13 match the baseline again. The device is left clean for the next capture run. |
 
-**Step 3: No commit unless the QA pass required a fix.** `conductor/` does not exist in this checkout, so there is no track record to update. Any QA-driven fix goes back through the TDD loop of the task it belongs to, with its own commit.
+Save the captures under `docs/audit/2026-10-21/saved-content-bookmarks/` (untracked, like earlier audits). Only after row 19 passes, call `stop-all-simulator-servers` with the device used.
+
+**Step 3: No commit unless the QA pass required a fix.** The `scripts/visual-audit/README.md` precondition already landed with the v2 plan commit. `conductor/` does not exist in this checkout, so there is no track record to update. Any QA-driven fix goes back through the TDD loop of the task it belongs to, with its own commit.
 
 ---
 
@@ -954,8 +1028,8 @@ Save the captures under `docs/audit/2026-10-21/saved-content-bookmarks/` (untrac
 
 1. Characterisation tests for `savedStore` (G5)
 2. `savedStore.restore()` keeps the original timestamp and position (G3, store half)
-3. `services/savedToggle.ts`: one toggle path with undo that restores (G3, UI half)
+3. `services/savedToggle.ts`: one toggle path with undo that restores, plus the pure `saveGestureProps` (G3, UI half)
 4. Group the Library list by recency; teach the lecture gesture in the empty state (G4)
 5. `useSaveGesture` and long-press save on `LectureCard` (G1, six screens)
 6. Scholar-detail lectures (`RibbonCard`) and the surah-list decision pin (G1 and G2)
-7. Full verification and visual QA on the iOS simulator
+7. Full verification, visual QA against the pre-change baseline, and teardown

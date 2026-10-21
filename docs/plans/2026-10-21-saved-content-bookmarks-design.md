@@ -3,7 +3,18 @@
 **Date:** 2026-10-21
 **Branch:** `fix/saved-lecture-bookmarks`
 **Ticket:** "Saved Content & Bookmarks System" — https://trello.com/c/5bF5jpXi
-**Status:** proposed. Defaults are chosen for every open question (section 12), so work can start without a reply.
+**Status:** v2. CTO review returned APPROVE WITH CHANGES, and the user approved long-press-to-save. Section 12 records a default for every open question, so work can start without a reply.
+
+**v2 changes after the CTO review:**
+- **Accessibility:** the hint now depends on saved state, the row carries an `accessibilityValue` of `محفوظة` when saved, and the custom-action path announces the result.
+- **Testable gesture props:** the props builder is now the pure `saveGestureProps(saved, onToggle)` in `services/savedToggle.ts`, unit-tested there. The haptic stays in the hook.
+- **Device-state hygiene:** QA uses the existing pre-change baseline, ends with a teardown step, and `scripts/visual-audit/README.md` gains an empty-library precondition.
+- **Corrected icon position:** on the compact rows of frames 23–24, the saved icon sits between the duration and the title.
+- **Recorded Library shift:** the empty-state hint is a one-line shift on frame 06.
+- **Accepted optional changes:**
+  - `RibbonCard` memoises its target on `save?.entityId`
+  - telemetry logs `restore` as its own action
+  - §6 tie reasoning is reworded
 
 ---
 
@@ -38,7 +49,7 @@ system is mostly there. `store/savedStore.ts` is a persisted Zustand store,
   - 20 Queens `2589:1772`
   - 21 Books `2597:2552`
   - 22 Radio `2606:3830`
-  - 23 Audiobooks `2869:2088` (no duration either)
+  - 23 Audiobooks `2869:2088` (the frame draws no duration; the app fixtures have one, `data/content/audiobooks.ts:19-54`)
   - 24 Exclusive `2869:2306`
 
   I checked the reference PNGs in
@@ -92,22 +103,34 @@ control calls.**
    timings, the accessibility-action builder, and `lectureSaveTarget(lecture)`.
    `BookmarkButton.onPress` becomes a one-line call to it, so tapping the icon and
    long-pressing a row behave identically, including both undo toasts.
-2. **`components/khazain/primitives/useSaveGesture.ts`** (new) is a thin hook. It
-   subscribes to the saved state for one target and returns the Pressable props:
-   - `onLongPress`
-   - `accessibilityActions` / `onAccessibilityAction` (a VoiceOver/TalkBack custom
-     action named `حفظ في المكتبة` / `إزالة من المحفوظات`)
-   - `accessibilityHint`
+2. **`saveGestureProps(saved, onToggle)`** (pure, in `services/savedToggle.ts`)
+   builds the row's Pressable props:
+   - `onLongPress`, which calls `onToggle`
+   - `accessibilityActions` / `onAccessibilityAction`: one VoiceOver/TalkBack custom
+     action, `toggleSave`, labelled `حفظ في المكتبة` or `إزالة من المحفوظات`
+     depending on state. Only that action calls `onToggle`. `activate` and
+     `longpress` actions are ignored, so a double-tap still plays.
+   - a **state-dependent** `accessibilityHint`: `اضغط مطوّلاً للحفظ في المكتبة` /
+     `اضغط مطوّلاً للإزالة من المحفوظات`
+   - `accessibilityValue={{ text: saved ? 'محفوظة' : undefined }}`
 
-   It also fires a light haptic through `expo-haptics`, which is already declared in
-   `package.json:35`.
-3. **`LectureCard`** always wires the gesture. Its `meta` slot shows a
+   On the custom-action path it also calls
+   `AccessibilityInfo.announceForAccessibility(...)` with the toast text. The toast
+   has no live region, so a screen-reader user would otherwise get no confirmation.
+3. **`components/khazain/primitives/useSaveGesture.ts`** (new) is a thin hook. It
+   subscribes to the saved state for one target, wraps `toggleSaved` with a light
+   haptic (`expo-haptics`, already declared in `package.json:35`), and returns
+   `saveGestureProps(saved, toggle)`. All the logic it adds is the haptic, so
+   everything else is tested through the pure builder.
+4. **`LectureCard`** always wires the gesture. Its `meta` slot shows a
    `BookmarkButton` **only while the lecture is saved**, and tapping that icon unsaves.
    The unused `showBookmark` prop is removed.
-4. **`RibbonCard`** gets an optional `save?: SaveTarget` prop. Only scholar detail
+5. **`RibbonCard`** gets an optional `save?: SaveTarget` prop. Only scholar detail
    (`scholar/[id].tsx:56`) passes it. The scholar *list* (`scholar.tsx:45`) does not,
-   so that screen is untouched.
-5. **Discoverability:** the empty-state copy gains a line telling the user to
+   so that screen is untouched. `RibbonCard` memoises the target on `save?.entityId`.
+   The caller builds a fresh object every render, and memoising keeps the hook's
+   `useMemo` effective.
+6. **Discoverability:** the empty-state copy gains a line telling the user to
    long-press a lecture to save it. That screen has no Figma frame (§8). The row's
    accessibility hint carries the same message.
 
@@ -141,7 +164,8 @@ Why this satisfies the criterion without breaking the frames:
     newest-first, so that is the item's original position.
   - It does nothing if the id is already present.
   - It respects `MAX_ITEMS` (`:24`).
-  - It emits the same `[khazayin] saved-toggle` telemetry with `action: 'save'`.
+  - It emits `[khazayin] saved-toggle` telemetry with its own `action: 'restore'`.
+    To allow this, `logSavedToggle`'s union widens to `'save' | 'unsave' | 'restore'` (`:95`).
 - No schema change. The persist `version: 1` (`:167`) stays, so no migration is
   needed.
 
@@ -149,11 +173,15 @@ Why this satisfies the criterion without breaking the frames:
 
 ```ts
 export interface SaveTarget { type: SavedType; entityId: string; snapshot: SavedSnapshot }
-export const SAVED_COPY: Readonly<{ saved; removed; undo; saveLabel; unsaveLabel; longPressHint }>;
+export const SAVED_COPY: Readonly<{ saved; removed; undo; saveLabel; unsaveLabel;
+                                     saveHint; unsaveHint; savedValue }>;
 export const SAVE_TOAST_MS = 3000;   // Board condition #3 (existing)
 export const UNSAVE_TOAST_MS = 5000; // Board condition #6 (existing)
+export const SAVE_ACTION_NAME = 'toggleSave';
+export type SaveGestureProps = Pick<PressableProps, 'onLongPress' | 'accessibilityActions'
+  | 'onAccessibilityAction' | 'accessibilityHint' | 'accessibilityValue'>;
 export function toggleSaved(target: SaveTarget): boolean;            // returns the new saved state
-export function saveAccessibilityActions(saved: boolean): AccessibilityActionInfo[];
+export function saveGestureProps(saved: boolean, onToggle: () => boolean): SaveGestureProps; // pure
 export function lectureSaveTarget(l: Pick<Lecture, 'id'|'title'|'scholar'|'duration'|'category'>): SaveTarget;
 ```
 
@@ -178,12 +206,13 @@ This mirrors the shape of `constants/libraryPresentation.ts`.
 | File | Change |
 |---|---|
 | `components/khazain/primitives/BookmarkButton.tsx:51-81` | `onPress` becomes `onChange?.(toggleSaved({ type, entityId, snapshot }))`. The visual contract is unchanged. |
-| `components/khazain/primitives/useSaveGesture.ts` (new) | Hook described in §3 item 2. |
+| `components/khazain/primitives/useSaveGesture.ts` (new) | Hook described in §3 item 3: a store selector, a haptic, and `saveGestureProps`. |
 | `components/khazain/primitives/LectureCard.tsx:33,44,52-67,90-101` | Remove `showBookmark`. Build `lectureSaveTarget` with `useMemo`, spread the gesture props on the `Pressable`, and render the `BookmarkButton` in `meta` when `saved`. |
-| `components/khazain/primitives/RibbonCard.tsx:21-51` | Add an optional `save` prop. When saved, the physical left becomes a `PHYSICAL_ROW` cluster `[duration, bookmark]`. When not saved, the existing bare duration `Text` is rendered exactly as today. |
+| `components/khazain/primitives/RibbonCard.tsx:21-51` | Add an optional `save` prop, memoised on `save?.entityId`. When saved, the physical left becomes a `PHYSICAL_ROW` cluster `[duration, bookmark]`. When not saved, the existing bare duration `Text` is rendered exactly as today. |
 | `app/(tabs)/sections/scholar/[id].tsx:56-61` | Pass `save={lectureSaveTarget(l)}`. |
 | `components/khazain/library/MySavedSection.tsx:21-28,37-39,86-98` | Use `groupSavedItems`, and render `SAVED_EMPTY_COPY` including `lectureHint`. |
 | `components/khazain/primitives/index.ts` | Export `useSaveGesture`. |
+| `scripts/visual-audit/README.md` (Safety rules) | Precondition: the saved library must be empty. Saved lectures add a bookmark to frames 18–24 (and fill the Home bookmarks on 05). **Added in this v2 commit.** |
 
 **Routes:** none added or changed.
 
@@ -234,8 +263,10 @@ recorded as Q2, default **no**.
   stay newest-first inside each group. The criterion "most recent first" then holds
   for the whole section: the first row under the header is always the last thing
   saved. With the fixed order, a just-saved design would have sat at the bottom.
-- Ties can't occur across groups, because composite ids are unique. Within a group,
-  ties keep store order (stable sort).
+- **Ties:** a group's position is set by its newest entry. Two groups tie only when
+  their newest entries share a millisecond `savedAt`. In that case the stable sort keeps
+  store order, which is itself newest-insertion-first. Entries within a group use the
+  same stable sort.
 
 ---
 
@@ -254,8 +285,12 @@ idempotent as a guard.
 
 ## 8. Figma frames affected
 
-The default state, with no lecture saved, must stay **pixel-identical** to the current
-`main` capture on every frame below. Only the saved state, which no frame draws, may
+The default state, with no lecture saved, must stay **pixel-identical** to the
+pre-change capture on every frame below. The orchestrator already captured every
+framed route before any change, at
+`/private/tmp/claude-501/-Users-ahmedelhadarey-samer-khazayin-app/ad126e66-b973-46e5-9731-c506a3e034d8/scratchpad/qa/baseline/`
+(`NN-<node>__<route>.png` plus `capture-summary.json`). That is the comparison
+target. The Figma exports are the secondary reference. Only the saved state, which no frame draws, may
 differ.
 
 | # | Node | Route | Must remain identical (unsaved) | Saved-state change |
@@ -265,13 +300,13 @@ differ.
 | 20 | `2589:1772` | `/sections/queen` | all rows | as 18 |
 | 21 | `2597:2552` | `/sections/books` | all rows | as 18 |
 | 22 | `2606:3830` | `/sections/radio` | all rows | as 18 |
-| 23 | `2869:2088` | `/sections/audiobooks` | rows, rail | bookmark icon on the far left of the compact row |
+| 23 | `2869:2088` | `/sections/audiobooks` | rows, rail | bookmark icon **between the duration and the title**. The meta cluster is `[duration, bookmark]` left to right (`LectureCard.tsx:56-65`), and every audiobook fixture has a duration. |
 | 24 | `2869:2306` | `/sections/exclusive` | rows, rail (the export is blank, so compare against the written spec) | as 23 |
 | 09 | `2102:2975` | `/sections/scholar` | **fully unchanged** (no `save` prop) | n/a |
 | 13 | `2207:5270` | `/sections/reciter/r1` | **fully unchanged** | n/a |
 | 14 | `2207:17898` | `/sections/mushaf` | unchanged (bookmark already present) | n/a |
 | 05 | `2001:940` | `/` | unchanged | n/a |
-| 06 | `2031:4659` | `/library` | everything the frame draws; the saved list has **no frame** (§6) | group order follows recency; empty state gains one line |
+| 06 | `2031:4659` | `/library` | everything the frame draws **above the saved block**; the saved list has **no frame** (§6) | Group order follows recency. **Expected shift:** under the `all` filter with an empty library, the new hint line pushes everything below the saved block (audiobook progress, smart reminders, and the rest) down by one caption line. QA compares this route against the **pre-change capture**, not the raw Figma export, and accepts exactly that one-line shift. |
 
 The toast overlay has no frame. It is an existing component and is unchanged.
 
@@ -299,8 +334,8 @@ The toast overlay has no frame. It is an existing component and is unchanged.
 
 | Risk | Mitigation |
 |---|---|
-| Long-press is a hidden gesture. | Empty-state hint, a11y hint, and a VoiceOver/TalkBack custom action. Once one lecture is saved, the visible icon teaches the pattern. Q1 lets the product owner pick a visible icon instead. |
-| The visual-audit harness never clears app storage (`scripts/visual-audit/capture-android.mjs:6` "never runs `pm clear`"). A saved lecture on the capture device would show an icon and fail frames 18–24. | The QA checklist starts with "unsave every lecture in Library". The saved state is captured separately. |
+| Long-press is a hidden gesture. | Empty-state hint, a state-dependent a11y hint, `accessibilityValue` `محفوظة`, and a VoiceOver/TalkBack custom action that announces its result. Once one lecture is saved, the visible icon teaches the pattern. Q1 lets the product owner pick a visible icon instead. |
+| The visual-audit harness never clears app storage (`scripts/visual-audit/capture-android.mjs:6` "never runs `pm clear`"). A saved lecture on the capture device would show an icon and fail frames 18–24, and saved Home items would fill bookmarks on 05. | Three mitigations: (1) a precondition in `scripts/visual-audit/README.md`; (2) the QA checklist starts with an empty library and **ends with a teardown step** (unsave everything, confirm the Library empty state); (3) the saved state is captured separately from the default-state comparison. |
 | Long-press could fire `onPress` and start playback too. | RN `Pressable` does not call `onPress` after `onLongPress` fires. This is checked in QA on both platforms. |
 | Long-press inside a scrolling FlatList could misfire. | `Pressable` cancels the long-press timer when the responder is taken by the scroll. This is checked in QA on the rail lists (23/24). |
 | `expo-haptics` on web throws or no-ops. | The call is wrapped in `.catch(() => undefined)`, and `Platform.OS !== 'web'` guards it. |
@@ -336,4 +371,6 @@ The toast overlay has no frame. It is an existing component and is unchanged.
 | Q2 | Long-press to save on the reciter surah list (`ReciterSurahRow`)? | **No.** The Mushaf list covers "surah list items" (§5). |
 | Q3 | Add a bookmark to the MiniPlayer for the now-playing lecture? | **No, follow-up.** It needs lecture identity on `PlayerTrack`. |
 | Q4 | Haptic tick on long-press via the already-declared `expo-haptics`? | **Yes**, light impact, skipped on web. |
+
+**Resolved by the user (v2):** long-press-to-save is approved, which settles the approach behind Q1.
 | Q5 | Empty-state hint wording: `لحفظ محاضرة، اضغط عليها مطوّلاً.` | **Use as written.** The client can revise the copy. |
