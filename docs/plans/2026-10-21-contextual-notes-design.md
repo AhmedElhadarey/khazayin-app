@@ -1,28 +1,38 @@
-# Contextual Notes Linked to Content: Design
+# Contextual Notes Linked to Content: Design (v2)
 
 - **Ticket:** "Contextual Notes Linked to Content" (https://trello.com/c/g42hsH45). It is marked Done on the board but failed the acceptance-criteria audit.
-- **Branch:** `feat/contextual-notes`. Book-detail work runs after a rebase onto `fix/search-route-and-navigation`.
+- **Branch:** `feat/contextual-notes`. **It is built last**, on top of `fix/search-route-and-navigation` (book detail) **and** `feat/progress-page-tracking` (the Mushaf reader split into per-page segments).
 - **Date:** 2026-10-21
-- **Authorities used:** Figma frames 16 (`2349:982`), 15 (`2349:829`), 6 (`2031:4659`), 19 (`2510:1990`) and 5 (`2001:940`), for what must not move. Every surface this ticket adds has no frame, so `constants/layout.ts` (RTL contract), `constants/typography.ts` (`textStyle` roles) and the `theme.ts` `Khazain*` tokens govern them. This doc says which applies in each place.
+- **Status:** v2. The CTO review returned APPROVE WITH CHANGES, and the user's decisions are recorded in §11. §12 lists what changed from v1.
+
+**Sibling plans this design builds on (read before implementing):**
+- `khazayin-worktrees/progress/docs/plans/2026-10-21-reading-progress-tracking-{design,implementation-plan}.md`. Task 6 gives the segmented reader; Task 1 gives `pageForAyah`.
+- `khazayin-worktrees/search/docs/plans/2026-10-21-content-search-reachability-{design,implementation-plan}.md` (v2). §4.4 is book detail (`BOOK_DETAIL_SECTIONS = ['cover','meta','primaryAction']`, `bookDetailHref`), §4.3 is `dismissTo`, and R7 is book identity.
+- `khazayin-worktrees/saved/docs/plans/2026-10-21-saved-content-bookmarks-{design,implementation-plan}.md` (v2). It adds long-press **to save** on `LectureCard`/`RibbonCard` (`saveGestureProps`, `useSaveGesture`) and a `save` prop on the scholar-detail `RibbonCard`.
+- `khazayin-worktrees/onboarding/docs/plans/2026-10-21-onboarding-flow-gaps-{design,implementation-plan}.md`. It adds the reciter preview in `audioEngine.ts`, a preview clear at the top of `playLecture`, and `syncBridge` suppression.
+
+**Authorities used:**
+- **Figma frames, for what must not move:** 16 (`2349:982`), 15 (`2349:829`), 14 (`2207:17898`), 6 (`2031:4659`), 19 (`2510:1990`) and 5 (`2001:940`).
+- **Contracts, for every new surface:** none of the surfaces this ticket adds has a frame among the 28. They follow `constants/layout.ts` (`RTL_TEXT`, `PHYSICAL_ROW`, `PHYSICAL_BOX`), `constants/typography.ts` (`textStyle`) and the `theme.ts` `Khazain*` tokens. Each section says which applies.
 
 ---
 
 ## 1. Problem: what the audit found
 
-Almost none of the ticket exists in code:
+Line numbers are from the current base, `0635ea1`. Task 0 re-confirms them after the rebase.
 
 | Gap | Evidence |
 |---|---|
-| A note cannot point at content | `store/notesStore.ts:6-12`: `Note = { id, title, body, createdAt, updatedAt }`. `addNote(title, body)` at `:16` takes no reference. |
-| Persist has no versioning | `store/notesStore.ts:48-52`: `persist(..., { name: '@khazain/notes', storage })` has no `version` and no `migrate`, so we cannot add a field safely. |
-| The editor cannot receive a reference | `app/note-editor.tsx:21`: `type Params = { id?: string; title?: string }`. |
-| The viewer shows no source | `app/notes-viewer.tsx:60-78`: `NoteRow` renders relative time and title only. |
-| Mushaf has no note action | `app/(tabs)/sections/mushaf.tsx:148-256`: `ReadingView` renders ayat as one `<Text>` (`:227-240`) and has no handlers. The footer (`:245-253`) has exactly the three Figma slots. |
-| Lecture playback has no note action | `components/khazain/primitives/MiniPlayer.tsx:15-66` has transport controls only. No full-screen player route exists. |
-| The Library "إضافة ملاحظة" only seeds a title | `app/(tabs)/library.tsx:331-334` calls `openNewNote(lecture.title)` (`:266-267`). The editor puts that title into the *body* (`note-editor.tsx:43-45`). No position or link is kept. |
-| No content screen lists its notes | Nothing reads notes outside Library, the editor, the viewer and the Settings export. |
-| No way back to the source | There is no `ayah` param on the Mushaf route (`mushaf.tsx:44`) and no way to start a lecture at a given episode and second (`services/audioEngine.ts:142-152` only resumes the saved session). |
-| No book detail screen | `app/(tabs)/sections/book/[id].tsx` does not exist. The Content Search ticket creates it, and this branch gets rebased onto that one. |
+| A note cannot point at content | `store/notesStore.ts:6-12`: `Note = { id, title, body, createdAt, updatedAt }`. `addNote(title, body)` at `:16`. |
+| The persisted shape cannot grow safely | `store/notesStore.ts:48-52`: `persist` with no `merge`/coercion. Any added field is trusted blindly on hydrate. |
+| The editor cannot receive a reference | `app/note-editor.tsx:21`: `Params = { id?, title? }`. |
+| The viewer shows no source | `app/notes-viewer.tsx:60-78`: the row is time and title only. |
+| Mushaf has no note action | The reader has no handlers, and the footer is the three Figma slots (`mushaf.tsx:245-253`). |
+| Lecture playback has no note action | `MiniPlayer.tsx:15-66` is transport controls only. There is no full-screen player. |
+| The Library "إضافة ملاحظة" only seeds a title | `library.tsx:331-334` calls `openNewNote(lecture.title)`. The title lands in the *body* (`note-editor.tsx:43-45`), and there is no link or position. |
+| No content screen lists its notes | Notes are read only by Library, the editor, the viewer and the Settings export. |
+| No way back to a source | There is no `ayah` param on the Mushaf route. `playLecture` cannot start at a chosen episode or second (`audioEngine.ts:142-152` only resumes the saved session). |
+| No book detail screen today | Search v2 §4.4 creates it, and it has **no** notes slot. |
 
 ## 2. Acceptance criteria (verbatim)
 
@@ -34,234 +44,295 @@ Almost none of the ticket exists in code:
 6. Content detail screens show existing notes linked to that content
 7. Linked notes display the source reference (e.g., 'البقرة: ٢٥٥' or 'محاضرة الشيخ — ١٢:٣٤')
 
-## 3. Approach chosen
+## 3. App-wide long-press rule (user decision, 2026-10-21)
 
-### 3.1 Data model (AC 4)
+| Long-press on… | Means | Owner |
+|---|---|---|
+| `LectureCard`, `RibbonCard` (lecture rows) | **SAVE** to المحفوظات | saved v2 plan (`saveGestureProps`) |
+| An ayah in the Mushaf reader | **NOTE** on that ayah | this ticket |
+| The MiniPlayer | **NOTE** at the current second | this ticket |
 
-There is one new pure module, `services/noteRefs.ts`, and it owns the reference type, the label formatters, validation and route-param encoding.
+The two gestures never share a surface. No note gesture goes on a lecture row, and no save gesture goes on an ayah or the MiniPlayer. A source-scan invariant test pins this rule (plan Task 19), and `CLAUDE.md` records it.
+
+## 4. Approach chosen
+
+### 4.1 Data model (AC 4)
+
+`services/noteRefs.ts` is new and pure. It owns the types, labels, validation, builders and route params.
 
 ```ts
-export type NoteRefType = 'ayah' | 'lecture' | 'book';
-export type NoteRefContext = 'mushaf' | 'mini-player' | 'library-progress' | 'book-detail';
+export const NOTE_REF_TYPES = Object.freeze(['ayah', 'lecture', 'book'] as const);
+export type NoteRefType = (typeof NOTE_REF_TYPES)[number];
 
+/** Stored shape. `type` and `context` are open strings so a newer build's refs survive here. */
 export type NoteRef = {
-  type: NoteRefType;
-  /** ayah: padded surah id ('002'); lecture: RNTP episode id ('ABC/002.mp3'); book: book id */
-  id: string;
-  /** ayah: ayah number; lecture: whole seconds; book: page. Omitted when unknown. */
-  position?: number;
-  /** Arabic label frozen at creation ('البقرة: ٢٥٥'). Shown verbatim. */
-  label: string;
-  /** "Creation context": which surface created the note. */
-  context: NoteRefContext;
-  /** lecture/book: content title (needed to rebuild playback and to relabel) */
-  title?: string;
-  /** lecture: scholar name (RNTP `artist`, needed to rebuild playback) */
-  speaker?: string;
+  type: string;            // NoteRefType for refs this build creates
+  id: string;              // ayah: padded surah id '002'; lecture: episode id 'ABC/002.mp3'; book: Book.id 'bk2'
+  position?: number;       // ayah: ayah number; lecture: whole seconds; book: page (unused today)
+  label: string;           // Arabic label frozen at creation, shown verbatim
+  context?: string;        // creation context: 'mushaf' | 'mini-player' | 'library-progress' | 'book-detail'
+  page?: number;           // ayah refs: Madani page from pageForAyah (progress Task 1)
+  title?: string;          // lecture/book title (needed to rebuild playback)
+  speaker?: string;        // lecture scholar (RNTP `artist`)
+  [extra: string]: unknown; // unknown keys from a newer build are preserved, not stripped
 };
-
 export type Note = { id; title; body; createdAt; updatedAt; ref?: NoteRef };
 ```
 
-- **The lecture `id` is the episode id**, not the series id. `resolveEpisodes` builds `${archiveId}/${file}` (`services/archive/episodeResolver.ts:85`). That is the same id `playerStore.track.id` and `LectureSession.lectureId` already carry, so all three entry points agree. The series is recovered with `id.split('/')[0]`, the same derivation `togglePlayback` uses at `services/audioEngine.ts:197`.
-- **The label is stored, not derived on render.** The ticket asks for the source reference to be displayed, and a stored label stays stable even after the content catalogue changes. The structured fields (`type/id/position`) drive navigation. The label is only for display.
-- `addNote(title, body, ref?)` stays backward compatible. `updateNote` keeps `ref` (it only patches `title`/`body`).
-- **Persist migration:** add `version: 1` and `migrate: migrateNotesState`. Existing installs are stored at zustand's implicit version `0`, so `migrate` runs once. It keeps every note and passes each `ref` through `coerceNoteRef`, which drops a malformed ref without losing the note. zustand writes the migrated state back because `migrate` ran. The storage key `@khazain/notes` **does not change**. `services/cache/keys.ts:7` and `cacheFacade` protect it as user content.
-- **Selectors** are pure functions exported from `store/notesStore.ts`:
-  - `notesFor(notes, type, id)` returns the notes whose `ref` matches, in store order (newest first).
-  - `notedAyahNumbers(notes, surahId)` returns a `Set<number>` for the ayah-number tint.
-  - `notesForLectureSeries(notes, archiveIds)` returns lecture notes whose episode belongs to any of the given series. The scholar screen uses it.
-  - `useLinkedNotes(type, id)` subscribes to `notes` and memoises `notesFor`. It never returns a fresh array from the zustand selector itself, which would loop under zustand 5's `useSyncExternalStore`.
+**Identity**
+- **Ayah:** `id` is the padded surah id (`normalizeSurahParam`, `services/mushafNavigation.ts:17`). `position` is the ayah. `page` is `pageForAyah(surah, ayah)` from the progress branch (`constants/quranPages.ts`). That closes "ayah/page" in AC 1 without a page-swipe reader.
+- **Lecture:** `id` is the **episode id** `${archiveId}/${file}` (`services/archive/episodeResolver.ts:85`). It is the same id `playerStore.track.id` and `LectureSession.lectureId` already carry.
+  - Lecture refs are built **only** for ids shaped `archiveId/file` (`/^[^/]+\/.+$/`). Any other track id gives an unlinked note rather than a link that cannot resolve.
+  - The series is recovered with `id.split('/')[0]`, the same derivation as `audioEngine.ts:197`.
+- **Book:** `id` is the **`Book.id` (`bk*`)**. This settles search R7 ("pick one canonical book id"), because book detail only ever receives `Book` ids (search §4.4). The sharh lecture (`b*`) played from that screen is a *lecture*, so a note taken while it plays (from the MiniPlayer) is a lecture ref. That split is intentional and is recorded in §8.
+- **The label is stored, not derived on render.** The display stays stable if the catalogue changes. Structured fields drive navigation; the label is display only.
 
-### 3.2 Arabic reference labels (AC 7)
+**Persistence: no version bump** (CTO change 1). This mirrors `store/settingsStore.ts:377-395`, which uses `merge` plus coercion and no zustand `version`/`migrate`.
+- `persist` gains `merge: (persisted, current) => ({ ...current, notes: coerceNotes(persisted) })`. The storage key `@khazain/notes` and the implicit version `0` are unchanged.
+- **Why no version bump:** a build that bumps `version` writes `version: 1`. An older build (no `migrate`) that later reads that record logs a version mismatch, and zustand discards the persisted state, so **notes are lost on downgrade**. With merge-only, the older build reads `{ notes }` and ignores `ref`. Its `updateNote` spreads `{ ...n, ...patch }` (`notesStore.ts:37-41`), so the ref survives an edit in the old build and is intact after re-upgrade. QA row 18 checks this.
+- **Coercion is lenient, and it never throws.**
+  - A note is kept when `id` is a non-empty string. `title` and `body` default to `''`, and the timestamps default to `0`.
+  - A ref is **dropped only when it is structurally malformed**: not an object, `type`/`id`/`label` not a non-empty string, or `position`/`page` present but not a finite integer ≥ 0.
+  - **Unknown `type`/`context` values and unknown keys are kept**, so a newer build's refs survive a round trip through this build. The UI shows their label but offers no link (`noteSourceTarget` returns `null` for an unknown type).
+  - Junk such as `null`, a string, `{ notes: 'x' }` or non-object entries never throws. It degrades to the valid subset, or to `[]` only when `notes` is not an array.
+- As `settingsStore.ts:379-387` explains, `merge` does not write back at hydrate. The coerced state reaches disk on the next note change, which is harmless because coercion is idempotent.
+- `addNote(title, body, ref?)` is backward compatible. `updateNote` keeps `ref`.
 
-These are pure functions in `services/noteRefs.ts`. All digits are Arabic-Indic, via `toArabicDigits` (`constants/progress.ts:141`).
+**Selectors** are exported pure from `store/notesStore.ts`:
+- `notesFor(notes, type, id)` returns store order (newest first).
+- `notesForLectureSeries(notes, archiveIds)`
+- `archiveIdOfEpisode(id)`
+- `useLinkedNotes(type, id)` subscribes to `notes` and `useMemo`s the filter. It never returns a fresh array from the zustand selector, which would loop under zustand 5.
+
+### 4.2 Arabic reference labels (AC 7)
+
+These are pure functions in `services/noteRefs.ts`. Digits are Arabic-Indic via `toArabicDigits` (`constants/progress.ts:141`). Lecture labels lead with the **title, with the speaker as fallback** (user decision Q2).
 
 | Input | Output |
 |---|---|
 | `ayahRefLabel(2, 255)` | `البقرة: ٢٥٥` |
-| `ayahRefLabel(2)` (surah-level note, a11y path) | `سورة البقرة` |
-| `formatPlaybackTime(754)` | `١٢:٣٤` (m:ss, minutes unpadded) |
-| `formatPlaybackTime(3723)` | `١:٠٢:٠٣` (h:mm:ss at ≥ 1 h) |
-| `formatPlaybackTime(-1 / NaN)` | `٠:٠٠` |
+| `ayahRefLabel(2)` (surah-level, a11y path) | `سورة البقرة` |
+| `formatPlaybackTime(754)` / `(3723)` / `(-1)` | `١٢:٣٤` / `١:٠٢:٠٣` / `٠:٠٠` |
 | `lectureRefLabel('آداب الدعاء', 'الشيخ عبد المحسن العباد', 754)` | `محاضرة آداب الدعاء — ١٢:٣٤` |
-| `lectureRefLabel('', 'الشيخ ابن عثيمين', 754)` | `محاضرة الشيخ ابن عثيمين — ١٢:٣٤` (speaker is the fallback when there is no title) |
-| `lectureRefLabel(title, speaker)` (no duration known) | `محاضرة آداب الدعاء` |
-| `bookRefLabel('الأصول الثلاثة')` | `كتاب الأصول الثلاثة` |
-| `bookRefLabel('الأصول الثلاثة', 12)` | `كتاب الأصول الثلاثة — صفحة ١٢` |
+| `lectureRefLabel('', 'الشيخ ابن عثيمين', 754)` | `محاضرة الشيخ ابن عثيمين — ١٢:٣٤` |
+| `lectureRefLabel(title, speaker)` (no duration) | `محاضرة آداب الدعاء` |
+| `bookRefLabel('الأصول الثلاثة')` / `(…, 12)` | `كتاب الأصول الثلاثة` / `كتاب الأصول الثلاثة — صفحة ١٢` |
 
-The ticket's sample `'محاضرة الشيخ — ١٢:٣٤'` reads as "lecture <speaker/title>". We use the **title** first because a title identifies a lecture and a speaker does not. Every lecture row in frame 19 carries the same speaker. The speaker is the fallback.
+**Bidi:** each time is an Arabic-Number run joined by single common separators. UAX #9 rule W4 makes `:` part of the run, so the time renders as one left-to-right numeral group inside the RTL label. The em dash is neutral. Every Text that shows a label spreads `RTL_TEXT` (`constants/layout.ts:112`).
 
-**Bidi:** `١٢:٣٤` and `١:٠٢:٠٣` are Arabic-Number runs separated by single common separators. UAX #9 rule W4 folds each `:` into the AN run, so the time renders as one left-to-right numeral group inside the RTL label, which is the Arabic convention. The ` — ` em dash is a neutral and takes the paragraph's RTL direction. Every Text that shows a label spreads `RTL_TEXT` (`constants/layout.ts:112`).
+### 4.3 Mushaf reader: Take Note (AC 1), the linked notes (AC 6) and navigating back
 
-### 3.3 Mushaf: Take Note (AC 1) and its linked notes (AC 6)
+The reader here is the **progress branch's segmented reader** (progress Task 6):
+- one `<Text>` per Madani page segment from `groupAyatByPage(surahNumber, ayat)`
+- segment layouts kept in `layoutsRef` (relative to the body wrapper, whose `y` is `bodyYRef`)
+- a `ScrollView` with `onScroll`/`onLayout`
+- `ReadingView` still keyed `key={surahId}`
 
-**Affordance: long-press on an ayah opens the note editor linked to that ayah.**
+All anchors below are in that version.
 
-- Each ayah's text becomes a nested `<Text onLongPress>` inside the existing single justified `<Text>` (`mushaf.tsx:227-240`). React Native supports press handlers on nested Text on iOS and Android without breaking the paragraph flow, so the justified layout does not change.
-- On long-press, `expo-haptics` (already in `package.json`) fires a light impact, then `router.push({ pathname: '/note-editor', params: noteRefToParams(makeAyahRef(surahId, n, 'mushaf')) })`.
-- **Accessibility:** nested Text spans are not individually focusable. The ayat body `<Text>` therefore declares `accessibilityActions=[{ name: 'addSurahNote', label: 'إضافة ملاحظة على السورة' }]`. That action creates a surah-level note (`position` omitted, label `سورة البقرة`).
-- **Page:** the reader has no page-swipe yet. `currentPage` is `surahStartPage` (`mushaf.tsx:159`), so a page number would always be the surah's first page and would mislead. AC 1's "ayah/page" is met by the ayah. A page field is a follow-up for when real paging lands (see Out of scope).
+**Take Note: long-press an ayah.**
+- Inside each segment `<Text>`, each ayah's text becomes a nested `<Text onLongPress suppressHighlighting>`. Nested press handlers are supported on iOS and Android and keep the justified paragraph flow.
+- Long-press gives a light haptic (`expo-haptics`, `package.json:35`, guarded with `Platform.OS !== 'web'`, matching the saved plan's Q4), then `router.push('/note-editor', takeAyahNoteParams(surahId, n))`. The ref carries `position = n` and `page = pageForAyah(surah, n)`.
+- **Accessibility:** nested spans are not focusable, so each segment `<Text>` declares `accessibilityActions=[{ name: 'addSurahNote', label: 'إضافة ملاحظة على السورة' }]`. That creates a surah-level ref (no position, label `سورة البقرة`).
 
-**Linked notes on the reader:**
-- **"ملاحظاتك على هذه السورة" section** is appended inside the reading `ScrollView` after the ayat. It renders `null` when the surah has no linked notes. The rows are sorted by ayah number, and tapping a row opens the note in the editor.
-- **Ayah-number tint:** ayah numbers that have notes render in `navy800` instead of `gold600` (`mushaf.tsx:362-366`). This is a colour change only, with no added glyph and no layout shift.
+**Visible cue (user decision Q1).**
+- At the end of the reading surface, after the body wrapper and inside the `ScrollView`, a caption hint `اضغط مطولًا على آية لإضافة ملاحظة` appears **when the surah has no linked notes**.
+- When the surah has notes, the hint is replaced by the **"ملاحظاتك على هذه السورة"** section. Rows are sorted by ayah, a row tap opens the editor, and a label tap scrolls to that ayah.
+- Both sit outside the segment wrapper, so the progress branch's segment offsets and page-in-view detection are unaffected.
+- **Dropped from v1:** the ayah-number tint (an optional change the CTO accepted). The hint and the section carry the cue.
 
-**Navigating back to an ayah:** `/sections/mushaf?surah=2&ayah=255`.
-- `normalizeAyahParam` (in `services/mushafNavigation.ts`) validates the param against the loaded ayah count.
-- The reader scrolls to an *approximate* offset: `ayahScrollFraction(ayat, n)` is the share of characters before ayah *n*, times the measured height of the ayat text block. It cannot be exact, because one justified Text cannot report per-span positions. The scroll fires once, after both layout and data settle.
-- The target ayah then renders with a `cream200` background, so the reader can find it even if the scroll is a line or two off.
+**Navigating back to an ayah: `/sections/mushaf?surah=2&ayah=255`** (CTO change 2).
+- `normalizeAyahParam(raw, ayahCount)` validates the param.
+- **Line lookup instead of a whole-surah character fraction:**
+  1. `segmentForAyah(segments, n)` finds the page segment holding ayah *n*.
+  2. Each segment `<Text>` adds `onTextLayout={(e) => linesRef.current.set(page, e.nativeEvent.lines)}`.
+  3. `ayahCharOffset(segment.ayat, n)` counts the characters before ayah *n* **exactly as rendered**. For each earlier ayah that is `text.length` plus the `AyahNum` marker `'  ' + String(number) + '  '` (4 + digits, `mushaf.tsx:268-276`), plus the `' '` separator between ayat (`mushaf.tsx:237`).
+  4. `lineYForOffset(lines, offset)` walks the cumulative `line.text.length` and returns the first line whose span contains the offset. The lookup counts characters; it does not match strings. That answers the fragility progress §4.2 raised against string matching.
+  5. `ayahScrollY({ bodyY, segmentY, lines, offset, segmentHeight, fraction })` gives `bodyY + segmentY + lineY`. **Fallback:** when there are no lines yet, or when the summed line lengths differ from the expected segment length by more than 5% (some platforms trim trailing whitespace), it uses `bodyY + segmentY + fraction × segmentHeight` with the character fraction *within the segment*. The error is then bounded by one Madani page, not the whole surah.
+  6. The view scrolls to `max(0, y − 80)`.
+- **Remember the last ayah scrolled to, not a boolean.** `ReadingView` is keyed by surah, so `?surah=2&ayah=255` → `?ayah=286` does **not** remount. `scrolledAyahRef = useRef<number | null>(null)` scrolls when `targetAyah !== scrolledAyahRef.current` and the measurements are ready, then stores it. A null target resets the ref, so the same ayah can be revisited.
+- The target ayah's span gets `backgroundColor: KhazainColors.cream200` (cream200 is `#EFE4D0`; `cream100` equals `pageBg`).
 
-**Alternatives rejected:**
-- *A fourth footer button or a header icon.* This breaks frame 16's three fixed slots (Index, Go to bookmark, Save bookmark) and CLAUDE.md's footer contract.
-- *Long-press opens an action menu* ("إضافة ملاحظة" / "عرض الملاحظات"). `Alert` is capped at three buttons on Android and looks off-brand. A new sheet route adds a whole screen for what would be one action, because the linked notes are already listed inline on the reader. The direct long-press keeps one gesture to one outcome.
-- *Splitting ayat into one `<Text>` per ayah* so each can be measured exactly. This changes how the justified paragraph flows and risks the reading surface for a scroll-precision gain the highlight already covers.
+**Alternatives rejected**
+- *A fourth footer button or a header icon.* Breaks frame 16's three fixed slots and CLAUDE.md's footer contract.
+- *Long-press opens a menu.* `Alert` is capped at three buttons on Android, and a sheet route for one action is too much. The notes are inline.
+- *v1's whole-surah character fraction.* Superseded by per-segment line lookup now that segments are measured.
 
-### 3.4 Lecture playback: Take Note (AC 2)
+### 4.4 Lecture playback: Take Note (AC 2)
 
-There is no full-screen player. Playback is the MiniPlayer plus the Library in-progress card.
+**MiniPlayer: a visible note button plus long-press (user decision Q1).**
+- **Visible button.** A 32×32 icon button uses `FigmaIcon name="LibraryNotes"` (the same glyph as the Library "ملاحظاتي" card, `library.tsx:302`), size 18, `navy800`, `accessibilityLabel="إضافة ملاحظة عند هذه اللحظة"`.
+  - Physical left → right, the row is **transport cluster, note button, title block, cover**. That is the existing order (`MiniPlayer.tsx:29`) with the button between transport and title.
+  - The title block keeps `flex: 1` with `numberOfLines={1}`, so long titles truncate rather than wrap.
+  - **No frame draws the MiniPlayer** (`MiniPlayer.tsx:122`), so this changes a shipped component but no frame. `miniPlayerReach.test.ts` invariants still hold.
+- **Long-press.** On the title-and-cover group it does the same thing as the button (for discoverability) and adds a `longpress` accessibility action.
+- **Position.** `takeLectureNoteParams(track, progress)` reads `usePlayerStore.getState()` **at press time**. It does not subscribe, which preserves the ~1 Hz render isolation at `MiniPlayer.tsx:16-19`.
+  - `position = round(progress × durationSec)`, and is omitted when there is no duration.
+  - It returns plain-note params when the track id is not episode-shaped.
 
-- **MiniPlayer:** a **long-press on the title block or the cover** (`MiniPlayer.tsx:46-57`) opens the editor with `lectureRefFromTrack(track, progress, 'mini-player')`. The position is `round(progress × durationSec)`, frozen at the moment of the long-press while playback continues. When the track has no `durationSec`, `position` is omitted and the label has no time.
-  - Screen-reader users get the same action through `accessibilityActions=[{ name: 'longpress', label: 'إضافة ملاحظة' }]` plus `accessibilityHint="اضغط مطولًا لإضافة ملاحظة"`.
-  - **No pixels change.** `MiniPlayer.tsx:122` records that no frame among the 28 draws a MiniPlayer, and nothing visible is added.
-- **Library in-progress card:** the existing "إضافة ملاحظة" button (`library.tsx:331-334`) now opens the editor with `lectureRefFromSession(inProgressLecture, 'library-progress')` (`id = lectureId`, `position = positionSec`). It no longer seeds the body with the title. The label and the position of the button stay the same.
+**Library in-progress card.** "إضافة ملاحظة" (`library.tsx:331-334`) now opens the editor with `lectureNoteParamsFromSession(inProgressLecture)`, where `id = lectureId` and `position = positionSec`. The label and position are unchanged (frame 6).
 
-**Navigating back to a lecture:**
-1. `openNoteSource` dismisses the viewer.
-2. It calls `startLecturePlayback(lecture, { episodeId: ref.id, positionSec: ref.position ?? 0 })`.
-3. `playLecture` (`services/audioEngine.ts:132`) gains an optional `start` argument. A new pure `resolveStartPoint(episodes, inProgress, start)` prefers the explicit start over the saved session and falls back to the old resume logic when the episode is no longer in the series.
+**Back to a lecture** (CTO change 4).
+- `playLecture(lecture, start?)` gains `start = { episodeId, positionSec }`. Two pure helpers decide the start point:
+  - `resolveStartPoint(episodes, inProgress, start)` prefers `start` when its episode exists in the series, and otherwise falls back to the existing resume logic.
+  - `clampStartPosition(pos, durationSec)` returns `min(max(0, pos), durationSec − 1)` when the duration is known.
+- **Start via `TrackPlayer.skip(index, initialPosition)`**, including index 0 when the position is > 0. This replaces `skip(index)` followed by a separate `seekTo`, so the first audible frame is already at the right second.
+  - When `index === 0 && pos === 0`, neither skip nor seek runs (unchanged).
+  - **This changes the resume expectation at `audioEngine.test.ts:148-149` deliberately.** It becomes `skip(1, 120)`, with `seekTo` not called.
+- **One-time seek correction.** After `play()`, a one-shot `Event.PlaybackState` listener runs on the first `Ready`/`Playing`. It reads `getProgress()`, and if `needsSeekCorrection(actual, target)` is true (`actual < target − 2`) it calls `seekTo(target)` once, then removes itself. This covers streams where `initialPosition` is ignored before the item is ready.
+- **Fast path, an accepted optional.** If the start episode is already in the active RNTP queue (`getQueue()` ids), the engine skips `fetchItemMetadata` and `reset()`. It calls `skip(idx, pos)` and `play()`, then mirrors `setTrack`. This applies to the scholar-footer and viewer links while the same series is playing.
+  - **Onboarding preview:** preview tracks have different ids, so they never match. The onboarding plan's "clear preview at the top of `playLecture`" stays first.
+- **Side effect, recorded on purpose.** Jumping to a lecture note **replaces that series' متابعة position**. The progress ticks after the seek move `inProgressLecture` to the note's second, so the Library card resumes from there afterwards. Accepted: the user chose to go to that moment.
 
-The MiniPlayer shows the track as usual. This is the single existing playback path (`services/lecturePlayback.ts:12`), and no second player is introduced.
+**Alternatives rejected:** a new full-screen player route (much larger than the ticket and has no frame), and keeping a separate `seekTo` after `skip` (an audible jump from 0:00, plus an extra await on every resume).
 
-**Alternatives rejected:**
-- *A visible "note" icon in the MiniPlayer.* No frame governs the MiniPlayer, but it changes a shipped component's look for every user, and the ticket doesn't require a visible control. This is open question Q1 for the user.
-- *A new full-screen player route.* It is far larger than the ticket and has no frame.
+### 4.5 Which "content detail" screen lists lecture notes (AC 6)
 
-### 3.5 Lectures: which "content detail" screen lists their notes (AC 6)
+**Scholar detail** (`app/(tabs)/sections/scholar/[id].tsx`). On top of the saved v2 plan's `RibbonCard save` prop, its `FlatList` (`:52-66`) gains a `ListFooterComponent`, a `LinkedNotesSection` titled "ملاحظاتي على هذه الدروس".
+- It shows `notesForLectureSeries(notes, archiveIds)` and renders `null` when empty, so frame 19 is unchanged.
+- A row tap opens the editor. A label tap plays that episode at that second.
+- **No note gesture on `RibbonCard`**, because long-press there means SAVE (§3).
 
-**Decision: the scholar detail screen** (`app/(tabs)/sections/scholar/[id].tsx`). It is the only screen that is the detail page for a set of lectures.
-- It gets a `ListFooterComponent` on its `FlatList` (`:52-66`), titled "ملاحظاتي على هذه الدروس". The section lists `notesForLectureSeries(notes, archiveIdsOf(lectures))` and renders `null` when there are none.
-- Each row shows the label (for example `محاضرة آداب الدعاء — ١٢:٣٤`) and opens the note.
-- The **Library in-progress card is not changed visually** (frame 6). It keeps its existing "إضافة ملاحظة" entry point.
+The Library in-progress card is not changed visually (frame 6).
 
-### 3.6 Notes viewer (AC 5, AC 7)
+### 4.6 Notes viewer (AC 5, AC 7) (CTO change 3)
 
-- `NoteRow` (`notes-viewer.tsx:60-78`) gains a second line when `note.ref` is set: a `NoteRefLink` showing the label as a plain text link (`caption` role, `navy800`, no underline and no glyph).
-  - Tapping the link calls `openNoteSource(note.ref, router)`.
-  - Tapping elsewhere on the row still opens the editor.
-  - The inner `Pressable` claims the touch, so the link and the row never both fire.
-- `openNoteSource` behaves per type:
-  - *ayah* and *book*: `router.replace(href)`. This is the same pattern `app/search.tsx:101` uses to leave a root route for a tab route.
-  - *lecture*: `router.back()`, then playback.
-- **No frame.** The note screens are outside the 28 frames (CLAUDE.md, "Design source is the spec"). The governing contracts are:
-  - `PHYSICAL_ROW` for the time/title row (`constants/layout.ts:125`) and `RTL_TEXT` for the label.
-  - `textStyle('caption')` from `constants/typography.ts:160`.
-  - `KhazainColors.navy800` for the link colour.
+- `NoteRow` (`notes-viewer.tsx:60-78`) gains a second line when `note.ref` is set: a `NoteRefLink` (the label in `textStyle('caption')`, `navy800`, `RTL_TEXT`).
+- A link tap **closes, then navigates**:
+  1. `router.back()` closes the sheet.
+  2. `runNoteSource(target, { navigate: (href) => router.navigate(href as any), play: startLecturePlayback })`.
+- `openNoteSource`/`runNoteSource` **never dismiss anything themselves**. Each caller owns its own presentation: the viewer closes itself, and the scholar footer and the reader's own section just run the target.
+- **Fallback** if Android back after this path lands on a duplicate Library: the search v2 pattern `router.dismissTo(href, { withAnchor: true })` (search §4.3, R1). QA row 11 states the expected back stack.
+- Unknown ref types show their label with no link.
+- **No frame among the 28.** The `.fig` file does hold an *unmapped* "ملاحظة سريعة" frame with an "عرض الملاحظات" list of time-plus-title rows. It is outside the 28-frame spec (CLAUDE.md), and the second line for linked notes is a recorded deviation from it (§6). Contracts: `PHYSICAL_ROW` (`constants/layout.ts:125`), `textStyle`, `KhazainColors`.
 
-### 3.7 Note editor
+### 4.7 Note editor (CTO change 5)
 
-- `Params` (`note-editor.tsx:21`) gains the ref params produced by `noteRefToParams`: `refType`, `refId`, `refPos`, `refLabel`, `refContext`, `refTitle`, `refSpeaker`. The `ref` prefix avoids colliding with the existing `id`/`title` params.
-- `noteRefFromParams` validates them, and garbage yields `undefined`, which is a plain note.
-- A linked new note shows a read-only `NoteRefLink` chip under the sheet title ("مرتبطة بـ البقرة: ٢٥٥"). `save()` (`:59-77`) passes the ref to `addNote`.
-- Editing an existing linked note shows its stored ref chip.
-- The "آخر الملاحظات" block (`:145-163`) is unchanged.
-- **No frame.** The contracts are as in 3.6.
+- `Params` gains `refType`, `refId`, `refPos`, `refPage`, `refLabel`, `refContext`, `refTitle` and `refSpeaker` (`noteRefToParams`/`noteRefFromParams`). The `ref` prefix avoids clashing with the existing `id`/`title`.
+- A linked new note shows a static chip, `مرتبطة بـ <label>`, under the sheet title. `save()` passes the ref to `addNote`.
+- **The "آخر الملاحظات" rows** (`note-editor.tsx:145-163`) gain the ref label under the title for linked notes. This uses the same row-model helper as the viewer. No frame among the 28 covers it, and the same unmapped-frame deviation applies.
 
-### 3.8 Book detail (AC 3, AC 6). Runs after the rebase
+### 4.8 Library "آخر الملاحظات" rows: excluded (CTO change 5)
 
-The search branch creates `app/(tabs)/sections/book/[id].tsx` with `DetailHeader`, cover, title, author, description, a primary action, and a slot reserved for notes.
+Frame 6 (`2031:4659`) draws these rows (`DIV-126` → `DIV-127`/`DIV-134`) as a **single line: `SPAN-128` time plus `SPAN-131` title**. That was read from `docs/KHAZAYIN.fig` with `scripts/figma/extract-text-styles.js`. A second label line would change the frame's row geometry, so it is a Figma conflict and **the label is not added on Library**. It is one tap away in the viewer. Recorded in §6.
 
-On top of that we add:
-- **A "إضافة ملاحظة" secondary action** next to the primary action. It opens the editor with `makeBookRef({ id, title }, 'book-detail')`. The page is omitted because no book reader exists, so there is no "current page".
-- **A `LinkedNotesSection`** in the reserved slot, fed by `useLinkedNotes('book', id)`. It renders `null` when empty.
-- **`noteSourceTarget`** for a book resolves to `BOOK_DETAIL_PATH + '/' + encodeURIComponent(id)`. The constant is confirmed against the rebased route.
+### 4.9 Book detail (AC 3, AC 6)
 
-**No frame** covers book detail, which is new in the search ticket. The contracts are `constants/layout.ts` and `constants/typography.ts`, plus whatever the search ticket records for that screen.
+Search v2 dropped the reserved notes slot. This ticket adds its own section:
+- `constants/bookDetailPresentation.ts` becomes `BOOK_DETAIL_SECTIONS = ['cover', 'meta', 'primaryAction', 'notes']`. Search's `__tests__/bookDetail.test.ts` order assertion is updated **deliberately**.
+- The `notes` section, built only when `detail` resolved, contains:
+  - a `sectionTitle` "ملاحظاتي"
+  - a `PillButton` (variant `cream`, label "إضافة ملاحظة") that pushes the editor with `bookNoteParams(detail)` (`makeBookRef({ id: detail.id, title: detail.title })`, no page)
+  - `<LinkedNotesSection notes={useLinkedNotes('book', detail.id)} />`
+- The notes section always shows its title and button. Book detail has no frame, so nothing must stay identical. The list part renders `null` when empty.
+- `noteSourceTarget` for a book reuses search's **`bookDetailHref(id)`** (`services/bookDetail.ts`) rather than a second path constant.
+- Contracts: search §4.4 (`PHYSICAL_BOX` content, `textStyle`), `constants/layout.ts`, `theme.ts`.
 
-### 3.9 Shared UI
+### 4.10 Shared UI
 
-These live in a new folder `components/khazain/notes/`, re-exported from `components/khazain/index.ts`.
+`components/khazain/notes/` is new and re-exported from `components/khazain/index.ts`.
+- `NoteRefLink` is pressable only when given `onPress`.
+- `LinkedNotesSection` keeps the `if (notes.length === 0) return null;` guard.
+- `linkedNotesModel.ts` is a pure row model, `{ id, title, label?, time }`, plus `sortByPosition`.
+- Rows are authored physical left → right in `PHYSICAL_ROW`: the time, then a title-and-label column.
 
-- **`NoteRefLink`:** the label as a pressable (or static, when `onPress` is absent) caption in `navy800`, with `RTL_TEXT`. It is used by the viewer, the editor and the section rows.
-- **`LinkedNotesSection`:** `{ title, notes, onOpenNote }`.
-  - It returns `null` when `notes.length === 0`. This is a guard so frame captures (a fresh install has no notes) stay pixel-identical.
-  - Rows are cream cards modelled on the viewer row: `cream50`, a `cardBorder` hairline, radius `KhazainRadius.lg`, and a `PHYSICAL_ROW` of time then a title-plus-label column.
-- **`linkedNotesModel.ts`:** a pure row model `{ id, title, label, time }`, so the formatting is testable without a renderer. The repo has no `@testing-library`, and `react-test-renderer` sits in `node_modules` without being in `package.json`, which makes it a new dependency we must not use.
-
-## 4. Data, route and store changes (summary)
+## 5. Data, route and store changes
 
 | Area | Change |
 |---|---|
-| `services/noteRefs.ts` | **New.** `NoteRef` types, label formatters, `coerceNoteRef`, `noteRefToParams` / `noteRefFromParams`, and the `make*Ref`, `lectureRefFromTrack` and `lectureRefFromSession` builders. |
-| `store/notesStore.ts` | `Note.ref?`, `addNote(title, body, ref?)`, persist `version: 1` plus `migrate`, selectors, `useLinkedNotes`. |
-| `services/mushafNavigation.ts` | `normalizeAyahParam` and `ayahScrollFraction`. |
-| `services/audioEngine.ts` | `resolveStartPoint`, and `playLecture(lecture, start?)`. |
-| `services/lecturePlayback.ts` | `startLecturePlayback(lecture, start?)` passes `start` through. |
-| `services/noteNavigation.ts` | **New.** `noteSourceTarget(ref)` (pure) and `openNoteSource(ref, router)`. |
-| Routes | `/sections/mushaf` accepts `?ayah=`. `/note-editor` accepts the `ref*` params. **No new routes**, and `app/_layout.tsx` is untouched. |
-| UI | `note-editor.tsx`, `notes-viewer.tsx`, `mushaf.tsx`, `MiniPlayer.tsx`, `library.tsx` (handler only), `scholar/[id].tsx`, book detail (post-rebase), and the new `components/khazain/notes/*`. |
+| `services/noteRefs.ts` (new) | Types, labels, lenient `coerceNoteRef`, builders, `noteRefToParams`/`noteRefFromParams` |
+| `services/noteActions.ts` (new) | Pure param builders: `takeAyahNoteParams`, `takeLectureNoteParams`, `lectureNoteParamsFromSession`, `bookNoteParams` |
+| `store/notesStore.ts` | `Note.ref?`, `addNote(title, body, ref?)`, `merge` + `coerceNotes` (no `version`), selectors, `useLinkedNotes` |
+| `services/mushafNavigation.ts` | `normalizeAyahParam`, `segmentForAyah`, `ayahCharOffset`, `lineYForOffset`, `ayahScrollY` |
+| `services/audioEngine.ts` | `resolveStartPoint`, `clampStartPosition`, `needsSeekCorrection`, `playLecture(lecture, start?)` with `skip(i, pos)`, the one-shot correction and the queue fast path |
+| `services/lecturePlayback.ts` | `startLecturePlayback(lecture, start?)` |
+| `services/noteNavigation.ts` (new) | `noteSourceTarget(ref)` (pure) and `runNoteSource(target, deps)` (never dismisses) |
+| `constants/bookDetailPresentation.ts` | adds the `'notes'` section |
+| `__mocks__/react-native-track-player.ts` | adds `getQueue` |
+| Routes | `/sections/mushaf` accepts `?ayah=`, and `/note-editor` accepts the `ref*` params. **No new routes, and `app/_layout.tsx` is untouched.** |
+| UI | `note-editor.tsx`, `notes-viewer.tsx`, `mushaf.tsx`, `MiniPlayer.tsx`, `library.tsx` (handler only), `scholar/[id].tsx`, `sections/book/[id].tsx`, the new `components/khazain/notes/*` |
+| Docs | `CLAUDE.md`: the long-press rule (§3), the `notesStore` API, and `components/khazain/notes/` |
 
-No new dependencies: `expo-haptics`, `zustand/middleware` and `expo-router` are already in `package.json`.
+**No new dependencies.** `expo-haptics`, `zustand/middleware` and `expo-router` are already declared.
 
-## 5. Figma frames affected and what must stay pixel-identical
+## 6. Figma frames and conflicts between the criteria and Figma
 
-These are compared on a **fresh install with no notes and no track loaded**. That is the state `scripts/visual-audit/capture-ios.mjs` captures in.
+Captures are compared on a fresh install with no notes and no track loaded.
 
-| # | Node | Route | Must stay identical | What may differ (only when notes or ref params exist) |
+| # | Node | Route | Must stay identical | May differ |
 |---|---|---|---|---|
-| 16 | `2349:982` | `/sections/mushaf?surah=2` | Header, meta line, and footer order and labels (`MUSHAF_FOOTER_ORDER`). | The reading surface is **not drawn by the frame** (`mushaf.tsx:36-39`). With notes, the ayah-number tint and the end-of-surah section appear. With `?ayah=`, the highlight and the scroll position change. |
-| 15 | `2349:829` | resume transition | Everything | Nothing |
-| 14 | `2207:17898` | `/sections/mushaf` | Everything | Nothing (untouched) |
-| 6 | `2031:4659` | `/library` | Everything, including the in-progress card's "إضافة ملاحظة" label and position. | Nothing. Only the button's handler changes. |
-| 5 | `2001:940` | `/` | Everything | Nothing. The MiniPlayer is not drawn by any frame, and long-press adds no pixels. |
-| 19 | `2510:1990` | `/sections/scholar/s1` | Everything | The footer section appears only when this scholar's lectures have notes. |
-
-## 6. Conflicts between the criteria and Figma, and how they are resolved
+| 16 | `2349:982` | `/sections/mushaf?surah=2` | Header, meta line, and footer (`MUSHAF_FOOTER_ORDER`, three slots) | The reading surface is not drawn by the frame (`mushaf.tsx:36-39`). The hint line, the notes section, and the `?ayah=` highlight and scroll live there. |
+| 15 | `2349:829` | resume transition | everything | nothing |
+| 14 | `2207:17898` | `/sections/mushaf` | everything | nothing |
+| 6 | `2031:4659` | `/library` | everything, including the in-progress "إضافة ملاحظة" and the "آخر الملاحظات" rows | nothing; the handler only |
+| 5 | `2001:940` | `/` | everything | nothing. No track means no MiniPlayer. |
+| 19 | `2510:1990` | `/sections/scholar/s1` | everything | the footer, only when notes exist |
 
 | Criterion | Conflict | Resolution |
 |---|---|---|
-| AC 1 (Mushaf Take Note) | Frame 16's footer is exactly three fixed slots, and the header has no spare action. | Long-press on the ayah text adds zero chrome. Screen-reader users get an accessibility action. |
-| AC 6 (Mushaf shows its notes) | Frame 16 has no notes area. | A section inside the reading surface, which the frame does not draw. It renders only when notes exist, so an empty-state capture is identical. |
-| AC 2 (lecture Take Note) | No frame draws a full player, and adding a control to the MiniPlayer would change a shipped component. | Long-press plus an accessibility action on the MiniPlayer, and the existing Library card button. Zero pixel change. A visible button is Q1. |
-| AC 6 (lecture notes) | Frame 19 has no notes area. | A conditional `ListFooterComponent`. Identical when empty. |
+| AC 1 (Mushaf Take Note) | Frame 16's footer is three fixed slots. | Long-press on the ayah, plus a hint line in the undrawn reading surface, plus an accessibility action. No chrome. |
+| AC 6 (Mushaf notes) | Frame 16 has no notes area. | A section in the undrawn reading surface, replacing the hint when notes exist. |
+| AC 2 (lecture note) | No frame draws a player. | A visible MiniPlayer button plus long-press (user decision). The MiniPlayer has no frame, so no frame changes. |
+| AC 6 (lecture notes) | Frame 19 has no notes area. | A conditional `ListFooterComponent`. |
+| AC 7 on Library | Frame 6 draws "آخر الملاحظات" rows as single-line time plus title. | **Label excluded on Library.** It shows in the viewer, the editor and the content screens. |
+| AC 5/7 in the viewer and editor | The unmapped "ملاحظة سريعة" frame (not among the 28) draws time-plus-title rows. | A second line for linked notes only. It is outside the 28-frame spec, so this is a recorded deviation, not a conflict. |
 
 ## 7. RTL considerations
 
-- Every new row is authored in **physical left → right order** inside `PHYSICAL_ROW`: time on the left, then the title/label column. This matches the existing viewer row (`notes-viewer.tsx:68-76`). No `row-reverse` and no `I18nManager` reads.
-- Section titles and labels spread `RTL_TEXT`. Containers whose `textAlign: 'right'` must mean the physical right spread `PHYSICAL_BOX` (CLAUDE.md, "Verification hygiene").
-- The nested ayah `<Text>` spans inherit the body's `writingDirection: 'rtl'` (`mushaf.tsx:360`). The highlight is a `backgroundColor` on the span, so it does not affect direction.
+- New rows are authored physical left → right inside `PHYSICAL_ROW`, with no `row-reverse` and no `I18nManager`. Containers whose `textAlign: 'right'` must mean the physical right spread `PHYSICAL_BOX`.
+- The MiniPlayer's new order (transport, note, title, cover) is authored inside the existing `PHYSICAL_ROW` (`MiniPlayer.tsx:151-156`).
+- Nested ayah spans inherit `writingDirection: 'rtl'`. The highlight is a background colour only.
 - `rtlPhysicalContract.test.ts` and `rtlVisualContracts.test.ts` must stay green.
 
 ## 8. Risks
 
 | Risk | Mitigation |
 |---|---|
-| The scroll-to-ayah offset is approximate (justified lines vary in width). | The highlight marks the ayah. The scroll stops 80 pt above the estimate. Visual QA with Al-Baqara 255 and 286. |
-| `router.replace` from a root `transparentModal` into a tab route. | Same pattern as `app/search.tsx:101`. Verified in visual QA. Fallback if it misbehaves: `router.back()` and then `router.navigate(href)`. |
-| `onLongPress` on nested Text on web. | Web is not a release target. It is noted, not handled. |
-| The persist `migrate` could wipe notes if it is written defensively wrong. | `migrateNotesState` never returns `notes: []` for an array input. Each entry is coerced individually. Tests cover a v0 record, malformed refs, and non-array garbage. |
-| Rebase conflicts with `fix/search-route-and-navigation`. | The book tasks are last. The tasks before them do not touch `app/search.tsx`, `app/_layout.tsx` or the book route. |
-| Merge conflicts with `fix/saved-lecture-bookmarks` in `scholar/[id].tsx` and `audioEngine.ts`. | Changes are additive (one `ListFooterComponent` and one optional argument). Flagged for whoever merges second. |
-| A source-scan test is brittle. | Used only where the repo already uses it (`miniPlayerReach.test.ts`) for wiring invariants. Logic is tested through pure functions. |
+| Line lookup diverges across platforms (trailing-space trimming, justification). | The 5% length check falls back to the in-segment fraction (error ≤ one page), and the highlight marks the ayah. QA on iOS and Android with 2:255, 2:286 and 18:1. |
+| `skip(index, initialPosition)` is ignored on some streams. | The one-shot correction seeks once if the position is more than 2 s short. The position is capped at duration − 1 so the track never ends instantly. |
+| Close-then-navigate leaves a duplicate Library on the Android back stack. | QA row 11. Fallback `dismissTo(href, { withAnchor: true })` (search R1). |
+| A newer build's refs are mangled by this build. | Lenient coercion keeps unknown types, contexts and keys (test). |
+| Notes are lost on downgrade. | No persist version bump (§4.1). QA row 18. |
+| Gesture overlap with save. | §3 rule plus the invariant test (Task 19). |
+| Book identity split (search R7). | Notes key on `Book.id`. A note taken while the sharh (`b*`) plays from the MiniPlayer is a lecture note. Both are correct, and a book's notes never include its sharh's lecture notes. |
+| Rebase conflicts across four sibling branches. | Task 0 rebases first, and every UI task cites the post-rebase symbol, not a line. Shared files: `mushaf.tsx` (progress), `scholar/[id].tsx` and `RibbonCard` (saved), `audioEngine.ts` and its tests (onboarding), `bookDetailPresentation.ts` and `book/[id].tsx` (search). |
+| Source-scan tests are brittle. | Used only for invariants: the null guard, three footer slots, `PHYSICAL_ROW` with no `row-reverse`, `getState()` rather than a subscription, and the long-press rule. Behaviour is tested through the pure helpers. |
 
 ## 9. Out of scope
 
-- A page field for Mushaf notes and page-accurate navigation. This waits for real page-swipe reading, because `currentPage` is the surah's start page today.
-- A full-screen lecture player, and a visible MiniPlayer note button (Q1).
-- Book page positions (there is no book reader).
-- Showing ref labels in the Library's "آخر الملاحظات" rows or quick-note card (frame 6).
-- Adding the ref label to the Settings notes export (`services/notesExporter.ts`).
-- A filtered "notes for this content" viewer mode. The inline sections cover AC 6.
-- Wiring the Mushaf footer buttons. They are unwired today and that is not this ticket.
-- Encryption of notes at rest. This is the accepted risk recorded in CLAUDE.md.
-- Cloud sync and the API data layer.
+- The ayah-number tint (dropped in v2).
+- Book page positions (no reader).
+- Labels in Library rows (§4.8).
+- The ref label in the Settings notes export.
+- A filtered viewer mode.
+- Wiring the Mushaf footer buttons.
+- A full-screen player.
+- Notes encryption (the accepted risk in CLAUDE.md).
+- Cloud sync.
 
-## 10. Open questions (each has a default so work can proceed)
+## 10. Open questions
 
-| # | Question | Default used by the plan |
-|---|---|---|
-| Q1 | Should the MiniPlayer get a *visible* "note" button, in addition to long-press? | **No.** Long-press plus an accessibility action. It can be revisited after on-device testing. |
-| Q2 | Should a lecture label lead with the lecture title or the speaker? | **Title**, with the speaker as the fallback (`محاضرة آداب الدعاء — ١٢:٣٤`). |
-| Q3 | Which screen counts as the lecture "content detail"? | **Scholar detail** (conditional footer). The Library card is not changed visually. |
-| Q4 | Should long-press open the editor directly, or a menu first? | **Directly.** The linked notes are visible inline on the reader. |
-| Q5 | Should a Mushaf note record the page? | **No**, until real paging exists. |
+None blocking. The v1 questions are resolved in §11. **Residual Q6:** should the MiniPlayer button also appear in the scholar-detail `MiniPlayerDock`? Default: **yes**, because it is the same component.
+
+## 11. User decisions (2026-10-21)
+
+| # | Decision |
+|---|---|
+| Q1 | Long-press **plus visible cues**: a note icon on the MiniPlayer, and the Mushaf end-of-surah hint `اضغط مطولًا على آية لإضافة ملاحظة` when the surah has no notes. |
+| Q2 | Lecture label leads with the title, with the speaker as fallback. |
+| Rule | Long-press on `LectureCard`/`RibbonCard` means SAVE. Long-press on an ayah or the MiniPlayer means NOTE (§3). |
+| Q3 | Scholar detail is the lecture detail screen (CTO-approved default). |
+| Q4 | Long-press opens the editor directly (CTO-approved default). |
+| Q5 | Ayah refs store the page via `pageForAyah` (enabled by the progress branch). |
+
+## 12. Changes from v1
+
+1. No persist `version`/`migrate`. Merge plus lenient coercion keeps unknown types, contexts and keys, and a downgrade QA row is added.
+2. Ayah scroll uses per-segment `onTextLayout` line lookup on the progress branch's segments, with an in-segment fallback. The scroll remembers the last ayah instead of a boolean.
+3. `openNoteSource` no longer dismisses. The viewer closes, then navigates, and Android back stack QA is added.
+4. Lectures start via `skip(index, initialPosition)` with a one-shot seek correction and a cap at duration − 1. The resume test is changed deliberately, and an active-queue fast path is added.
+5. The ref label appears in the editor's "آخر الملاحظات". The Library rows are excluded because of the frame 6 conflict.
+6. Behaviour is tested through pure helpers (`services/noteActions.ts`). Source scans are kept for invariants only. Every test importing `notesStore` mocks AsyncStorage.
+7. User decisions: a visible MiniPlayer note button and a Mushaf hint, lecture labels lead with the title, and the long-press rule.
+8. Built last on search v2 and progress: book detail gets its own `'notes'` section, and the Mushaf tasks target the segmented reader.
+9. The optional changes taken: drop the ayah tint, merge v1 Tasks 1–3 and 19–20, the active-queue fast path, episode-shaped lecture refs only, and the note on the متابعة side effect. **`context` is kept** (optional and open) because the ticket names "creation context".

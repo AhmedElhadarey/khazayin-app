@@ -1,522 +1,587 @@
-# Contextual Notes Linked to Content: Implementation Plan
+# Contextual Notes Linked to Content: Implementation Plan (v2)
 
 > **For Claude:** REQUIRED SUB-SKILL: use superpowers:executing-plans (or the CLAUDE.md subagent-driven loop) to implement this plan task by task. Each task needs a spec review, then a code-quality review, before it is marked done.
 
-**Goal:** Notes can be linked to an ayah, a lecture timestamp or a book. You create them from the Mushaf reader, the MiniPlayer, the Library in-progress card and book detail. You see them on those screens and in the notes viewer, and from the viewer you can jump back to the source.
+**Goal:** Notes can be linked to an ayah (and its page), a lecture second or a book. You create them from the Mushaf reader, the MiniPlayer, the Library in-progress card and book detail. You see them on those screens and in the notes viewer and editor, and you can jump from a note back to its source.
 
-**Architecture:** A pure `services/noteRefs.ts` owns the `NoteRef` type, the Arabic labels, validation and route-param encoding. `notesStore` gains an optional `ref`, a versioned persist migration and pure selectors. A pure `services/noteNavigation.ts` resolves a ref to a route or to a playback start, and `audioEngine.playLecture` gains an explicit start point. All UI additions are zero-pixel (long-press and accessibility actions) or render `null` when there are no notes, so Figma frames 5, 6, 14, 15, 16 and 19 stay identical. The rationale is in `docs/plans/2026-10-21-contextual-notes-design.md`.
+**Architecture:**
+- Pure modules hold the logic:
+  - `services/noteRefs.ts`: types, labels, lenient validation and route params
+  - `services/noteActions.ts`: the params each "take note" action pushes
+  - `services/noteNavigation.ts`: ref → route or playback target, plus a runner that never dismisses
+  - additions to `services/mushafNavigation.ts` (ayah scroll math) and `services/audioEngine.ts` (explicit start point)
+- `notesStore` gains `ref` through `merge` plus coercion, with **no persist version bump**.
+- The UI is wired onto the post-rebase screens: the progress branch's segmented Mushaf reader and the search branch's book detail.
 
-**Tech stack:** Expo SDK 54, React Native 0.81.5, TypeScript 5.9, zustand 5 (`persist`), expo-router 6, react-native-track-player (behind `services/audioEngine.ts`), and jest-expo. There are no component-render tests: the repo has no testing library, and `react-test-renderer` is not in `package.json`. Logic is tested through pure functions, and wiring is tested by source scans in the style of `__tests__/miniPlayerReach.test.ts`.
+The rationale is in `docs/plans/2026-10-21-contextual-notes-design.md` (v2).
 
-**Standing rules (from CLAUDE.md):**
-- No new dependencies.
-- No `--no-verify`.
-- No `Co-Authored-By` or any AI attribution in commits.
-- Spread `RTL_TEXT` on every new Text. Author every row in physical left → right order inside `PHYSICAL_ROW`.
+**Tech stack:** Expo SDK 54, React Native 0.81.5, TypeScript 5.9, zustand 5, expo-router 6, react-native-track-player 4 (behind `services/audioEngine.ts`), and jest-expo.
+
+**Testing rules (CTO change 6):**
+- **Behaviour** is tested through pure helpers.
+- **Source scans** (the `__tests__/miniPlayerReach.test.ts` technique) are used *only* for invariants:
+  - the `LinkedNotesSection` null guard
+  - the three Mushaf footer slots
+  - `PHYSICAL_ROW` with no `row-reverse`
+  - `getState()`, not a subscription, in the MiniPlayer
+  - the long-press rule
+- **Every test file that imports `@/store/notesStore` at runtime** (directly or through `linkedNotesModel`, `noteActions`, or anything else) starts with:
+
+```ts
+jest.mock('@react-native-async-storage/async-storage', () =>
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+```
+
+- Do not use component-render tests. The repo has no testing library, and `react-test-renderer` is not in `package.json`.
+
+**Standing rules:**
+- No new dependencies. No `--no-verify`. No `Co-Authored-By` or any AI attribution.
+- Spread `RTL_TEXT` on new Text, and author rows in physical left → right order in `PHYSICAL_ROW`.
 - Use `router.push(... as any)` for routes that typed-routes has not regenerated.
 - Run `npx tsc --noEmit --pretty false` after every task.
 
-**Ordering:** Tasks 1–17 run on the current branch. **Task 18 rebases onto `fix/search-route-and-navigation`.** Tasks 19–20 need the book detail screen that branch creates. Task 21 is final verification.
+**Line anchors:** `file:line` refers to the base `0635ea1` unless it says "post-rebase". After Task 0, the post-rebase anchors are named by **symbol** and by the sibling plan task that introduced them. Re-confirm each anchor at the start of its task.
+
+**Long-press rule (design §3, user decision):** long-press on `LectureCard`/`RibbonCard` means **SAVE** (saved branch). Long-press on an ayah or the MiniPlayer means **NOTE** (this branch). Never put a note gesture on a lecture row.
 
 ---
 
-### Task 1: Arabic time and reference-label formatters
+### Task 0: Rebase onto the sibling branches and confirm anchors (no code)
+
+**Steps:**
+1. **Prerequisite:** `fix/search-route-and-navigation` (search v2) and `feat/progress-page-tracking` are implemented. Note which of `fix/saved-lecture-bookmarks` and `feat/onboarding-audio-previews` have landed on the integration base.
+2. Rebase this branch onto the integration branch the coordinator names (which contains search and progress), for example `git rebase <integration-branch>`. Resolve conflicts with the `resolving-merge-conflicts` skill. This branch has only the two plan docs at this point, so conflicts should not happen.
+3. Run `npx jest && npx tsc --noEmit --pretty false`. Both must be green before any task starts.
+4. Record in a scratch note (not committed) the post-rebase location of each of these:
+   - `ReadingView`, `segments`, `layoutsRef`, `bodyYRef`, the segment `<Text>` map and the `ScrollView` in `app/(tabs)/sections/mushaf.tsx` (progress Task 6)
+   - `pageForAyah` in `constants/quranPages.ts` (progress Task 1)
+   - `BOOK_DETAIL_SECTIONS` (`constants/bookDetailPresentation.ts`), `bookDetailHref` and `resolveBookDetail` (`services/bookDetail.ts`), the `sections` record in `app/(tabs)/sections/book/[id].tsx`, and the order assertion in `__tests__/bookDetail.test.ts` (search Task 7 and the book-detail screen task)
+   - the `RibbonCard save=` prop in `scholar/[id].tsx` and `saveGestureProps` in `services/savedToggle.ts` (saved v2), if landed
+   - the preview clear at the top of `playLecture` and `__resetForTests` (onboarding), if landed
+5. Leave the commit history alone.
+
+---
+
+### Task 1: The `services/noteRefs.ts` module (labels, `NoteRef`, lenient validation, route params)
 
 **Files:**
 - Create: `services/noteRefs.ts`
-- Test: `__tests__/noteRefs.test.ts`
+- Test: `__tests__/noteRefs.test.ts` (no store import, so no AsyncStorage mock is needed)
 
-**Step 1: Write the failing tests** (`describe('note reference labels')`)
+**Step 1: Failing tests**
 
-| Test name | Assertion |
+`describe('labels')`:
+
+| Test | Assertion |
 |---|---|
-| `formatPlaybackTime renders m:ss with Arabic-Indic digits` | `754` → `'١٢:٣٤'`; `65` → `'١:٠٥'`; `5` → `'٠:٠٥'` |
+| `formatPlaybackTime renders m:ss in Arabic-Indic digits` | `754` → `'١٢:٣٤'`; `65` → `'١:٠٥'`; `5` → `'٠:٠٥'` |
 | `formatPlaybackTime switches to h:mm:ss at one hour` | `3600` → `'١:٠٠:٠٠'`; `3723` → `'١:٠٢:٠٣'` |
-| `formatPlaybackTime floors fractions and clamps junk to zero` | `754.9` → `'١٢:٣٤'`; `-3`, `NaN` and `Infinity` → `'٠:٠٠'` |
-| `ayahRefLabel names the surah and the ayah` | `(2, 255)` → `'البقرة: ٢٥٥'`; `(1, 7)` → `'الفاتحة: ٧'` |
-| `ayahRefLabel without an ayah is a surah-level label` | `(2)` → `'سورة البقرة'` |
-| `lectureRefLabel leads with the title and appends the time` | `('آداب الدعاء', 'الشيخ عبد المحسن العباد', 754)` → `'محاضرة آداب الدعاء — ١٢:٣٤'` |
-| `lectureRefLabel falls back to the speaker when the title is blank` | `('  ', 'الشيخ ابن عثيمين', 754)` → `'محاضرة الشيخ ابن عثيمين — ١٢:٣٤'` |
-| `lectureRefLabel omits the time when the position is unknown` | `('آداب الدعاء', 'x')` → `'محاضرة آداب الدعاء'` |
-| `bookRefLabel with and without a page` | `('الأصول الثلاثة')` → `'كتاب الأصول الثلاثة'`; `('الأصول الثلاثة', 12)` → `'كتاب الأصول الثلاثة — صفحة ١٢'` |
+| `formatPlaybackTime floors and clamps junk` | `754.9` → `'١٢:٣٤'`; `-3`, `NaN` and `Infinity` → `'٠:٠٠'` |
+| `ayahRefLabel` | `(2,255)` → `'البقرة: ٢٥٥'`; `(1,7)` → `'الفاتحة: ٧'`; `(2)` → `'سورة البقرة'` |
+| `lectureRefLabel leads with the title` | `('آداب الدعاء','الشيخ عبد المحسن العباد',754)` → `'محاضرة آداب الدعاء — ١٢:٣٤'` |
+| `lectureRefLabel falls back to the speaker` | `('  ','الشيخ ابن عثيمين',754)` → `'محاضرة الشيخ ابن عثيمين — ١٢:٣٤'` |
+| `lectureRefLabel without a position` | `('آداب الدعاء','x')` → `'محاضرة آداب الدعاء'` |
+| `bookRefLabel` | `('الأصول الثلاثة')` → `'كتاب الأصول الثلاثة'`; `(…,12)` → `'كتاب الأصول الثلاثة — صفحة ١٢'` |
 
-**Step 2:** Run `npx jest __tests__/noteRefs.test.ts`. Expected: FAIL, "Cannot find module '@/services/noteRefs'".
+`describe('builders')`:
 
-**Step 3: Implement** (minimal)
+| Test | Assertion |
+|---|---|
+| `makeAyahRef pads the id and records ayah and page` | `makeAyahRef('2', 255)` → `{ type:'ayah', id:'002', position:255, page: pageForAyah(2,255), label:'البقرة: ٢٥٥', context:'mushaf' }` |
+| `makeAyahRef surah-level` | `makeAyahRef('002')` has no `position` and no `page`, and the label is `'سورة البقرة'` |
+| `isEpisodeId` | `'ABC/002.mp3'` and `'ABC/sub/x.mp3'` → true; `'sl5-1'`, `'/x'`, `'ABC/'` and `''` → false |
+| `makeLectureRef rounds the position` | `({ id:'ABC/002.mp3', title:'ح2', speaker:'الشيخ', positionSec:754.6 }, 'mini-player')` → `position 755`, label `'محاضرة ح2 — ١٢:٣٥'`, `title` and `speaker` kept |
+| `makeLectureRef refuses a non-episode id` | `({ id:'sl5-1', … })` → `undefined` |
+| `makeBookRef` | `({ id:'bk2', title:'الأصول الثلاثة' })` → `{ type:'book', id:'bk2', label:'كتاب الأصول الثلاثة', context:'book-detail' }` |
+
+`describe('coerceNoteRef (lenient)')`:
+
+| Test | Assertion |
+|---|---|
+| `round-trips every builder output` | `coerceNoteRef(x)` deep-equals `x` |
+| `keeps an unknown type and context (newer build)` | `{ type:'video', id:'v1', label:'فيديو', context:'tv' }` is kept as-is |
+| `keeps unknown keys` | `{ ...valid, extra: { a: 1 } }` keeps `extra` |
+| `drops structurally malformed refs` | `null`, `'x'`, `[]`, `{}`, `{ type:'', id:'a', label:'l' }`, `{ type:'ayah', id:5, label:'l' }`, `{ type:'ayah', id:'a' }` (no label), `{ …, position: NaN }`, `{ …, position: -1 }`, `{ …, position: '3' }` and `{ …, page: 1.5 }` → `undefined` |
+| `never throws` | For each of 20 junk values (primitives, arrays, nested junk), `expect(() => coerceNoteRef(v)).not.toThrow()` |
+
+`describe('route params')`:
+
+| Test | Assertion |
+|---|---|
+| `noteRefToParams emits string values under ref* keys` | ayah → `{ refType:'ayah', refId:'002', refPos:'255', refPage:'<n>', refLabel:'البقرة: ٢٥٥', refContext:'mushaf' }` |
+| `omits absent optional fields` | There is no `refPos`/`refPage`/`refTitle`/`refSpeaker` key when undefined |
+| `noteRefFromParams round-trips every builder` | deep-equal |
+| `reads expo-router string[] params` | `{ refType:['ayah'], … }` → the first element |
+| `no ref params → undefined` | `{ id:'n1' }` → `undefined` |
+| `tampered numeric params → undefined` | `refPos:'abc'` → `undefined` (numbers must match `/^\d+$/`) |
+
+**Step 2:** `npx jest __tests__/noteRefs.test.ts` → FAIL (module not found).
+
+**Step 3: Implement**, following design §4.1–4.2:
 
 ```ts
-// services/noteRefs.ts
-import { SURAH_NAMES_AR, toArabicDigits } from '@/constants/progress';
-
 const SEP = ' — ';
 const pad2 = (n: number) => String(n).padStart(2, '0');
-
 export function formatPlaybackTime(sec: number): string {
   const s = Number.isFinite(sec) && sec > 0 ? Math.floor(sec) : 0;
-  const h = Math.floor(s / 3600);
-  const m = Math.floor((s % 3600) / 60);
-  const r = s % 60;
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), r = s % 60;
   return toArabicDigits(h > 0 ? `${h}:${pad2(m)}:${pad2(r)}` : `${m}:${pad2(r)}`);
 }
-export function ayahRefLabel(surahNumber: number, ayah?: number): string {
-  const name = SURAH_NAMES_AR[surahNumber] ?? '';
-  return ayah && ayah > 0 ? `${name}: ${toArabicDigits(ayah)}` : `سورة ${name}`;
-}
-export function lectureRefLabel(title: string, speaker: string, positionSec?: number): string {
-  const subject = title.trim() || speaker.trim();
-  const base = `محاضرة ${subject}`;
-  return typeof positionSec === 'number' ? `${base}${SEP}${formatPlaybackTime(positionSec)}` : base;
-}
-export function bookRefLabel(title: string, page?: number): string {
-  const base = `كتاب ${title.trim()}`;
-  return page && page > 0 ? `${base}${SEP}صفحة ${toArabicDigits(page)}` : base;
-}
 ```
 
-**Step 4:** Run `npx jest __tests__/noteRefs.test.ts`. Expected: PASS. Then run `npx tsc --noEmit --pretty false`.
+- Labels, `NOTE_REF_TYPES`, `NoteRef` (open `type`/`context`, with an index signature for extras), `isEpisodeId = (id) => /^[^/]+\/.+$/.test(id)`, the builders (`makeAyahRef` imports `pageForAyah` from `@/constants/quranPages` and `normalizeSurahParam`), `coerceNoteRef` (validates the required fields, then returns `{ ...raw }`, so unknown keys survive), `noteRefToParams` and `noteRefFromParams`.
+- The builders' `context` defaults: `makeAyahRef` → `'mushaf'`, `makeBookRef` → `'book-detail'`, and lecture → the argument.
 
-**Step 5: Commit**
+**Step 4:** The test passes. `npx tsc --noEmit --pretty false` is clean.
 
-```bash
-git add services/noteRefs.ts __tests__/noteRefs.test.ts
-git commit -m "feat(notes): add Arabic reference-label formatters"
-```
+**Step 5:** `git add services/noteRefs.ts __tests__/noteRefs.test.ts && git commit -m "feat(notes): add note references, Arabic labels and route params"`
 
 ---
 
-### Task 2: `NoteRef` type, validation and builders
+### Task 2: `notesStore` keeps a ref through `merge` plus coercion (no version bump)
 
 **Files:**
-- Modify: `services/noteRefs.ts`
-- Test: `__tests__/noteRefs.test.ts` (new `describe('NoteRef')`)
+- Modify: `store/notesStore.ts`: `:6-12` (`Note`), `:14-19` (`NotesState`), `:28-35` (`addNote`) and `:48-52` (persist options)
+- Test: create `__tests__/notesStore.test.ts`. Add the AsyncStorage mock, and copy the `flushPersist`/`rehydrate` helpers from `__tests__/settingsStore.test.ts:17-43`.
 
 **Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `makeAyahRef pads the surah id and labels it` | `makeAyahRef('2', 255, 'mushaf')` → `{ type:'ayah', id:'002', position:255, label:'البقرة: ٢٥٥', context:'mushaf' }` |
-| `makeAyahRef without an ayah has no position` | `makeAyahRef('002', undefined, 'mushaf')` has no `position` key and the label `'سورة البقرة'` |
-| `makeLectureRef keeps the episode id and rounds the position` | `({ id:'ABC/002.mp3', title:'ح2', speaker:'الشيخ', positionSec:754.6 }, 'mini-player')` → `position: 755`, label `'محاضرة ح2 — ١٢:٣٥'`, and `title` and `speaker` kept |
-| `lectureRefFromTrack derives seconds from progress × duration` | track `{ id:'ABC/001.mp3', title:'ح1', reciter:'س', durationSec:600 }` with progress `0.5` → `position 300` |
-| `lectureRefFromTrack omits position when the track has no duration` | Same track without `durationSec` → no `position`, and a label with no ` — ` |
-| `lectureRefFromSession uses lectureId and positionSec` | A `LectureSession` (`db/types.ts:21-30`) → `id === lectureId`, `position === round(positionSec)`, `context:'library-progress'` |
-| `makeBookRef labels the title` | `({ id:'b1', title:'الأصول الثلاثة' }, 'book-detail')` → label `'كتاب الأصول الثلاثة'` |
-| `coerceNoteRef accepts a well-formed ref unchanged` | Round-trips each builder's output |
-| `coerceNoteRef rejects junk` | `null`, `'x'`, `{}`, an unknown `type`, an empty `id`, a non-string `label`, an unknown `context`, and `position: NaN` / `-1` / `'3'` → `undefined` |
-| `coerceNoteRef drops unknown keys` | `{ ...valid, evil: 1 }` → the result has no `evil` key |
-
-**Step 3: Implement**
-- Export `NoteRefType`, `NoteRefContext` and `NoteRef` exactly as in design §3.1.
-- `makeAyahRef(surahId, ayah, context)` uses `normalizeSurahParam` from `services/mushafNavigation.ts:17` to pad. It throws on an invalid surah id, which is a programmer error since callers already hold a normalized id.
-- `makeLectureRef({ id, title, speaker, positionSec? }, context)`: `position = Math.round(positionSec)` only when `positionSec` is finite and ≥ 0.
-- `lectureRefFromTrack(track: PlayerTrack, progress: number, context)`: `import type { PlayerTrack } from '@/store/playerStore'` (type-only, so no cycle).
-- `lectureRefFromSession(session: LectureSession, context)`: `import type { LectureSession } from '@/db/types'`.
-- `makeBookRef({ id, title, page? }, context)`.
-- `coerceNoteRef(raw: unknown): NoteRef | undefined` uses explicit whitelists: `NOTE_REF_TYPES` and `NOTE_REF_CONTEXTS`, both `Object.freeze`d arrays. A position must be a finite integer ≥ 0. The function builds a fresh object, so unknown keys are dropped.
-
-**Step 4:** `npx jest __tests__/noteRefs.test.ts` passes, and so does `npx tsc --noEmit --pretty false`.
-
-**Step 5:** `git commit -m "feat(notes): add NoteRef type, builders and validation"`
-
----
-
-### Task 3: Note-reference route params (encode and decode)
-
-**Files:**
-- Modify: `services/noteRefs.ts`
-- Test: `__tests__/noteRefs.test.ts` (new `describe('note ref route params')`)
-
-**Step 1: Failing tests**
-
-| Test name | Assertion |
-|---|---|
-| `noteRefToParams emits only string values with the ref prefix` | Every key starts with `ref`, and every value is a string. An ayah ref gives `{ refType:'ayah', refId:'002', refPos:'255', refLabel:'البقرة: ٢٥٥', refContext:'mushaf' }`. |
-| `noteRefToParams omits absent optional fields` | No `refPos`, `refTitle` or `refSpeaker` key when they are undefined. |
-| `noteRefFromParams round-trips every builder` | `noteRefFromParams(noteRefToParams(r))` deep-equals `r` for the ayah, lecture and book refs. |
-| `noteRefFromParams tolerates expo-router string[] params` | `{ refType: ['ayah'], ... }` reads the first element. |
-| `noteRefFromParams returns undefined when no ref params are present` | `{ id: 'n1' }` → `undefined` |
-| `noteRefFromParams returns undefined for a tampered ref` | `refType:'video'` or `refPos:'abc'` → `undefined`. It parses, then passes the result through `coerceNoteRef`. |
-
-**Step 3: Implement** `noteRefToParams(ref): Record<string, string>` and `noteRefFromParams(params: Record<string, string | string[] | undefined>): NoteRef | undefined`. `refPos` is parsed with `Number`, and only if `/^\d+$/` matches.
-
-**Step 5:** `git commit -m "feat(notes): encode note references as route params"`
-
----
-
-### Task 4: `notesStore` stores a ref, with a versioned persist migration
-
-**Files:**
-- Modify: `store/notesStore.ts:6-12` (the `Note` type), `:14-19` (`NotesState`), `:28-35` (`addNote`) and `:48-52` (persist options)
-- Test: create `__tests__/notesStore.test.ts`
-
-**Step 1: Failing tests.** Copy the AsyncStorage mock, the `flushPersist` helper and the `rehydrate` helper from `__tests__/settingsStore.test.ts:12-43`. `beforeEach` clears storage and resets `useNotesStore.setState({ notes: [] })`.
-
-| Test name | Assertion |
-|---|---|
-| `T-NS-1 addNote without a ref keeps the old shape` | `addNote('t','b')` → the stored note has `ref === undefined`. The return value is the id. |
-| `T-NS-2 addNote stores the ref verbatim` | `addNote('t','b', makeAyahRef('2',255,'mushaf'))` → `notes[0].ref` equals the input. |
-| `T-NS-3 updateNote keeps the ref` | After `updateNote(id, { body:'new' })`, the ref is unchanged and `updatedAt` has advanced. |
-| `T-NS-4 a v0 record keeps every note after migration` | Seed `@khazain/notes` with `{ state:{ notes:[n1,n2] }, version:0 }` (no refs). After rehydrate, both notes are present with the same ids, titles and bodies, and `ref` is undefined. |
-| `T-NS-5 migration strips a malformed ref but keeps the note` | Seed a v0 note with `ref:{ type:'video' }`. After rehydrate, the note is present and `ref` is undefined. |
-| `T-NS-6 migration writes the record back at version 1` | After T-NS-4's rehydrate and a flush, `JSON.parse(getItem('@khazain/notes')).version === 1`. |
-| `T-NS-7 migrateNotesState never wipes an array of notes` | Direct unit test: `migrateNotesState({ notes:[{ id:'a', title:1 }] }, 0)` keeps note `a` with `title ''`. `migrateNotesState('garbage', 0)` → `{ notes: [] }`. |
-| `T-NS-8 the storage key is unchanged` | Source scan of `store/notesStore.ts`: `/name: '@khazain\/notes'/`. Guards against orphaning installs, as `settingsStore.ts:368-371` warns. |
+| `T-NS-1 addNote without a ref keeps the old shape` | `'ref' in notes[0] === false` |
+| `T-NS-2 addNote stores the ref` | `addNote('t','b', makeAyahRef('2',255))` → `notes[0].ref` equal to the input |
+| `T-NS-3 updateNote keeps the ref` | After `updateNote(id,{ body:'x' })` the ref is unchanged and `updatedAt` is greater |
+| `T-NS-4 an existing record hydrates unchanged` | Seed `@khazain/notes` with `{ state:{ notes:[n1,n2] }, version:0 }`, then rehydrate. Both notes come back field-for-field. |
+| `T-NS-5 a malformed ref is dropped, the note kept` | Seed a note with `ref:{ id: 5 }`, then rehydrate. The note is present and `ref` is undefined. |
+| `T-NS-6 an unknown ref type survives (forward compatible)` | Seed `ref:{ type:'video', id:'v', label:'فيديو', extra:1 }`, then rehydrate. The ref is deep-equal to the seed. |
+| `T-NS-7 no persist version bump` | After `addNote` and a flush, `JSON.parse(getItem('@khazain/notes')).version === 0`. A source scan of `store/notesStore.ts` shows no `version:` key and no `migrate:` key in the persist options. |
+| `T-NS-8 coerceNotes never throws on junk` | For each of `undefined`, `null`, `'x'`, `42`, `[]`, `{ notes:'x' }`, `{ notes:[null, 1, 'a', { id: 3 }, { id:'' }] }` and `{ notes:[{ id:'ok', title: 7 }] }`, `expect(() => coerceNotes(v)).not.toThrow()`. The last value gives `[{ id:'ok', title:'', body:'', createdAt:0, updatedAt:0 }]`, and every non-array `notes` gives `[]`. |
+| `T-NS-9 merge keeps the actions` | After rehydrating junk, `typeof getState().addNote === 'function'` |
+| `T-NS-10 the storage key is unchanged` | Source scan: `/name: '@khazain\/notes'/` |
 
 **Step 2:** `npx jest __tests__/notesStore.test.ts` → FAIL.
 
 **Step 3: Implement**
-- `Note` gains `ref?: NoteRef`.
-- `addNote: (title, body, ref?) => string`. Use `...(ref ? { ref } : {})`, so plain notes have no `ref` key at all.
-- Export `NOTES_PERSIST_VERSION = 1` and `migrateNotesState(persisted: unknown, _from: number): { notes: Note[] }`. It coerces each entry: `id` must be a non-empty string, or the entry is dropped. `title` and `body` fall back to `''`. `createdAt` and `updatedAt` must be finite numbers, or fall back to `0`. `ref` goes through `coerceNoteRef`.
-- Add `version: NOTES_PERSIST_VERSION` and `migrate: migrateNotesState` to the persist options. Add a comment explaining that zustand only writes back when `migrate` ran, which is the reverse of the `settingsStore` note.
+- `Note.ref?: NoteRef`.
+- `addNote(title, body, ref?)` uses `...(ref ? { ref } : {})`.
+- Export `coerceNotes(persisted: unknown): Note[]`. It only accepts an object whose `notes` is an array. Each entry is kept when `id` is a non-empty string. `title`/`body` must be strings or `''`, and the timestamps must be finite or `0`. When `'ref' in entry`, `ref` is `coerceNoteRef(entry.ref)`, omitted if undefined. Other note keys are preserved.
+- Persist options add `merge: (persisted, current) => ({ ...current, notes: coerceNotes(persisted) })`, with a comment that cross-references `settingsStore.ts:377-387` (no write-back at hydrate) and design §4.1 (why there is no version bump: downgrade safety).
 
-**Step 4:** The new test passes. `npx jest __tests__/notesExporter.test.ts` (the existing `Note` consumer) still passes. tsc passes.
+**Step 4:** The new test passes, and so do `npx jest __tests__/notesExporter.test.ts __tests__/cacheFacade.test.ts` and tsc.
 
-**Step 5:** `git commit -m "feat(notes): persist an optional content reference on notes"`
+**Step 5:** `git commit -m "feat(notes): persist an optional content reference without a schema bump"`
 
 ---
 
-### Task 5: Linked-note selectors
+### Task 3: Linked-note selectors
 
 **Files:**
-- Modify: `store/notesStore.ts` (append the selectors)
-- Modify: `store/index.ts:113-114` (re-export `notesFor` and `useLinkedNotes`)
-- Test: `__tests__/notesStore.test.ts` (new `describe('linked-note selectors')`)
+- Modify: `store/notesStore.ts` (append the selectors), `store/index.ts:113-114` (re-export them)
+- Test: `__tests__/notesStore.test.ts` (new `describe`)
 
-**Step 1: Failing tests** (pure, with no store involved)
+**Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `notesFor matches type and id exactly` | Given ayah `002`, ayah `003`, a lecture and a plain note, `notesFor(notes,'ayah','002')` returns only the `002` note. |
-| `notesFor keeps store order (newest first)` | Two `002` notes come back in input order. |
-| `notesFor ignores notes without a ref` | A plain note is never returned. |
-| `notedAyahNumbers collects positions for one surah` | → `Set {255, 286}`. A surah-level ref (no position) is not included. |
-| `notesForLectureSeries matches by archive id prefix` | Refs `ABC/001.mp3` and `ABC/sub/002.mp3` match `new Set(['ABC'])`. `ABCD/001.mp3` does not. |
+| `notesFor matches type and id exactly` | Among ayah `002`, ayah `003`, a lecture, a plain note and an unknown-type note, only the `002` note is returned |
+| `notesFor keeps store order` | Two `002` notes come back in input order |
+| `archiveIdOfEpisode` | `'ABC/sub/x.mp3'` → `'ABC'` |
+| `notesForLectureSeries matches by archive id` | `ABC/001.mp3` and `ABC/sub/002.mp3` match `new Set(['ABC'])`; `ABCD/001.mp3` does not; book and ayah refs never match |
 
-**Step 3: Implement**
-- `export function notesFor(notes: readonly Note[], type: NoteRefType, id: string): Note[]`
-- `export function notedAyahNumbers(notes, surahId): Set<number>`
-- `export function archiveIdOfEpisode(id: string): string` (`id.split('/')[0]`, mirroring `services/audioEngine.ts:197`)
-- `export function notesForLectureSeries(notes, archiveIds: ReadonlySet<string>): Note[]`
-- `export function useLinkedNotes(type, id)`:
+**Step 3: Implement** `notesFor`, `archiveIdOfEpisode`, `notesForLectureSeries` and `useLinkedNotes(type, id)`:
 
 ```ts
-const notes = useNotesStore((s) => s.notes);
-return useMemo(() => notesFor(notes, type, id), [notes, type, id]);
+export function useLinkedNotes(type: NoteRefType, id: string): Note[] {
+  const notes = useNotesStore((s) => s.notes);
+  return useMemo(() => notesFor(notes, type, id), [notes, type, id]);
+}
 ```
 
-Do **not** filter inside the zustand selector. A fresh array per call loops under zustand 5.
+Never filter inside the zustand selector, because a fresh array per call loops under zustand 5.
 
 **Step 5:** `git commit -m "feat(notes): add linked-note selectors"`
 
 ---
 
-### Task 6: Shared linked-note UI (`NoteRefLink`, `LinkedNotesSection`)
+### Task 4: Pure "take note" param builders
 
 **Files:**
-- Create: `components/khazain/notes/linkedNotesModel.ts`, `components/khazain/notes/NoteRefLink.tsx`, `components/khazain/notes/LinkedNotesSection.tsx`, `components/khazain/notes/index.ts`
-- Modify: `components/khazain/index.ts` (add `export * from './notes';`)
-- Test: create `__tests__/linkedNotesModel.test.ts`, and create `__tests__/contextualNotesWiring.test.ts` (source scans; later tasks add to it)
+- Create: `services/noteActions.ts`
+- Test: create `__tests__/noteActions.test.ts` (no store import: it takes `track` and `progress` as arguments and imports only types)
 
 **Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `linkedNoteRow carries id, title, label and relative time` | With `Date.now` frozen (as `notesExporter.test.ts:30-35` does), a note updated one hour ago gives `{ id, title, label:'البقرة: ٢٥٥', time:'منذ ساعة' }`. |
-| `linkedNoteRow falls back to the untitled placeholder` | `title ''` → `'ملاحظة بلا عنوان'`. This is the same string as `notes-viewer.tsx:75`. |
-| `linkedNoteRow has no label for a plain note` | `label === undefined` |
-| `sortByPosition orders ayah notes by ayah number, surah-level first` | Positions `[286, undefined, 255]` → `[undefined, 255, 286]` |
-| (wiring) `LinkedNotesSection renders nothing when there are no notes` | Source scan: `/if \(notes\.length === 0\) return null;/`. This guard is what keeps frames 16 and 19 identical. |
-| (wiring) `linked-note rows are authored in physical order` | Source scan of `LinkedNotesSection.tsx` for `...PHYSICAL_ROW`, and no `row-reverse` |
+| `takeAyahNoteParams links the ayah` | `('002', 255)` → `noteRefToParams(makeAyahRef('002',255))` |
+| `takeAyahNoteParams surah-level` | `('002', undefined)` → params without `refPos`, with label `'سورة البقرة'` |
+| `takeLectureNoteParams freezes the current second` | track `{ id:'ABC/001.mp3', title:'ح1', reciter:'س', durationSec:600 }` with progress `0.5` → `refPos:'300'`, `refContext:'mini-player'` |
+| `takeLectureNoteParams without a duration has no position` | → no `refPos`, and a label with no ` — ` |
+| `takeLectureNoteParams for a non-episode track gives a plain note` | track id `'mock-fatiha'` → `{}` |
+| `takeLectureNoteParams with no track gives a plain note` | `(null, 0)` → `{}` |
+| `lectureNoteParamsFromSession` | A `LectureSession` (`db/types.ts:21-30`) with `positionSec:754.4` → `refId:lectureId`, `refPos:'754'`, `refContext:'library-progress'`, label `'محاضرة <title> — ١٢:٣٤'` |
+| `bookNoteParams` | `({ id:'bk2', title:'الأصول الثلاثة' })` → `refType:'book'`, `refId:'bk2'`, `refContext:'book-detail'` |
 
-**Step 3: Implement**
-- `linkedNoteRow(note)` and `sortByPosition(notes)` are pure. They use `formatRelativeAr` from `store/notesStore.ts:56`.
-- `NoteRefLink({ label, onPress? })`:
-  - `Text` with `textStyle('caption', { color: KhazainColors.navy800 })` and `...RTL_TEXT`, `numberOfLines={1}`.
-  - When `onPress` is set, it is wrapped in a `Pressable` with `accessibilityRole="link"`, `accessibilityLabel={`الانتقال إلى ${label}`}` and `hitSlop={6}`.
-- `LinkedNotesSection({ title, notes, onOpenNote, onOpenSource? })`:
-  - Container spreads `PHYSICAL_BOX`. Title uses `textStyle('sectionTitle', { color: KhazainColors.ink900 })` and `RTL_TEXT`.
-  - Each row is a `Pressable` card copied from `notes-viewer.tsx:117-127`: `cream50`, a `cardBorder` hairline, `KhazainRadius.lg`, `PHYSICAL_ROW`. Physically left → right it holds the time `Text` (caption, `ink400`), then a column with the title (`cardTitle`) and `NoteRefLink` under it.
-  - No Figma frame governs it. Contracts: `constants/layout.ts`, `constants/typography.ts`, `theme.ts`.
+**Step 3: Implement** the four functions, each returning `Record<string, string>`. They use type-only imports for `PlayerTrack` (`store/playerStore.ts:44`) and `LectureSession` (`db/types.ts:21`).
 
-**Step 4:** `npx jest __tests__/linkedNotesModel.test.ts __tests__/contextualNotesWiring.test.ts __tests__/rtlPhysicalContract.test.ts` passes, and so does tsc.
+**Step 5:** `git commit -m "feat(notes): pure params for every take-note action"`
+
+---
+
+### Task 5: Shared linked-note UI
+
+**Files:**
+- Create: `components/khazain/notes/{linkedNotesModel.ts,NoteRefLink.tsx,LinkedNotesSection.tsx,index.ts}`
+- Modify: `components/khazain/index.ts` (add `export * from './notes';`)
+- Test: create `__tests__/linkedNotesModel.test.ts` (with the AsyncStorage mock, because it imports `formatRelativeAr` from the store); create `__tests__/contextualNotesInvariants.test.ts` (source scans; later tasks add to it)
+
+**Step 1: Failing tests**
+
+| Test | Assertion |
+|---|---|
+| `linkedNoteRow carries id, title, label and relative time` | `Date.now` frozen as in `notesExporter.test.ts:30-35`; an hour-old ayah note → `{ id, title, label:'البقرة: ٢٥٥', time:'منذ ساعة' }` |
+| `linkedNoteRow untitled fallback` | `'ملاحظة بلا عنوان'` (the same string as `notes-viewer.tsx:75`) |
+| `linkedNoteRow plain note has no label` | `label === undefined` |
+| `linkedNoteRow unknown-type ref shows its label but is not linkable` | `{ label:'فيديو', linkable:false }`, while a known type gives `linkable:true` |
+| `sortByPosition` | Positions `[286, undefined, 255]` → `[undefined, 255, 286]`, stable for ties |
+| (invariant) `LinkedNotesSection renders nothing when empty` | `/if \(notes\.length === 0\) return null;/` |
+| (invariant) `rows are physically ordered` | `LinkedNotesSection.tsx` contains `...PHYSICAL_ROW` and no `row-reverse` |
+
+**Step 3: Implement** as in design §4.10.
+- **`NoteRefLink`:** `textStyle('caption', { color: KhazainColors.navy800 })`, `...RTL_TEXT`, `numberOfLines={1}`. When it gets `onPress`, it is a `Pressable` with `accessibilityRole="link"`, ``accessibilityLabel={`الانتقال إلى ${label}`}`` and `hitSlop={6}`.
+- **`LinkedNotesSection({ title?, notes, onOpenNote, onOpenSource? })`** (the title is optional, so book detail can use its own heading):
+  - The container uses `PHYSICAL_BOX`. The title, when given, uses `textStyle('sectionTitle', { color: KhazainColors.ink900 })` with `RTL_TEXT`.
+  - Each row is a `Pressable` card: `cream50`, a `cardBorder` hairline, `KhazainRadius.lg`, `PHYSICAL_ROW`. Physically left → right it holds the time (`caption`, `ink400`), then a `flex: 1` column with the title (`cardTitle`) and the label link.
+  - No frame governs it. The contracts are `constants/layout.ts`, `constants/typography.ts` and `theme.ts`.
+
+**Step 4:** `npx jest __tests__/linkedNotesModel.test.ts __tests__/contextualNotesInvariants.test.ts __tests__/rtlPhysicalContract.test.ts` passes, and tsc is clean.
 
 **Step 5:** `git commit -m "feat(notes): add shared linked-note section and reference link"`
 
 ---
 
-### Task 7: The note editor accepts and saves a reference
+### Task 6: The note editor accepts a ref, shows it, and labels "آخر الملاحظات" rows
 
 **Files:**
 - Modify: `app/note-editor.tsx`:
-  - `:21` widens `Params` to `Record<string, string | string[] | undefined>`, keeping `id` and `title`.
-  - `:30-38` derives `seedRef`.
-  - `:59-77` passes the ref in `save()`.
-  - `:107-109` shows the chip under the sheet title.
-- Test: `__tests__/contextualNotesWiring.test.ts` (`describe('note editor')`)
+  - `:21` (Params)
+  - `:30-38` (decode)
+  - `:59-77` (`save`)
+  - `:107-109` (chip under the title)
+  - `:145-163` (recent rows gain a label line)
+- Modify: `components/khazain/notes/linkedNotesModel.ts`. Add `editorSeed(params)` → `{ ref?: NoteRef; legacyTitle?: string }`.
+- Test: `__tests__/linkedNotesModel.test.ts` (with the AsyncStorage mock)
 
-**Step 1: Failing tests** (source scans; the param decoding itself is unit-tested in Task 3)
+**Step 1: Failing tests** (behaviour lives in the pure seed helper)
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `decodes the ref from route params` | `note-editor.tsx` matches `/noteRefFromParams\(params\)/` |
-| `passes the ref to addNote when creating` | `/addNote\(derivedTitle, cleanBody, seedRef\)/` |
-| `shows the linked source on the sheet` | `/<NoteRefLink/` |
-| `keeps the legacy title seed working` | `/params\.title/` still present |
+| `editorSeed decodes a linked note` | `editorSeed(noteRefToParams(ref))` → `{ ref }` |
+| `editorSeed keeps the legacy title seed` | `{ title:'x' }` → `{ legacyTitle:'x' }` with no ref |
+| `editorSeed ignores a ref when editing an existing note` | `{ id:'n1', ...refParams }` → `{}` (the stored ref wins) |
+| `recent rows carry the label` | `linkedNoteRow` (Task 5) is reused, so this is already covered. Add one case with an editor-shaped note list. |
 
 **Step 3: Implement**
-- `const seedRef = editingId ? undefined : noteRefFromParams(params);`
-- `const shownRef = existing?.ref ?? seedRef;`
-- Below `sheetTitle`, render ``shownRef ? <NoteRefLink label={`مرتبطة بـ ${shownRef.label}`} /> : null``. It is static, with no `onPress`, because navigating away from an open editor would drop the draft.
-- The new `TextStyle` sits inside `scrollContent`, which already spreads `PHYSICAL_BOX` (`:233-236`), so `textAlign: 'right'` lands on the physical right.
+- `const { ref: seedRef, legacyTitle } = editorSeed(params);` and `const shownRef = existing?.ref ?? seedRef;`
+- Under the title, add ``shownRef ? <NoteRefLink label={`مرتبطة بـ ${shownRef.label}`} /> : null``. It is static, because navigating away would drop the draft.
+- In `save()`, call `addNote(derivedTitle, cleanBody, seedRef)`.
+- Recent rows switch to the `linkedNoteRow` model. A row with a label gets a column holding the title and a static `NoteRefLink`. The row stays `PHYSICAL_ROW` (`recentRow`, `:311-322`), with the time on the left.
+- `scrollContent` already spreads `PHYSICAL_BOX` (`:261-264`).
+- No frame among the 28. This is the recorded deviation from the unmapped "ملاحظة سريعة" frame (design §6).
 
-**Step 4:** The wiring tests pass and so does tsc.
+**Step 4:** The tests pass, tsc is clean, and `npx jest __tests__/rtlPhysicalContract.test.ts __tests__/rtlVisualContracts.test.ts` passes.
 
-**Step 5:** `git commit -m "feat(notes): let the note editor create linked notes"`
+**Step 5:** `git commit -m "feat(notes): create linked notes from the editor and label recent notes"`
 
 ---
 
-### Task 8: Mushaf ayah param and scroll fraction
+### Task 7: Ayah deep-link math (param, segment and line lookup)
 
 **Files:**
 - Modify: `services/mushafNavigation.ts` (append)
-- Test: `__tests__/mushafPresentation.test.ts` (new `describe('ayah deep link')`)
+- Test: `__tests__/mushafPresentation.test.ts` (new `describe('ayah deep link')`; the existing `:10-68` tests stay)
+
+**Step 1: Failing tests** (`Ayah` fixtures as in progress Task 3: `{ surahId, number, text }`)
+
+| Test | Assertion |
+|---|---|
+| `normalizeAyahParam` | `('255',286)` → 255; `('0',7)`, `('8',7)`, `('2a',7)`, `('',7)` and `(undefined,7)` → null; `('255',undefined)` → 255; `('300',undefined)` → null |
+| `segmentForAyah finds the page segment` | segments `[{page:2, ayat:1–5},{page:3, ayat:6–7}]` → ayah 6 gives index 1; ayah 9 gives -1 |
+| `ayahCharOffset counts text, marker and separator exactly as rendered` | ayat `[{1,'aaaa'},{2,'bb'},{3,'c'}]` → ayah 1 gives 0; ayah 2 gives `4 + '  1  '.length + 1` = 10; ayah 3 gives `10 + 2 + 5 + 1` = 18 |
+| `ayahCharOffset handles multi-digit markers` | ayah 10 after ayah 9 (`'x'`) adds `'  9  '.length` (5); after ayah 100 the marker is 7 |
+| `segmentCharLength matches the rendered string` | Equals the `.length` of the concatenation `text + '  n  ' + ' '` (no trailing separator) |
+| `lineYForOffset picks the line containing the offset` | lines `[{text:'0123456789',y:0},{text:'0123456789',y:48},{text:'01234',y:96}]` → offset 0 gives 0; 10 gives 48; 24 gives 96; 99 gives the last line's y |
+| `ayahScrollY uses the line when the lines add up` | `bodyY 120`, `segmentY 400` and a line at 48 → `568` |
+| `ayahScrollY falls back to the in-segment fraction when the lines are off by >5%` | expected length 100 and lines summing to 80 → `120 + 400 + (offset/100) × segmentHeight` |
+| `ayahScrollY falls back when there are no lines yet` | `lines: undefined` → the fraction path |
+
+**Step 3: Implement** `normalizeAyahParam(raw, ayahCount?)`, `segmentForAyah`, `ayahMarker(n) = '  ' + n + '  '` (it must match `AyahNum` at `mushaf.tsx:268-276`, which a comment cross-references), `ayahCharOffset`, `segmentCharLength`, `lineYForOffset` and `ayahScrollY`.
+
+**Step 5:** `git commit -m "feat(mushaf): locate an ayah's line inside its page segment"`
+
+---
+
+### Task 8: Start a lecture at an explicit episode and second
+
+**Files:**
+- Modify: `services/audioEngine.ts`, the `playLecture` resume block (base `:142-152`; post-rebase it sits after the onboarding preview clear, if that landed), queue start `:163-166`, and setTrack `:168-178`
+- Modify: `services/lecturePlayback.ts:12`
+- Test: `services/audioEngine/__tests__/audioEngine.test.ts` (the `playLecture` describe at `:108`)
 
 **Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `normalizeAyahParam accepts an ayah inside the surah` | `('255', 286)` → `255` |
-| `normalizeAyahParam rejects out-of-range or malformed input` | `('0',7)`, `('8',7)`, `('2a',7)`, `(undefined,7)` and `('', 7)` → `null` |
-| `normalizeAyahParam without a known count accepts any positive ayah up to 286` | `('255', undefined)` → `255`; `('300', undefined)` → `null` (286 is the longest surah) |
-| `ayahScrollFraction is the share of text before the ayah` | ayat `[{n:1,'aaaa'},{n:2,'bbbbbb'},{n:3,'cc'}]` → ayah 1 `0`, ayah 2 `4/12`, ayah 3 `10/12` |
-| `ayahScrollFraction returns 0 for an unknown ayah or empty text` | → `0` |
-
-**Step 3: Implement** `normalizeAyahParam(param, ayahCount?)` and `ayahScrollFraction(ayat: readonly { number: number; text: string }[], ayahNumber: number): number`. The existing tests in that file (`:10-68`, including the footer order) must stay green.
-
-**Step 5:** `git commit -m "feat(mushaf): validate an ayah deep-link param"`
-
----
-
-### Task 9: Start a lecture at an explicit episode and second
-
-**Files:**
-- Modify: `services/audioEngine.ts:132-185` (`playLecture`)
-- Modify: `services/lecturePlayback.ts:12` (`startLecturePlayback`)
-- Test: `services/audioEngine/__tests__/audioEngine.test.ts` (extend `describe('playLecture')` at `:108`)
-
-**Step 1: Failing tests** (reuse the `META` and `LECTURE` fixtures at `:99-106`)
-
-| Test name | Assertion |
-|---|---|
-| `starts at an explicit episode and position, ignoring the saved session` | With `mockInProgress` on `ABC/002.mp3@120` and `playLecture(LECTURE, { episodeId:'ABC/003.mp3', positionSec:45 })`: `skip(2)`, `seekTo(45)`, and the `setTrack` initial progress ≈ `45/800` |
-| `falls back to the saved session when the start episode is not in the series` | `start.episodeId:'ABC/999.mp3'` with `mockInProgress` on `002@120` → `skip(1)`, `seekTo(120)` |
-| `an explicit start at 0 on the first episode neither skips nor seeks` | `{ episodeId:'ABC/001.mp3', positionSec:0 }` → `skip` and `seekTo` are not called |
-| `resolveStartPoint is pure` | `resolveStartPoint(episodes, null, undefined)` → `{ index:0, positionSec:0 }`. A negative `positionSec` clamps to 0. |
+| **(changed deliberately)** `resumes: starts the saved episode at its position in one skip` | Replace `:148-149` with `expect(TrackPlayer.skip).toHaveBeenCalledWith(1, 120)` and `expect(TrackPlayer.seekTo).not.toHaveBeenCalled()`. The commit message names this change. |
+| `resumes on episode 0 via skip(0, pos)` | `mockInProgress` on `ABC/001.mp3@90` → `skip(0, 90)` |
+| `plays from the top without skip or seek` | The existing `:127-143` test is unchanged (`skip` is not called) |
+| `explicit start beats the saved session` | `playLecture(LECTURE, { episodeId:'ABC/003.mp3', positionSec:45 })` with `mockInProgress` on `002@120` → `skip(2, 45)`, and the `setTrack` initial progress ≈ `45/800` |
+| `explicit start falls back to resume when the episode is not in the series` | `'ABC/999.mp3'` → `skip(1, 120)` |
+| `start is capped at duration − 1` | `{ episodeId:'ABC/001.mp3', positionSec:5000 }` → `skip(0, 599)` |
+| `one-shot correction seeks once when playback starts short` | Capture the `addEventListener(Event.PlaybackState, cb)` callback, mock `getProgress` → `{ position: 0 }`, then fire `cb({ state: State.Ready })` → `seekTo(45)` once and the listener's `remove` called. A second fire does not seek again. |
+| `no correction within 2 s` | `getProgress` → `{ position: 44 }` → no `seekTo` |
+| `pure helpers` | `resolveStartPoint(eps, null, undefined)` → `{ index:0, positionSec:0 }`; `clampStartPosition(-5, 600)` → 0; `clampStartPosition(700, 0)` → 700 (unknown duration is not capped); `needsSeekCorrection(0, 45)` → true; `(43.5, 45)` → false |
+| `startLecturePlayback passes start through` | In a new `__tests__/lecturePlayback.test.ts` that mocks `@/services/audioEngine`: `playLecture` is called with `(lecture, start)` |
 
 **Step 3: Implement**
-- Export `type LectureStart = { episodeId: string; positionSec: number }`.
-- Export `resolveStartPoint(episodes, inProgress, start?)`. Move the resume block at `:142-152` into it.
-- `playLecture(lecture, start?)` calls it.
-- `startLecturePlayback(lecture, start?)` passes `start` through to `playLecture`.
+- Export `LectureStart`, `resolveStartPoint`, `clampStartPosition` and `needsSeekCorrection`.
+- In `playLecture`:
+  1. After `setQueue`, when `startPos > 0 || startIndex > 0`, call `await TrackPlayer.skip(startIndex, startPos > 0 ? startPos : undefined)`.
+  2. `await TrackPlayer.play()`.
+  3. If `startPos > 0`, arm the one-shot listener. On `State.Ready`/`State.Playing` it removes itself, reads `getProgress()`, and if `needsSeekCorrection(position, startPos)` it calls `seekTo(startPos)`. Errors are caught and reported to Sentry, as at `:208`.
+- The onboarding preview clear (if present) stays the first statement.
+- `startLecturePlayback(lecture, start?)` passes `start` through.
 
-The existing resume tests (`:145-160`) must still pass unchanged.
+**Step 4:** `npx jest services/audioEngine __tests__/lecturePlayback.test.ts` passes, and so do the onboarding `preview.test.ts` and `syncBridge.test.ts` if landed. tsc is clean.
 
-**Step 4:** `npx jest services/audioEngine` passes, and so does tsc.
-
-**Step 5:** `git commit -m "feat(audio): start a lecture at an explicit episode and position"`
+**Step 5:** `git commit -m "feat(audio): start a lecture at an explicit second via skip(index, position)"`. The body says: "Resume now uses skip(index, initialPosition); the resume expectation in audioEngine.test.ts changed on purpose."
 
 ---
 
-### Task 10: Resolve a note reference back to its source
+### Task 9: Jump within the active queue without refetching (accepted optional)
+
+**Files:**
+- Modify: `services/audioEngine.ts` (`playLecture`, before `fetchItemMetadata`)
+- Modify: `__mocks__/react-native-track-player.ts` (add `getQueue: jest.fn().mockResolvedValue([])`)
+- Test: `services/audioEngine/__tests__/audioEngine.test.ts`
+
+**Step 1: Failing tests**
+
+| Test | Assertion |
+|---|---|
+| `an explicit start already in the active queue skips there without reset or fetch` | `getQueue` → three tracks `ABC/00{1,2,3}.mp3`; `playLecture(LECTURE, { episodeId:'ABC/002.mp3', positionSec:30 })` → `fetchItemMetadata` not called, `reset` not called, `skip(1, 30)` and `play` called, and `setTrack` mirrored with `id:'ABC/002.mp3'` |
+| `without an explicit start the fast path is never taken` | `getQueue` holds `ABC/002.mp3`, `playLecture(LECTURE)` → `fetchItemMetadata` called |
+| `an episode not in the queue takes the normal path` | → `fetchItemMetadata` and `reset` called |
+
+**Step 3: Implement** a guarded early branch: `if (start) { const q = await TrackPlayer.getQueue(); const i = q.findIndex((t) => t.id === start.episodeId); if (i >= 0) { … ; return; } }`. Then mirror `setTrack`, `setVisible(true)` and `setIsPlaying(true)` as at `:168-180`, using the queue track's `title`/`duration`.
+
+**Step 5:** `git commit -m "perf(audio): jump within the active queue when a note targets it"`
+
+---
+
+### Task 10: Resolve a note reference to its source (no dismissal)
 
 **Files:**
 - Create: `services/noteNavigation.ts`
-- Test: create `__tests__/noteNavigation.test.ts` (mock `@/services/lecturePlayback`)
+- Test: create `__tests__/noteNavigation.test.ts` (no store import)
 
 **Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `an ayah ref targets the mushaf reader at that ayah` | `noteSourceTarget(makeAyahRef('2',255,'mushaf'))` → `{ kind:'route', href:'/sections/mushaf?surah=2&ayah=255' }` |
-| `a surah-level ref omits the ayah` | → `'/sections/mushaf?surah=2'` |
-| `an ayah ref with a corrupt surah id has no target` | `{ ...ref, id:'999' }` → `null` |
-| `a lecture ref targets playback of that episode at that second` | → `{ kind:'lecture', lecture:{ archiveId:'ABC', title:'ح2', scholar:'الشيخ', … }, start:{ episodeId:'ABC/002.mp3', positionSec:754 } }` |
-| `a lecture ref without a position starts at 0` | `start.positionSec === 0` |
-| `a book ref targets book detail` | → `{ kind:'route', href:'/sections/book/b%201' }` for id `'b 1'` |
-| `openNoteSource replaces the route for ayah refs` | With a fake router `{ replace: jest.fn(), back: jest.fn() }`, `replace` is called with the href and `back` is not called. |
-| `openNoteSource closes the sheet then starts playback for lecture refs` | `back` is called, then the mocked `startLecturePlayback` is called with the lecture and start, in that order. |
+| `ayah ref targets the reader at that ayah` | `noteSourceTarget(makeAyahRef('2',255))` → `{ kind:'route', href:'/sections/mushaf?surah=2&ayah=255' }` |
+| `surah-level ayah ref` | → `'/sections/mushaf?surah=2'` |
+| `corrupt surah id → null` | `{ ...ref, id:'999' }` → `null` |
+| `lecture ref targets playback at that second` | → `{ kind:'lecture', lecture:{ id:'ABC', archiveId:'ABC', title:'ح2', scholar:'الشيخ', duration:'', category:'scholar' }, start:{ episodeId:'ABC/002.mp3', positionSec:754 } }` |
+| `lecture ref without a position starts at 0` | `start.positionSec === 0` |
+| `lecture ref with a non-episode id → null` | `id:'sl5-1'` → `null` |
+| `book ref targets book detail via search's helper` | `noteSourceTarget(makeBookRef({ id:'bk2', title:'t' }))` → `{ kind:'route', href: bookDetailHref('bk2') }` |
+| `unknown type → null` | `{ type:'video', … }` → `null` |
+| `runNoteSource navigates a route and never dismisses` | `deps = { navigate: jest.fn(), play: jest.fn() }` → `navigate(href)` only. `deps` has no dismiss member, so the type itself forbids it. |
+| `runNoteSource plays a lecture target` | `play(lecture, start)` called and `navigate` not called |
+| `runNoteSource(null) is a no-op` | Neither dep is called |
 
-**Step 3: Implement**
-- `export const BOOK_DETAIL_PATH = '/sections/book';`, with the comment "confirmed in Task 18 after the rebase".
-- `noteSourceTarget(ref)` validates the surah id with `normalizeSurahParam`. The href uses `Number(id)`, because `?surah=` takes a plain number (`mushafNavigation.ts:13-16`).
-- The lecture built for playback mirrors `audioEngine.ts:197-204`: `{ id: archiveId, title: ref.title ?? ref.label, scholar: ref.speaker ?? '', duration: '', category: 'scholar', archiveId }`.
-- `openNoteSource(ref, router: Pick<Router, 'replace' | 'back'>)` uses `router.replace(href as any)`, the same pattern as `app/search.tsx:101`.
+**Step 3: Implement** `noteSourceTarget(ref)` and `runNoteSource(target, deps: { navigate(href: string): void; play(l: Lecture, s: LectureStart): Promise<void> | void })`.
+- The lecture object mirrors `audioEngine.ts:197-204`.
+- The book href comes from `bookDetailHref` (search, `services/bookDetail.ts`).
 
-**Step 5:** `git commit -m "feat(notes): navigate from a note back to its source"`
+**Step 5:** `git commit -m "feat(notes): resolve a note back to its source"`
 
 ---
 
-### Task 11: The notes viewer shows the reference and links back
+### Task 11: The notes viewer shows the reference and closes, then navigates
 
 **Files:**
-- Modify: `app/notes-viewer.tsx:45-50` (`renderItem`), `:60-78` (`NoteRow`) and `:117-131` (styles)
-- Test: `__tests__/contextualNotesWiring.test.ts` (`describe('notes viewer')`)
+- Modify: `app/notes-viewer.tsx`: `:17-24` (handlers), `:45-50` (`renderItem`), `:60-78` (`NoteRow`) and `:117-131` (styles)
+- Test: `__tests__/contextualNotesInvariants.test.ts`, plus the pure `viewerSourceAction` in `services/noteNavigation.ts` with its tests in `__tests__/noteNavigation.test.ts`
 
-**Step 1: Failing tests** (source scans)
+**Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `renders the reference link for linked notes` | `/note\.ref \? \(\s*<NoteRefLink/` |
-| `the link navigates to the source` | `/openNoteSource\(note\.ref, router\)/` or `onOpenSource` wiring |
-| `the row still opens the editor` | `/openExisting\(item\.id\)/` |
-| `the row stays physically ordered` | `/\.\.\.PHYSICAL_ROW/` is still present in `row`, with no `row-reverse` |
+| `viewerSourceAction closes first, then runs the target` | With fake `{ back, navigate, play }`, calling `viewerSourceAction(ayahRef, fake)` records the order `['back', 'navigate:/sections/mushaf?surah=2&ayah=255']` |
+| `viewerSourceAction for a lecture closes, then plays` | Order `['back', 'play']` |
+| `viewerSourceAction for an unlinkable ref does nothing` | No calls at all; the sheet stays open |
+| (invariant) `viewer row stays physically ordered` | `notes-viewer.tsx` `row` still spreads `PHYSICAL_ROW`, with no `row-reverse` |
 
 **Step 3: Implement**
-- `NoteRow` gains `onOpenSource`. The row stays a `PHYSICAL_ROW` of `[time] [column]`, where the column (`flex: 1`) is the title plus `note.ref ? <NoteRefLink label={note.ref.label} onPress={onOpenSource} /> : null`. The inner `Pressable` claims the touch, so the row's `onPress` does not fire.
-- `rowTitle` keeps its `flex: 1` inside the column.
-- No frame governs this screen. Contracts: `PHYSICAL_ROW` (`constants/layout.ts:125`), `textStyle('caption')`, `KhazainColors.navy800`.
+- `NoteRow` becomes the `PHYSICAL_ROW` `[time] [column: title + (row.label ? <NoteRefLink onPress={row.linkable ? onOpenSource : undefined} /> : null)]`, using `linkedNoteRow` (Task 5).
+- Wire `onOpenSource = () => viewerSourceAction(note.ref, { back: router.back, navigate: (h) => router.navigate(h as any), play: startLecturePlayback })`.
+- The inner `Pressable` claims the touch, so the row's `onPress` (open the editor) does not fire.
+- No frame among the 28 (design §4.6).
 
-**Step 4:** tsc passes, and so do `npx jest __tests__/contextualNotesWiring.test.ts __tests__/rtlPhysicalContract.test.ts __tests__/rtlVisualContracts.test.ts`.
+**Step 4:** tsc is clean, and `npx jest __tests__/noteNavigation.test.ts __tests__/contextualNotesInvariants.test.ts __tests__/rtlPhysicalContract.test.ts __tests__/rtlVisualContracts.test.ts` passes.
 
-**Step 5:** `git commit -m "feat(notes): show and follow a note's source in the viewer"`
+**Step 5:** `git commit -m "feat(notes): show a note's source in the viewer and follow it"`
 
 ---
 
-### Task 12: Mushaf long-press on an ayah takes a linked note
+### Task 12: Mushaf long-press on an ayah takes a linked note (segmented reader)
 
 **Files:**
-- Modify: `app/(tabs)/sections/mushaf.tsx:148` (`ReadingView` needs `useRouter`) and `:227-240` (the ayat `Text`)
-- Test: `__tests__/contextualNotesWiring.test.ts` (`describe('mushaf reader')`)
+- Modify (post-rebase): `app/(tabs)/sections/mushaf.tsx`:
+  - in `ReadingView`, add `const router = useRouter()` and `takeAyahNote`
+  - in the segment `<Text>` map (progress Task 6, Step 3.5), wrap each `{a.text}` and add the segment accessibility action
+- Test: `__tests__/contextualNotesInvariants.test.ts` (the behaviour is `takeAyahNoteParams`, tested in Task 4)
 
-**Step 1: Failing tests** (source scans)
+**Step 1: Failing tests** (invariants only)
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `each ayah span takes a long-press` | `/onLongPress=\{\(\) => takeAyahNote\(a\.number\)\}/` |
-| `the note is linked to the ayah` | `/makeAyahRef\(surahId, ayahNumber, 'mushaf'\)/` and `/noteRefToParams/` |
-| `screen-reader users get a surah-level note action` | `/accessibilityActions=\{\[\{ name: 'addSurahNote'/` |
-| `the footer is still the three Figma slots` | `/MUSHAF_FOOTER_ORDER\.map/`, and there is no fourth `MushafBtn` (count `<MushafBtn` occurrences === 1). Guards frame 16. |
+| `the footer is still the three Figma slots` | `/MUSHAF_FOOTER_ORDER\.map/` and exactly one `<MushafBtn` occurrence (frame 16) |
+| `no save gesture on the reader` | `mushaf.tsx` does not match `/saveGestureProps\|useSaveGesture/` (long-press rule) |
+| `ayah long-press uses the pure params` | `/takeAyahNoteParams\(surahId, /` (a wiring smoke check that stops a re-implemented ref sneaking in) |
+| `progress wiring untouched` | The progress branch's `__tests__/mushafPageTrackingWiring.test.ts` still passes (run it; do not edit it) |
 
 **Step 3: Implement**
 
 ```tsx
-const takeAyahNote = (ayahNumber?: number) => {
-  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
-  router.push({ pathname: '/note-editor' as any,
-    params: noteRefToParams(makeAyahRef(surahId, ayahNumber, 'mushaf')) });
-};
+const takeAyahNote = useCallback((n?: number) => {
+  if (Platform.OS !== 'web') Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => undefined);
+  router.push({ pathname: '/note-editor' as any, params: takeAyahNoteParams(surahId, n) });
+}, [router, surahId]);
 ```
 
-- Wrap `{a.text}` in `<Text onLongPress={() => takeAyahNote(a.number)} suppressHighlighting>`.
-- The body `<Text>` gets `accessibilityActions` and `onAccessibilityAction={(e) => e.nativeEvent.actionName === 'addSurahNote' && takeAyahNote(undefined)}`.
-- Import `expo-haptics`. It is already in `package.json:35`.
+- Inside each segment `<Text>`, render `<Text onLongPress={() => takeAyahNote(a.number)} suppressHighlighting>{a.text}</Text>`, followed by `<AyahNum …/>` and the separator, unchanged.
+- The segment `<Text>` gets `accessibilityActions={[{ name: 'addSurahNote', label: 'إضافة ملاحظة على السورة' }]}` and `onAccessibilityAction={(e) => { if (e.nativeEvent.actionName === 'addSurahNote') takeAyahNote(undefined); }}`.
+- Do not touch `onLayout`, `layoutsRef` or the tracker.
 
-**Step 4:** tsc passes, and so does `npx jest __tests__/contextualNotesWiring.test.ts __tests__/mushafPresentation.test.ts`.
+**Step 4:** tsc is clean, and `npx jest __tests__/contextualNotesInvariants.test.ts __tests__/mushafPresentation.test.ts __tests__/mushafPageTrackingWiring.test.ts` passes.
 
 **Step 5:** `git commit -m "feat(mushaf): long-press an ayah to take a linked note"`
 
 ---
 
-### Task 13: Mushaf `?ayah=` scrolls to and highlights the ayah
+### Task 13: Mushaf `?ayah=` scrolls to the ayah's line and highlights it
 
 **Files:**
-- Modify: `app/(tabs)/sections/mushaf.tsx`:
-  - `:44` adds `ayah?: string` to the params.
-  - `:95` passes `targetAyah` into `ReadingView`.
-  - `:204` adds a ScrollView ref.
-  - `:220-241` wraps the ayat Text in a measured `View`.
-  - The `styles` block adds `ayahHighlight`.
-- Test: `__tests__/contextualNotesWiring.test.ts`
-
-**Step 1: Failing tests** (the math is unit-tested in Task 8)
-
-| Test name | Assertion |
-|---|---|
-| `reads and validates the ayah param` | `/normalizeAyahParam\(/` |
-| `scrolls once using the character fraction` | `/ayahScrollFraction\(ayat, targetAyah\)/` and a `didScrollRef` guard |
-| `highlights the target ayah` | `/a\.number === targetAyah \? styles\.ayahHighlight/` |
-| `ReadingView stays keyed by surah` | `/<ReadingView key=\{surahId\}/` (`:95`) is unchanged. A remount per surah is load-bearing for the Rules of Hooks. |
-
-**Step 3: Implement**
-- Pass `params.ayah` raw into `ReadingView`. Validate it there with `normalizeAyahParam(raw, ayat.length || undefined)`.
-- `onLayout` on the wrapper records `{ y, height }`.
-- An effect fires once, when `targetAyah`, the layout and `ayatStatus === 'success'` are all ready: `scrollRef.current?.scrollTo({ y: Math.max(0, y + fraction * height - 80), animated: false })`.
-- `ayahHighlight: { backgroundColor: KhazainColors.cream200 }`.
-- With no `ayah` param, nothing changes. This is frame 16's state.
-
-**Step 5:** `git commit -m "feat(mushaf): open the reader at a linked ayah"`
-
----
-
-### Task 14: The Mushaf reader lists the surah's linked notes
-
-**Files:**
-- Modify: `app/(tabs)/sections/mushaf.tsx`:
-  - After `:241`, add `<LinkedNotesSection>` inside the ScrollView.
-  - `:236` (`AyahNum`) gets a `noted` prop.
-  - `:362-366` adds `ayahNumNoted`.
-- Test: `__tests__/contextualNotesWiring.test.ts`
+- Modify (post-rebase): `app/(tabs)/sections/mushaf.tsx`:
+  - `MushafScreen` params (base `:44`) gain `ayah?: string`, passed raw into `ReadingView` (base `:95`, `key={surahId}` unchanged)
+  - in `ReadingView`: a `scrollRef` on the `ScrollView`, `linesRef`, `onTextLayout` on each segment `<Text>`, `scrolledAyahRef` and the highlight style
+- Test: `__tests__/contextualNotesInvariants.test.ts` (the math is in Task 7)
 
 **Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `lists notes linked to this surah` | `/useLinkedNotes\('ayah', surahId\)/` and `/<LinkedNotesSection/` with the title `ملاحظاتك على هذه السورة` |
-| `orders them by ayah` | `/sortByPosition\(/` |
-| `tints noted ayah numbers without adding glyphs` | `/notedAyahNumbers\(/`. `ayahNumNoted` only overrides `color` (scan the style block: `ayahNumNoted: \{ color: KhazainColors\.navy800 \}`). |
-| `opening a listed note goes to the editor` | `/pathname: '\/note-editor' as any, params: \{ id \}/` |
+| (invariant) `remembers the last ayah, not a boolean` | `/scrolledAyahRef = useRef<number \| null>\(null\)/`, and no `/didScroll/` |
+| (invariant) `ReadingView stays keyed by surah` | `/<ReadingView key=\{surahId\}/` |
+| (invariant) `segment layouts still come from progress's layoutsRef` | `/layoutsRef\.current\.get\(/` is used by the scroll effect, and there is no second `onLayout` map |
 
-**Step 3: Implement** as described. The section sits inside `pageContent` padding. `LinkedNotesSection` returns `null` when empty (Task 6), so frame 16's capture is unchanged.
+**Step 3: Implement**
+- `const targetAyah = normalizeAyahParam(rawAyah, ayat.length || undefined);`
+- `onTextLayout={(e) => { linesRef.current.set(segment.page, e.nativeEvent.lines); tryScroll(); }}` on each segment `<Text>`. Also call `tryScroll()` from the existing segment `onLayout` and from an effect on `[targetAyah, segments]`.
+- `tryScroll()`:
+  1. If `targetAyah == null`, set `scrolledAyahRef.current = null` and return.
+  2. If `targetAyah === scrolledAyahRef.current`, return.
+  3. `i = segmentForAyah(segments, targetAyah)`. Get the layout from `layoutsRef.current.get(segments[i].page)`. If either is missing, return (a later layout callback retries).
+  4. `y = ayahScrollY({ bodyY: bodyYRef.current, segmentY, segmentHeight, lines: linesRef.current.get(page), offset: ayahCharOffset(...), expectedLength: segmentCharLength(...) })`.
+  5. `scrollRef.current?.scrollTo({ y: Math.max(0, y - 80), animated: false })`, then `scrolledAyahRef.current = targetAyah`.
+- The span gets `style={a.number === targetAyah ? styles.ayahHighlight : undefined}` with `ayahHighlight: { backgroundColor: KhazainColors.cream200 }`.
+- With no `ayah` param, nothing changes (frame 16's state).
 
-**Step 5:** `git commit -m "feat(mushaf): show a surah's linked notes on the reader"`
+**Step 5:** `git commit -m "feat(mushaf): open the reader at a linked ayah's line"`
 
 ---
 
-### Task 15: MiniPlayer long-press takes a timestamped lecture note
+### Task 14: The Mushaf reader shows its linked notes, or a hint line
 
 **Files:**
-- Modify: `components/khazain/primitives/MiniPlayer.tsx:46-57` (the info and cover views become one `Pressable` group, or each gets `onLongPress`)
-- Test: `__tests__/contextualNotesWiring.test.ts` (`describe('mini player')`)
+- Modify (post-rebase): `app/(tabs)/sections/mushaf.tsx`, inside the `ScrollView` **after** the body wrapper `View` (outside progress's measured wrapper), plus the `styles`
+- Modify: `components/khazain/notes/linkedNotesModel.ts`. Add `surahNotesBlock(notes)` → `{ kind:'hint' } | { kind:'notes', notes: Note[] }` (sorted by position).
+- Test: `__tests__/linkedNotesModel.test.ts`, `__tests__/contextualNotesInvariants.test.ts`
 
 **Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `long-press on the track block opens a linked note` | `/onLongPress=\{takeLectureNote\}/` |
-| `the position is read at press time, not subscribed` | `/usePlayerStore\.getState\(\)\.progress/`. No new `progress` subscription on the parent, which keeps the T3.3 re-render isolation at `MiniPlayer.tsx:16-19`. |
-| `the ref comes from the shared builder` | `/lectureRefFromTrack\(track, progress, 'mini-player'\)/` |
-| `screen readers get the same action` | `/accessibilityActions=\{\[\{ name: 'longpress', label: 'إضافة ملاحظة' \}\]\}/` |
-| `no visible chrome is added` | The count of `<Pressable` in `MiniPlayer.tsx` is ≤ 4 (play plus two `SkipButton`s defined once, plus the new group). This guards against an icon button sneaking in (design Q1). |
-| `the dock still collapses when idle` | The existing `miniPlayerReach.test.ts` stays green. |
+| `surahNotesBlock with no notes is the hint` | `([])` → `{ kind:'hint' }` |
+| `surahNotesBlock sorts by ayah` | `[286, 255, surah-level]` → `notes` ordered `[surah-level, 255, 286]` |
+| (invariant) `the hint copy is exact` | `mushaf.tsx` contains `'اضغط مطولًا على آية لإضافة ملاحظة'` |
+| (invariant) `notes block sits outside the measured segment wrapper` | In source order, the `surahNotesBlock(` usage appears after the closing of the `bodyYRef` wrapper. Assert that `indexOf('surahNotesBlock(') > indexOf('bodyYRef.current = ')`. |
 
 **Step 3: Implement**
-- Wrap the `info` and `cover` views (keeping their physical order inside the `PHYSICAL_ROW`) in a `Pressable` with `style={{ flex: 1, ...PHYSICAL_ROW, alignItems:'center', gap: 10 }}`, `onLongPress={takeLectureNote}`, `delayLongPress={350}`, `accessibilityHint="اضغط مطولًا لإضافة ملاحظة"`, the accessibility actions, and an `onAccessibilityAction` that calls `takeLectureNote`. It has no `onPress`, so a tap does nothing, as before.
-- `takeLectureNote` reads `usePlayerStore.getState()` and pushes `/note-editor` with `noteRefToParams(...)`, using `useRouter()`.
+- `const block = surahNotesBlock(useLinkedNotes('ayah', surahId));`
+- `hint` → `<Text style={styles.noteHint}>…</Text>` with `noteHint: textStyle('caption', { color: KhazainColors.ink400, textAlign: 'center' })` (centred, like the meta line at `:311-315`).
+- `notes` → `<LinkedNotesSection title="ملاحظاتك على هذه السورة" notes={block.notes} onOpenNote={(id) => router.push({ pathname: '/note-editor' as any, params: { id } })} onOpenSource={(n) => router.setParams({ ayah: String(n.ref?.position ?? '') } as any)} />`. Tapping a label re-targets the scroll through Task 13's `scrolledAyahRef`.
 
-**Step 4:** tsc passes, and so does `npx jest __tests__/miniPlayerReach.test.ts __tests__/contextualNotesWiring.test.ts`.
+**Step 5:** `git commit -m "feat(mushaf): show a surah's linked notes, or how to add one"`
 
-**Step 5:** `git commit -m "feat(player): long-press the mini player to note the current moment"`
+---
+
+### Task 15: MiniPlayer visible note button plus long-press
+
+**Files:**
+- Modify: `components/khazain/primitives/MiniPlayer.tsx`:
+  - `:29-58` (row children; the order comment becomes "transport, note, title, cover")
+  - `:136-219` (styles: `noteBtn`)
+- Test: `__tests__/contextualNotesInvariants.test.ts` (behaviour: `takeLectureNoteParams`, Task 4)
+
+**Step 1: Failing tests** (invariants)
+
+| Test | Assertion |
+|---|---|
+| `reads the position at press time` | `/usePlayerStore\.getState\(\)/` inside `takeLectureNote`, and the parent component still has exactly the three atomic subscriptions (`track`, `isPlaying`, `isVisible`): count `usePlayerStore((s) =>` occurrences outside `ProgressFill` === 3 (T3.3 isolation, `:16-22`) |
+| `uses the pure params` | `/takeLectureNoteParams\(/` |
+| `no save gesture on the MiniPlayer` | No `/saveGestureProps\|useSaveGesture/` (long-press rule) |
+| `the dock still collapses when idle` | The existing `__tests__/miniPlayerReach.test.ts` is green, and `/if \(!isVisible \|\| !track\) return null;/` is still present |
+
+**Step 3: Implement**
+- `takeLectureNote`:
+
+```ts
+const { track, progress } = usePlayerStore.getState();
+router.push({ pathname: '/note-editor' as any, params: takeLectureNoteParams(track, progress) });
+```
+
+- The note button is a `Pressable` 32×32 (`hitSlop={6}`, `accessibilityRole="button"`, `accessibilityLabel="إضافة ملاحظة عند هذه اللحظة"`) holding `<FigmaIcon name="LibraryNotes" size={18} color={KhazainColors.navy800} />`. It is placed in physical order after `transport` and before `info` inside the existing `PHYSICAL_ROW` `row`.
+- `info` and `cover` are wrapped in a `Pressable` with `style={{ flex: 1, ...PHYSICAL_ROW, alignItems: 'center', gap: 10 }}`, `onLongPress={takeLectureNote}`, `delayLongPress={350}`, `accessibilityHint="اضغط مطولًا لإضافة ملاحظة"`, `accessibilityActions={[{ name: 'longpress', label: 'إضافة ملاحظة' }]}`, and an `onAccessibilityAction` that calls `takeLectureNote`. It has no `onPress`.
+- No frame draws the MiniPlayer (`:122`). The contracts are `PHYSICAL_ROW` and `theme.ts`.
+
+**Step 4:** tsc is clean, and `npx jest __tests__/miniPlayerReach.test.ts __tests__/contextualNotesInvariants.test.ts __tests__/rtlVisualContracts.test.ts` passes.
+
+**Step 5:** `git commit -m "feat(player): note the current moment from the mini player"`
 
 ---
 
 ### Task 16: The Library in-progress card creates a linked lecture note
 
 **Files:**
-- Modify: `app/(tabs)/library.tsx:266-267` (add `openLinkedNote`) and `:333` (`onSecondary`)
-- Test: `__tests__/contextualNotesWiring.test.ts` (`describe('library in-progress card')`)
+- Modify: `app/(tabs)/library.tsx:331-334` (`onSecondary`). Keep `openNewNote` (`:266-267`) for the quick-note card.
+- Test: `__tests__/contextualNotesInvariants.test.ts` (behaviour: `lectureNoteParamsFromSession`, Task 4)
 
 **Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `"إضافة ملاحظة" links the note to the lecture position` | `/onSecondary=\{\(\) => openLinkedNote\(lectureRefFromSession\(lecture, 'library-progress'\)\)\}/` |
-| `the button label is unchanged (frame 6)` | `/secondaryLabel="إضافة ملاحظة"/` |
-| `the quick-note card still opens a plain note` | `/onPress=\{\(\) => openNewNote\(\)\}/` is still present |
+| (invariant) `frame 6 copy unchanged` | `/secondaryLabel="إضافة ملاحظة"/` |
+| (invariant) `"آخر الملاحظات" rows unchanged (frame 6 conflict, design §4.8)` | The Library recent-note row block does not reference `NoteRefLink` or `linkedNoteRow` |
+| (invariant) `uses the pure params` | `/lectureNoteParamsFromSession\(lecture\)/` |
 
-**Step 3: Implement** `const openLinkedNote = (ref: NoteRef) => router.push({ pathname: '/note-editor' as any, params: noteRefToParams(ref) });`. Leave `openNewNote` for the quick-note card.
+**Step 3: Implement** `onSecondary={() => router.push({ pathname: '/note-editor' as any, params: lectureNoteParamsFromSession(lecture) })}`.
 
-**Step 4:** tsc passes, and so does `npx jest __tests__/libraryLayout.test.ts __tests__/libraryPresentation.test.ts __tests__/contextualNotesWiring.test.ts`.
+**Step 4:** tsc is clean, and `npx jest __tests__/libraryLayout.test.ts __tests__/libraryPresentation.test.ts __tests__/contextualNotesInvariants.test.ts` passes.
 
 **Step 5:** `git commit -m "feat(library): link in-progress lecture notes to their position"`
 
@@ -525,131 +590,146 @@ const takeAyahNote = (ayahNumber?: number) => {
 ### Task 17: Scholar detail lists notes for its lectures
 
 **Files:**
-- Modify: `app/(tabs)/sections/scholar/[id].tsx:52-66` (`FlatList` gets a `ListFooterComponent`)
-- Test: `__tests__/contextualNotesWiring.test.ts` (`describe('scholar detail')`)
+- Modify (post-rebase): `app/(tabs)/sections/scholar/[id].tsx`. The `FlatList` (base `:52-66`, now carrying saved v2's `save=` prop on `RibbonCard`) gains a `ListFooterComponent`.
+- Modify: `components/khazain/notes/linkedNotesModel.ts`. Add `seriesIdsOf(lectures)` → `Set<string>` (skipping missing `archiveId`).
+- Test: `__tests__/linkedNotesModel.test.ts`, `__tests__/contextualNotesInvariants.test.ts`
 
 **Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `collects notes for this scholar's lecture series` | `/notesForLectureSeries\(notes, archiveIds\)/`, where `archiveIds` is built from `lectures.map((l) => l.archiveId)` |
-| `renders them as the list footer` | `/ListFooterComponent=\{\s*<LinkedNotesSection/` with the title `ملاحظاتي على هذه الدروس` |
-| `tapping the reference resumes the lecture there` | `/onOpenSource=\{\(note\) => openNoteSource\(note\.ref!?, router\)\}/` (or equivalent) |
+| `seriesIdsOf collects archive ids` | `[{archiveId:'A'},{},{archiveId:'B'}]` → `Set {'A','B'}` |
+| (invariant) `no note gesture on RibbonCard` | `scholar/[id].tsx` passes no `onLongPress` to `RibbonCard` (long-press rule: RibbonCard = SAVE) |
+| (invariant) `footer uses the guarded section` | `/ListFooterComponent=\{\s*<LinkedNotesSection/` |
 
 **Step 3: Implement**
-- `useNotesStore((s) => s.notes)`.
-- `useMemo` for the `archiveIds` `Set` (filter out `undefined`) and for the matched notes.
-- A footer row tap opens the editor. A link tap calls `openNoteSource`, which resumes playback at the second.
-- The footer renders `null` when empty, so frame 19 is unchanged.
+- `const notes = useNotesStore((s) => s.notes);`
+- `const linked = useMemo(() => notesForLectureSeries(notes, seriesIdsOf(lectures)), [notes, lectures]);`
+- The footer is ``<LinkedNotesSection title="ملاحظاتي على هذه الدروس" notes={linked} onOpenNote={…editor…} onOpenSource={(n) => runNoteSource(noteSourceTarget(n.ref!), { navigate: (h) => router.navigate(h as any), play: startLecturePlayback })} />``. There is nothing to dismiss here.
 
-**Step 4:** tsc passes, and so does `npx jest __tests__/contextualNotesWiring.test.ts __tests__/scholarCardLayout.test.ts __tests__/sectionsLayout.test.ts`.
+**Step 4:** tsc is clean, and `npx jest __tests__/contextualNotesInvariants.test.ts __tests__/scholarCardLayout.test.ts __tests__/sectionsLayout.test.ts` passes, along with the saved branch's tests if they landed.
 
 **Step 5:** `git commit -m "feat(scholar): show notes linked to a scholar's lectures"`
 
 ---
 
-### Task 18: Rebase onto the search branch and confirm the book route (checkpoint)
+### Task 18: Book detail notes section (take-note action plus linked notes)
 
 **Files:**
-- Modify (only if needed): `services/noteNavigation.ts` (`BOOK_DETAIL_PATH`) and `__tests__/noteNavigation.test.ts`
-
-**Steps:**
-1. Run `git fetch` if needed, then `git rebase fix/search-route-and-navigation`. Resolve conflicts with the `resolving-merge-conflicts` skill. Never use `--no-verify`.
-2. Open the screen with `ls "app/(tabs)/sections/book/"` and read `[id].tsx`. Record the following in the task notes, with file and line:
-   - the actual route path
-   - the `Book` fields now available (`types/content.ts:105-109` may have gained `author` and `coverUrl`)
-   - where the reserved notes slot is
-3. Add a failing test, `book detail route matches the screen on disk`. It asserts that `fs.existsSync('app/(tabs)/sections/book/[id].tsx')` holds and that `BOOK_DETAIL_PATH === '/sections/book'`. If the search branch chose a different path, update the constant and the Task 10 href test to match.
-4. Run the full `npx jest` and `npx tsc --noEmit --pretty false`. Both must be green on the rebased tree before you continue.
-5. Commit only if the constant changed: `git commit -m "fix(notes): point book references at the shipped book detail route"`
-
----
-
-### Task 19: Book detail "إضافة ملاحظة" action (after the rebase)
-
-**Files:**
-- Modify: `app/(tabs)/sections/book/[id].tsx`, next to the primary action. Cite the actual lines recorded in Task 18.
-- Test: `__tests__/contextualNotesWiring.test.ts` (`describe('book detail')`)
+- Modify (post-rebase): `constants/bookDetailPresentation.ts`, making `BOOK_DETAIL_SECTIONS` `['cover','meta','primaryAction','notes']`
+- Modify (post-rebase): `__tests__/bookDetail.test.ts`, the order assertion (**changed deliberately**)
+- Modify (post-rebase): `app/(tabs)/sections/book/[id].tsx`, adding a `notes` entry to the `sections` record
+- Test: `__tests__/noteActions.test.ts` (`bookNoteParams` already exists), `__tests__/noteNavigation.test.ts` and `__tests__/contextualNotesInvariants.test.ts`
 
 **Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `offers a take-note action` | `/accessibilityLabel="إضافة ملاحظة"/` |
-| `links the note to this book` | `/makeBookRef\(\{ id: book\.id, title: book\.title \}, 'book-detail'\)/` and `/noteRefToParams/` |
+| **(changed deliberately)** `book detail section order` | `BOOK_DETAIL_SECTIONS` equals `['cover','meta','primaryAction','notes']` |
+| `book note round-trips to this screen` | `noteSourceTarget(makeBookRef({ id:'bk2', title:'t' })).href === bookDetailHref('bk2')`, and `resolveBookDetail('bk2', MOCK_BOOKS, MOCK_LECTURES)` is non-null, so the id is a real `Book.id` (search R7) |
+| (invariant) `the screen renders every section from the order constant` | `/BOOK_DETAIL_SECTIONS\.map\(/` is still present (search's own test) |
+| (invariant) `notes list is the guarded section` | `book/[id].tsx` contains `<LinkedNotesSection` and `useLinkedNotes('book', ` |
 
-**Step 3: Implement** a secondary action that reuses the screen's own secondary-button style if the search ticket defined one. Otherwise use `PillButton` (`components/khazain/primitives`) in a non-primary variant (`PillButton.tsx` `Variant`, e.g. `ghost`). Place it in physical order inside the screen's existing action row (`PHYSICAL_ROW`), never with `row-reverse`. It pushes `/note-editor` with the book ref. No frame covers this screen, so the contracts are `constants/layout.ts`, `constants/typography.ts`, `theme.ts`, and any contract the search ticket recorded for book detail.
+**Step 3: Implement**
+- `notes` is a `View` with `gap: 8` holding:
+  - a `Text` "ملاحظاتي" (`textStyle('sectionTitle', { color: KhazainColors.ink900 })`, `RTL_TEXT`)
+  - `<PillButton variant="cream" label="إضافة ملاحظة" onPress={() => router.push({ pathname: '/note-editor' as any, params: bookNoteParams(detail) })} />`
+  - `<LinkedNotesSection notes={bookNotes} onOpenNote={…editor…} />`, with no `title` (the section's own heading is the "ملاحظاتي" text above it).
+- `useLinkedNotes` must be called unconditionally at the top of the screen (Rules of Hooks), keyed by `id ?? ''`.
+- No frame covers this screen. The contracts are search §4.4 (`PHYSICAL_BOX` content), `constants/typography.ts` and `theme.ts`.
 
-**Step 5:** `git commit -m "feat(books): take a note linked to a book"`
+**Step 4:** tsc is clean, and `npx jest __tests__/bookDetail.test.ts __tests__/bookDetailScreen.test.ts __tests__/noteNavigation.test.ts __tests__/contextualNotesInvariants.test.ts __tests__/rtlPhysicalContract.test.ts` passes.
+
+**Step 5:** `git commit -m "feat(books): take and list notes on the book detail screen"`
 
 ---
 
-### Task 20: Book detail lists its linked notes (after the rebase)
+### Task 19: Long-press rule invariant and docs
 
 **Files:**
-- Modify: `app/(tabs)/sections/book/[id].tsx` (the reserved notes slot)
-- Test: `__tests__/contextualNotesWiring.test.ts`
+- Test: `__tests__/contextualNotesInvariants.test.ts` (`describe('long-press rule')`)
+- Modify: `CLAUDE.md`:
+  - **State** → the `notesStore` bullet: `addNote(title, body, ref?)`, `merge` + `coerceNotes` with no version bump and the reason, `notesFor`/`useLinkedNotes`, and pointers to `services/noteRefs.ts`, `services/noteActions.ts` and `services/noteNavigation.ts`
+  - **File layout** → add `components/khazain/notes/`
+  - a new **"Long-press means…"** rule under "Things TO do"
 
 **Step 1: Failing tests**
 
-| Test name | Assertion |
+| Test | Assertion |
 |---|---|
-| `renders this book's linked notes in the reserved slot` | `/useLinkedNotes\('book', /` and `/<LinkedNotesSection/` with the title `ملاحظاتك على هذا الكتاب` |
-| `opening a listed note goes to the editor` | `/pathname: '\/note-editor' as any, params: \{ id \}/` |
-| `book ref round-trips to this screen` | In `__tests__/noteNavigation.test.ts`: `noteSourceTarget(makeBookRef({ id: <a real mock book id from contentService>, title }, 'book-detail'))` gives an href whose last segment is that id |
+| `lecture rows never take a note gesture` | `components/khazain/**/LectureCard.tsx` and `RibbonCard.tsx` do not import from `noteActions`/`noteRefs` |
+| `note surfaces never take a save gesture` | `mushaf.tsx` and `MiniPlayer.tsx` do not reference `saveGestureProps`/`useSaveGesture` (shared with Tasks 12/15; keep one copy here) |
+| `CLAUDE.md records the rule` | `CLAUDE.md` matches `/Long-press.*SAVE/` and `/Long-press.*NOTE/` |
 
-**Step 3: Implement.** No `onOpenSource` is needed here, because the source is this screen. The section returns `null` when empty.
-
-**Step 5:** `git commit -m "feat(books): show notes linked to a book on its detail screen"`
+**Step 5:** `git commit -m "docs: record the long-press rule and the contextual notes contracts"`
 
 ---
 
-### Task 21: Full verification, docs touch-up and visual QA
-
-**Files:**
-- Modify: `CLAUDE.md`, the **State** section bullet for `notesStore`. Update the API to `addNote(title, body, ref?)`, mention persist `version: 1`, `notesFor` and `useLinkedNotes`, and point to `services/noteRefs.ts` and `services/noteNavigation.ts`. Add `components/khazain/notes/` to the File layout tree.
-- Modify: `docs/plans/2026-10-21-contextual-notes-design.md`. Record any decision changed during implementation.
+### Task 20: Full verification and visual QA
 
 **Step 1: Automated gates** (all must be green)
 
 ```bash
 npx jest
 npx tsc --noEmit --pretty false
-npm run lint 2>&1 | grep -E "notesStore|noteRefs|noteNavigation|mushafNavigation|note-editor|notes-viewer|sections/mushaf|MiniPlayer|\(tabs\)/library|scholar/\[id\]|sections/book|audioEngine|lecturePlayback|khazain/notes" -A 2
+npm run lint 2>&1 | grep -E "notesStore|noteRefs|noteActions|noteNavigation|mushafNavigation|note-editor|notes-viewer|sections/mushaf|MiniPlayer|\(tabs\)/library|scholar/\[id\]|sections/book|bookDetailPresentation|audioEngine|lecturePlayback|khazain/notes" -A 2
 ```
 
 The lint grep must print nothing new. The `browse.tsx:603` errors are known and out of scope.
 
-**Step 2: Visual QA on the iOS simulator.** Read the `argent-device-interact` and `argent-test-ui-flow` skills first, and use `list-devices` and prefer a booted simulator. Capture each state below. Compare a frame state against its reference PNG under `/Users/ahmedelhadarey/samer/khazayin-app/docs/audit/2026-09-09/figma-reference/`. For a no-frame state, check against the named contract.
+**Step 2: Visual QA on the iOS simulator.** Load `argent-device-interact` and `argent-test-ui-flow` first, run `list-devices`, and prefer a booted simulator. Reference PNGs live under `/Users/ahmedelhadarey/samer/khazayin-app/docs/audit/2026-09-09/figma-reference/`.
 
-| # | State to capture | Route / action | Compare against |
+| # | State | Route / action | Compare against |
 |---|---|---|---|
-| 1 | Fresh install, no notes | `/sections/mushaf?surah=2` | `16-2349-982.png`. Header, meta and footer must be pixel-identical; there is no notes section and no tinted numbers. |
-| 2 | Resume transition | cold start with last page > 1 | `15-2349-829.png` (unchanged) |
+| 1 | Fresh install, no notes | `/sections/mushaf?surah=2` | `16-2349-982.png`. Header, meta and footer must be pixel-identical. The reading surface ends with the hint `اضغط مطولًا على آية لإضافة ملاحظة` (no frame there). |
+| 2 | Resume transition | cold start, last page > 1 | `15-2349-829.png` (unchanged) |
 | 3 | Surah index | `/sections/mushaf` | `14-2207-17898.png` (unchanged) |
 | 4 | Library, no notes, no lecture | `/library` | `06-2031-4659.png` (unchanged) |
 | 5 | Home, no track | `/` | `05-2001-940.png` (unchanged) |
 | 6 | Scholar detail, no notes | `/sections/scholar/s1` | `19-2510-1990.png` (unchanged) |
-| 7 | Long-press Al-Baqara 255 | in the reader | no frame. The editor shows the chip `مرتبطة بـ البقرة: ٢٥٥`. Contracts: `RTL_TEXT`, `textStyle('caption')`. |
-| 8 | Reader after saving 2 ayah notes | `/sections/mushaf?surah=2` | No frame for the reading surface. Header, meta and footer are still identical to `16-2349-982.png`. Ayahs 255 and 286 are tinted `navy800`. The end-of-surah section is ordered 255 then 286, rows are in `PHYSICAL_ROW` order (time on the left), and the text sits on the physical right. |
-| 9 | VoiceOver action on the ayat body | Rotor → "إضافة ملاحظة على السورة" | The editor chip reads `مرتبطة بـ سورة البقرة` |
-| 10 | Notes viewer with linked and plain notes | Library → ملاحظاتي → viewer | No frame. Contract: `PHYSICAL_ROW` (time left, column right). The label sits under the title. A plain note has no second line. |
-| 11 | Tap the `البقرة: ٢٥٥` link in the viewer | — | The reader opens at Al-Baqara, scrolled near 255 with the highlight. Back navigation does not land on the dismissed sheet. |
-| 12 | Play a lecture, long-press the MiniPlayer at about 12:34 | scholar `s1` → play → long-press | The editor chip reads `مرتبطة بـ محاضرة <title> — ١٢:٣٤`, with the time rendered as one LTR numeral group. MiniPlayer pixels are unchanged when not pressed. |
-| 13 | Tap the lecture link in the viewer | — | The sheet closes and the MiniPlayer shows the same episode, seeked to about 12:34. |
-| 14 | Library in-progress card "إضافة ملاحظة" | `/library` | Same pixels as before the tap. The editor chip shows the lecture label at the saved position. |
-| 15 | Scholar detail with a lecture note | `/sections/scholar/s1` | The footer "ملاحظاتي على هذه الدروس" sits below the list; the rows above it are unchanged against `19-2510-1990.png`. |
-| 16 | Book detail (post-rebase) | `/sections/book/<id>` | No frame. The "إضافة ملاحظة" action follows the search ticket's book-detail contract. With a note saved, the linked-notes section shows in the reserved slot, and the viewer link for that note lands here. |
-| 17 | Upgrade path | Install the `main` build, create 2 notes, install this build | Both notes survive with their titles and bodies, and the viewer shows no ref line for them (migration v0 → v1). |
-| 18 | Android spot check | Repeat 1, 8, 10 and 12 on the emulator | Same physical order. The nested-Text long-press works. |
+| 7 | Long-press 2:255 | reader | No frame. The editor chip reads `مرتبطة بـ البقرة: ٢٥٥`. Contracts: `RTL_TEXT`, `textStyle('caption')`. |
+| 8 | Reader with notes on 2:255 and 2:286 | `/sections/mushaf?surah=2` | Header, meta and footer still identical to `16-2349-982.png`. The hint is replaced by "ملاحظاتك على هذه السورة", ordered 255 then 286, with time on the left and text on the physical right. Page tracking still credits pages (progress QA). |
+| 9 | VoiceOver on a segment | Rotor → "إضافة ملاحظة على السورة" | The chip reads `مرتبطة بـ سورة البقرة` |
+| 10 | Viewer with linked, plain and unknown-type notes | Library → ملاحظاتي → viewer | No frame (`PHYSICAL_ROW`). The label sits under the title for linked notes. A plain note has no second line. An unknown type shows its label and is not tappable. |
+| 11 | Tap `البقرة: ٢٥٥` in the viewer, then Android back | iOS and Android | The sheet closes and the reader opens at 2:255's line with the highlight. **Back lands on the previous distinct screen, never on a second copy of Library.** If it does, switch to the `dismissTo(href, { withAnchor: true })` fallback (design §4.6). |
+| 12 | Same reader, follow a 2:286 note from its own section | reader | Scrolls to 286 without a remount (it remembers the last ayah) |
+| 13 | Play a scholar lecture, then tap the MiniPlayer note button at about 12:34 | `s1` → play | The MiniPlayer shows transport, note, title, cover, left to right. The chip reads `مرتبطة بـ محاضرة <title> — ١٢:٣٤` (one LTR numeral group). Long-press on the title does the same. |
+| 14 | Viewer link on that lecture note | — | The sheet closes, and the same episode plays from about 12:34 (no audible start at 0:00). With the same series already playing, there is no network fetch (fast path). |
+| 15 | Library in-progress "إضافة ملاحظة" | `/library` | Pixels are unchanged before the tap, and the chip shows the lecture label at the saved position. "آخر الملاحظات" rows show **no** label (frame 6 exclusion). |
+| 16 | Scholar detail with a lecture note | `/sections/scholar/s1` | The footer sits below the list. The rows above it match `19-2510-1990.png`. Long-press on a row **saves** (saved branch), not a note. |
+| 17 | Book detail | `/content-search` → a book → `/sections/book/bk2` | No frame. Order: cover, meta, primary action, then the notes section with the "إضافة ملاحظة" pill. After saving, the note appears, and the viewer link lands back here. |
+| 18 | **Downgrade** | Install this build, create 2 linked notes and 1 plain note, install the `main` build, edit one note, reinstall this build | In the old build all 3 notes are present (no crash, no loss). After reinstalling, both refs are intact, including the edited one. |
+| 19 | Upgrade | Install `main`, create 2 notes, install this build | Both notes are present and unlinked |
+| 20 | Android spot check | Rows 1, 8, 11, 13, 14 on the emulator | Same physical order. Long-press works on nested Text, and the line-lookup scroll lands within a line or two. |
 
-Optional evidence: `npm run capture:ios` and `npm run compare:figma` for states 1, 4, 5 and 6.
+Optional evidence: `npm run capture:ios` and `npm run compare:figma` for rows 1–6.
 
-**Step 3: Commit**
+**Step 3:** Update the design doc for any decision that changed during implementation, then run `git commit -m "docs(plans): record contextual-notes implementation outcomes"`. Do not push. Report the QA table with screenshots.
 
-```bash
-git add CLAUDE.md docs/plans/2026-10-21-contextual-notes-design.md
-git commit -m "docs: record the contextual notes contracts"
-```
+---
 
-Do not push. Report the QA table with screenshots to the user.
+## Task index
+
+| # | Title | Depends on |
+|---|---|---|
+| 0 | Rebase onto the sibling branches and confirm anchors | search and progress implemented |
+| 1 | `services/noteRefs.ts` (labels, `NoteRef`, lenient validation, route params) | 0 |
+| 2 | `notesStore` keeps a ref through merge plus coercion (no version bump) | 1 |
+| 3 | Linked-note selectors | 2 |
+| 4 | Pure "take note" param builders | 1 |
+| 5 | Shared linked-note UI | 3 |
+| 6 | Note editor: accept, show and label refs | 4, 5 |
+| 7 | Ayah deep-link math (param, segment and line lookup) | 0 |
+| 8 | Start a lecture at an explicit episode and second | 0 |
+| 9 | Jump within the active queue (optional) | 8 |
+| 10 | Resolve a note reference to its source (no dismissal) | 1, 8 |
+| 11 | Notes viewer: reference link, close then navigate | 5, 10 |
+| 12 | Mushaf long-press an ayah to take a note | 4 |
+| 13 | Mushaf `?ayah=` line scroll and highlight | 7, 12 |
+| 14 | Mushaf linked notes or hint line | 5, 13 |
+| 15 | MiniPlayer visible note button plus long-press | 4 |
+| 16 | Library in-progress card linked note | 4 |
+| 17 | Scholar detail linked notes footer | 5, 10 |
+| 18 | Book detail notes section | 4, 5, 10 |
+| 19 | Long-press rule invariant and docs | 12, 15, 17 |
+| 20 | Full verification and visual QA | all |
