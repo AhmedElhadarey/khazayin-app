@@ -1290,3 +1290,10 @@ git commit -m "docs(qa): record content search reachability QA"
   v2 text and is left as history). `BookCard`'s `Pressable` carries `accessibilityLabel` only when it
   has an `onPress`, so TalkBack does not read the name twice on Home. `rootReveal.test.ts` clears
   the one-slot listener after each test.
+- **Device QA (iPhone 16, iOS 26.5 simulator)** — with `content-search` presented as a
+  `fullScreenModal`, the native `SafeAreaView edges={['top', 'bottom']}` got a 0 top inset, so the
+  header and its back button sat under the status bar / Dynamic Island and could not be tapped; a
+  fullScreenModal has no swipe-to-dismiss, so the user was stuck unless they picked a result (the
+  old `'modal'` page sheet was fine). The screen root is now a plain `View` padded by
+  `useSafeAreaInsets()` top and bottom. Pinned by `__tests__/contentSearchSafeArea.test.tsx`, which
+  renders the screen with mocked insets and also asserts the `fullScreenModal` registration.
