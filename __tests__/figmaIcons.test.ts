@@ -163,12 +163,15 @@ describe('the header art the frames lay over the page', () => {
     expect(src).not.toMatch(/opacity[:=]\s*\{?[\d.]/);
   });
 
-  it('has no More screen still tiling the old ornament', () => {
+  it('has no framed screen still tiling the old ornament', () => {
     const screens = [
       ...['index', 'archive', 'contact', 'about', 'settings', 'settings-progress']
         .map((f) => `app/(tabs)/more/${f}.tsx`),
       // 2120:942 lays the same art, so the dawah screen is part of the same set.
       'app/(tabs)/sections/dawah.tsx',
+      // 2031:5675 is a tab root and carries the pair of corner motifs; the
+      // 22-10 device audit caught it painting a bare ground.
+      'app/(tabs)/sections/index.tsx',
     ];
     for (const file of screens) {
       const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
