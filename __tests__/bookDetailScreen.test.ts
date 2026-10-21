@@ -24,10 +24,37 @@ describe('book detail screen', () => {
     expect(read(SCREEN)).toMatch(/<InlineHeader/));
 });
 
-describe('BookCard accessibility', () => {
-  it('is only announced as a button when it has an action', () => {
-    const src = read('components/khazain/home/BookCard.tsx');
-    expect(src).toMatch(/accessibilityRole=\{onPress \? 'button' : undefined\}/);
-    expect(src).toMatch(/disabled=\{!onPress\}/);
+describe('book detail screen states', () => {
+  const src = read(SCREEN);
+
+  it('picks its body and primary action through the pure helpers', () => {
+    expect(src).toMatch(/bookDetailBody\(/);
+    expect(src).toMatch(/bookPrimaryAction\(/);
   });
+
+  it('offers a retry when the books failed, like the scholar detail', () => {
+    expect(src).toMatch(/<AsyncContent[\s\S]*?status="error"[\s\S]*?onRetry=/);
+  });
+
+  it('holds the cover footprint while loading instead of a left-aligned row', () => {
+    expect(src).not.toMatch(/SkeletonCardList/);
+    expect(src).toMatch(/bookCardLayout\(/);
+    expect(src).toMatch(/coverSkeleton: \{[^}]*alignSelf: 'center'/);
+  });
+
+  it('resolves the detail once per input change', () =>
+    expect(src).toMatch(/useMemo\(\s*\(\) => resolveBookDetail\(/));
+});
+
+describe('BookCard accessibility', () => {
+  const src = read('components/khazain/home/BookCard.tsx');
+
+  it('is only announced as a button when it has an action', () =>
+    expect(src).toMatch(/accessibilityRole=\{onPress \? 'button' : undefined\}/));
+
+  it('is never marked disabled — a screen reader would announce it "dimmed"', () =>
+    expect(src).not.toMatch(/disabled=/));
+
+  it('gives no press feedback when there is nothing to press', () =>
+    expect(src).toMatch(/scale: pressed && onPress \? 0\.97 : 1/));
 });

@@ -179,7 +179,7 @@ Section order `constants/bookDetailPresentation.ts`:
 | Section | Content |
 |---|---|
 | header | `InlineHeader title="الكتب العلمية"` — every Sections sub-screen uses it (`sections/books.tsx:37`); `DetailHeader` has no callers. |
-| cover | `BookCard` (`components/khazain/home/BookCard.tsx`) centred, no `onPress`. `BookCard` changes to `accessibilityRole={onPress ? 'button' : undefined}` and `disabled={!onPress}` so a screen reader does not announce an action-less button (also fixes the Home rail, whose cards have no `onPress` today; no pixel change). |
+| cover | `BookCard` (`components/khazain/home/BookCard.tsx`) centred, no `onPress`. `BookCard` changes to `accessibilityRole={onPress ? 'button' : undefined}` and suppresses press feedback without an `onPress` (`disabled` was dropped in code review: it makes a screen reader announce "dimmed") so a screen reader does not announce an action-less button (also fixes the Home rail, whose cards have no `onPress` today; no pixel change). |
 | meta | title (`screenTitle`), author (`bodyCompact`, `ink500`) — omitted when unknown. |
 | primaryAction | `PillButton "استمع إلى الشرح"` → `startLecturePlayback(lecture)`; without a lecture, caption "لا يتوفر شرح صوتي لهذا الكتاب بعد". |
 
@@ -272,7 +272,7 @@ No frame (contracts govern): `/content-search`, `/sections/book/[id]`.
 | R4 | A store in `error` is settled, so a failed corpus shows "no results". **Pagination limitation:** the four lecture stores are paginated (`store/lectureStore.ts`); search only sees the pages already loaded (page 1 after warm-up), so later-page lectures are not findable. | Acceptable for the offline mock (one page each). Both belong with backend wiring (server-side search). |
 | R5 | (v1: Books list play became two taps) — removed with the Books/Home wiring cut. | — |
 | R6 | Typed routes for new paths. | `as Href` confined to `searchNavigation.ts` and the single `dismissTo` call in the screen; hrefs stay plain strings in the pure helpers (keeps their tests free of router types). |
-| R7 | **Book identity split.** The same book exists as `Book` `bk2` and book-lecture `b4` ("شرح رياض الصالحين"). Search opens `/sections/book/bk2`; the Home card's bookmark saves `b4` (`BookCard.tsx:66-71` saves whatever `id` it is given). A future entry point with `b*` ids would need its own page or a mapping, and notes keyed by book id would split across the two. | Not solved here. Flagged for the Contextual Notes ticket, which must pick one canonical book id before keying notes to it. |
+| R7 | **Book identity split.** The same book exists as `Book` `bk2` and book-lecture `b4` ("شرح رياض الصالحين"). Search opens `/sections/book/bk2`; the Home card's bookmark saves `b4` (`BookCard.tsx:66-71` saves whatever `id` it is given). A future entry point with `b*` ids would need its own page or a mapping, and notes keyed by book id would split across the two. | Not solved here. Flagged for the Contextual Notes ticket, which must pick one canonical book id before keying notes to it. **Double bookmark key (code review):** the book detail cover is a `BookCard` given `bk2`, so its bookmark saves `book:bk2` while the Home rail's card saves `book:b4` for the same book — the Library "My saved" list can hold it twice until the canonical id is chosen. |
 | R8 | No-audio `Alert` raised while the modal is dismissing can be dropped on iOS. | Play on the native-stack `transitionEnd` (closing) event, bounded by a 500 ms fallback, once only (`runOnceAfterDismissal`); device QA row 22. |
 
 ## 10. Open questions (defaults chosen)

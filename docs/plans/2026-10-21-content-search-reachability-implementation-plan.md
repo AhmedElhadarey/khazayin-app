@@ -1256,3 +1256,10 @@ git commit -m "docs(qa): record content search reachability QA"
   closing event + a 500 ms fallback; the runner's `play` dep is now `playAfterDismiss`, called before
   `dismiss()`. Runner held in `useState`; recents recorded only when the runner acted.
   `isCorpusLoading` moved to `services/loadState.ts`. `openSearch` uses `router.navigate`.
+- **Code review (book detail)** — body and primary action chosen by pure `bookDetailBody` /
+  `bookPrimaryAction` (`services/bookDetail.ts`): retry via `AsyncContent` when books fail, a
+  centred cover-sized placeholder while loading, no "no audio" caption until the sharh list settles.
+  `BookCard` drops `disabled` (announced "dimmed") and only scales on press when it has an
+  `onPress`. **Not applied:** hiding the detail cover from the accessibility tree
+  (`no-hide-descendants`) — it would also hide the cover's bookmark toggle, the only bookmark
+  control on that screen; the title is read twice instead.

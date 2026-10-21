@@ -1,5 +1,5 @@
 import { BOOK_DETAIL_SECTIONS } from '@/constants/bookDetailPresentation';
-import { bookDetailHref, resolveBookDetail } from '@/services/bookDetail';
+import { bookDetailBody, bookDetailHref, bookPrimaryAction, resolveBookDetail } from '@/services/bookDetail';
 import type { Book, Lecture } from '@/types/content';
 
 const lecture = (id: string, title: string, scholar: string): Lecture =>
@@ -46,4 +46,30 @@ describe('resolveBookDetail', () => {
 describe('book detail section order', () => {
   it('is cover, meta, then the primary action', () =>
     expect(BOOK_DETAIL_SECTIONS).toEqual(['cover', 'meta', 'primaryAction']));
+});
+
+describe('bookDetailBody', () => {
+  it('shows the book whenever it resolved, even if a refresh then failed (stale-while-error)', () =>
+    expect(bookDetailBody({ found: true, booksStatus: 'error' })).toBe('book'));
+  it('offers a retry, not "unavailable", when the books failed to load', () =>
+    expect(bookDetailBody({ found: false, booksStatus: 'error' })).toBe('error'));
+  it('shows a placeholder while the books are still loading', () => {
+    expect(bookDetailBody({ found: false, booksStatus: 'loading' })).toBe('loading');
+    expect(bookDetailBody({ found: false, booksStatus: 'idle' })).toBe('loading');
+  });
+  it('says the book is unavailable only once the books settled without it', () => {
+    expect(bookDetailBody({ found: false, booksStatus: 'success' })).toBe('missing');
+    expect(bookDetailBody({ found: false, booksStatus: 'empty' })).toBe('missing');
+  });
+});
+
+describe('bookPrimaryAction', () => {
+  it('plays when a sharh is linked', () =>
+    expect(bookPrimaryAction({ hasLecture: true, lecturesStatus: 'loading' })).toBe('play'));
+  it('does not claim "no audio" while the sharh list is still loading', () => {
+    expect(bookPrimaryAction({ hasLecture: false, lecturesStatus: 'loading' })).toBe('loading');
+    expect(bookPrimaryAction({ hasLecture: false, lecturesStatus: 'idle' })).toBe('loading');
+  });
+  it('says "no audio" once the sharh list settled without a match', () =>
+    expect(bookPrimaryAction({ hasLecture: false, lecturesStatus: 'success' })).toBe('none'));
 });
