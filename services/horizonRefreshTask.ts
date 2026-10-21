@@ -19,9 +19,10 @@
  *   - iOS: after the user force-quits the app, the OS gives it NO background time
  *     until the user manually relaunches (Apple DTS). So on iOS this task does
  *     NOT run at all in the exact scenario that matters, and the prayer horizon
- *     still goes silent after ~7 days (the wird horizon after 14). Every shipped competitor has the same
- *     limitation (Muslim Pro, Muslim Toolbox, Pillars) and discloses it; it is
- *     industry-wide and unsolved for iOS local notifications.
+ *     still goes silent after ~7 days (the wird horizon after 14). Every
+ *     shipped competitor has the same limitation (Muslim Pro, Muslim Toolbox,
+ *     Pillars) and discloses it; it is industry-wide and unsolved for iOS local
+ *     notifications.
  *   - Android: Doze and OEM battery managers (Xiaomi/MIUI, Huawei, Oppo) can
  *     defer this task for days or suppress it entirely, and nothing in the app
  *     can detect that.
@@ -45,9 +46,9 @@ const IS_EXPO_GO =
 export const HORIZON_REFRESH_TASK = 'khazain-horizon-refresh';
 
 /**
- * Minimum inexact wake interval (minutes). The horizon spans 7 days, so a
- * roughly-daily top-up is ample headroom; the OS treats this as a floor and
- * will usually run less often.
+ * Minimum inexact wake interval (minutes). The horizon spans 7 days for
+ * prayers and 14 for wird, so a roughly-daily top-up is ample headroom; the OS
+ * treats this as a floor and will usually run less often.
  */
 const HORIZON_REFRESH_MIN_INTERVAL_MINUTES = 60 * 12;
 

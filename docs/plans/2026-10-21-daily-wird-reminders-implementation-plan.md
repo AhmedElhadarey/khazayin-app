@@ -1202,3 +1202,25 @@ git commit -m "docs(qa): daily wird reminders on-device verification"
   skipped the reconcile that cancels today's reminder. `snapshotDay` itself is
   left for the rollover hydrate, which also promotes the pending target.
   Pinned by T-WS-4b.
+- **Quality-review follow-ups (items 1–7).**
+  1. `useDayRollover`'s logic moved to `startDayRolloverWatch` in
+     `services/dayRollover.ts` (AppState and refresh injected) so it can be
+     tested with fake timers without a hook-testing dependency; a `disposed`
+     flag makes `arm()` a no-op after cleanup, so a midnight refresh in flight
+     at unmount cannot start an unreachable timer chain (T-DRW-3).
+  2. `reconcileHorizonAsync` schedules each entry in its own try/catch, so one
+     rejected DATE trigger no longer drops the rest of the horizon (T-NHS-13;
+     the mock gained `__rejectNextSchedules`).
+  3. `selectGoalMetToday(state, today)` in `store/wirdStore.ts` is the single
+     "met today" read (stale `snapshotDay` gives false); used by the Library
+     caption, the `_layout` suppressor and `recomputeTodayPct` (T-SEL-1/2).
+  4. A second pending request with an already-kept key is cancelled
+     (T-NHS-14).
+  5. `readGoalMetToday` logs its error in `__DEV__`, like the orchestrator.
+  6. `__tests__/wirdStore.test.ts` pins Date (2026-10-21 09:00) so `TODAY()`
+     cannot cross midnight mid-run.
+  7. `horizonRefreshTask.ts` interval comment names both horizons (7 / 14
+     days); over-long comment lines re-wrapped there and in
+     `wirdReminderToggle.ts`.
+  Items 1, 2 and 4 landed in one commit (they share the reconcile loop and
+  its test file); 3, 5, 6 and 7 in a second.

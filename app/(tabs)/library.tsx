@@ -60,7 +60,7 @@ import { setWirdReminderEnabled } from '@/services/wirdReminderToggle';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useProgressStore } from '@/store/progressStore';
-import { useWirdStore } from '@/store/wirdStore';
+import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { getRepos, progressRepo } from '@/db';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -130,7 +130,7 @@ export default function LibraryScreen() {
   const notificationPermission = useNotificationPermission();
   // Once today's goal is met, today's reminder is cancelled, so the caption
   // names tomorrow (design 2026-10-21 §3.5). Same DB-derived flag as the horizon.
-  const goalMetToday = useWirdStore((s) => s.goalMetToday);
+  const goalMetToday = useWirdStore((s) => selectGoalMetToday(s, toLocalDay()));
   const reminder = describeWirdReminder(new Date(), wirdReminderTime, {
     enabled: wirdReminderOn,
     permission: notificationPermission,

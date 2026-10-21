@@ -6,9 +6,10 @@
  * the notifications settings screen. They MUST agree, because a persisted
  * `wird-daily: true` causes the Library card to render a next-reminder time.
  * If the OS has denied notification permission, the horizon reconcile
- * silently schedules nothing — so flipping the preference anyway would leave the card
- * advertising a reminder that can never fire. That is the exact class of defect
- * this feature exists to remove (see the three deleted mock ReminderCards).
+ * silently schedules nothing — so flipping the preference anyway would leave
+ * the card advertising a reminder that can never fire. That is the exact class
+ * of defect this feature exists to remove (see the three deleted mock
+ * ReminderCards).
  *
  * The permission PROMPT (an Alert) stays in the screens; this module reports the
  * outcome and refuses to lie about state.
@@ -72,8 +73,9 @@ export async function setWirdReminderEnabled(next: boolean): Promise<WirdToggleO
  * switch is already on for every new user — and `setWirdReminderEnabled` (the
  * only caller of `requestPermissionAsync`) runs solely when the user *flips* that
  * switch. A switch that starts on is never flipped on, so a fresh install never
- * saw an OS prompt, the scheduler hit its permission gate on every boot, and the reminder could never fire. Choosing a time looked like it worked
- * and did nothing.
+ * saw an OS prompt, the scheduler hit its permission gate on every boot, and
+ * the reminder could never fire. Choosing a time looked like it worked and did
+ * nothing.
  *
  * Picking a reminder time is an unambiguous statement of intent, which is exactly
  * when a permission prompt belongs (Apple HIG: ask in context, never at cold

@@ -61,11 +61,13 @@ jest.mock('@/services/notificationScheduler', () => ({
   cancelCategoryAsync: jest.fn(async () => undefined),
 }));
 
-import { useWirdStore } from '@/store/wirdStore';
+import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { assembleAndReconcile } from '@/services/horizonOrchestrator';
 import { toLocalDay } from '@/constants/progress';
 
 const mockReconcile = assembleAndReconcile as jest.Mock;
+// The clock is pinned (beforeEach below), so TODAY() cannot cross midnight
+// mid-test.
 const TODAY = () => toLocalDay();
 
 const PENDING: SuggestionDecision = {
@@ -76,6 +78,14 @@ const PENDING: SuggestionDecision = {
 };
 
 beforeEach(() => {
+  // Fake ONLY Date: the store awaits real promises.
+  jest.useFakeTimers({
+    doNotFake: [
+      'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval',
+      'setImmediate', 'clearImmediate', 'nextTick', 'queueMicrotask',
+    ],
+  });
+  jest.setSystemTime(new Date(2026, 9, 21, 9, 0));
   mockSetTarget.mockClear();
   mockRecordSuggestionInteraction.mockClear();
   mockPagesReadToday.mockClear();
@@ -86,6 +96,20 @@ beforeEach(() => {
     dbFailed: false,
     goalMetToday: false,
     snapshotDay: '',
+  });
+});
+
+afterEach(() => jest.useRealTimers());
+
+describe('selectGoalMetToday', () => {
+  it('T-SEL-1: true only when the snapshot is for today and says met', () => {
+    const met = { goalMetToday: true, snapshotDay: '2026-10-21' };
+    expect(selectGoalMetToday(met, '2026-10-21')).toBe(true);
+    expect(selectGoalMetToday({ ...met, goalMetToday: false }, '2026-10-21')).toBe(false);
+  });
+  it('T-SEL-2: a stale snapshot (another day) gives false', () => {
+    expect(selectGoalMetToday({ goalMetToday: true, snapshotDay: '2026-10-20' }, '2026-10-21')).toBe(false);
+    expect(selectGoalMetToday({ goalMetToday: true, snapshotDay: '' }, '2026-10-21')).toBe(false);
   });
 });
 

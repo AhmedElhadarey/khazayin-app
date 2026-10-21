@@ -29,7 +29,10 @@ async function reconcileWirdSchedule(): Promise<void> {
 async function readGoalMetToday(today: string): Promise<boolean> {
   try {
     return (await progressRepo.completedDaysInRange(today, today)).includes(today);
-  } catch {
+  } catch (err) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[wirdStore] goal-met read failed', err);
+    }
     return false;
   }
 }
@@ -47,6 +50,20 @@ export type WirdSnapshot = {
    *  hydrate. `services/dayRollover` re-hydrates when the local day moves on. */
   snapshotDay: string;
 };
+
+/**
+ * "Is TODAY's goal met?" as the UI may state it: the stored flag counts only
+ * when the snapshot was taken for `today`. Between local midnight and the
+ * rollover re-hydrate the snapshot still describes yesterday, and yesterday's
+ * "met" says nothing about today. Shared by the Library caption, the
+ * foreground suppressor and `recomputeTodayPct`.
+ */
+export function selectGoalMetToday(
+  s: Readonly<Pick<WirdSnapshot, 'goalMetToday' | 'snapshotDay'>>,
+  today: string,
+): boolean {
+  return s.goalMetToday && s.snapshotDay === today;
+}
 
 export type WirdStoreActions = {
   hydrate(): Promise<void>;
@@ -120,11 +137,11 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
   },
 
   async recomputeTodayPct() {
-    const { target, goalMetToday, snapshotDay } = get();
+    const { target } = get();
     const today = toLocalDay();
     // A "met" flag from a snapshot of another day (the day rolled over and the
     // rollover hydrate has not run yet) says nothing about today.
-    const wasMet = goalMetToday && snapshotDay === today;
+    const wasMet = selectGoalMetToday(get(), today);
     const [pagesToday, met] = await Promise.all([
       progressRepo.pagesReadToday(),
       readGoalMetToday(today),

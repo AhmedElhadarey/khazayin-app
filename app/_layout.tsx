@@ -15,7 +15,7 @@ import { useHorizonReconcile } from '@/hooks/useHorizonReconcile';
 import { useDayRollover } from '@/hooks/useDayRollover';
 import { ToastOverlay } from '@/components/khazain';
 import { useProgressStore } from '@/store/progressStore';
-import { useWirdStore } from '@/store/wirdStore';
+import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
 import { shouldSuppressWirdNotification } from '@/services/wirdReminder';
@@ -291,10 +291,11 @@ function RootLayout() {
     bootstrapNotificationHandler({
       suppress: (data) => {
         const w = useWirdStore.getState();
+        const today = toLocalDay();
         return shouldSuppressWirdNotification(data, {
-          goalMetToday: w.goalMetToday,
+          goalMetToday: selectGoalMetToday(w, today),
           snapshotDay: w.snapshotDay,
-          todayLocalDay: toLocalDay(),
+          todayLocalDay: today,
         });
       },
     });
