@@ -8,6 +8,7 @@ import { HeaderArt } from '@/components/khazain/patterns';
 import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { ARCHIVE_ROWS, type ArchiveRow } from '@/data/content/archive';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -40,7 +41,7 @@ export default function ArchiveScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.searchBlock}>
-          <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+          <SearchPill placeholder="بحث.." onPress={openSearch} />
         </View>
         <View style={styles.list}>
           {ARCHIVE_ROWS.map((it) => (

@@ -281,6 +281,8 @@ bespoke colours any more, so it now asserts the stronger fact.
 - `/search` resolves to `app/(tabs)/search.tsx`, the legacy hidden tab, not
   `app/search.tsx`. So the reworked input-mode search pill is not reachable from
   any Sections screen. Pre-existing route collision, flagged not fixed.
+  **Closed 2026-10-21:** search moved to `/content-search` and every pill opens it
+  through `openSearch()`; see `docs/plans/2026-10-21-content-search-reachability-qa.md`.
 
 ---
 

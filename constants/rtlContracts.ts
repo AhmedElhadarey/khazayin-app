@@ -27,6 +27,14 @@ export type LectureCardSlot = (typeof LECTURE_CARD_ORDER)[number];
 export const RECITER_ROW_ORDER = Object.freeze(['disclosure', 'text', 'quranBadge'] as const);
 export type ReciterRowSlot = (typeof RECITER_ROW_ORDER)[number];
 
+/**
+ * Onboarding selectable row (qira'a / reciter). No Figma frame — contract-only.
+ * `select` is the radio Pressable; inside it the order stays tick → text.
+ * The optional preview control is a sibling so screen readers reach it.
+ */
+export const SELECTABLE_ROW_ORDER = Object.freeze(['preview', 'select'] as const);
+export type SelectableRowSlot = (typeof SELECTABLE_ROW_ORDER)[number];
+
 /** Inline page header — title sits at the physical right, chevron beyond it. */
 export const INLINE_HEADER_ORDER = Object.freeze(['title', 'back'] as const);
 export type InlineHeaderSlot = (typeof INLINE_HEADER_ORDER)[number];

@@ -11,16 +11,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ChannelsStep,
-  FEATURE_STEPS,
-  FeatureStep,
   OnboardingFooter,
   OnboardingProgress,
   QiraaStep,
   ReciterStep,
   WelcomeStep,
 } from '@/components/khazain/onboarding';
-import { ONBOARDING_STEP_COUNT } from '@/constants/settings';
+import { ONBOARDING_STEP_COUNT, ONBOARDING_STEPS } from '@/constants/settings';
 import { KhazainColors } from '@/constants/theme';
+import { stopPreview } from '@/services/reciterPreview';
 import { useSettingsStore } from '@/store';
 
 const SLIDE_OFFSET = 40;
@@ -82,7 +81,7 @@ export default function OnboardingScreen(): React.ReactElement {
       // so no later frame ever corrected it. Step 0 rendered blank on every
       // fresh install (content mounted, `uiautomator dump` found the text;
       // it was simply invisible). A JS-driven value goes through the shadow
-      // tree, so a remount picks up the settled value. 280ms on eight steps.
+      // tree, so a remount picks up the settled value. 280ms on four steps.
       useNativeDriver: false,
     });
     // Settle to fully-visible whenever the run does not finish. The step area
@@ -107,6 +106,7 @@ export default function OnboardingScreen(): React.ReactElement {
   }, [step, reduceMotion, anim]);
 
   const goTo = (next: number): void => {
+    void stopPreview();
     const clamped = Math.max(0, Math.min(ONBOARDING_STEP_COUNT - 1, next));
     directionRef.current = clamped > step ? 1 : -1;
     setStep(clamped);
@@ -114,6 +114,7 @@ export default function OnboardingScreen(): React.ReactElement {
   };
 
   const finish = (): void => {
+    void stopPreview();
     setOnboardingComplete(true);
     router.replace('/(tabs)');
   };
@@ -164,33 +165,17 @@ export default function OnboardingScreen(): React.ReactElement {
   );
 }
 
-/**
- * Step content (track 003): 0 welcome → 1 qira'a → 2 reciter →
- * 3–6 feature showcase (FEATURE_STEPS) → 7 channels.
- */
+/** Step content: welcome → qira'a → reciter → channels (ONBOARDING_STEPS). `step` is always clamped. */
 function renderStep(step: number): React.ReactElement {
-  switch (step) {
-    case 0:
+  switch (ONBOARDING_STEPS[step]) {
+    case 'welcome':
       return <WelcomeStep />;
-    case 1:
+    case 'qiraa':
       return <QiraaStep />;
-    case 2:
+    case 'reciter':
       return <ReciterStep />;
-    case 7:
+    case 'channels':
       return <ChannelsStep />;
-    default: {
-      // Steps 3–6 are the feature-showcase screens.
-      const feature = FEATURE_STEPS[step - 3];
-      return feature ? (
-        <FeatureStep
-          illustration={feature.illustration}
-          title={feature.title}
-          description={feature.description}
-        />
-      ) : (
-        <WelcomeStep />
-      );
-    }
   }
 }
 

@@ -4,6 +4,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import { notifyRootRevealed } from '@/services/search/rootReveal';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -12,11 +13,14 @@ import { I18nManager, LogBox, Platform, Pressable, StyleSheet, Text, TextInput, 
 import { Image as ExpoImage } from 'expo-image';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import { useHorizonReconcile } from '@/hooks/useHorizonReconcile';
+import { useDayRollover } from '@/hooks/useDayRollover';
 import { ToastOverlay } from '@/components/khazain';
 import { useProgressStore } from '@/store/progressStore';
-import { useWirdStore } from '@/store/wirdStore';
+import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
+import { shouldSuppressWirdNotification } from '@/services/wirdReminder';
+import { toLocalDay } from '@/constants/progress';
 import { registerCacheRoot } from '@/services/cacheFacade';
 import { registerPlaybackService, restoreLastLecture, setupPlayer } from '@/services/audioEngine';
 import { registerPlaybackListeners } from '@/services/audioEngine/syncBridge';
@@ -259,6 +263,9 @@ function RootLayout() {
   // also guards this internally (the background task has no React lifecycle);
   // this gate just avoids a wasted pre-hydration pass.
   useHorizonReconcile(navigatorReady);
+  // Audit gap 2: reset the Library wird ring when the local day changes while
+  // the app is still in memory (on foreground, and at local midnight).
+  useDayRollover(navigatorReady);
 
   // The native splash stays up for the whole gate, so there is no blank frame
   // between it and the launch overlay.
@@ -280,7 +287,19 @@ function RootLayout() {
   // Library tab never crashes if the DB layer mis-initializes.
   useEffect(() => {
     if (!navigatorReady) return;
-    bootstrapNotificationHandler();
+    // Hide a foreground wird reminder once today's goal is met (defence in
+    // depth for the reconcile that cancels it; design 2026-10-21 §3.1).
+    bootstrapNotificationHandler({
+      suppress: (data) => {
+        const w = useWirdStore.getState();
+        const today = toLocalDay();
+        return shouldSuppressWirdNotification(data, {
+          goalMetToday: selectGoalMetToday(w, today),
+          snapshotDay: w.snapshotDay,
+          todayLocalDay: today,
+        });
+      },
+    });
     Promise.all([
       useProgressStore.getState().hydrate(),
       useWirdStore.getState().hydrate(),
@@ -329,7 +348,18 @@ function RootLayout() {
           animation: Platform.OS === 'android' ? 'slide_from_right' : 'default',
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false }}
+          // When a full-screen modal over the tabs (search) finishes closing,
+          // (tabs) gets onAppear → transitionEnd {closing: false}. The modal's
+          // own closing event never arrives — see services/search/rootReveal.ts.
+          listeners={{
+            transitionEnd: (e) => {
+              if (!e.data.closing) notifyRootRevealed();
+            },
+          }}
+        />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen
           name="resource/[id]"
@@ -401,10 +431,12 @@ function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="search"
+          name="content-search"
           options={{
             headerShown: false,
-            presentation: 'modal',
+            // Full-screen, not a page sheet: the ticket asks for a full-screen
+            // search view; 'modal' is a card with the previous screen peeking on iOS.
+            presentation: 'fullScreenModal',
             animation: Platform.OS === 'android' ? 'slide_from_left' : 'default',
           }}
         />

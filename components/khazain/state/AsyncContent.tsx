@@ -9,6 +9,7 @@
  *
  * Track: khazain-content-service_20260506  Phase 3 / T3.3
  */
+import { isApiError } from '@/services/api/errors';
 import type { LoadState } from '@/types/content';
 import React, { useEffect } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
@@ -17,6 +18,7 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
+import { resolveAsyncView } from './asyncView';
 import { EmptyState } from './EmptyState';
 import { ErrorState } from './ErrorState';
 import { SkeletonRowList } from './SkeletonRow';
@@ -34,7 +36,10 @@ export type AsyncContentProps = {
   empty?: React.ReactNode;
   /** Arabic copy for default EmptyState. */
   emptyMessage?: string;
-  /** Arabic copy for default ErrorState (overrides error.message). */
+  /**
+   * Arabic copy for default ErrorState (overrides an ApiError's message;
+   * non-ApiError messages are never shown).
+   */
   errorMessage?: string;
   /**
    * When true (default), success children fade in with 200ms Reanimated
@@ -95,28 +100,33 @@ export function AsyncContent({
   style,
   children,
 }: AsyncContentProps) {
-  // C5a: idle is treated identically to loading
-  if (status === 'idle' || status === 'loading') {
-    return <>{skeleton ?? <SkeletonRowList count={3} />}</>;
-  }
+  // resolveAsyncView stays pure and the render stays side-effect free; the
+  // dev-only diagnostic lives in an effect. A non-ApiError's text is hidden
+  // from the user, so tell the developer once per status/error change.
+  useEffect(() => {
+    if (__DEV__ && status === 'error' && error && !isApiError(error)) {
+      console.warn(
+        '[AsyncContent] non-ApiError reached the error state; showing the Arabic default instead of:',
+        error,
+      );
+    }
+  }, [status, error]);
 
-  if (status === 'empty') {
-    return <>{empty ?? <EmptyState message={emptyMessage} />}</>;
-  }
+  const view = resolveAsyncView(status, { error, errorMessage });
 
-  if (status === 'error') {
-    return (
-      <ErrorState
-        message={errorMessage ?? error?.message}
-        onRetry={onRetry}
-      />
-    );
+  switch (view.kind) {
+    // C5a: idle is treated identically to loading
+    case 'skeleton':
+      return <>{skeleton ?? <SkeletonRowList count={3} />}</>;
+    case 'empty':
+      return <>{empty ?? <EmptyState message={emptyMessage} />}</>;
+    case 'error':
+      return <ErrorState message={view.message} onRetry={onRetry} />;
+    case 'content':
+      return (
+        <FadeInView enabled={fadeIn} style={style}>
+          {children}
+        </FadeInView>
+      );
   }
-
-  // status === 'success'
-  return (
-    <FadeInView enabled={fadeIn} style={style}>
-      {children}
-    </FadeInView>
-  );
 }

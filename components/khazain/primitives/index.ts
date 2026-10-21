@@ -3,7 +3,7 @@ export { Wordmark } from './Wordmark';
 export { SearchPill } from './SearchPill';
 export { IconChip } from './IconChip';
 export { SectionHeader } from './SectionHeader';
-export { PillButton } from './PillButton';
+export { PILL_BUTTON_HEIGHTS, PillButton } from './PillButton';
 export { Toggle } from './Toggle';
 export { MiniPlayer } from './MiniPlayer';
 export { CustomTabBar, MiniPlayerDock } from './CustomTabBar';
@@ -31,4 +31,5 @@ export {
 export { DawahPosterRow } from './DawahPosterRow';
 export { RtlCarousel } from './RtlCarousel';
 export { BookmarkButton } from './BookmarkButton';
+export { useSaveGesture } from './useSaveGesture';
 export { ToastOverlay } from './ToastOverlay';

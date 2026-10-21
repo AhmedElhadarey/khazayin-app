@@ -2,10 +2,12 @@ import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { LECTURE_CARD_ORDER, type LectureCardSlot } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { lectureSaveTarget } from '@/services/savedToggle';
 import type { Lecture } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BookmarkButton } from './BookmarkButton';
+import { useSaveGesture } from './useSaveGesture';
 
 // Cream rounded card used across pages 25 / 33 / 34 / 35.
 //
@@ -21,6 +23,11 @@ import { BookmarkButton } from './BookmarkButton';
 // tall at radius 20 with no stroke, because the rail supplies the edge.
 // `pretitleSmall` renders an optional pretitle line above the title (e.g. "فضيلة الشيخ").
 // `iconNode` lets each section slot a different glyph badge.
+//
+// Saving: the frames draw no bookmark on a lecture row, so the unsaved row
+// renders exactly as they do. A long-press (or the screen-reader custom action)
+// saves the lecture through useSaveGesture; once saved, a BookmarkButton
+// appears in the meta slot beside the duration, and tapping it unsaves.
 export function LectureCard({
   id,
   category,
@@ -30,7 +37,6 @@ export function LectureCard({
   duration,
   pretitleSmall,
   compact,
-  showBookmark = false,
   onPress,
 }: {
   id: string;
@@ -41,7 +47,6 @@ export function LectureCard({
   duration?: string;
   pretitleSmall?: string;
   compact?: boolean;
-  showBookmark?: boolean;
   onPress?: () => void;
 }) {
   // `compact` changes the card's shape and clamps the title to one line — the
@@ -49,17 +54,22 @@ export function LectureCard({
   // styles: both frames set the same faces and sizes.
   const heightStyle = compact ? styles.cardCompact : styles.card;
 
+  const saveTarget = lectureSaveTarget({ id, title, scholar, duration, category });
+  const { saved, gestureProps } = useSaveGesture(saveTarget);
+
   const slots: Record<LectureCardSlot, React.ReactNode> = {
-    // Physical left: duration plus an opt-in save affordance.
+    // Physical left: duration, plus a bookmark once the lecture is saved. The
+    // frames draw no bookmark, so the unsaved row stays exactly as they do;
+    // saving is a long-press (useSaveGesture).
     meta:
-      duration || showBookmark ? (
+      duration || saved ? (
         <View style={styles.endCluster}>
           {duration ? <Text style={styles.duration}>{duration}</Text> : null}
-          {showBookmark ? (
+          {saved ? (
             <BookmarkButton
-              type="lecture"
-              entityId={id}
-              snapshot={{ type: 'lecture', title, scholar: scholar ?? '', duration: duration ?? '', category }}
+              type={saveTarget.type}
+              entityId={saveTarget.entityId}
+              snapshot={saveTarget.snapshot}
               variant="light"
             />
           ) : null}
@@ -89,6 +99,7 @@ export function LectureCard({
   return (
     <Pressable
       onPress={onPress}
+      {...gestureProps}
       style={({ pressed }) => [
         styles.cardBase,
         heightStyle,

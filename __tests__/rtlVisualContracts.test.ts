@@ -8,6 +8,7 @@ import {
   MUSHAF_FOOTER_ORDER,
   RECITER_ROW_ORDER,
   SEARCH_PILL_ORDER,
+  SELECTABLE_ROW_ORDER,
   backAccessibilityLabel,
   listRowAccessibilityLabel,
 } from '@/constants/rtlContracts';
@@ -90,5 +91,12 @@ describe('accessibility label contracts', () => {
 
   it('names the screen a back affordance returns from', () => {
     expect(backAccessibilityLabel('القرآن حياة')).toBe('رجوع، القرآن حياة');
+  });
+});
+
+describe('onboarding selectable row contract (no Figma frame)', () => {
+  it('onboarding selectable row: preview on the physical left, select (tick → text) leading at the right', () => {
+    expect(SELECTABLE_ROW_ORDER).toEqual(['preview', 'select']);
+    expect(Object.isFrozen(SELECTABLE_ROW_ORDER)).toBe(true);
   });
 });

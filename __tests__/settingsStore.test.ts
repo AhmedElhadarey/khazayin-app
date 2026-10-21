@@ -429,3 +429,44 @@ describe('useSettingsStore', () => {
     expect(SETTINGS_STORAGE_KEY).toBe('@khazain/settings/v1');
   });
 });
+
+describe('onboardingStep resume across the 8 → 4 step change', () => {
+  const v3 = (onboardingStep: unknown) => ({
+    schemaVersion: 3,
+    defaultQiraaId: 'hafs-asim',
+    preferredReciterId: 'r3',
+    fontSizeLevel: 3,
+    notifications: {},
+    onboardingComplete: false,
+    onboardingStep,
+  });
+  it.each([
+    [0, 0], [1, 1], [2, 2], // same meaning in both layouts
+    [3, 3], [4, 3], [5, 3], [6, 3], // old feature screens → channels (next unseen)
+    [7, 3], // old channels → channels
+  ])('T-SS-OB-1: stored step %i resumes at %i', async (stored, expected) => {
+    await seedStorage({ state: v3(stored), version: 0 });
+    await rehydrateStore();
+    const s = useSettingsStore.getState();
+    expect(s.onboardingStep).toBe(expected);
+    expect(s.onboardingComplete).toBe(false);
+    expect(s.preferredReciterId).toBe('r3');
+  });
+  it.each([8, 99, -1, 2.5, '3', null])(
+    'T-SS-OB-2: %p was never a step → resets to 0',
+    async (stored) => {
+      await seedStorage({ state: v3(stored), version: 0 });
+      await rehydrateStore();
+      expect(useSettingsStore.getState().onboardingStep).toBe(0);
+    },
+  );
+  it('T-SS-OB-3: every legacy step migrates to a renderable step', async () => {
+    for (let i = 0; i < 8; i++) {
+      await seedStorage({ state: v3(i), version: 0 });
+      await rehydrateStore();
+      const step = useSettingsStore.getState().onboardingStep;
+      expect(step).toBeGreaterThanOrEqual(0);
+      expect(step).toBeLessThan(ONBOARDING_STEP_COUNT);
+    }
+  });
+});

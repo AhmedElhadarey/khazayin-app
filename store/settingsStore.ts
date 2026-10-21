@@ -8,6 +8,7 @@ import {
   DEFAULT_PRAYER_CONFIG,
   DEFAULT_SETTINGS,
   FONT_SIZE_SCALE,
+  LEGACY_ONBOARDING_STEP_COUNT,
   ONBOARDING_STEP_COUNT,
   SETTINGS_SCHEMA_VERSION,
   SETTINGS_STORAGE_KEY,
@@ -263,14 +264,19 @@ function coerceSettings(input: unknown): UserSettings {
       ? input.onboardingComplete
       : ((coerced = isCurrent || coerced), DEFAULT_SETTINGS.onboardingComplete);
 
-  // A stored step must be an in-range integer; otherwise reset to default
-  // (consistent with fontSizeLevel handling). Clamping is reserved for the setter.
+  // A stored step must be an integer from a layout we have shipped. In-range
+  // values are kept. Values in [COUNT, LEGACY_COUNT) were written by the 8-step
+  // flow (features + channels, all past the setup screens) and resume at the
+  // last step (channels) — never at Welcome. Anything else is corrupt → 0.
+  // Clamping arbitrary input is reserved for the setter.
+  const rawStep = input.onboardingStep;
   const onboardingStep: number =
-    typeof input.onboardingStep === 'number' &&
-    Number.isInteger(input.onboardingStep) &&
-    input.onboardingStep >= 0 &&
-    input.onboardingStep < ONBOARDING_STEP_COUNT
-      ? input.onboardingStep
+    typeof rawStep === 'number' && Number.isInteger(rawStep) && rawStep >= 0
+      ? rawStep < ONBOARDING_STEP_COUNT
+        ? rawStep
+        : rawStep < LEGACY_ONBOARDING_STEP_COUNT
+          ? ((coerced = isCurrent || coerced), ONBOARDING_STEP_COUNT - 1)
+          : ((coerced = isCurrent || coerced), DEFAULT_SETTINGS.onboardingStep)
       : ((coerced = isCurrent || coerced), DEFAULT_SETTINGS.onboardingStep);
 
   if (__DEV__ && coerced) {

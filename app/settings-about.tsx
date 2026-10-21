@@ -1,8 +1,10 @@
 import React from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
+import { resolveBuildNumber } from '@/services/appBuildInfo';
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
@@ -15,16 +17,6 @@ import {
 
 function resolveVersion(): string {
   return Constants.expoConfig?.version ?? '1.0.0';
-}
-
-function resolveBuildNumber(): string {
-  const cfg = Constants.expoConfig;
-  if (!cfg) return '';
-  const ios = cfg.ios?.buildNumber;
-  if (typeof ios === 'string' && ios.length > 0) return ios;
-  const android = cfg.android?.versionCode;
-  if (typeof android === 'number') return String(android);
-  return '';
 }
 
 /** canOpenURL + Arabic fallback alert — the repo's external-link pattern. */
@@ -45,7 +37,11 @@ function openFoundationWebsite() {
 
 export default function SettingsAboutScreen() {
   const version = resolveVersion();
-  const build = resolveBuildNumber();
+  const build = resolveBuildNumber({
+    executionEnvironment: Constants.executionEnvironment,
+    nativeBuildVersion: Application.nativeBuildVersion,
+    expoConfig: Constants.expoConfig,
+  });
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
@@ -63,12 +59,10 @@ export default function SettingsAboutScreen() {
             <Text style={styles.versionValue}>{version}</Text>
             <Text style={styles.versionLabel}>الإصدار</Text>
           </View>
-          {build ? (
-            <View style={styles.versionRow}>
-              <Text style={styles.versionValue}>{build}</Text>
-              <Text style={styles.versionLabel}>رقم البناء</Text>
-            </View>
-          ) : null}
+          <View style={styles.versionRow}>
+            <Text style={styles.versionValue}>{build ?? '—'}</Text>
+            <Text style={styles.versionLabel}>رقم البناء</Text>
+          </View>
         </View>
         <Pressable
           onPress={openFoundationWebsite}

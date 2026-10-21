@@ -45,9 +45,10 @@ const PINNED_SCREENS = [
   'app/settings-wird-reminder.tsx',
   'app/note-editor.tsx',
   'app/notes-viewer.tsx',
-  'app/search.tsx',
+  'app/content-search.tsx',
   'app/share-sheet.tsx',
   'app/(tabs)/more/settings-progress.tsx',
+  'app/(tabs)/sections/book/[id].tsx',
   'components/khazain/sheets/SheetRow.tsx',
   'components/khazain/settings/SettingsSection.tsx',
   // Onboarding. Not in the original sweep because it is the one flow the
@@ -60,6 +61,8 @@ const PINNED_SCREENS = [
   'components/khazain/onboarding/SelectableRow.tsx',
   'components/khazain/onboarding/QiraaStep.tsx',
   'components/khazain/onboarding/ReciterStep.tsx',
+  'components/khazain/onboarding/WelcomeStep.tsx',
+  'components/khazain/onboarding/PreviewButton.tsx',
 ] as const;
 
 /** Strip `//` and `/* *\/` comments so a prose mention of a banned rule passes. */

@@ -4,17 +4,22 @@
  * Uses the manual `__mocks__/expo-notifications.ts` (auto-resolved by Jest)
  * and an inline mock for `@/services/notificationRegistry` so this test does
  * not depend on the parallel registry track being landed.
+ *
+ * The wird reminder is a one-shot DATE entry on the rolling horizon, armed
+ * through `reconcileHorizonAsync` (design
+ * docs/plans/2026-10-21-daily-wird-reminders-design.md §3.1).
  */
 
 import * as MockNotifications from 'expo-notifications';
 
 import {
   bootstrapNotificationHandler,
-  cancelWirdReminderAsync,
+  cancelCategoryAsync,
   getPermissionAsync,
+  reconcileHorizonAsync,
   requestPermissionAsync,
-  scheduleWirdReminderAsync,
 } from '@/services/notificationScheduler';
+import type { HorizonEntry } from '@/services/notificationHorizon';
 
 // ---------------------------------------------------------------------------
 // Helpers to access the manual-mock test surface with typed handles.
@@ -23,7 +28,7 @@ type MockSurface = typeof MockNotifications & {
   __setPermissionResponse: (status: 'granted' | 'denied' | 'undetermined') => void;
   __getScheduleCalls: () => ReadonlyArray<{
     content: { title?: string | null; body?: string | null; data?: Record<string, unknown> };
-    trigger: { type: string; hour?: number; minute?: number } | null;
+    trigger: { type: string; date?: Date; channelId?: string } | null;
     identifier?: string;
   }>;
   __getCancelCalls: () => readonly string[];
@@ -42,19 +47,26 @@ const Mock = MockNotifications as unknown as MockSurface;
 
 // ---------------------------------------------------------------------------
 // notificationRegistry is created in a parallel track; mock it inline.
-// Each test overrides the return value via `isCategoryEnabledMock.mockReturnValue(...)`.
 // ---------------------------------------------------------------------------
-const mockIsCategoryEnabled = jest.fn<boolean, [string]>();
 jest.mock('@/services/notificationRegistry', () => ({
-  isCategoryEnabled: (id: string) => mockIsCategoryEnabled(id),
+  getCategory: (id: string) => ({ id, labelAr: id, descriptionAr: id, defaultOn: true, available: true }),
 }));
 
 beforeEach(() => {
   Mock.__resetMock();
-  mockIsCategoryEnabled.mockReset();
-  // Default to "enabled" so tests must opt-out for the disabled cases.
-  mockIsCategoryEnabled.mockReturnValue(true);
 });
+
+/** A wird horizon entry for tomorrow at h:m local (built from local components). */
+function wirdEntry(hour: number, minute: number): HorizonEntry {
+  const t = new Date();
+  const fireAt = new Date(t.getFullYear(), t.getMonth(), t.getDate() + 1, hour, minute, 0, 0);
+  const localDay = [
+    fireAt.getFullYear(),
+    String(fireAt.getMonth() + 1).padStart(2, '0'),
+    String(fireAt.getDate()).padStart(2, '0'),
+  ].join('-');
+  return { categoryId: 'wird-daily', localDay, fireAt };
+}
 
 // ---------------------------------------------------------------------------
 // T-NS-1: requestPermissionAsync mirrors the OS permission response
@@ -71,91 +83,48 @@ describe('T-NS-1 requestPermissionAsync', () => {
 });
 
 // ---------------------------------------------------------------------------
-// T-NS-2: schedule with a DAILY trigger when category enabled + granted
+// T-NS-2: a wird horizon entry is scheduled as a DATE trigger on its channel
 // ---------------------------------------------------------------------------
-describe('T-NS-2 scheduleWirdReminderAsync (happy path)', () => {
-  it('schedules a daily-repeating trigger with the given hour/minute', async () => {
+describe('T-NS-2 reconcileHorizonAsync arms a wird entry (happy path)', () => {
+  it('schedules a one-shot DATE trigger on the wird-daily channel', async () => {
     Mock.__setPermissionResponse('granted');
+    const e = wirdEntry(5, 30);
 
-    const id = await scheduleWirdReminderAsync({ hour: 5, minute: 30 });
+    await reconcileHorizonAsync([e]);
 
-    expect(id).toEqual(expect.any(String));
     const calls = Mock.__getScheduleCalls();
     expect(calls).toHaveLength(1);
     const call = calls[0];
     expect(call.trigger).toEqual(
-      expect.objectContaining({
-        type: 'daily',
-        hour: 5,
-        minute: 30,
-      }),
+      expect.objectContaining({ type: 'date', date: e.fireAt, channelId: 'wird-daily' }),
     );
     expect(call.content.data).toEqual(expect.objectContaining({ category: 'wird-daily' }));
   });
 });
 
-// ---------------------------------------------------------------------------
-// T-NS-3: category disabled -> null, no OS call
-// ---------------------------------------------------------------------------
-describe('T-NS-3 scheduleWirdReminderAsync (category disabled)', () => {
-  it('returns null and never calls the OS when category is disabled', async () => {
-    Mock.__setPermissionResponse('granted');
-    mockIsCategoryEnabled.mockReturnValue(false);
-
-    const id = await scheduleWirdReminderAsync({ hour: 8, minute: 0 });
-
-    expect(id).toBeNull();
-    expect(Mock.__getScheduleCalls()).toHaveLength(0);
-    expect(mockIsCategoryEnabled).toHaveBeenCalledWith('wird-daily');
-  });
-});
+// T-NS-3 (category disabled → nothing armed) is covered by T-HO-4 in
+// horizonOrchestrator.test.ts: a disabled category never reaches `intended`.
 
 // ---------------------------------------------------------------------------
-// T-NS-4: permission denied -> null, no OS schedule
+// T-NS-4: permission denied -> no OS schedule
 // ---------------------------------------------------------------------------
-describe('T-NS-4 scheduleWirdReminderAsync (permission denied)', () => {
-  it('returns null and never schedules when permission is denied', async () => {
+describe('T-NS-4 reconcileHorizonAsync (permission denied)', () => {
+  it('never schedules when permission is denied', async () => {
     Mock.__setPermissionResponse('denied');
 
-    const id = await scheduleWirdReminderAsync({ hour: 8, minute: 0 });
+    await reconcileHorizonAsync([wirdEntry(8, 0)]);
 
-    expect(id).toBeNull();
     expect(Mock.__getScheduleCalls()).toHaveLength(0);
   });
 });
 
-// ---------------------------------------------------------------------------
-// T-NS-5: idempotency — second schedule cancels the first
-// ---------------------------------------------------------------------------
-describe('T-NS-5 scheduleWirdReminderAsync (idempotency)', () => {
-  it('cancels any prior wird-daily before scheduling the next one', async () => {
-    Mock.__setPermissionResponse('granted');
-
-    const firstId = await scheduleWirdReminderAsync({ hour: 6, minute: 0 });
-    expect(firstId).toEqual(expect.any(String));
-
-    const secondId = await scheduleWirdReminderAsync({ hour: 7, minute: 15 });
-    expect(secondId).toEqual(expect.any(String));
-
-    // Two schedules total.
-    expect(Mock.__getScheduleCalls()).toHaveLength(2);
-
-    // First one must have been cancelled before the second was scheduled.
-    expect(Mock.__getCancelCalls()).toContain(firstId);
-
-    // Only one wird-daily entry should remain in the OS-side scheduled list.
-    const wirdDaily = Mock.__getScheduledNotifications().filter(
-      (n) => n.content.data?.category === 'wird-daily',
-    );
-    expect(wirdDaily).toHaveLength(1);
-    expect(wirdDaily[0].identifier).toBe(secondId);
-  });
-});
+// T-NS-5 (idempotency) is covered by T-NHS-2 and T-NHS-12 in
+// notificationHorizonScheduler.test.ts.
 
 // ---------------------------------------------------------------------------
-// T-NS-6: cancel only touches `category === 'wird-daily'`
+// T-NS-6: cancelCategoryAsync('wird-daily') only touches wird-tagged requests
 // ---------------------------------------------------------------------------
-describe('T-NS-6 cancelWirdReminderAsync', () => {
+describe('T-NS-6 cancelCategoryAsync(wird-daily)', () => {
   it('cancels only notifications tagged category === "wird-daily"', async () => {
     Mock.__setScheduledNotifications([
       { identifier: 'wird-1', content: { data: { category: 'wird-daily' } } },
@@ -164,7 +133,7 @@ describe('T-NS-6 cancelWirdReminderAsync', () => {
       { identifier: 'wird-2', content: { data: { category: 'wird-daily' } } },
     ]);
 
-    await cancelWirdReminderAsync();
+    await cancelCategoryAsync('wird-daily');
 
     const cancelled = [...Mock.__getCancelCalls()].sort();
     expect(cancelled).toEqual(['wird-1', 'wird-2']);
@@ -194,10 +163,41 @@ describe('T-NS-8 scheduled content matches documented Arabic copy', () => {
   it('uses the exact title and body strings from the contract', async () => {
     Mock.__setPermissionResponse('granted');
 
-    await scheduleWirdReminderAsync({ hour: 5, minute: 30 });
+    await reconcileHorizonAsync([wirdEntry(5, 30)]);
 
     const call = Mock.__getScheduleCalls()[0];
     expect(call.content.title).toBe('تذكير الورد');
     expect(call.content.body).toBe('حان وقت قراءة وردك اليومي من القرآن الكريم.');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-NS-9: the foreground handler honours the injected suppress predicate.
+// Isolated module so `handlerRegistered` is fresh.
+// ---------------------------------------------------------------------------
+describe('T-NS-9 handler honours the injected suppress predicate', () => {
+  const note = (data: Record<string, unknown>) => ({ request: { content: { data } } });
+  it('all-false when suppressed, all-true otherwise, fails OPEN on throw', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const M = require('expo-notifications');
+      M.__resetMock();
+      const { bootstrapNotificationHandler: bootstrap } = require('@/services/notificationScheduler');
+      bootstrap({
+        suppress: (d: { category?: string }) => {
+          if (d.category === 'boom') throw new Error('x');
+          return d.category === 'wird-daily';
+        },
+      });
+      const h = M.__getHandler();
+      expect(await h.handleNotification(note({ category: 'wird-daily' }))).toEqual(
+        expect.objectContaining({ shouldShowBanner: false, shouldShowList: false, shouldPlaySound: false }),
+      );
+      expect(await h.handleNotification(note({ category: 'prayer-fajr' }))).toEqual(
+        expect.objectContaining({ shouldShowBanner: true }),
+      );
+      expect(await h.handleNotification(note({ category: 'boom' }))).toEqual(
+        expect.objectContaining({ shouldShowBanner: true }),
+      );
+    });
   });
 });

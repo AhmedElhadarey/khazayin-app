@@ -12,11 +12,8 @@
  */
 
 const mockReconcile = jest.fn<Promise<void>, [readonly unknown[]]>(async () => undefined);
-const mockScheduleWird = jest.fn<Promise<string | null>, [{ hour: number; minute: number }]>(
-  async () => 'wird-id',
-);
-const mockCancelCategory = jest.fn<Promise<void>, [string]>(async () => undefined);
 const mockGetRepos = jest.fn<Promise<unknown>, []>(async () => ({}));
+const mockCompletedDays = jest.fn<Promise<string[]>, [string, string]>(async () => []);
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -25,13 +22,12 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('@/services/notificationScheduler', () => ({
   __esModule: true,
   reconcileHorizonAsync: (intended: readonly unknown[]) => mockReconcile(intended),
-  scheduleWirdReminderAsync: (cfg: { hour: number; minute: number }) => mockScheduleWird(cfg),
-  cancelCategoryAsync: (id: string) => mockCancelCategory(id),
 }));
 
 jest.mock('@/db', () => ({
   __esModule: true,
   getRepos: () => mockGetRepos(),
+  progressRepo: { completedDaysInRange: (a: string, b: string) => mockCompletedDays(a, b) },
 }));
 
 import { assembleAndReconcile, setPrayerTimesProvider } from '@/services/horizonOrchestrator';
@@ -40,9 +36,8 @@ import type { HorizonEntry } from '@/services/notificationHorizon';
 
 beforeEach(() => {
   mockReconcile.mockClear();
-  mockScheduleWird.mockClear();
-  mockCancelCategory.mockClear();
   mockGetRepos.mockClear();
+  mockCompletedDays.mockClear();
   setPrayerTimesProvider(null);
 });
 
@@ -51,6 +46,8 @@ function lastIntended(): readonly HorizonEntry[] {
   if (!call) throw new Error('reconcileHorizonAsync was never called');
   return call[0] as readonly HorizonEntry[];
 }
+
+const wirdIntended = () => lastIntended().filter((e) => e.categoryId === 'wird-daily');
 
 describe('T-HO — hydration gate', () => {
   it('T-HO-1: awaits persist rehydration before reading settings', async () => {
@@ -90,21 +87,6 @@ describe('T-HO — hydration gate', () => {
 
     hasHydrated.mockRestore();
     rehydrate.mockRestore();
-  });
-
-  it('T-HO-3: schedules the wird reminder at the persisted time, not the default constant', async () => {
-    // The wird reminder is now a repeating DAILY trigger scheduled directly
-    // (spec amendment "US4 descoped; wird moves to a repeating trigger"), NOT a
-    // horizon entry — so it must be passed to `scheduleWirdReminderAsync` with
-    // the PERSISTED time. The previous implementation stored the setting but
-    // scheduled the WIRD_REMINDER_DEFAULT_TIME constant; this pins the fix.
-    useSettingsStore.setState({ wirdReminderTime: { hour: 6, minute: 15 } });
-
-    await assembleAndReconcile();
-
-    expect(mockScheduleWird).toHaveBeenCalledWith({ hour: 6, minute: 15 });
-    // And the wird is never smuggled into the prayer horizon.
-    expect(lastIntended().filter((e) => e.categoryId === 'wird-daily')).toHaveLength(0);
   });
 
   it('T-HO-5: concurrent callers never overlap (cold boot races the wird hydrate)', async () => {
@@ -168,20 +150,51 @@ describe('T-HO — hydration gate', () => {
     const prayers = lastIntended().filter((e) => e.categoryId.startsWith('prayer-'));
     expect(prayers).toHaveLength(0);
   });
+});
 
-  it('T-HO-4: a disabled wird category cancels the wird reminder and schedules none', async () => {
-    useSettingsStore.setState({
-      notifications: {
-        ...useSettingsStore.getState().notifications,
-        'wird-daily': false,
-      },
+describe('T-HO wird (Date pinned)', () => {
+  // Fake ONLY Date; T-HO-5/6 rely on real setTimeout and would hang otherwise.
+  beforeEach(() => {
+    jest.useFakeTimers({
+      doNotFake: [
+        'setTimeout', 'clearTimeout', 'setInterval', 'clearInterval',
+        'setImmediate', 'clearImmediate', 'nextTick', 'queueMicrotask',
+      ],
     });
+    jest.setSystemTime(new Date(2026, 9, 21, 9, 0));
+    useSettingsStore.setState({
+      notifications: { ...useSettingsStore.getState().notifications, 'wird-daily': true },
+    });
+  });
+  afterEach(() => jest.useRealTimers());
 
+  it('T-HO-3: wird entries are armed at the PERSISTED time (not the default constant)', async () => {
+    useSettingsStore.setState({ wirdReminderTime: { hour: 6, minute: 15 } });
     await assembleAndReconcile();
+    expect(wirdIntended().length).toBeGreaterThan(0);
+    for (const e of wirdIntended()) expect([e.fireAt.getHours(), e.fireAt.getMinutes()]).toEqual([6, 15]);
+  });
 
-    expect(mockCancelCategory).toHaveBeenCalledWith('wird-daily');
-    expect(mockScheduleWird).not.toHaveBeenCalled();
-    // Never smuggled into the prayer horizon either.
-    expect(lastIntended().filter((e) => e.categoryId === 'wird-daily')).toHaveLength(0);
+  it('T-HO-4: a disabled wird category arms no wird entry', async () => {
+    useSettingsStore.setState({
+      notifications: { ...useSettingsStore.getState().notifications, 'wird-daily': false },
+    });
+    await assembleAndReconcile();
+    expect(wirdIntended()).toHaveLength(0);
+  });
+
+  it("T-HO-8: today's goal met ⇒ no wird entry for today, tomorrow still armed", async () => {
+    mockCompletedDays.mockResolvedValueOnce(['2026-10-21']);
+    useSettingsStore.setState({ wirdReminderTime: { hour: 20, minute: 0 } });
+    await assembleAndReconcile();
+    expect(mockCompletedDays).toHaveBeenCalledWith('2026-10-21', '2026-10-21');
+    expect(wirdIntended()[0].localDay).toBe('2026-10-22');
+  });
+
+  it('T-HO-9: a DB read failure is treated as NOT met (fail toward reminding)', async () => {
+    mockCompletedDays.mockRejectedValueOnce(new Error('db closed'));
+    useSettingsStore.setState({ wirdReminderTime: { hour: 20, minute: 0 } });
+    await assembleAndReconcile();
+    expect(wirdIntended()[0].localDay).toBe('2026-10-21');
   });
 });

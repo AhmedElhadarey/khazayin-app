@@ -9,7 +9,12 @@
  * Soft-capped at 500 items (Board condition #2). New saves drop the oldest
  * if at capacity.
  *
- * Telemetry: every save/unsave emits a structured [khazayin] log with
+ * restore() re-inserts an item removed by unsave() unchanged (original
+ * savedAt and snapshot) at the position its savedAt implies, for the unsave
+ * toast's undo. At the 500 cap the oldest entry is dropped, which can be the
+ * restored item itself.
+ *
+ * Telemetry: every save/unsave/restore emits a structured [khazayin] log with
  * { context: 'saved-toggle', action, type, total } (Board condition #5).
  *
  * Track: khazain-saved_20260511  T2
@@ -92,7 +97,7 @@ function composeId(type: SavedType, entityId: string): string {
   return `${type}:${entityId}`;
 }
 
-function logSavedToggle(action: 'save' | 'unsave', type: SavedType, total: number): void {
+function logSavedToggle(action: 'save' | 'unsave' | 'restore', type: SavedType, total: number): void {
   // eslint-disable-next-line no-console
   console.log('[khazayin]', { context: 'saved-toggle', action, type, total });
 }
@@ -110,6 +115,13 @@ export interface SavedState {
   /** Removes the saved item. Returns the removed item (for undo) or null.
    *  Emits telemetry on success. */
   unsave(type: SavedType, entityId: string): SavedItem | null;
+
+  /** Re-inserts a previously removed item UNCHANGED (original savedAt and
+   *  snapshot) at the position its savedAt implies — i.e. where it was before
+   *  unsave(). No-op if an item with the same id is already present. Used by
+   *  the unsave toast's undo. At the 500 cap the oldest entry is dropped, which
+   *  can be the restored item itself. */
+  restore(item: SavedItem): void;
 
   /** Fast lookup for render-time icon state. O(n) over <=500 items. */
   isSaved(type: SavedType, entityId: string): boolean;
@@ -150,6 +162,18 @@ export const useSavedStore = create<SavedState>()(
         set((s) => ({ items: s.items.filter((it) => it.id !== id) }));
         logSavedToggle('unsave', type, get().items.length);
         return removed;
+      },
+
+      restore: (item) => {
+        if (get().items.some((it) => it.id === item.id)) return;
+        set((s) => {
+          const at = s.items.findIndex((it) => it.savedAt < item.savedAt);
+          const next = at === -1
+            ? [...s.items, item]
+            : [...s.items.slice(0, at), item, ...s.items.slice(at)];
+          return { items: next.length > MAX_ITEMS ? next.slice(0, MAX_ITEMS) : next };
+        });
+        logSavedToggle('restore', item.type, get().items.length);
       },
 
       isSaved: (type, entityId) => {
