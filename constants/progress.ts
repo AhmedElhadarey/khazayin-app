@@ -167,3 +167,10 @@ export function toLocalDay(date: Date = new Date()): string {
     day: '2-digit',
   }).format(date);
 }
+
+/** Milliseconds until the next LOCAL midnight. Built from local components so
+ *  23h/25h DST days are correct. Never returns 0. */
+export function msUntilNextLocalMidnight(now: Date): number {
+  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
+  return next.getTime() - now.getTime();
+}

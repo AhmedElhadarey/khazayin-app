@@ -77,8 +77,9 @@ export default function SettingsNotificationsScreen() {
 
   // Reconcile the OS schedule with the persisted wird preference on mount
   // (final-review Risk #1). Handles fresh installs where settings says
-  // "wird-daily=true" but no OS schedule yet exists (idempotent in the
-  // scheduler — it cancels any prior wird before scheduling the next).
+  // "wird-daily=true" but no OS schedule yet exists. Idempotent: it goes
+  // through the serialised horizon reconcile, which only applies the delta
+  // between the intended and the pending wird entries.
   useEffect(() => {
     if (notifications['wird-daily'] && permission === 'granted') {
       void useWirdStore.getState().setWirdEnabledFromSettings(true);
@@ -178,7 +179,7 @@ export default function SettingsNotificationsScreen() {
         </View>
 
         {/* Reminder-time picker entry (T045). Displayed whenever the wird
-            reminder is enabled — editing the time re-arms the DAILY trigger. */}
+            reminder is enabled — editing the time re-arms the wird reminder horizon. */}
         {notifications['wird-daily'] ? (
           <SettingsValueRow
             title="وقت تذكير الورد"
