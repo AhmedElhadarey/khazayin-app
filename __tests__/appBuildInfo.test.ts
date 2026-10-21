@@ -4,6 +4,8 @@
  * resolveBuildNumber is pure: the screen injects Application/Constants values,
  * so these tests never load native modules.
  */
+import fs from 'fs';
+import path from 'path';
 import { resolveBuildNumber } from '@/services/appBuildInfo';
 
 describe('resolveBuildNumber', () => {
@@ -71,5 +73,19 @@ describe('resolveBuildNumber', () => {
 
   it("T-BN-6: trims the native value", () => {
     expect(resolveBuildNumber({ executionEnvironment: 'standalone', nativeBuildVersion: ' 15 ' })).toBe('15');
+  });
+});
+
+describe('app/settings-about.tsx build row (source contract)', () => {
+  const source = fs.readFileSync(path.resolve(__dirname, '..', 'app/settings-about.tsx'), 'utf8');
+
+  it('T-BN-7: settings-about wires the native resolver and always renders the build row', () => {
+    expect(source).toMatch(/from 'expo-application'/);
+    expect(source).toMatch(/resolveBuildNumber\(\{/);
+    expect(source).toMatch(/nativeBuildVersion: Application\.nativeBuildVersion/);
+    expect(source).toMatch(/executionEnvironment: Constants\.executionEnvironment/);
+    expect(source).toMatch(
+      /<Text style=\{styles\.versionValue\}>\{build \?\? '—'\}<\/Text>\s*<Text style=\{styles\.versionLabel\}>رقم البناء<\/Text>/,
+    );
   });
 });
