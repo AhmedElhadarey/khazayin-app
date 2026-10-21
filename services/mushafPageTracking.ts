@@ -107,3 +107,96 @@ export class PageDwellTracker {
     }
   }
 }
+
+/**
+ * Decides WHEN reading time counts, so ReadingView only forwards events.
+ * Time is credited only while all three gates are open:
+ *   focused      — tabs keep the reader mounted behind other tabs
+ *   appActive    — the app is in the foreground
+ *   contentReady — the ayat are on screen (AsyncContent unmounts them while
+ *                  loading, empty or on error)
+ * Reopening a gate re-arms the clock; the closed period is never credited.
+ *
+ * `contentYForPage` is the seam the contextual-notes branch scrolls with
+ * (design §10) — do not add a second set of segment measurements.
+ */
+export class MushafPageTrackingController {
+  private readonly tracker: PageDwellTracker;
+  private readonly layouts = new Map<number, { y: number; height: number }>();
+  private bodyY = 0;
+  private scrollY = 0;
+  private viewportHeight = 0;
+  private focused = false;
+  private appActive = true;
+  private contentReady = false;
+
+  constructor(opts: { onRead: (page: number) => void; dwellMs?: number; maxStepMs?: number }) {
+    this.tracker = new PageDwellTracker(opts);
+  }
+
+  get isObserving(): boolean {
+    return this.focused && this.appActive && this.contentReady;
+  }
+
+  setFocused(focused: boolean, nowMs: number): void {
+    this.focused = focused;
+    this.sync(nowMs);
+  }
+
+  setAppActive(active: boolean, nowMs: number): void {
+    this.appActive = active;
+    this.sync(nowMs);
+  }
+
+  /** `false` drops every stored layout: the segments have been unmounted. */
+  setContentReady(ready: boolean, nowMs: number): void {
+    this.contentReady = ready;
+    if (!ready) this.layouts.clear();
+    this.sync(nowMs);
+  }
+
+  setViewportHeight(height: number): void {
+    this.viewportHeight = height;
+  }
+
+  setBodyY(y: number): void {
+    this.bodyY = y;
+  }
+
+  setSegmentLayout(page: number, y: number, height: number): void {
+    this.layouts.set(page, { y, height });
+  }
+
+  /** Forget layouts of pages that are no longer rendered. */
+  retainPages(pages: readonly number[]): void {
+    const live = new Set(pages);
+    for (const page of [...this.layouts.keys()]) {
+      if (!live.has(page)) this.layouts.delete(page);
+    }
+  }
+
+  onScroll(y: number, nowMs: number): void {
+    this.scrollY = y;
+    this.tick(nowMs);
+  }
+
+  /** Scroll-content y of a page's segment, or null when it is not laid out. */
+  contentYForPage(page: number): number | null {
+    const l = this.layouts.get(page);
+    return l ? this.bodyY + l.y : null;
+  }
+
+  tick(nowMs: number): void {
+    if (!this.isObserving) return;
+    const laid: SegmentLayout[] = [];
+    this.layouts.forEach((l, page) => {
+      laid.push({ page, y: this.bodyY + l.y, height: l.height });
+    });
+    this.tracker.update(pagesInView(laid, this.scrollY, this.viewportHeight), nowMs);
+  }
+
+  private sync(nowMs: number): void {
+    if (this.isObserving) this.tick(nowMs);
+    else this.tracker.pause(nowMs);
+  }
+}

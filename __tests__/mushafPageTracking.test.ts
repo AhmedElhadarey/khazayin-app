@@ -1,4 +1,9 @@
-import { PageDwellTracker, groupAyatByPage, pagesInView } from '@/services/mushafPageTracking';
+import {
+  MushafPageTrackingController,
+  PageDwellTracker,
+  groupAyatByPage,
+  pagesInView,
+} from '@/services/mushafPageTracking';
 import type { Ayah } from '@/types/content';
 
 const ayah = (surah: number, n: number): Ayah => ({
@@ -134,5 +139,111 @@ describe('PageDwellTracker', () => {
     const { t, read } = make();
     run(t, [603, 604], 0, 8000);
     expect(read.sort()).toEqual([603, 604]);
+  });
+});
+
+describe('MushafPageTrackingController', () => {
+  const VIEW = 800;
+  const make = () => {
+    const read: number[] = [];
+    const c = new MushafPageTrackingController({
+      dwellMs: 8000,
+      maxStepMs: 2000,
+      onRead: (p) => read.push(p),
+    });
+    c.setViewportHeight(VIEW);
+    c.setSegmentLayout(2, 0, 2000);
+    return { c, read };
+  };
+  const ticks = (c: MushafPageTrackingController, from: number, to: number) => {
+    for (let ms = from; ms <= to; ms += 1000) c.tick(ms);
+  };
+  /** Focused, foreground and showing content from `at`. */
+  const open = (c: MushafPageTrackingController, at: number) => {
+    c.setFocused(true, at);
+    c.setContentReady(true, at);
+  };
+
+  it('credits nothing until focused, in the foreground and showing content', () => {
+    const { c, read } = make();
+    ticks(c, 0, 20000);
+    c.setFocused(true, 20000);
+    ticks(c, 21000, 40000); // content still loading
+    expect(read).toEqual([]);
+    expect(c.isObserving).toBe(false);
+    c.setContentReady(true, 40000);
+    expect(c.isObserving).toBe(true);
+    ticks(c, 41000, 47000);
+    expect(read).toEqual([]);
+    c.tick(48000);
+    expect(read).toEqual([2]);
+  });
+
+  it('pauses on blur — a tab switch leaves the reader mounted', () => {
+    const { c, read } = make();
+    open(c, 0);
+    ticks(c, 1000, 5000); // 5 s
+    c.setFocused(false, 5000);
+    ticks(c, 6000, 60000); // on another tab: nothing counts
+    c.setFocused(true, 60000); // re-arms only
+    ticks(c, 61000, 62000); // 7 s
+    expect(read).toEqual([]);
+    c.tick(63000);
+    expect(read).toEqual([2]);
+  });
+
+  it('pauses while the app is in the background', () => {
+    const { c, read } = make();
+    open(c, 0);
+    ticks(c, 1000, 5000); // 5 s
+    c.setAppActive(false, 5000);
+    ticks(c, 6000, 60000);
+    c.setAppActive(true, 60000);
+    ticks(c, 61000, 62000); // 7 s
+    expect(read).toEqual([]);
+    c.tick(63000);
+    expect(read).toEqual([2]);
+  });
+
+  it('drops layouts while the ayat are not on screen, and needs fresh ones after', () => {
+    const { c, read } = make();
+    open(c, 0);
+    ticks(c, 1000, 3000); // 3 s
+    c.setContentReady(false, 3000); // refetch: AsyncContent unmounted the segments
+    expect(c.contentYForPage(2)).toBeNull();
+    c.setContentReady(true, 10000);
+    ticks(c, 11000, 30000); // no layouts → nothing in view
+    expect(read).toEqual([]);
+    c.setSegmentLayout(2, 0, 2000);
+    ticks(c, 31000, 35000); // 31 re-arms with [2]; 32..35 → 7 s
+    expect(read).toEqual([]);
+    c.tick(36000);
+    expect(read).toEqual([2]);
+  });
+
+  it('places segments below the body offset in scroll coordinates', () => {
+    const read: number[] = [];
+    const c = new MushafPageTrackingController({ dwellMs: 8000, maxStepMs: 2000, onRead: (p) => read.push(p) });
+    c.setViewportHeight(VIEW);
+    c.setBodyY(1000);
+    c.setSegmentLayout(5, 0, 300);
+    open(c, 0);
+    ticks(c, 1000, 10000); // segment sits at 1000..1300, below the viewport
+    expect(read).toEqual([]);
+    c.onScroll(900, 10000);
+    ticks(c, 11000, 17000); // 7 s
+    expect(read).toEqual([]);
+    c.tick(18000);
+    expect(read).toEqual([5]);
+    expect(c.contentYForPage(5)).toBe(1000);
+    expect(c.contentYForPage(6)).toBeNull();
+  });
+
+  it('forgets layouts of pages that are no longer rendered', () => {
+    const { c } = make();
+    c.setSegmentLayout(3, 2000, 500);
+    c.retainPages([2]);
+    expect(c.contentYForPage(3)).toBeNull();
+    expect(c.contentYForPage(2)).toBe(0);
   });
 });
