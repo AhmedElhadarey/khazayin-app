@@ -4,6 +4,7 @@
 - **Slug:** `settings-screen-gaps`
 - **Branch:** `fix/settings-privacy-build-number`
 - **Date:** 2026-10-21
+- **Revision:** v2, after CTO review and user decisions (expo-application approved; privacy URL deferred to the client)
 
 ---
 
@@ -45,7 +46,7 @@ Guessing a path such as `https://khazayin.com/privacy` would put a 404 behind a 
 
 `app/settings-about.tsx:14-22` reads the build number only from `Constants.expoConfig.ios.buildNumber` / `android.versionCode`. `app.json` sets neither field. `eas.json:4` uses `"appVersionSource": "remote"`, so EAS writes the build number straight into the native project (Info.plist `CFBundleVersion`, `build.gradle` `versionCode`) and the embedded app config never carries it. `resolveBuildNumber()` therefore returns `''`, and the `{build ? … : null}` guard at `app/settings-about.tsx:56-61` hides the row on every build.
 
-The obvious fix is `expo-application`. It sits in `node_modules` as a transitive dependency but is **not** in `package.json`, so the project rules count it as a new dependency, which needs user approval.
+The obvious fix is `expo-application`. It sits in `node_modules` as a transitive dependency but was **not** in `package.json`, so the project rules count it as a new dependency. **v2:** the user approved adding it (§4B).
 
 ## 3. Governing contracts (no Figma frame)
 
@@ -64,7 +65,7 @@ Contracts that govern this work:
 
 ### A. Privacy policy: configurable URL, validated, logic extracted
 
-1. `constants/config.ts` reads `process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL` (inlined into the bundle at build time, the same mechanism as `EXPO_PUBLIC_SENTRY_DSN` in the tracked `.env`). It runs the value through a pure `normalizePrivacyPolicyUrl(raw)` that:
+1. `constants/config.ts` reads `process.env.EXPO_PUBLIC_PRIVACY_POLICY_URL`. The value is **inlined into the JS bundle at build time**, the same mechanism as `EXPO_PUBLIC_SENTRY_DSN` in the tracked `.env`. Changing it needs a new build, because `expo-updates` is not installed. It runs the value through a pure `normalizePrivacyPolicyUrl(raw)` that:
    - trims whitespace
    - accepts only `https://` URLs. The check uses a regex, not `new URL()`, because React Native's `URL` polyfill throws on `.protocol` and friends.
    - returns `string | null` and never `''`
@@ -73,43 +74,57 @@ Contracts that govern this work:
 
 **Fallback while no URL exists:** keep the existing Arabic "coming soon" alert. Alternative A2 below was considered and rejected.
 
-### B. Build number: native value, no new dependency
+### B. Build number: `expo-application`, synchronous (v2, after CTO review)
 
-The new `services/appBuildInfo.ts` reads the **native** build number. Native wins over the app config because OTA updates can change the config but never the binary.
+**User decision (2026-10-21):** adding `expo-application` is approved. It is already linked into both native projects, transitively: `expo-notifications` declares `"expo-application": "~7.0.8"` (`node_modules/expo-notifications/package.json:51`). As a result:
+- `package-lock.json:7746-7749` already resolves `node_modules/expo-application` to **7.0.8**.
+- The main checkout's `ios/Podfile.lock` already has `EXApplication (7.0.8)`. That file lives only in the main checkout, because `/ios` is git-ignored.
 
-| Platform | Source | Why it is trustworthy |
+Promoting it to a direct dependency with `npx expo install expo-application` therefore changes `package.json` (and possibly the root entry in `package-lock.json`), and nothing native.
+
+The new `services/appBuildInfo.ts` exports one pure, synchronous function:
+
+```ts
+resolveBuildNumber({ executionEnvironment, nativeBuildVersion, expoConfig }): string | null
+```
+
+| Precedence | Source | Why |
 |---|---|---|
-| iOS | `Constants.platform.ios.buildNumber` (expo-constants 18.0.13, already a dependency) | Documented API. Native code returns `NSBundle.mainBundle.infoDictionary[CFBundleVersion]` (`node_modules/expo-constants/ios/EXConstantsService.m:49-59`), which is the value EAS remote versioning writes. |
-| Android | `RNSentry.fetchNativeRelease().build` through `TurboModuleRegistry.get('RNSentry')` (`@sentry/react-native` ~7.2.0, already a dependency) | expo-constants returns an **empty** map on Android (`node_modules/expo-constants/android/src/main/java/expo/modules/constants/ConstantsService.kt:46`). Sentry's native module returns `String.valueOf(packageInfo.versionCode)` from `PackageManager` (`node_modules/@sentry/react-native/android/src/main/java/io/sentry/react/RNSentryModuleImpl.java:477-483`). `packageInfo` is set in the module constructor, so the call works whether or not `Sentry.init` is enabled. `app/_layout.tsx:74` disables Sentry in dev and without a DSN. |
-| Either, fallback | `Constants.expoConfig.ios.buildNumber` / `android.versionCode` | The existing behaviour, kept in case a future `app.json` sets the field. |
-| Web / Expo Go | none | Returns `null`. |
+| 0. Guard | `Constants.executionEnvironment === 'storeClient'` → `null` | In Expo Go, `nativeBuildVersion` is **Expo Go's own** build number, not this app's. Showing it would be a wrong number, which is worse than `—`. |
+| 1 | `Application.nativeBuildVersion` | The documented API. iOS returns `CFBundleVersion` and Android returns `versionCode`, read from the installed binary. These are exactly the values EAS remote versioning (`eas.json:4`) writes into the native project. The call is synchronous, so there is no loading state. |
+| 2 | `Constants.expoConfig.ios.buildNumber` / `android.versionCode` | The existing fallback, kept in case a future `app.json` sets the field. |
+| 3 | `null` | Web (where `nativeBuildVersion` is `null`), Expo Go, or nothing usable. |
 
-Design:
-- `pickBuildNumber(sources)` is a pure function with the precedence native → `expoConfig` → `null`. It treats `''`, `'null'`, `'undefined'` and `'0'` as absent.
-- `readNativeBuildNumber(deps)` is async. Its dependencies are injected (`os`, `iosBuildNumber()`, `getSentryNative()`), and every native access is wrapped in try/catch so it never throws.
-- `hooks/useAppBuildNumber.ts` seeds state from the synchronous sources (the iOS value is synchronous), then upgrades it from `readNativeBuildNumber()` on mount.
-- `app/settings-about.tsx` **always** renders the "رقم البناء" row. The value is the build number, or `—` while unresolved (web / Expo Go). Rendering the row unconditionally removes the hide-when-empty guard that caused the audit failure, and avoids a layout jump when the Android value arrives. Digits stay Latin to match the existing version row (`app/settings-about.tsx:53`), which shows `1.0.0` verbatim.
-- A **contract-pin test** reads `node_modules/@sentry/react-native/dist/js/NativeRNSentry.d.ts` and asserts that `fetchNativeRelease(): Promise<NativeReleaseResponse>` and `build: string` still exist. A Sentry upgrade that renames the method then fails CI instead of silently blanking the row.
+Values `''`, whitespace, `'null'`, `'undefined'` and `'0'` count as absent at every tier.
+
+`app/settings-about.tsx` calls `resolveBuildNumber` once at render, with the real `Constants` and `Application` values. Its local `resolveBuildNumber` at lines 14-22 and the `{build ? … : null}` guard at lines 56-61 are removed. The "رقم البناء" row **always** renders, showing `{build ?? '—'}`.
+- `—` appears only when the number is genuinely unavailable (web, Expo Go). There is no async flash.
+- Digits stay Latin, matching the existing version row (`app/settings-about.tsx:53`, which shows `1.0.0` verbatim).
+
+**Not used (v1 approach, dropped in v2):** the Sentry `RNSentry.fetchNativeRelease()` route, the async `readNativeBuildNumber`, `hooks/useAppBuildNumber.ts`, and the Sentry contract-pin test. All of these existed only to avoid the dependency the user has now approved.
 
 ### Alternatives rejected
 
-- **A2. Bundled in-app Arabic privacy policy screen.** No policy text exists. Writing one means inventing a legal document for a real foundation, and it would have to disclose Sentry diagnostics accurately (`RELEASE-READINESS.md:27`). That is the foundation's content to supply. The configurable URL keeps the criterion's mechanism ("opens in-app browser") intact and needs no code change once the URL arrives.
+- **A2. Bundled in-app Arabic privacy policy screen.** No policy text exists. Writing one means inventing a legal document for a real foundation, and it would have to disclose Sentry diagnostics accurately (`RELEASE-READINESS.md:27`). That is the foundation's content to supply. The configurable URL keeps the criterion's mechanism intact.
 - **A3. Default to a guessed `https://khazayin.com/privacy`.** The site has no such page today, and a 404 behind a legal link is worse than an honest "coming soon".
-- **B2. Add `expo-application`.** This is the cleanest API, but it is a new dependency (USER_ONLY per CLAUDE.md "Things NOT to do"; `conductor/authority-matrix.md` is referenced there but not in this tree). It is listed as an open question, and the plan proceeds without it.
-- **B3. Convert `app.json` to `app.config.js` and scrape `android/app/build.gradle` for `versionCode` during expo-constants' `createExpoConfig` gradle task.** This relies on gradle task ordering and on EAS's native-file rewrite happening first, and it is invisible in local `expo run`. Too fragile, and it changes the project's config format for one number.
-- **B4. Ask EAS for an env var.** EAS sets no documented build-number env var (`EAS_BUILD_ID`, `EAS_BUILD_PROFILE` and similar exist, but none carries the build number), so there is nothing reliable to inject.
+- **B2. Without the dependency: read `Constants.platform.ios.buildNumber` on iOS and Sentry's undocumented `RNSentry.fetchNativeRelease()` on Android.** This was the v1 plan. Dropped: it relied on an undocumented third-party native API with an async read, while a documented, already-linked module exists.
+- **B3. Convert `app.json` to `app.config.js` and scrape `android/app/build.gradle` during expo-constants' `createExpoConfig` gradle task.** Depends on gradle task ordering and is invisible in local `expo run`. Too fragile.
+- **B4. An EAS env var.** EAS sets no documented build-number env var.
 
 ## 5. Data, route and store changes
 
 - **Routes:** none.
 - **Stores:** none.
 - **Config:** `KhazainConfig.privacyPolicyUrl` changes type from `''` to `string | null`. Its only consumer is `app/(tabs)/more/settings.tsx:87`, which already checks for a falsy value.
-- **New modules:** `services/privacyPolicy.ts`, `services/appBuildInfo.ts`, `hooks/useAppBuildNumber.ts`.
-- **Env:** the new optional `EXPO_PUBLIC_PRIVACY_POLICY_URL`. It is public by design: it is a URL, not a secret.
+- **New modules:** `services/privacyPolicy.ts` and `services/appBuildInfo.ts`.
+- **Dependency:** `expo-application` (~7.0.8) is promoted from transitive to direct. User-approved. No native change.
+- **Env:** the new optional `EXPO_PUBLIC_PRIVACY_POLICY_URL`.
+  - It is public by design (a URL, not a secret).
+  - It is **inlined into the JS bundle at build time.** Changing it needs a new binary build: `expo-updates` is not installed (it is absent from `package.json`), so there is no OTA path.
 
 ## 6. RTL considerations
 
-- The always-rendered build row reuses `styles.versionRow` (`PHYSICAL_ROW`, physical left → right: value, label) and needs no new layout.
+- The always-rendered build row reuses `styles.versionRow` (`PHYSICAL_ROW`, physical left → right: value, label). No new layout.
 - `—` and Latin digits are direction-neutral. The label keeps `textStyle(...)`, which already carries `RTL_TEXT`.
 - The in-app browser is a native sheet and follows the system direction. Nothing to pin.
 
@@ -117,27 +132,35 @@ Design:
 
 | Risk | Mitigation |
 |---|---|
-| A Sentry upgrade renames or removes `fetchNativeRelease`. | The contract-pin test fails. At runtime the try/catch returns `null` and the row shows `—`. |
-| `TurboModuleRegistry.get('RNSentry')` is `null` on some arch. | The reader returns `null`. Task 7 verifies the call on an iOS simulator and an Android emulator. |
-| Dev builds report build `1`. | Correct: that is the dev binary's real `versionCode` / `CFBundleVersion`. |
-| The privacy URL stays unset at submission. | `RELEASE-READINESS.md` names the env var explicitly. The behaviour stays the honest alert. |
+| `npx expo install` picks a version other than 7.0.x, causing a native diff. | Task 4 asserts that `package.json`, `package-lock.json` and the main checkout's `ios/Podfile.lock` all read 7.0.8. If they differ, stop and report. |
+| Expo Go shows Expo Go's own build number. | The `storeClient` guard returns `null`, and a unit test pins it. |
+| Local dev builds report build `1`. | Correct: that is the local binary's real `versionCode` / `CFBundleVersion`. The remote-managed number (> 1) can only be proven on an EAS build (Task 7 follow-up). |
+| The privacy URL stays unset at submission. | `RELEASE-READINESS.md:26` stays **unchecked** and names the env var. The behaviour stays the honest alert. |
 
 ## 8. Recorded decisions on minor findings
 
-- **Preferred reciter is not used as the default for playback** (finding 3). The criterion asks only that the reciter "can be selected from available reciters". That passes: it is selectable from Settings (`app/settings-reciter.tsx:15`), during onboarding (`components/khazain/onboarding/ReciterStep.tsx:19`), and it is marked in the reciters list (`app/(tabs)/sections/reciter.tsx:83`). Routing playback through it means touching the audio boundary (`store/playerStore.ts` JSDoc) and `services/surahPlayback.ts`, which is a behaviour change outside this ticket. **Out of scope. File it as a follow-up ticket.**
-- **Font size applies only to the Mushaf reading view** (finding 4). The criterion says "**Quran text** font size". `useFontScale()` is consumed by `app/(tabs)/sections/mushaf.tsx:154`, the Quran text surface. This is acceptable as specified. No change.
+- **Preferred reciter is not used as the default for playback** (finding 3). The criterion asks only that the reciter "can be selected from available reciters". That passes: it is selectable from Settings (`app/settings-reciter.tsx:15`), during onboarding (`components/khazain/onboarding/ReciterStep.tsx:19`), and it is marked in the reciters list (`app/(tabs)/sections/reciter.tsx:83`). Routing playback through it touches the audio boundary (`store/playerStore.ts` JSDoc, `services/surahPlayback.ts`). **Out of scope. File it as a follow-up ticket.**
+- **Font size applies only to the Mushaf reading view** (finding 4). The criterion says "**Quran text** font size". `useFontScale()` is consumed by `app/(tabs)/sections/mushaf.tsx:154`. This is acceptable as specified. No change.
 
 ## 9. Out of scope
 
 - Writing or hosting a privacy policy, and choosing its URL.
-- Adding `expo-application` or any other dependency.
+- Any dependency other than `expo-application`.
 - Wiring the preferred reciter into playback defaults.
 - Applying font scale outside the Mushaf.
-- Reading the version from native (`CFBundleShortVersionString`). The version row already works from `app.json`'s `version`.
+- Reading the version from native (`Application.nativeApplicationVersion`). The version row already works from `app.json`'s `version`.
 - Any change to the More root, its eight reference rows, or `MORE_EXTENSION_ROWS`.
 - Legacy `app/(tabs)/settings.tsx` (preserved per CLAUDE.md).
 
-## 10. Open questions (each has a default so work can proceed)
+## 10. Done when (per criterion)
 
-1. **What is the privacy policy URL?** Default: leave `EXPO_PUBLIC_PRIVACY_POLICY_URL` unset and keep the Arabic "coming soon" alert. All code ships; setting the URL in `.env` (or the EAS profile `env`) and rebuilding is the only remaining step. Suggestion for the foundation: publish the policy at a stable `https://khazayin.com/...` path. It must disclose Sentry crash and diagnostic collection.
-2. **May we add `expo-application`** to replace the Sentry-module read on Android? Default: **no**. Use the no-dependency approach in §4B. If it is approved later, swap the Android branch of `readNativeBuildNumber` for `Application.nativeBuildVersion`. The function signature and its tests stay as they are.
+| Criterion | Done when | Status after this plan |
+|---|---|---|
+| App version and build number are displayed | "رقم البناء" renders on `/settings-about` with `Application.nativeBuildVersion`, verified on a local iOS simulator and Android emulator (value `1` / local `CFBundleVersion`). | **Code-complete.** Proof of a remote-managed `versionCode` > 1 on an EAS preview APK is a **manual follow-up** (Task 7). |
+| Privacy policy link opens in-app browser | `openPrivacyPolicy` opens `expo-web-browser` whenever `EXPO_PUBLIC_PRIVACY_POLICY_URL` is a valid https URL. Unit-tested, and demonstrated on a simulator with a temporary local URL. | **Code-complete, BLOCKED on the client's URL.** It closes only when the client supplies the URL, it is set in `.env` or the EAS profile `env`, and a **new build** ships (the value is inlined at bundle time; no expo-updates). `RELEASE-READINESS.md:26` stays ☐. |
+| The other five | Already passing (§2). Regression-checked in Task 8. | PASS |
+
+## 11. Decisions and remaining open questions
+
+1. **Privacy policy URL.** *Decided by the user:* keep `EXPO_PUBLIC_PRIVACY_POLICY_URL` and the Arabic "coming soon" alert, and the user supplies the URL later. *Still open:* the URL itself. Suggestion for the foundation: a stable `https://khazayin.com/...` path that discloses Sentry crash and diagnostic collection.
+2. **`expo-application`.** *Decided by the user:* approved, added with `npx expo install expo-application`.
