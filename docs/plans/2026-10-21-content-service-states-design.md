@@ -86,6 +86,17 @@ that names itself as simulated:
 A developer flipping `mockAdapter.simulateError` can tell it apart from a real
 failure, and the text is still Arabic.
 
+Hiding a non-`ApiError`'s text must not hide the bug from developers. In its
+error branch, `AsyncContent` calls `console.warn` under `__DEV__` when
+`error && !isApiError(error)`. `resolveAsyncView` stays pure, with no side
+effects.
+
+`app/foundations-sandbox.tsx:211` (a dev smoke screen) drives the error state
+with `new Error('خطأ تجريبي')`. It switches to `toApiError(undefined, 500)`.
+**Recorded output change:** the sandbox error card now reads the server copy,
+"حدث خطأ في الخادم. يرجى المحاولة مجدداً بعد قليل."
+(`services/api/errors.ts:37`), instead of "خطأ تجريبي".
+
 ### 3.3 Reciter surah list (`reciter/[id].tsx`)
 
 Precedence (first match wins):
@@ -186,10 +197,20 @@ revert.
 | 2207:5270 | 13 Reciter audio surah list | `/sections/reciter/r1` | Header (reciter name), search pill, surah rows with 6pt gap and 24pt bottom padding |
 
 Reference renders: `docs/audit/2026-09-09/figma-reference/08-2031-6193.png`,
-`10-2102-3187.png`, `13-2207-5270.png` (main checkout, untracked).
+`10-2102-3187.png`, `13-2207-5270.png` (main checkout, untracked, so
+`compare:figma` must be given
+`--reference /Users/ahmedelhadarey/samer/khazayin-app/docs/audit/2026-09-09/figma-reference`).
+
+**Regression scope is all 28 frames, not just these three.** `AsyncContent`
+is rendered by ~18 screens, so the before/after diff covers every manifest
+frame: 23 captured, plus 5 transition frames the harness skips. The
+before-baseline already exists:
+`/private/tmp/claude-501/-Users-ahmedelhadarey-samer-khazayin-app/ad126e66-b973-46e5-9731-c506a3e034d8/scratchpad/qa/baseline`.
 
 "Pixel-identical" means **identical to a capture of the same route taken
-before this branch's code changes** (Task 0). It does not mean identical to
+before this branch's code changes** (Task 0, the baseline above). It is
+checked per frame with argent `screenshot-diff`, and only device-chrome mask
+bands may differ. It does not mean identical to
 the Figma export, which the app already differs from in documented ways. The
 Figma comparison is a second, informational check.
 
@@ -223,10 +244,11 @@ Both are **out of scope**. No code change.
 
 | Risk | Mitigation |
 |---|---|
-| The `AsyncContent` refactor changes behaviour on ~18 consumer screens | `resolveAsyncView` is unit-tested for all five statuses. The JSX branches stay one-to-one. Visible change happens only for non-`ApiError` errors (English → Arabic default). Final full `npx jest` and tsc. |
+| The `AsyncContent` refactor changes behaviour on ~18 consumer screens | `resolveAsyncView` is unit-tested for all five statuses. The JSX branches stay one-to-one, and `__tests__/moreLayout.test.ts:129-131` still pins the `FadeInView` line. Visible change happens only for non-`ApiError` errors (English → Arabic default). Full `npx jest` and tsc, plus a before/after `screenshot-diff` of all 28 frames. |
 | The `[id]` loaded state shifts (fade wrapper, padding) | `ready` renders the original `FlatList` JSX verbatim. A source-contract test pins `contentContainerStyle={[styles.list, { paddingBottom: 24 }]}`. Task 0 and Task 7 capture-diff. |
-| The SWR cache hides loading and error states during visual QA | QA uses a dedicated simulator with a fresh install. `clearAppCache` (`services/cacheFacade.ts`) clears only the image cache, not SWR. The audit harness rule "never clears app data" is respected on the main QA simulator. |
-| `tabEmpty` cannot be triggered in-app with mock data (every tab has reciters, `data/content/quran.ts:115-130`) | Covered by unit tests. Recorded in QA as "no runtime trigger". |
+| The SWR cache hides loading and error states during visual QA | QA uses a dedicated simulator, with a fresh install per stub "install group". `clearAppCache` (`services/cacheFacade.ts`) clears only the image cache, not SWR. The audit simulator is never wiped, per the harness rule. |
+| `tabEmpty`, `listEmpty` and `surahsEmpty` cannot be triggered with mock data (every tab has reciters, `data/content/quran.ts:115-130`) | A dependency-free `node:http` stub API (QA-only, kept in the scratchpad, never committed) serves never-responding routes (15 s timeout), 500s, tajweed-only reciters, `[]` reciters, and `{items: []}` surahs. Metro points at it with `EXPO_PUBLIC_API_BASE=http://127.0.0.1:<port>`. Unit tests cover the same states. Full procedure: implementation plan, Task 7 Step 3. |
+| The guard hides a real bug's English message from developers | `__DEV__` `console.warn` in `AsyncContent`'s error branch (§3.2). |
 | Typed-route casts | No new routes. Existing `as any` casts stay. |
 
 ## 10. Out of scope
@@ -247,3 +269,14 @@ Both are **out of scope**. No code change.
 2. **Apply the `ApiError`-only message guard to every `AsyncContent` consumer?** Default: **yes**. It changes output only where English would have leaked.
 3. **Copy.** Default: global empty "لا يوجد قراء حالياً", tab empty "لا يوجد قراء في هذا التصنيف", not-found "لم يتم العثور على هذا القارئ" (unchanged), no-surahs "لا توجد سور متاحة لهذا القارئ", simulated error "تعذر تحميل المحتوى (خطأ تجريبي). حاول مجدداً." The client may want to review the wording.
 4. **Should "not found" offer a way back besides the header back button?** Default: **no**. The header back chevron is always present, and no frame defines a CTA.
+
+## 12. Revision history
+
+- **v2 (2026-10-21, after CTO review: APPROVE WITH CHANGES).**
+  - QA uses a local `node:http` stub API instead of an unroutable IP, and adds `surahsEmpty`, `listEmpty` and `tabEmpty` runtime checks.
+  - Corrected the timeout copy citation to `errors.ts:32`.
+  - Regression covers all 28 frames against the existing baseline. `compare:figma` gets an explicit `--reference`. The before/after `screenshot-diff` gate is spelled out.
+  - `__DEV__` warning for non-`ApiError`s. Foundations sandbox moved to `toApiError`.
+  - Wiring tests tightened: `moreLayout.test.ts` added to the Task 3 regression run, `not.toMatch(/error\??\.message/)`, and `state.kind === 'ready'` asserted.
+  - The adapter method-list test was dropped (tsc enforces it).
+  - No native rebuild is needed.
