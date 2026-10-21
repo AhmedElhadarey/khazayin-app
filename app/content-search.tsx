@@ -8,7 +8,8 @@ import {
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
-import { rowPropsForSearchResult } from '@/services/search';
+import { startLecturePlayback } from '@/services/lecturePlayback';
+import { createSearchTargetRunner, rowPropsForSearchResult, type SearchTarget } from '@/services/search';
 import {
   useBookLecturesStore,
   useBooksStore,
@@ -20,8 +21,8 @@ import {
   useSearchStore,
   useSurahsStore,
 } from '@/store';
-import { useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import { useRouter, type Href } from 'expo-router';
+import React, { useEffect, useRef } from 'react';
 import {
   Alert,
   FlatList,
@@ -96,9 +97,15 @@ export default function SearchModalScreen() {
     if (q.trim()) addRecent(q.trim());
   };
 
-  const handleResultPress = (route: string, q: string) => {
-    commitQuery(q);
-    router.replace(route as any);
+  const runTarget = useRef(createSearchTargetRunner({
+    dismissTo: (h) => router.dismissTo(h as Href, { withAnchor: true }),
+    dismiss: () => router.back(),
+    play: (l) => { void startLecturePlayback(l); },
+  })).current;
+
+  const handleResultPress = (t: SearchTarget) => {
+    commitQuery(query);
+    runTarget(t);
   };
 
   const handleConfirmClearRecents = () => {
@@ -212,7 +219,7 @@ function ResultsList({
   onPress,
 }: {
   results: ResultGroup[];
-  onPress: (route: string, q: string) => void;
+  onPress: (target: SearchTarget) => void;
 }) {
   return (
     <FlatList
@@ -226,7 +233,7 @@ function ResultsList({
           {group.items.map((it) => {
             // Each group's items render through SearchResultRow with a real
             // type-specific badge (Board condition #2: no stubs in v1).
-            const { iconNode, title, subtitle, meta, route } = rowPropsForSearchResult(group, it);
+            const { iconNode, title, subtitle, meta, target } = rowPropsForSearchResult(group, it);
             return (
               <SearchResultRow
                 key={(it as { id: string }).id}
@@ -234,7 +241,7 @@ function ResultsList({
                 title={title}
                 subtitle={subtitle}
                 meta={meta}
-                onPress={() => onPress(route, title)}
+                onPress={() => onPress(target)}
               />
             );
           })}

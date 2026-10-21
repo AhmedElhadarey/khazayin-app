@@ -17,6 +17,7 @@ import type { Book, Lecture, Scholar, Surah, SavedItem } from '@/types/content';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { SearchResultGroup } from './searchAll';
+import { searchTargetFor, type SearchTarget } from './searchTarget';
 
 // ---------------------------------------------------------------------------
 // Inline badges shared between search + library
@@ -77,20 +78,27 @@ export interface RowProps {
 }
 
 /**
+ * A search result row: same shape as a saved row, but it carries where the
+ * tap goes (a route or playback) instead of a bare route — see searchTarget.ts.
+ */
+export type SearchRowProps = Omit<RowProps, 'route'> & { target: SearchTarget };
+
+/**
  * Build row props for a search result group + item.
  * Used by app/content-search.tsx.
  */
 export function rowPropsForSearchResult(
   group: SearchResultGroup,
   item: { id: string },
-): RowProps {
+): SearchRowProps {
+  const target = searchTargetFor(group, item);
   if (group.type === 'surah') {
     const s = item as Surah;
     return {
       iconNode: <SurahNumberBadge displayNumber={s.displayNumber} />,
       title: s.name,
       subtitle: s.meta,
-      route: '/sections/mushaf',
+      target,
     };
   }
   if (group.type === 'scholar') {
@@ -98,7 +106,7 @@ export function rowPropsForSearchResult(
     return {
       iconNode: <ScholarMedallion />,
       title: s.name,
-      route: `/sections/scholar/${s.id}`,
+      target,
     };
   }
   if (group.type === 'book') {
@@ -106,7 +114,7 @@ export function rowPropsForSearchResult(
     return {
       iconNode: <OpenBookBadge size={40} />,
       title: b.title,
-      route: '/sections/books',
+      target,
     };
   }
   const l = item as Lecture;
@@ -115,7 +123,7 @@ export function rowPropsForSearchResult(
     title: l.title,
     subtitle: l.scholar,
     meta: l.duration,
-    route: lectureRouteFor(l.category),
+    target,
   };
 }
 
