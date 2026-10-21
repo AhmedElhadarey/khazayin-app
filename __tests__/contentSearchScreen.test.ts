@@ -19,14 +19,29 @@ describe('content search screen', () => {
     expect(src).not.toMatch(/router\.push\(/);
   });
 
-  it('starts playback when the modal finishes closing, not on the next tick', () => {
+  it('starts playback when the root reappears under the closed modal, not on the next tick', () => {
     // InteractionManager is a setImmediate stub on RN 0.81, so it cannot wait
-    // for the dismissal (R8). The once-only logic is runOnceAfterDismissal.
+    // for the dismissal (R8). The closing screen's own transitionEnd never
+    // arrives: it is unmounted, and its event emitter with it. The (tabs)
+    // route stays mounted and gets transitionEnd {closing: false} instead.
     expect(src).toMatch(/runOnceAfterDismissal\(/);
-    expect(src).toMatch(/addListener\('transitionEnd'/);
-    expect(src).toMatch(/e\.data\.closing/);
+    expect(src).toMatch(/onClosed: onRootRevealedOnce/);
+    expect(src).not.toMatch(/addListener\('transitionEnd'/);
     expect(src).not.toMatch(/InteractionManager/);
   });
+
+  it('has the root stack announce the (tabs) reveal', () => {
+    const layout = read('app/_layout.tsx');
+    expect(layout).toMatch(
+      /<Stack\.Screen\s+name="\(tabs\)"[\s\S]*?listeners=\{\{\s*transitionEnd: \(e\) => \{\s*if \(!e\.data\.closing\) notifyRootRevealed\(\);/,
+    );
+  });
+
+  it('reads the corpus load state from its own module', () =>
+    expect(src).toMatch(/import \{ isCorpusLoading \} from '@\/services\/loadState';/));
+
+  it('announces the loading body as a progress indicator', () =>
+    expect(src).toMatch(/style=\{styles\.loadingWrap\}[\s\S]{0,40}accessible[\s\S]{0,40}accessibilityRole="progressbar"/));
 
   it('creates its one-shot runner once per mount', () =>
     expect(src).toMatch(/const \[runTarget\] = useState\(\(\) => createSearchTargetRunner\(/));

@@ -4,9 +4,9 @@
  * Why not InteractionManager.runAfterInteractions: on RN 0.81 it is a
  * setImmediate stub, so it fires mid-dismissal — and iOS drops an Alert
  * presented on a view controller that is being dismissed (design R8). The
- * caller subscribes to the native-stack `transitionEnd` (closing) event; the
- * bounded timer covers a platform that never sends it. Whichever comes first
- * wins; `run` is called exactly once.
+ * caller subscribes to the (tabs) root reappearing under the closed modal
+ * (services/search/rootReveal.ts); the bounded timer covers a platform that
+ * never sends it. Whichever comes first wins; `run` is called exactly once.
  */
 
 /** About the length of the iOS full-screen modal dismissal. */

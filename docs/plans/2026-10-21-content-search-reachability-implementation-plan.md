@@ -1263,3 +1263,10 @@ git commit -m "docs(qa): record content search reachability QA"
   `onPress`. **Not applied:** hiding the detail cover from the accessibility tree
   (`no-hide-descendants`) — it would also hide the cover's bookmark toggle, the only bookmark
   control on that screen; the title is read twice instead.
+- **Code re-review (search screen)** — the close signal is no longer the search screen's own
+  `transitionEnd {closing: true}`, which never arrives (the popped route unmounts and loses its
+  native event emitter before the dismissal ends). `app/_layout.tsx` forwards the `(tabs)` screen's
+  `transitionEnd {closing: false}` to the one-slot `services/search/rootReveal.ts`, and the search
+  screen arms `onRootRevealedOnce`; `runOnceAfterDismissal` and the 500 ms fallback are unchanged.
+  The loading body is `accessible` with `accessibilityRole="progressbar"`. `content-search.tsx`
+  imports `isCorpusLoading` from `@/services/loadState`; the search barrel no longer re-exports it.

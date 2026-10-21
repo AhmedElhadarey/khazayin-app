@@ -9,14 +9,15 @@ import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { startLecturePlayback } from '@/services/lecturePlayback';
+import { isCorpusLoading } from '@/services/loadState';
 import {
   createSearchTargetRunner,
-  isCorpusLoading,
   rowPropsForSearchResult,
   runOnceAfterDismissal,
   searchBodyState,
   type SearchTarget,
 } from '@/services/search';
+import { onRootRevealedOnce } from '@/services/search/rootReveal';
 import {
   useBookLecturesStore,
   useBooksStore,
@@ -28,8 +29,7 @@ import {
   useSearchStore,
   useSurahsStore,
 } from '@/store';
-import type { NavigationProp, NavigationState, ParamListBase } from '@react-navigation/native';
-import { router, useNavigation, type Href } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
@@ -42,12 +42,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Group title lookups for the 4 result types.
-/** The one native-stack event this screen listens for (root stack, see app/_layout.tsx). */
-type CloseTransitionEvents = { transitionEnd: { data: { closing: boolean } } };
-type SearchNavigation = NavigationProp<
-  ParamListBase, string, string | undefined, NavigationState, object, CloseTransitionEvents
->;
-
 const GROUP_TITLES: Record<'surah' | 'scholar' | 'book' | 'lecture', string> = {
   surah: 'سور',
   scholar: 'علماء',
@@ -56,8 +50,6 @@ const GROUP_TITLES: Record<'surah' | 'scholar' | 'book' | 'lecture', string> = {
 };
 
 export default function SearchModalScreen() {
-  const navigation = useNavigation<SearchNavigation>();
-
   // ── Search state ──
   const query = useSearchStore((s) => s.query);
   const results = useSearchStore((s) => s.results);
@@ -124,19 +116,19 @@ export default function SearchModalScreen() {
   };
 
   // One runner per mount: it acts on the first target only, so a second tap
-  // during the transition is a no-op. The imperative `router` and the screen's
-  // own `navigation` are stable for the life of the screen.
+  // during the transition is a no-op. The imperative `router` is stable for
+  // the life of the screen.
   const [runTarget] = useState(() => createSearchTargetRunner({
     // POP_TO at the root stack: pops search and navigates the existing (tabs);
     // withAnchor loads the Sections index under the destination (design §4.3).
     dismissTo: (href) => router.dismissTo(href as Href, { withAnchor: true }),
     dismiss: () => router.back(),
     // Start playback once the modal has finished closing: an Alert raised
-    // mid-dismissal can be dropped on iOS (R8). Armed before dismiss().
+    // mid-dismissal can be dropped on iOS (R8). Armed before dismiss(). The
+    // close signal is (tabs) reappearing underneath (services/search/rootReveal.ts);
+    // this screen's own closing event never arrives because it unmounts first.
     playAfterDismiss: (lecture) => runOnceAfterDismissal({
-      onClosed: (fire) => navigation.addListener('transitionEnd', (e) => {
-        if (e.data.closing) fire();
-      }),
+      onClosed: onRootRevealedOnce,
       setTimer: (fire, ms) => {
         const t = setTimeout(fire, ms);
         return () => clearTimeout(t);
@@ -193,7 +185,12 @@ export default function SearchModalScreen() {
       ) : body === 'results' ? (
         <ResultsList results={results} onPress={handleResultPress} />
       ) : body === 'loading' ? (
-        <View style={styles.loadingWrap} accessibilityLabel="جارٍ التحميل">
+        <View
+          style={styles.loadingWrap}
+          accessible
+          accessibilityRole="progressbar"
+          accessibilityLabel="جارٍ التحميل"
+        >
           <SkeletonRowList count={4} />
         </View>
       ) : body === 'no-results' ? (
