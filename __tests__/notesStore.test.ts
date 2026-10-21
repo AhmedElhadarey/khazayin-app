@@ -3,7 +3,14 @@ import fs from 'fs';
 import path from 'path';
 
 import { makeAyahRef } from '@/services/noteRefs';
-import { coerceNotes, useNotesStore } from '@/store/notesStore';
+import {
+  archiveIdOfEpisode,
+  coerceNotes,
+  notesFor,
+  notesForLectureSeries,
+  useNotesStore,
+  type Note,
+} from '@/store/notesStore';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -119,5 +126,48 @@ describe('notesStore ref persistence', () => {
 
   it('T-NS-10 the storage key is unchanged', () => {
     expect(SRC).toMatch(/name: '@khazain\/notes'/);
+  });
+});
+
+describe('linked-note selectors', () => {
+  const mk = (id: string, ref?: Note['ref']): Note => ({
+    id,
+    title: id,
+    body: '',
+    createdAt: 0,
+    updatedAt: 0,
+    ...(ref ? { ref } : {}),
+  });
+  const lec = (id: string): Note['ref'] => ({ type: 'lecture', id, label: 'l' });
+
+  it('notesFor matches type and id exactly', () => {
+    const notes = [
+      mk('a', makeAyahRef('2', 1)),
+      mk('b', makeAyahRef('3', 1)),
+      mk('c', lec('ABC/001.mp3')),
+      mk('d'),
+      mk('e', { type: 'video', id: '002', label: 'v' }),
+    ];
+    expect(notesFor(notes, 'ayah', '002').map((n) => n.id)).toEqual(['a']);
+  });
+
+  it('notesFor keeps store order', () => {
+    const notes = [mk('x', makeAyahRef('2', 5)), mk('y', makeAyahRef('2', 1))];
+    expect(notesFor(notes, 'ayah', '002').map((n) => n.id)).toEqual(['x', 'y']);
+  });
+
+  it('archiveIdOfEpisode', () => {
+    expect(archiveIdOfEpisode('ABC/sub/x.mp3')).toBe('ABC');
+  });
+
+  it('notesForLectureSeries matches by archive id', () => {
+    const notes = [
+      mk('a', lec('ABC/001.mp3')),
+      mk('b', lec('ABC/sub/002.mp3')),
+      mk('c', lec('ABCD/001.mp3')),
+      mk('d', { type: 'book', id: 'ABC/001.mp3', label: 'b' }),
+      mk('e', makeAyahRef('2', 1)),
+    ];
+    expect(notesForLectureSeries(notes, new Set(['ABC'])).map((n) => n.id)).toEqual(['a', 'b']);
   });
 });

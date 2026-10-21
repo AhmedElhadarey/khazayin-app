@@ -1,8 +1,9 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { useMemo } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { toArabicDigits } from '@/constants/progress';
-import { coerceNoteRef, type NoteRef } from '@/services/noteRefs';
+import { coerceNoteRef, type NoteRef, type NoteRefType } from '@/services/noteRefs';
 
 export type Note = {
   id: string;
@@ -96,6 +97,35 @@ export const useNotesStore = create<NotesState>()(
     },
   ),
 );
+
+/** Notes linked to exactly (type, id), in store order (newest first). */
+export function notesFor(notes: readonly Note[], type: string, id: string): Note[] {
+  return notes.filter((n) => n.ref?.type === type && n.ref.id === id);
+}
+
+/** Archive (series) id of an episode id `${archiveId}/${file}`. */
+export function archiveIdOfEpisode(episodeId: string): string {
+  return episodeId.split('/')[0];
+}
+
+/** Lecture notes whose episode belongs to any of the given archive ids. */
+export function notesForLectureSeries(
+  notes: readonly Note[],
+  archiveIds: ReadonlySet<string>,
+): Note[] {
+  return notes.filter(
+    (n) => n.ref?.type === 'lecture' && archiveIds.has(archiveIdOfEpisode(n.ref.id)),
+  );
+}
+
+/**
+ * Subscribes to `notes` and filters in a memo. Never filter inside the zustand
+ * selector: a fresh array per call loops under zustand 5.
+ */
+export function useLinkedNotes(type: NoteRefType, id: string): Note[] {
+  const notes = useNotesStore((s) => s.notes);
+  return useMemo(() => notesFor(notes, type, id), [notes, type, id]);
+}
 
 // Relative-time helper used by the UI (e.g. "منذ ساعتين", "أمس", "الآن").
 // Keeps locale handling in Arabic numerals to match the mock's voice.
