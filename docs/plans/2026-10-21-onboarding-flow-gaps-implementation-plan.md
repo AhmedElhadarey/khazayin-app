@@ -1308,3 +1308,31 @@ Use argent: `list-devices`, then the `argent-ios-simulator-setup` skill, then `a
 - record the FoundationMark deviation as user-approved (Q6).
 
 **Step 6: Session cleanup.** Call `stop-all-simulator-servers` with `devices: [<the udid used>]`.
+
+---
+
+## Preview source verification (Task 4, 2026-10-21) — for the PR, user sign-off before merge
+
+Method: `curl https://archive.org/metadata/<id>` + `jq` for criteria (a)-(d); `curl -sIL` on the URL exactly as `buildDownloadUrl` builds it for (e). Additionally each shipped file was downloaded and probed (`afinfo` / `ffprobe`) for decoded duration and ID3 tags.
+
+### Verified (shipped, in display order)
+
+| Reciter | Item id | File | Creator / title evidence | Track / title | Length | Size | HTTP / content-type | Download URL |
+|---|---|---|---|---|---|---|---|---|
+| `r3` الشيخ محمد صديق المنشاوي | `Minshawi_Morattal_FullQuran` | `001.Al-Fatihah.mp3` (source: original) | title "القرآن الكريم كاملا الشيخ محمد صديق المنشاوي - المصحف المرتل - برواية حفص عن عاصم"; ID3 artist "Muhammad Siddiq Al-Minshawi" | track `01`, title `Al-Fatihah` | 51.97 s (decoded 51.97 s) | 1,071,502 B (128 kbps) | 302 → 200 `audio/mpeg`, content-length matches | https://archive.org/download/Minshawi_Morattal_FullQuran/001.Al-Fatihah.mp3 |
+| `r12` الشيخ مشاري راشد العفاسي | `mishari-rashid-al-afasy-quran-mp3` | `001.mp3` (source: original) | creator "Mishari Rashid Al Afasy"; title "Mishary bin Rashid Alafasy Complete Quran MP3"; ID3 artist "Alafasy" | track `01`, name `001` | 52.06 s (decoded 52.04 s) | 682,391 B (64 kbps) | 302 → 200 `audio/mpeg`, content-length matches | https://archive.org/download/mishari-rashid-al-afasy-quran-mp3/001.mp3 |
+| `r2` الشيخ محمود خليل الحصري | `QuranRecitation-Husary` | `001.Fatiha.mp3` (source: original) | title "Qur'an recitation - Husary"; subject "Husary Mahmood Mahmud Husari" (creator field is the uploader "Abdullhadi"; no ID3 tags) | name `001.Fatiha` (no track field) | 54.91 s (decoded 54.83 s) | 439,159 B (64 kbps, ≈ 8.0 KB/s — at the floor of criterion d) | 302 → 200 `audio/mpeg`, content-length matches | https://archive.org/download/QuranRecitation-Husary/001.Fatiha.mp3 |
+
+**Flag for sign-off (r2):** it passes all five criteria, but its provenance is the weakest of the three (forum uploader, reciter named only in the title/subject, no ID3 artist). Also, the catalogue labels `r2` as المصحف المجوّد, while a ~55 s Al-Fatiha is consistent with Husary's murattal recording — fine for a voice sample, but worth a listen before merge. Dropping it is a one-line removal from `ONBOARDING_RECITER_PREVIEW_SOURCES`.
+
+### Candidates not used
+
+| Reciter | Item id | File checked | Result | Reason not shipped |
+|---|---|---|---|---|
+| `r3` | `mos7af_Siddeeq_al_Minshawi` | `001.mp3` (track `1/114`, title "001- Al-Fatiha", length 52.42 s) | 302 → 200 `audio/mpeg` | Not needed — the first candidate passed (plan: take the first passing candidate). Also weaker on (d): metadata size 262,144 B for 52 s (≈ 5 KB/s, a suspiciously round 2^18), below the ~8 KB/s floor. Rejected. |
+| `r12` | `afasyrecitation` | `001 - Al-Fatihah.mp3` (length "00:51", size 1,019,438 B) | 302 → 200 `audio/mpeg` | Not needed — the first candidate passed. Also the mp3 is a `derivative` (the original is `.ogg`), and the item has no creator field; the plan prefers `source: original`. |
+
+## Deviations
+
+- **Task 3:** the Step-4 grep (`grep -rn "FeatureStep\|FEATURE_STEPS" … __tests__`) is not empty: it matches the new `__tests__/onboardingSteps.test.ts` assertions that prove FeatureStep is gone. No product code references remain.
+- **Task 4:** the verification table lives here (committed) instead of only in `$SCRATCH/preview-sources.md`, at the coordinator's request, so it can be pasted into the PR. All three candidate reciters verified, so the preview list is `r3, r12, r2`.
