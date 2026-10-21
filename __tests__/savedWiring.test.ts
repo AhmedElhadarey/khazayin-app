@@ -24,3 +24,14 @@ describe('BookmarkButton', () => {
     expect(src).not.toMatch(/useToastStore/);
   });
 });
+
+describe('MySavedSection', () => {
+  const src = read('components/khazain/library/MySavedSection.tsx');
+  it('orders groups through groupSavedItems, not a fixed type list', () => {
+    expect(src).toMatch(/groupSavedItems\(items\)/);
+    expect(src).not.toMatch(/GROUP_ORDER/);
+  });
+  it('renders the lecture hint in the empty state', () => {
+    expect(src).toMatch(/SAVED_EMPTY_COPY\.lectureHint/);
+  });
+});
