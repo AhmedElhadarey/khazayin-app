@@ -1,6 +1,6 @@
 /**
  * Pure route params for every "take note" action. Each returns what to pass as
- * `params` to `router.push('/note-editor')`; an empty object opens a plain note.
+ * `params` to `router.push('/note-editor')`; `undefined` means "cannot be linked"; callers use `?? {}` for a plain note.
  * Type-only imports keep this free of store side effects.
  */
 import type { LectureSession } from '@/db/types';
@@ -21,8 +21,8 @@ export function takeAyahNoteParams(surahId: string, ayah?: number): Record<strin
 export function takeLectureNoteParams(
   track: PlayerTrack | null,
   progress: number,
-): Record<string, string> {
-  if (!track) return {};
+): Record<string, string> | undefined {
+  if (!track) return undefined;
   const hasDuration = typeof track.durationSec === 'number' && track.durationSec > 0;
   const ref = makeLectureRef(
     {
@@ -35,10 +35,12 @@ export function takeLectureNoteParams(
     },
     'mini-player',
   );
-  return ref ? noteRefToParams(ref) : {};
+  return ref ? noteRefToParams(ref) : undefined;
 }
 
-export function lectureNoteParamsFromSession(session: LectureSession): Record<string, string> {
+export function lectureNoteParamsFromSession(
+  session: LectureSession,
+): Record<string, string> | undefined {
   const ref = makeLectureRef(
     {
       id: session.lectureId,
@@ -48,7 +50,7 @@ export function lectureNoteParamsFromSession(session: LectureSession): Record<st
     },
     'library-progress',
   );
-  return ref ? noteRefToParams(ref) : {};
+  return ref ? noteRefToParams(ref) : undefined;
 }
 
 export function bookNoteParams(book: { id: string; title: string }): Record<string, string> {

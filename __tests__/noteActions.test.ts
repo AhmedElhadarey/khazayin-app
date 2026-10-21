@@ -18,21 +18,21 @@ describe('noteActions', () => {
     expect(p.refLabel).toBe('سورة البقرة');
   });
   it('takeLectureNoteParams freezes the current second', () => {
-    const p = takeLectureNoteParams(TRACK, 0.5);
+    const p = takeLectureNoteParams(TRACK, 0.5)!;
     expect(p.refPos).toBe('300');
     expect(p.refContext).toBe('mini-player');
     expect(p.refId).toBe('ABC/001.mp3');
   });
   it('takeLectureNoteParams without a duration has no position', () => {
-    const p = takeLectureNoteParams({ ...TRACK, durationSec: undefined }, 0.5);
+    const p = takeLectureNoteParams({ ...TRACK, durationSec: undefined }, 0.5)!;
     expect('refPos' in p).toBe(false);
     expect(p.refLabel).not.toContain(' — ');
   });
   it('takeLectureNoteParams for a non-episode track gives a plain note', () => {
-    expect(takeLectureNoteParams({ ...TRACK, id: 'mock-fatiha' }, 0.2)).toEqual({});
+    expect(takeLectureNoteParams({ ...TRACK, id: 'mock-fatiha' }, 0.2)).toBeUndefined();
   });
   it('takeLectureNoteParams with no track gives a plain note', () => {
-    expect(takeLectureNoteParams(null, 0)).toEqual({});
+    expect(takeLectureNoteParams(null, 0)).toBeUndefined();
   });
   it('lectureNoteParamsFromSession', () => {
     const p = lectureNoteParamsFromSession({
@@ -45,10 +45,18 @@ describe('noteActions', () => {
       completed: false,
       lastListenedAt: 0,
     });
-    expect(p.refId).toBe('ABC/002.mp3');
-    expect(p.refPos).toBe('754');
-    expect(p.refContext).toBe('library-progress');
-    expect(p.refLabel).toBe('محاضرة آداب الدعاء — ١٢:٣٤');
+    expect(p!.refId).toBe('ABC/002.mp3');
+    expect(p!.refPos).toBe('754');
+    expect(p!.refContext).toBe('library-progress');
+    expect(p!.refLabel).toBe('محاضرة آداب الدعاء — ١٢:٣٤');
+  });
+  it('lectureNoteParamsFromSession for a non-episode id is undefined', () => {
+    expect(
+      lectureNoteParamsFromSession({
+        lectureId: 'sl5-1', title: 't', author: 'a', durationSec: 1,
+        positionSec: 0, forwardListenedSec: 0, completed: false, lastListenedAt: 0,
+      }),
+    ).toBeUndefined();
   });
   it('bookNoteParams', () => {
     const p = bookNoteParams({ id: 'bk2', title: 'الأصول الثلاثة' });

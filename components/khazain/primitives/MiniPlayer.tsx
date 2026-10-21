@@ -31,7 +31,7 @@ export function MiniPlayer() {
     const { track: current, progress } = usePlayerStore.getState();
     router.push({
       pathname: '/note-editor' as any,
-      params: takeLectureNoteParams(current, progress),
+      params: takeLectureNoteParams(current, progress) ?? {},
     });
   };
 

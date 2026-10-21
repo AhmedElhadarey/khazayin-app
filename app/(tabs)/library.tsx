@@ -354,7 +354,7 @@ export default function LibraryScreen() {
             // Linked to the saved second. A session whose id is not an episode
             // id cannot be linked, so it keeps the old title-seeded note.
             const linked = lectureNoteParamsFromSession(lecture);
-            if (Object.keys(linked).length === 0) openNewNote(lecture.title);
+            if (!linked) openNewNote(lecture.title);
             else router.push({ pathname: '/note-editor' as any, params: linked });
           }}
         />
