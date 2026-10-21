@@ -93,6 +93,9 @@ export const ONBOARDING_RECITER_PREVIEW_SOURCES: Readonly<Record<string, Preview
     r2: { archiveId: 'QuranRecitation-Husary', file: '001.Fatiha.mp3' },
   });
 
+/** Longest a reciter preview plays before it stops itself, in seconds. */
+export const PREVIEW_MAX_SEC = 30;
+
 /** The onboarding reciter step lists exactly the reciters with a verified preview file. */
 export const ONBOARDING_POPULAR_RECITER_IDS: readonly string[] = Object.freeze(
   Object.keys(ONBOARDING_RECITER_PREVIEW_SOURCES),

@@ -16,20 +16,57 @@ import TrackPlayer, {
   State,
 } from 'react-native-track-player';
 import * as Sentry from '@sentry/react-native';
+import { PREVIEW_MAX_SEC, type PreviewSource } from '@/constants/settings';
 import { usePlayerStore } from '@/store/playerStore';
+import { usePreviewStore } from '@/store/previewStore';
 import { useProgressStore } from '@/store/progressStore';
 import { useToastStore } from '@/store/toastStore';
 import { fetchItemMetadata } from './archive/archiveClient';
-import { resolveEpisodes } from './archive/episodeResolver';
-import type { Lecture } from '@/types/content';
+import { buildDownloadUrl, resolveEpisodes } from './archive/episodeResolver';
+import type { Lecture, Reciter } from '@/types/content';
 
 const isWeb = () => Platform.OS === 'web';
 
 let _setupPromise: Promise<void> | null = null;
 
-/** Test-only: reset the one-time setup guard. */
+// ---------------------------------------------------------------------------
+// QUEUE OWNER — synchronous, module-level. Who the RNTP queue currently belongs
+// to. Written before the first await of every operation that takes or releases
+// the queue, so the sync bridge can never observe a stale owner.
+//   'lecture' — playLecture took it (the MiniPlayer's queue)
+//   'preview' — a reciter preview took it (bridge drops all playerStore writes)
+//   'none'    — nothing queued by this JS session
+// ---------------------------------------------------------------------------
+export type QueueOwner = 'none' | 'lecture' | 'preview';
+let _queueOwner: QueueOwner = 'none';
+
+export function getQueueOwner(): QueueOwner {
+  return _queueOwner;
+}
+
+// Reciter-preview bookkeeping (see the RECITER PREVIEW section below).
+const PREVIEW_ID_PREFIX = 'preview:';
+let _previewToken = 0;
+let _previewTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clearPreviewTimer(): void {
+  if (_previewTimer) clearTimeout(_previewTimer);
+  _previewTimer = null;
+}
+
+/** Drop any preview bookkeeping (token, timer, UI state). Does not touch RNTP. */
+function abandonPreview(): void {
+  _previewToken += 1;
+  clearPreviewTimer();
+  usePreviewStore.getState().clear();
+}
+
+/** Test-only: reset the one-time setup guard and the queue owner. */
 export function __resetForTests(): void {
   _setupPromise = null;
+  _queueOwner = 'none';
+  _previewToken = 0;
+  clearPreviewTimer();
 }
 
 const TRANSPORT_CAPABILITIES = [
@@ -69,6 +106,18 @@ export async function setupPlayer(): Promise<void> {
         appKilledPlaybackBehavior: AppKilledPlaybackBehavior.ContinuePlayback,
       },
     });
+    // Adopt the owner of a native queue that outlived the JS session (Android
+    // ContinuePlayback): a preview track stays a preview, anything else is the
+    // user's lecture. Without this the bridge would treat a surviving preview
+    // as a lecture and write it into the MiniPlayer.
+    if (_queueOwner === 'none') {
+      const active = await TrackPlayer.getActiveTrack();
+      if (active) {
+        _queueOwner = String((active as { id?: unknown }).id ?? '').startsWith(PREVIEW_ID_PREFIX)
+          ? 'preview'
+          : 'lecture';
+      }
+    }
   })();
   try {
     await _setupPromise;
@@ -113,7 +162,67 @@ export async function skipPrev(): Promise<void> {
 
 export async function stop(): Promise<void> {
   if (isWeb()) return;
+  abandonPreview();
+  _queueOwner = 'none';
   await TrackPlayer.reset();
+}
+
+// ---------------------------------------------------------------------------
+// RECITER PREVIEW (onboarding, design 2026-10-21 §4.3). A verified Al-Fatiha
+// file, capped at PREVIEW_MAX_SEC. Never offered while a lecture owns the
+// queue; never writes playerStore; stop is a no-op unless a preview owns the
+// queue, so it can never reset the user's lecture.
+// ---------------------------------------------------------------------------
+export const PREVIEW_ERROR_MESSAGE = 'تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.';
+
+/** True when a preview may be offered: native, and no lecture owns the queue. */
+export function canPreviewAudio(): boolean {
+  return !isWeb() && _queueOwner !== 'lecture';
+}
+
+export async function stopReciterPreview(): Promise<void> {
+  if (isWeb() || _queueOwner !== 'preview') return;
+  abandonPreview();
+  _queueOwner = 'none';
+  await TrackPlayer.reset();
+}
+
+/**
+ * Play `source` as a single-track preview queue. A start superseded by a newer
+ * start or a stop checks currency after every await and issues no further
+ * command. Rethrows only while still current (the caller shows the toast).
+ */
+export async function startReciterPreview(reciter: Reciter, source: PreviewSource): Promise<void> {
+  if (!canPreviewAudio()) return;
+  abandonPreview();
+  const token = _previewToken;
+  _queueOwner = 'preview';
+  usePreviewStore.getState().begin(reciter.id);
+  const isCurrent = () => token === _previewToken && _queueOwner === 'preview';
+  try {
+    await setupPlayer();
+    if (!isCurrent()) return;
+    await TrackPlayer.reset();
+    if (!isCurrent()) return;
+    await TrackPlayer.add({
+      id: `${PREVIEW_ID_PREFIX}${reciter.id}`,
+      url: buildDownloadUrl(source.archiveId, source.file),
+      title: 'سورة الفاتحة — عيّنة',
+      artist: reciter.name,
+    });
+    if (!isCurrent()) return;
+    await TrackPlayer.play();
+    if (!isCurrent()) return;
+    usePreviewStore.getState().markPlaying(reciter.id);
+    _previewTimer = setTimeout(() => {
+      if (isCurrent()) void stopReciterPreview().catch(() => undefined);
+    }, PREVIEW_MAX_SEC * 1000);
+  } catch (err) {
+    if (!isCurrent()) return; // superseded — the newer owner handles the UI
+    abandonPreview();
+    _queueOwner = 'none';
+    throw err;
+  }
 }
 
 /** Thrown when a lecture cannot be streamed (no archiveId or no episodes). */
@@ -131,6 +240,10 @@ export class NoAudioError extends Error {
  */
 export async function playLecture(lecture: Lecture): Promise<void> {
   if (isWeb()) return;
+  // Take the queue synchronously, before any await: from here the sync bridge
+  // treats every event as the lecture's, and any in-flight preview is abandoned.
+  abandonPreview();
+  _queueOwner = 'lecture';
   if (!lecture.archiveId) throw new NoAudioError();
 
   await setupPlayer();
@@ -190,7 +303,9 @@ export async function togglePlayback(): Promise<void> {
   try {
     await setupPlayer();
     const idx = await TrackPlayer.getActiveTrackIndex();
-    const hasQueue = idx !== undefined && idx !== null;
+    // A preview-owned queue is not the user's: rebuild their lecture instead
+    // of toggling the preview track.
+    const hasQueue = _queueOwner !== 'preview' && idx !== undefined && idx !== null;
     if (!hasQueue) {
       const track = usePlayerStore.getState().track;
       if (!track) return;
