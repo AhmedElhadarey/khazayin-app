@@ -33,7 +33,7 @@ import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 
 // The scholar's name as calligraphy, keyed by scholar id; ids must match
@@ -59,6 +59,7 @@ const BOOK_TITLE_ART = require('@/assets/khazain/home/book-title.webp');
 
 export default function HomeScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   const goToSections = () => router.push('/sections');
 
@@ -178,7 +179,10 @@ export default function HomeScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    // The inset hook, not the native SafeAreaView: a cold start slides this screen up
+    // from below the screen, and the native view reads its insets from where it
+    // sits, so it would jump as it landed (launch design R6).
+    <View style={[styles.screen, { paddingTop: insets.top }]}>
       <StatusBar style="dark" backgroundColor={KhazainColors.pageBg} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: SCREEN_BOTTOM_BREATHING }]}
@@ -190,7 +194,7 @@ export default function HomeScreen() {
           </View>
         ))}
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 }
 

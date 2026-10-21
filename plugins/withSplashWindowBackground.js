@@ -19,7 +19,8 @@ const SPLASH_COLOR = '#F4E7DA';
  *
  * `splashscreen_background` is also pinned to the same colour app.json gives
  * expo-splash-screen. They had drifted (#F5EDE4 vs #F4E7DA), which reads as a
- * tone shift between the system splash and the JS one.
+ * tone shift between the system splash and the JS one. `__tests__/splashConfig`
+ * now fails if this, app.json and the launch overlay disagree.
  */
 const withSplashWindowBackground = (config) => {
   config = withAndroidColors(config, (cfg) => {
@@ -42,3 +43,4 @@ const withSplashWindowBackground = (config) => {
 };
 
 module.exports = withSplashWindowBackground;
+module.exports.SPLASH_COLOR = SPLASH_COLOR;

@@ -1,4 +1,4 @@
-import { LaunchSequence, shouldRunLaunchSequence } from '@/components/khazain/launch';
+import { LaunchSequence, shouldRunLaunchSequence, useLaunchReveal } from '@/components/khazain/launch';
 import { FONT_ASSET_MODULES } from '@/constants/fonts';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
@@ -29,7 +29,7 @@ import {
   shouldRedirectToOnboarding,
 } from '@/services/onboardingGate';
 import * as Sentry from '@sentry/react-native';
-import 'react-native-reanimated';
+import Animated from 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
@@ -132,7 +132,8 @@ const KhazayinDarkTheme = {
   },
 };
 
-function useOnboardingRedirect(navigatorReady: boolean) {
+/** Returns true once the onboarding redirect has been decided either way. */
+function useOnboardingRedirect(navigatorReady: boolean): boolean {
   const router = useRouter();
   const segments = useSegments();
   const [hydrated, setHydrated] = useState<boolean>(() =>
@@ -197,6 +198,8 @@ function useOnboardingRedirect(navigatorReady: boolean) {
       router.replace('/onboarding');
     }
   }, [navigatorReady, hydrated, reconciled, onboardingComplete, segments, router]);
+
+  return hydrated && reconciled;
 }
 
 /** True once zustand's persist middleware has finished reading AsyncStorage. */
@@ -252,7 +255,7 @@ function RootLayout() {
   // same flag so navigation never fires during the `null` render before the
   // Navigator mounts (T1.3).
   const navigatorReady = (fontsLoaded || !!fontError) && settingsSettled;
-  useOnboardingRedirect(navigatorReady);
+  const onboardingDecided = useOnboardingRedirect(navigatorReady);
   useBackgroundRefresh();
   // Keep the rolling notification horizon armed: register the background top-up
   // task and reconcile on boot + every foreground (track 004, T026 / T115).
@@ -272,11 +275,15 @@ function RootLayout() {
   // Cold-start only: `shouldRunLaunchSequence` returns true exactly once per
   // app session, so a tab return or a Fast Refresh never replays the sequence.
   const [showLaunch, setShowLaunch] = useState(() => shouldRunLaunchSequence());
+  // The prototype moves Home in from the bottom over the splash, so the
+  // navigator, not the overlay, is what animates (design §3.3).
+  const launchReveal = useLaunchReveal(showLaunch);
 
   useEffect(() => {
     // When the launch overlay is mounted it owns the hand-over: it hides the
-    // native splash once its own emblem has drawn, so the two never trade
-    // places through a blank frame. Without the overlay, readiness is the cue.
+    // native splash once its backdrop has decoded over the same bare ground,
+    // so the two never trade places through a blank frame. Without the
+    // overlay, readiness is the cue.
     if (showLaunch) return;
     if (navigatorReady) {
       SplashScreen.hideAsync().catch(() => undefined);
@@ -331,11 +338,27 @@ function RootLayout() {
       fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
     >
     <ThemeProvider value={colorScheme === 'dark' ? KhazayinDarkTheme : KhazayinLightTheme}>
-      {/* Home still never appears before fonts *and* settings resolve. The
-          launch overlay is a sibling rather than a wrapper, so it can mount on
-          the first JS frame and show the wait rather than follow it. */}
+      {/* First, so the navigator paints over it: the prototype ends with Home
+          moving in from the bottom over the splash (2007:511 → 2001:940). A
+          sibling rather than a wrapper, so it mounts on the first JS frame. */}
+      {showLaunch ? (
+        <LaunchSequence
+          navigatorReady={navigatorReady}
+          onboardingDecided={onboardingDecided}
+          reveal={launchReveal}
+          onDone={() => setShowLaunch(false)}
+        />
+      ) : null}
+      {/* Home still never appears before fonts *and* settings resolve. While a
+          launch is running the navigator is hidden, takes no touches and is
+          kept from screen readers; afterwards the wrapper is at rest. */}
       {navigatorReady ? (
-      <>
+      <Animated.View
+        style={[StyleSheet.absoluteFillObject, launchReveal.style]}
+        pointerEvents={showLaunch ? 'none' : 'auto'}
+        accessibilityElementsHidden={showLaunch}
+        importantForAccessibility={showLaunch ? 'no-hide-descendants' : 'auto'}
+      >
       <Stack
         screenOptions={{
           headerShown: false,
@@ -506,14 +529,9 @@ function RootLayout() {
         />
       </Stack>
       <ToastOverlay />
-      </>
+      </Animated.View>
       ) : null}
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-      {/* Last child, so it paints over the navigator during the hand-over —
-          Figma nodes 2001:888, 2001:914, 2007:511. */}
-      {showLaunch ? (
-        <LaunchSequence ready={navigatorReady} onDone={() => setShowLaunch(false)} />
-      ) : null}
     </ThemeProvider>
     </Sentry.ErrorBoundary>
   );
