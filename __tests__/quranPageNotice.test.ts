@@ -19,6 +19,10 @@ describe('CC BY 3.0 notice for the Tanzil page data', () => {
     expect(QURAN_PAGE_DATA_CHANGES.length).toBeGreaterThan(0);
   });
 
+  it('keeps brackets out of the credit so the Latin runs cannot reorder in the RTL line', () => {
+    expect(QURAN_PAGE_DATA_CREDIT).not.toMatch(/[()[\]]/);
+  });
+
   it('is rendered on About with a tappable licence link', () => {
     expect(about).toMatch(/مصادر البيانات/);
     expect(about).toMatch(/\{QURAN_PAGE_DATA_CREDIT\}/);

@@ -39,7 +39,7 @@ export function pageForAyah(surah: number, ayah: number): number | null {
  * The licence requires credit, the licence URI and a note of changes.
  */
 export const QURAN_PAGE_DATA_CREDIT =
-  'تقسيم صفحات المصحف وأجزائه: بيانات Tanzil.net (Quran Metadata 1.0، ٢٠٠٨–٢٠٠٩)';
+  'تقسيم صفحات المصحف وأجزائه: بيانات Tanzil.net، إصدار Quran Metadata 1.0 لعامي ٢٠٠٨–٢٠٠٩';
 export const QURAN_PAGE_DATA_CHANGES = 'التعديلات: تحويل الصيغة فقط دون تغيير القيم.';
 export const QURAN_PAGE_DATA_LICENSE_LABEL = 'الرخصة: CC BY 3.0';
 export const QURAN_PAGE_DATA_LICENSE_URL = 'https://creativecommons.org/licenses/by/3.0/';
