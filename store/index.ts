@@ -110,7 +110,13 @@ export type { ToastState, ToastConfig, ToastAction } from './toastStore';
 export { usePlayerStore } from './playerStore';
 export type { PlayerTrack } from './playerStore';
 
-export { useNotesStore, formatRelativeAr } from './notesStore';
+export {
+  useNotesStore,
+  formatRelativeAr,
+  notesFor,
+  notesForLectureSeries,
+  useLinkedNotes,
+} from './notesStore';
 export type { Note } from './notesStore';
 
 // ---------------------------------------------------------------------------

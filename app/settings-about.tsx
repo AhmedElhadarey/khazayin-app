@@ -8,13 +8,19 @@ import { resolveBuildNumber } from '@/services/appBuildInfo';
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import {
+  QURAN_PAGE_DATA_CHANGES,
+  QURAN_PAGE_DATA_CREDIT,
+  QURAN_PAGE_DATA_LICENSE_LABEL,
+  QURAN_PAGE_DATA_LICENSE_URL,
+} from '@/constants/quranPages';
 
 function resolveVersion(): string {
   return Constants.expoConfig?.version ?? '1.0.0';
 }
 
-async function openFoundationWebsite() {
-  const url = MORE_EXTERNAL_URLS.web;
+/** canOpenURL + Arabic fallback alert — the repo's external-link pattern. */
+async function openExternalUrl(url: string) {
   if (!url) return;
   try {
     const can = await Linking.canOpenURL(url);
@@ -23,6 +29,10 @@ async function openFoundationWebsite() {
   } catch {
     Alert.alert('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
   }
+}
+
+function openFoundationWebsite() {
+  void openExternalUrl(MORE_EXTERNAL_URLS.web);
 }
 
 export default function SettingsAboutScreen() {
@@ -65,6 +75,20 @@ export default function SettingsAboutScreen() {
           <Text style={styles.linkTitle}>موقع المؤسسة</Text>
           <Text style={styles.linkValue}>khazayin.com</Text>
         </Pressable>
+        {/* CC BY 3.0 notice for the mushaf page/juz data (constants/quranPageData.ts). */}
+        <View style={[styles.linkCard, KhazainShadows.card]}>
+          <Text style={styles.linkTitle}>مصادر البيانات</Text>
+          <Text style={styles.creditValue}>{QURAN_PAGE_DATA_CREDIT}</Text>
+          <Text style={styles.creditValue}>{QURAN_PAGE_DATA_CHANGES}</Text>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={QURAN_PAGE_DATA_LICENSE_LABEL}
+            hitSlop={8}
+            onPress={() => void openExternalUrl(QURAN_PAGE_DATA_LICENSE_URL)}
+          >
+            <Text style={styles.linkValue}>{QURAN_PAGE_DATA_LICENSE_LABEL}</Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -135,4 +159,5 @@ const styles = StyleSheet.create({
   },
   linkTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
   linkValue: textStyle('bodyCompact', { color: KhazainColors.goldAccent }),
+  creditValue: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
 });

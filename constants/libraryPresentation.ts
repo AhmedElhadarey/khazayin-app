@@ -29,7 +29,7 @@ export const LIBRARY_EXTENSION_SECTIONS = Object.freeze([
   'wirdTrend',
   'insights',
   'wirdSuggestion',
-  'completedLectures',
+  'progressStats',
 ] as const);
 
 /**
@@ -52,7 +52,7 @@ export const LIBRARY_SECTION_ORDER = Object.freeze([
   'wirdTrend',
   'insights',
   'wirdSuggestion',
-  'completedLectures',
+  'progressStats',
 ] as const);
 
 export type LibrarySectionKey = (typeof LIBRARY_SECTION_ORDER)[number];
@@ -65,6 +65,15 @@ export const LIBRARY_SUMMARY_CARD_ORDER = Object.freeze([
 ] as const);
 
 export type LibrarySummaryCardKey = (typeof LIBRARY_SUMMARY_CARD_ORDER)[number];
+
+/**
+ * The progress row below the frame (no Figma frame — contract:
+ * libraryLayout STAT_CARD + PHYSICAL_ROW). Physical left → right:
+ * محاضرات مسموعة، الأجزاء المكتملة، صفحات مقروءة.
+ */
+export const LIBRARY_PROGRESS_STAT_ORDER = Object.freeze(['lectures', 'juz', 'pages'] as const);
+
+export type LibraryProgressStatKey = (typeof LIBRARY_PROGRESS_STAT_ORDER)[number];
 
 export type LibraryFilter = 'all' | 'saved' | 'notes' | 'history';
 

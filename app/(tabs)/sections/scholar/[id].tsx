@@ -1,13 +1,23 @@
-import { AsyncContent, InlineHeader, RibbonCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
+import {
+  AsyncContent,
+  InlineHeader,
+  LinkedNotesSection,
+  RibbonCard,
+  SearchPill,
+  SkeletonRibbonList,
+  seriesIdsOf,
+} from '@/components/khazain';
 import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { startLecturePlayback } from '@/services/lecturePlayback';
+import { noteSourceTarget, runNoteSource } from '@/services/noteNavigation';
 import { lectureSaveTarget } from '@/services/savedToggle';
 import { useScholarLecturesStore, useScholarsStore } from '@/store';
+import { notesForLectureSeries, useNotesStore } from '@/store/notesStore';
 import { openSearch } from '@/services/searchNavigation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -34,6 +44,14 @@ export default function ScholarDetailScreen() {
     fetchScholars();
     fetch();
   }, [fetchScholars, fetch, id]);
+
+  // Notes taken on this scholar's lectures. Subscribe to the list and filter in
+  // a memo; a fresh array from the selector would loop under zustand 5.
+  const allNotes = useNotesStore((s) => s.notes);
+  const linkedNotes = useMemo(
+    () => notesForLectureSeries(allNotes, seriesIdsOf(lectures)),
+    [allNotes, lectures],
+  );
 
   const name =
     scholars.find((s) => s.id === id)?.name ?? 'عبد المحسن العباد';
@@ -63,6 +81,25 @@ export default function ScholarDetailScreen() {
               onPress={() => startLecturePlayback(l)}
             />
           )}
+          ListFooterComponent={
+            linkedNotes.length > 0 ? (
+              <LinkedNotesSection
+                title="ملاحظاتي على هذه الدروس"
+                notes={linkedNotes}
+                onOpenNote={(noteId) =>
+                  router.push({ pathname: '/note-editor' as any, params: { id: noteId } })
+                }
+                onOpenSource={(n) => {
+                  // Nothing to dismiss here: the screen stays underneath.
+                  if (!n.ref) return;
+                  runNoteSource(noteSourceTarget(n.ref), {
+                    navigate: (href) => router.navigate(href as any),
+                    play: startLecturePlayback,
+                  });
+                }}
+              />
+            ) : null
+          }
           style={styles.flex}
           contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
           showsVerticalScrollIndicator={false}

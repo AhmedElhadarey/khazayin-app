@@ -221,6 +221,22 @@ it('P12e: a preview started during the playLecture reset gap is abandoned, not l
   expect(usePreviewStore.getState()).toMatchObject({ reciterId: null, status: 'idle' });
 });
 
+it('P12f: a note start never jumps within a preview queue — reset first, then a fresh load', async () => {
+  await engine.startReciterPreview(reciter, SRC);
+  (TrackPlayer.reset as jest.Mock).mockClear();
+  (TrackPlayer.getQueue as jest.Mock).mockClear();
+  // The preview reset left its track behind (e.g. it failed natively).
+  (TrackPlayer.getQueue as jest.Mock).mockResolvedValueOnce([{ id: 'preview:r3', url: 'u' }]);
+  (fetchItemMetadata as jest.Mock).mockResolvedValueOnce(lectureMeta);
+  await engine.playLecture(lecture, { episodeId: 'L/a.mp3', positionSec: 5 });
+  const resetOrder = (TrackPlayer.reset as jest.Mock).mock.invocationCallOrder[0];
+  const queueOrder = (TrackPlayer.getQueue as jest.Mock).mock.invocationCallOrder[0];
+  expect(resetOrder).toBeLessThan(queueOrder);
+  expect(fetchItemMetadata).toHaveBeenCalled();
+  expect(TrackPlayer.setQueue).toHaveBeenCalled();
+  expect(engine.getQueueOwner()).toBe('lecture');
+});
+
 it('P12d: no preview → playLecture claims the queue synchronously, as before', () => {
   (fetchItemMetadata as jest.Mock).mockResolvedValueOnce(lectureMeta);
   void engine.playLecture(lecture);

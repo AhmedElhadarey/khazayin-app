@@ -19,12 +19,15 @@ import {
 } from '@/components/khazain/library';
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import {
+  LIBRARY_PROGRESS_STAT_ORDER,
   LIBRARY_SUMMARY_CARD_ORDER,
+  type LibraryProgressStatKey,
   type LibrarySectionKey,
   type LibraryFilter,
   type LibrarySummaryCardKey,
   visibleLibrarySections,
 } from '@/constants/libraryPresentation';
+import { juzCompletedSubtitle, lecturesListenedSubtitle, pagesReadSubtitle } from '@/services/libraryStats';
 import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
@@ -62,6 +65,7 @@ import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useProgressStore } from '@/store/progressStore';
 import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { getRepos, progressRepo } from '@/db';
+import { lectureNoteParamsFromSession } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
@@ -101,7 +105,6 @@ export default function LibraryScreen() {
   const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
 
   const [filter, setFilter] = useState<LibraryFilter>('all');
-  const [lastReadPage, setLastReadPage] = useState<number>(1);
 
   // Wird completion history (US5). Loaded lazily when the السجل pill is active.
   // The window defaults to 12 weeks and grows via the "show more" affordance so
@@ -183,6 +186,7 @@ export default function LibraryScreen() {
 
   // Progress snapshot (SQLite-backed, hydrated at app boot).
   const currentStreak = useProgressStore((s) => s.currentStreak);
+  const lastReadPage = useProgressStore((s) => s.lastReadPage);
   const trendLast28 = useProgressStore((s) => s.trendLast28);
   const longestStreak = useProgressStore((s) => s.longestStreakEver);
   const bestDayPages = useProgressStore((s) => s.bestWirdDayPages);
@@ -192,24 +196,12 @@ export default function LibraryScreen() {
   const wirdTarget = useWirdStore((s) => s.target);
   const inProgressLecture = useProgressStore((s) => s.inProgressLecture);
   const completedLectureCount = useProgressStore((s) => s.completedLectureCount);
+  const totalPagesRead = useProgressStore((s) => s.totalPagesRead);
+  const completedJuzCount = useProgressStore((s) => s.completedJuzCount);
+  const listenedLectureCount = useProgressStore((s) => s.listenedLectureCount);
   const pendingSuggestion = useWirdStore((s) => s.pendingSuggestion);
   const acceptSuggestion = useWirdStore((s) => s.acceptSuggestion);
   const dismissSuggestion = useWirdStore((s) => s.dismissSuggestion);
-
-  // last_read_page lives in settings — refresh whenever the wird ring nudges
-  // (proxy for "user just recorded a page"). Awaits `getRepos()` so the Proxy
-  // accessor never throws the pre-hydration error.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      await getRepos();
-      const p = await progressRepo.getLastReadPage();
-      if (!cancelled) setLastReadPage(p);
-    })().catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [todayPct]);
 
   // Load completion history when the السجل pill is active. Re-runs when the
   // window grows (show more) or when today's wird ring nudges (a fresh page
@@ -309,6 +301,32 @@ export default function LibraryScreen() {
     ),
   };
 
+  // Below the frame (no Figma frame — design 2026-10-21 §4.4). Same StatCard,
+  // geometry and PHYSICAL_ROW as the frame's summary row.
+  const progressStatCards: Record<LibraryProgressStatKey, React.ReactNode> = {
+    lectures: (
+      <StatCard
+        title="محاضرات مسموعة"
+        subtitle={lecturesListenedSubtitle(listenedLectureCount, completedLectureCount)}
+        icon={<HeadphonesGlyph size={STAT_GLYPH} />}
+      />
+    ),
+    juz: (
+      <StatCard
+        title="الأجزاء المكتملة"
+        subtitle={juzCompletedSubtitle(completedJuzCount)}
+        icon={<FigmaIcon name="SectionQuran" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+      />
+    ),
+    pages: (
+      <StatCard
+        title="صفحات مقروءة"
+        subtitle={pagesReadSubtitle(totalPagesRead)}
+        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+      />
+    ),
+  };
+
   const audiobookProgressCard = inProgressLecture ? (
     (() => {
       const lecture = inProgressLecture;
@@ -336,7 +354,13 @@ export default function LibraryScreen() {
           primaryLabel="متابعة"
           secondaryLabel="إضافة ملاحظة"
           onPrimary={resume}
-          onSecondary={() => openNewNote(lecture.title)}
+          onSecondary={() => {
+            // Linked to the saved second. A session whose id is not an episode
+            // id cannot be linked, so it keeps the old title-seeded note.
+            const linked = lectureNoteParamsFromSession(lecture);
+            if (!linked) openNewNote(lecture.title);
+            else router.push({ pathname: '/note-editor' as any, params: linked });
+          }}
         />
       );
     })()
@@ -619,17 +643,12 @@ export default function LibraryScreen() {
       />
     ) : null,
 
-    completedLectures: (
-      <View style={styles.block}>
-        <StatCard
-          title="محاضرات مكتملة"
-          subtitle={
-            completedLectureCount === 0
-              ? 'لم تكتمل بعد'
-              : `${toArNum(completedLectureCount)} محاضرة`
-          }
-          icon={<HeadphonesGlyph />}
-        />
+    // Physical left → right: محاضرات مسموعة، الأجزاء المكتملة، صفحات مقروءة.
+    progressStats: (
+      <View style={styles.statsRow}>
+        {LIBRARY_PROGRESS_STAT_ORDER.map((key) => (
+          <React.Fragment key={key}>{progressStatCards[key]}</React.Fragment>
+        ))}
       </View>
     ),
   };
