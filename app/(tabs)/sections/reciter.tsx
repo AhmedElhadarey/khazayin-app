@@ -1,5 +1,6 @@
 import {
   AsyncContent,
+  EmptyState,
   InlineHeader,
   LetterIndex,
   ReciterRow,
@@ -13,6 +14,7 @@ import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
 import { reciterDestination, reciterTabFromParam } from '@/services/reciterNavigation';
+import { RECITER_STATE_COPY, reciterListView } from '@/services/reciterScreenState';
 import type { Reciter } from '@/types/content';
 import { useRecitersStore, useSettingsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -51,8 +53,9 @@ export default function ReciterScreen() {
     }
   }, [data, preferredReciterId, setPreferredReciter]);
 
-  // Filter by active tab — local UI state, store doesn't know about tabs
-  const filtered = data.filter((r) => r.style === active);
+  // Filter by active tab — local UI state, store doesn't know about tabs.
+  // The store's `empty` is whole-dataset, so a single tab can still be empty.
+  const view = reciterListView(status, data, active);
 
   // The reciter is carried through: `reciterDestination` sends the Qiraa tab to
   // the qiraat screen and every other reciter to their own listening list. The
@@ -70,11 +73,13 @@ export default function ReciterScreen() {
       <SegmentTabs<string> tabs={RECITER_TABS} active={active} onChange={setActive} />
       {/* Body: scrollable list + absolute-positioned right-rail letter index. */}
       <View style={styles.body}>
-        {/* Virtualized on success; AsyncContent owns the loading/empty/error
-            states (T3.1). The right-rail letter index is a sibling overlay. */}
-        {status === 'success' ? (
+        {/* Three bodies: the virtualized list when the active tab has
+            reciters; a per-tab empty card when reciters loaded but none sit
+            in this tab; otherwise AsyncContent owns loading/empty/error
+            (T3.1). The right-rail letter index is a sibling overlay. */}
+        {view.kind === 'list' ? (
           <FlatList
-            data={filtered}
+            data={view.reciters}
             keyExtractor={(r) => r.id}
             renderItem={({ item: r }) => (
               <ReciterRow
@@ -88,6 +93,13 @@ export default function ReciterScreen() {
             contentContainerStyle={[styles.listContent, { paddingBottom: 24 }]}
             showsVerticalScrollIndicator={false}
           />
+        ) : view.kind === 'tabEmpty' ? (
+          // Reciters loaded, but none in this tab: the store's `empty` is
+          // whole-dataset, so this case needs its own card (no frame —
+          // EmptyState tokens, letter-rail inset from styles.list).
+          <View style={styles.list}>
+            <EmptyState message={RECITER_STATE_COPY.tabEmpty} />
+          </View>
         ) : (
           <View style={styles.list}>
             <AsyncContent
@@ -95,7 +107,7 @@ export default function ReciterScreen() {
               error={error}
               onRetry={refresh}
               skeleton={<SkeletonRibbonList count={6} />}
-              emptyMessage="لا يوجد قراء في هذا التصنيف"
+              emptyMessage={RECITER_STATE_COPY.listEmpty}
             >
               {null}
             </AsyncContent>

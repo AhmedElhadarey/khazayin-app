@@ -1,3 +1,5 @@
+import fs from 'fs';
+import path from 'path';
 import { RECITERS } from '@/data/content/quran';
 import {
   RECITER_STATE_COPY,
@@ -100,5 +102,22 @@ describe('retryTargets', () => {
     expect(retryTargets('error', 'success')).toEqual(['reciters']);
     expect(retryTargets('success', 'error')).toEqual(['surahs']);
     expect(retryTargets('success', 'loading')).toEqual([]);
+  });
+});
+
+const readApp = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
+
+describe('reciter.tsx wiring (nodes 2031:6193 / 2102:3187)', () => {
+  const src = readApp('app/(tabs)/sections/reciter.tsx');
+  it('selects its body through reciterListView', () => {
+    expect(src).toContain('reciterListView(status, data, active)');
+    expect(src).not.toMatch(/data\.filter\(\(r\) => r\.style === active\)/);
+  });
+  it('renders the per-tab Arabic empty state', () => {
+    expect(src).toContain('RECITER_STATE_COPY.tabEmpty');
+    expect(src).toContain('RECITER_STATE_COPY.listEmpty');
+  });
+  it('keeps the loaded FlatList geometry untouched', () => {
+    expect(src).toContain('contentContainerStyle={[styles.listContent, { paddingBottom: 24 }]}');
   });
 });
