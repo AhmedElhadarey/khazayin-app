@@ -46,6 +46,11 @@ describe('computeNextWirdReminder (US2, T050)', () => {
     const next = computeNextWirdReminder(now, { hour: 20, minute: 0 });
     expect(next.getDate()).toBe(10);
   });
+
+  it('T050-5: goal met ⇒ next reminder is tomorrow even when today’s time is still ahead', () => {
+    expect(computeNextWirdReminder(new Date(2026, 9, 21, 9, 0), { hour: 20, minute: 0 }, { goalMetToday: true }))
+      .toEqual(new Date(2026, 9, 22, 20, 0, 0, 0));
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -62,34 +67,42 @@ describe('T-WR-CAPTION — describeWirdReminder', () => {
   const now = new Date(2026, 6, 9, 9, 0, 0);
 
   it('T-WRC-1: enabled + granted => armed, caption shows the time', () => {
-    const r = describeWirdReminder(now, time, { enabled: true, permission: 'granted' });
+    const r = describeWirdReminder(now, time, { enabled: true, permission: 'granted', goalMetToday: false });
     expect(r.armed).toBe(true);
     expect(r.caption).toContain('التذكير القادم');
   });
 
   it('T-WRC-2: enabled + UNDETERMINED (fresh install) => NOT armed, no time shown', () => {
-    const r = describeWirdReminder(now, time, { enabled: true, permission: 'undetermined' });
+    const r = describeWirdReminder(now, time, { enabled: true, permission: 'undetermined', goalMetToday: false });
     expect(r.armed).toBe(false);
     expect(r.caption).not.toContain('التذكير القادم');
     expect(r.caption).not.toMatch(/[٠-٩]/); // no Arabic-Indic digits => no time
   });
 
   it('T-WRC-3: enabled + DENIED (revoked after grant) => NOT armed, no time shown', () => {
-    const r = describeWirdReminder(now, time, { enabled: true, permission: 'denied' });
+    const r = describeWirdReminder(now, time, { enabled: true, permission: 'denied', goalMetToday: false });
     expect(r.armed).toBe(false);
     expect(r.caption).not.toMatch(/[٠-٩]/);
   });
 
   it('T-WRC-4: disabled + granted => NOT armed, explicit off caption', () => {
-    const r = describeWirdReminder(now, time, { enabled: false, permission: 'granted' });
+    const r = describeWirdReminder(now, time, { enabled: false, permission: 'granted', goalMetToday: false });
     expect(r.armed).toBe(false);
     expect(r.caption).not.toMatch(/[٠-٩]/);
   });
 
   it('T-WRC-5: a permission problem is distinguishable from a user switching it off', () => {
-    const blocked = describeWirdReminder(now, time, { enabled: true, permission: 'denied' });
-    const off = describeWirdReminder(now, time, { enabled: false, permission: 'granted' });
+    const blocked = describeWirdReminder(now, time, { enabled: true, permission: 'denied', goalMetToday: false });
+    const off = describeWirdReminder(now, time, { enabled: false, permission: 'granted', goalMetToday: false });
     expect(blocked.caption).not.toBe(off.caption);
+  });
+
+  it('T-WRC-6: armed + goal met ⇒ caption says غدًا, never اليوم', () => {
+    const r = describeWirdReminder(new Date(2026, 9, 21, 9, 0), { hour: 20, minute: 0 },
+      { enabled: true, permission: 'granted', goalMetToday: true });
+    expect(r.armed).toBe(true);
+    expect(r.caption).toContain('غدًا');
+    expect(r.caption).not.toContain('اليوم');
   });
 });
 
@@ -120,7 +133,7 @@ describe('T-ARM — isWirdReminderArmed', () => {
 
     for (const enabled of [true, false]) {
       for (const permission of perms) {
-        expect(describeWirdReminder(now, time, { enabled, permission }).armed).toBe(
+        expect(describeWirdReminder(now, time, { enabled, permission, goalMetToday: false }).armed).toBe(
           isWirdReminderArmed(enabled, permission),
         );
       }

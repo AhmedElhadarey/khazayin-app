@@ -128,9 +128,13 @@ export default function LibraryScreen() {
   const wirdReminderOn = useSettingsStore((s) => s.notifications['wird-daily']);
   const wirdReminderTime = useSettingsStore((s) => s.wirdReminderTime);
   const notificationPermission = useNotificationPermission();
+  // Once today's goal is met, today's reminder is cancelled, so the caption
+  // names tomorrow (design 2026-10-21 §3.5). Same DB-derived flag as the horizon.
+  const goalMetToday = useWirdStore((s) => s.goalMetToday);
   const reminder = describeWirdReminder(new Date(), wirdReminderTime, {
     enabled: wirdReminderOn,
     permission: notificationPermission,
+    goalMetToday,
   });
   const onToggleWirdReminder = (next: boolean) => {
     void setWirdReminderEnabled(next).then((outcome) => {

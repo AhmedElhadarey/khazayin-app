@@ -23,9 +23,17 @@ const PDI = '⁩'; // Pop Directional Isolate
 /**
  * The next occurrence of the daily wall-clock `time`: today at that time if it
  * is still in the future, otherwise tomorrow. At exactly the target minute the
- * next occurrence is tomorrow (matching a DAILY trigger that already fired).
+ * next occurrence is tomorrow (today's reminder has already fired).
+ *
+ * When `opts.goalMetToday` is true, today's reminder has been cancelled (the
+ * horizon drops today's entry once the goal is met), so the next one is
+ * tomorrow whatever the time.
  */
-export function computeNextWirdReminder(now: Date, time: TimeOfDay): Date {
+export function computeNextWirdReminder(
+  now: Date,
+  time: TimeOfDay,
+  opts?: Readonly<{ goalMetToday?: boolean }>,
+): Date {
   const todayAt = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -35,7 +43,7 @@ export function computeNextWirdReminder(now: Date, time: TimeOfDay): Date {
     0,
     0,
   );
-  if (todayAt.getTime() > now.getTime()) return todayAt;
+  if (!opts?.goalMetToday && todayAt.getTime() > now.getTime()) return todayAt;
   // `Date` normalises an overflowing day into the next month/year.
   return new Date(
     now.getFullYear(),
@@ -64,10 +72,14 @@ export function formatClockTime(time: TimeOfDay): string {
 
 /**
  * The Library card's next-reminder caption, e.g. `التذكير القادم: اليوم ⁦٨:٠٠⁩ م`.
- * Derived purely from `now` + the persisted time.
+ * Derived purely from `now` + the persisted time + whether today's goal is met.
  */
-export function formatNextWirdReminder(now: Date, time: TimeOfDay): string {
-  const next = computeNextWirdReminder(now, time);
+export function formatNextWirdReminder(
+  now: Date,
+  time: TimeOfDay,
+  goalMetToday = false,
+): string {
+  const next = computeNextWirdReminder(now, time, { goalMetToday });
   const isToday =
     next.getFullYear() === now.getFullYear() &&
     next.getMonth() === now.getMonth() &&
@@ -118,12 +130,19 @@ export function isWirdReminderArmed(
  * the three deleted mock `ReminderCard`s told. A reminder is armed only when the
  * user wants it AND the OS permits it.
  *
- * Pure: `now` and `permission` are both injected.
+ * `goalMetToday` is required for the same reason: once today's goal is met,
+ * today's entry is cancelled, so the caption must name tomorrow, not today.
+ *
+ * Pure: `now`, `permission` and `goalMetToday` are all injected.
  */
 export function describeWirdReminder(
   now: Date,
   time: TimeOfDay,
-  status: Readonly<{ enabled: boolean; permission: NotificationPermission }>,
+  status: Readonly<{
+    enabled: boolean;
+    permission: NotificationPermission;
+    goalMetToday: boolean;
+  }>,
 ): WirdReminderState {
   if (!isWirdReminderArmed(status.enabled, status.permission)) {
     if (!status.enabled) {
@@ -133,7 +152,7 @@ export function describeWirdReminder(
     // different (grant permission vs. flip the switch), so the copy must differ.
     return { armed: false, caption: 'التذكير متوقّف: يلزم السماح بالإشعارات' };
   }
-  return { armed: true, caption: formatNextWirdReminder(now, time) };
+  return { armed: true, caption: formatNextWirdReminder(now, time, status.goalMetToday) };
 }
 
 export type WirdSuppressionState = Readonly<{
