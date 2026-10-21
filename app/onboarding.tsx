@@ -7,7 +7,7 @@ import {
   StyleSheet,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   ChannelsStep,
@@ -31,6 +31,7 @@ export default function OnboardingScreen(): React.ReactElement {
   const setOnboardingComplete = useSettingsStore((s) => s.setOnboardingComplete);
 
   // Resume at the last reached step (read once on mount).
+  const insets = useSafeAreaInsets();
   const [step, setStep] = useState<number>(() => useSettingsStore.getState().onboardingStep);
   const directionRef = useRef<number>(1);
 
@@ -143,7 +144,10 @@ export default function OnboardingScreen(): React.ReactElement {
   const opacity = anim.interpolate({ inputRange: [0, 1], outputRange: [1, 0] });
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+    // The inset hook, not the native SafeAreaView: a first run slides this screen up
+    // from below the screen, and the native view reads its insets from where it
+    // sits, so it would jump as it landed (launch design R6).
+    <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <View style={styles.progressWrap}>
         <OnboardingProgress count={ONBOARDING_STEP_COUNT} index={step} />
       </View>
@@ -161,7 +165,7 @@ export default function OnboardingScreen(): React.ReactElement {
           onSkip={onSkip}
         />
       </View>
-    </SafeAreaView>
+    </View>
   );
 }
 

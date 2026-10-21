@@ -1,76 +1,135 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Image, Platform, StyleSheet, View } from 'react-native';
+import { Image, Linking, StyleSheet, View, useWindowDimensions, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
+  ReduceMotion,
   cancelAnimation,
+  runOnJS,
   useAnimatedStyle,
   useReducedMotion,
   useSharedValue,
-  withRepeat,
+  withDelay,
   withSequence,
   withTiming,
+  type AnimatedStyle,
+  type SharedValue,
 } from 'react-native-reanimated';
 
-import { BREATHE_MS, GROW_MS, SCALE, resolveExit, type LaunchExit } from './launchTiming';
+import {
+  BACKDROP_FADE_MS,
+  FIGMA_EASE,
+  SPLASH_GROUND,
+  STEP_MS,
+  STEP_STARTS,
+  emblemPose,
+  isDeepLinkLaunch,
+  isRevealReady,
+  launchMode,
+  MAX_VISIBLE_MS,
+  patternTiles,
+  resolveHomeReveal,
+  type LaunchMode,
+} from './launchTiming';
 
 const PATTERN = require('@/assets/khazain/splash/pattern.webp');
 const EMBLEM = require('@/assets/khazain/splash/emblem.webp');
 const WORDMARK = require('@/assets/khazain/splash/wordmark.webp');
 
 /**
- * Geometry measured against the Figma frame export at 2x. See
- * `docs/plans/2026-09-09-splash-rebuild-design.md`.
+ * Geometry from the Splash frames: `Artboard 1 2` is 130.7 x 181 at rest and
+ * `png_1 1` is 220 x 35.1, 24 above the bottom edge in every frame.
  */
 const EMBLEM_SIZE = { width: 131, height: 181 };
 const WORDMARK_SIZE = { width: 220, height: 35 };
 const WORDMARK_BOTTOM = 24;
 
 /**
- * The gradient is a vertical linear ramp, brightest just below centre where the
- * emblem sits. `#F4E7DA` is also the native splash's background colour, so the
- * two layers meet on the same value behind the emblem.
+ * The gradient and pattern are the 2026-09-09 decomposition, measured against
+ * the frame export (`docs/plans/2026-09-09-splash-rebuild-design.md`).
  */
 const GRADIENT = ['#D8BFA1', '#F4E7DA', '#D8BE9D'] as const;
 const GRADIENT_STOPS = [0, 0.52, 1] as const;
 
-/** Hide the native splash anyway if the emblem never reports back. */
+/** Release the native splash anyway if the pattern never reports back. */
 const NATIVE_HANDOVER_CAP_MS = 1500;
 
-/** How long the gradient, pattern and wordmark take to come up around the emblem. */
-const BACKDROP_FADE_MS = 260;
+/** Hand back control this long after the reveal should have landed, regardless. */
+const REVEAL_BACKSTOP_MS = 500;
+
+/** Stop waiting for the initial URL; an unanswered query is a launcher start. */
+const INITIAL_URL_WAIT_MS = 300;
+
+const ease = Easing.bezier(...FIGMA_EASE);
 
 /**
- * The post-native launch overlay — Figma nodes 2001:888, 2001:914, 2007:511.
+ * What the root's navigator wrapper animates. A launch starts it hidden —
+ * below the screen for the full sequence, transparent for the reduced and
+ * brief ones — and the overlay brings it in. With no launch it is at rest.
+ */
+export type LaunchReveal = {
+  translateY: SharedValue<number>;
+  opacity: SharedValue<number>;
+  style: AnimatedStyle<ViewStyle>;
+};
+
+export function useLaunchReveal(active: boolean): LaunchReveal {
+  const { height } = useWindowDimensions();
+  const translateY = useSharedValue(active ? height : 0);
+  const opacity = useSharedValue(active ? 0 : 1);
+  const style = useAnimatedStyle<ViewStyle>(() => ({
+    opacity: opacity.value,
+    transform: [{ translateY: translateY.value }],
+  }));
+  return { translateY, opacity, style };
+}
+
+/**
+ * The launch overlay — the Splash section of the Mobile page (2132:2371).
  *
- * The emblem grows while the app loads, so this mounts on the first JS frame,
- * beside the navigator rather than after it. That is why every layer is raster:
- * naming a font family here would make the overlay wait for the very load it is
- * supposed to be covering.
+ * It plays the prototype's four steps and then lets the screen underneath in:
+ * the root draws this *under* its navigator, and `reveal` moves the navigator
+ * up from the bottom over it (2007:511 → Home, MOVE_FROM_BOTTOM). Steps 1–4
+ * run as one sequence on the UI thread, so a JS thread busy hydrating the app
+ * cannot make them stutter or drift; only the reveal waits on readiness.
  *
- * `onDone` fires exactly once, including when the component unmounts early.
+ * Every layer is raster: naming a font family here would make the overlay wait
+ * for the very load it is covering. `onDone` fires exactly once, including when
+ * the component unmounts early.
  */
 export function LaunchSequence({
-  ready,
+  navigatorReady,
+  onboardingDecided,
+  reveal,
   onDone,
 }: {
-  /** The navigator is mounted and the app is ready to be revealed. */
-  ready: boolean;
+  /** The root <Stack> is mounted. Nothing is revealed before this. */
+  navigatorReady: boolean;
+  /** Settings have hydrated and the onboarding redirect has been decided. */
+  onboardingDecided: boolean;
+  reveal: LaunchReveal;
   onDone: () => void;
 }) {
+  const { width, height } = useWindowDimensions();
   const reduceMotion = !!useReducedMotion();
-  const mountedAt = useRef(Date.now()).current;
 
-  // Always starts at rest, including under Reduce Motion: the native splash
-  // draws the emblem at exactly this size, and starting anywhere else would
-  // make the emblem jump at hand-over for the users who asked for no motion.
-  const scale = useSharedValue<number>(SCALE.rest);
-  const opacity = useSharedValue(1);
-  const backdrop = useSharedValue(0);
-
-  const [exit, setExit] = useState<LaunchExit | null>(null);
+  const [deepLinked, setDeepLinked] = useState<boolean | null>(null);
   const [visible, setVisible] = useState(false);
+  const [capReached, setCapReached] = useState(false);
+  const mode: LaunchMode | null =
+    deepLinked === null ? null : launchMode({ reduceMotion, deepLinked });
+
+  // The shared values, not the `reveal` object, are what the effects below
+  // depend on: they keep their identity for the component's life, so a root
+  // re-render can never re-run the cleanup that ends the launch.
+  const { translateY: revealY, opacity: revealOpacity } = reveal;
+
+  const start = emblemPose(1, height);
+  const backdrop = useSharedValue(0);
+  const emblemY = useSharedValue(start.translateY);
+  const emblemScale = useSharedValue(start.scale);
+  const emblemOpacity = useSharedValue(1);
 
   const done = useRef(false);
   const finish = useRef(onDone);
@@ -81,14 +140,29 @@ export function LaunchSequence({
     finish.current();
   }, []);
 
-  // The native splash stays up until this overlay has actually drawn its
-  // emblem, so the two never trade places through a blank frame. A decode
-  // failure or a silent load must not strand the user behind the native layer,
-  // so an error and a cap both release it too.
-  const revealed = useRef(false);
+  // A deep-linked cold start plays the brief path (design R5). The query is
+  // answered in a few milliseconds; a silent one is treated as a launcher start.
+  useEffect(() => {
+    let live = true;
+    const settle = (linked: boolean) => live && setDeepLinked((d) => d ?? linked);
+    const t = setTimeout(() => settle(false), INITIAL_URL_WAIT_MS);
+    Linking.getInitialURL()
+      .then((url) => settle(isDeepLinkLaunch(url)))
+      .catch(() => settle(false));
+    return () => {
+      live = false;
+      clearTimeout(t);
+    };
+  }, []);
+
+  // The native splash is the same bare ground this overlay starts on, so it
+  // is released once the backdrop has decoded. A decode failure or a silent
+  // load must not strand the user behind it, so an error and a cap release it
+  // too.
+  const released = useRef(false);
   const revealNative = useCallback(() => {
-    if (revealed.current) return;
-    revealed.current = true;
+    if (released.current) return;
+    released.current = true;
     SplashScreen.hideAsync().catch(() => undefined);
     setVisible(true);
   }, []);
@@ -97,142 +171,171 @@ export function LaunchSequence({
     return () => clearTimeout(t);
   }, [revealNative]);
 
-  // The native splash is a bare emblem on flat cream. Bringing the gradient,
-  // pattern and wordmark up around it — rather than cutting to them — is what
-  // makes the hand-over read as one screen rather than two.
+  // The cap only stops waiting for the onboarding decision (design R10).
   useEffect(() => {
-    if (!visible) return;
+    const t = setTimeout(() => setCapReached(true), MAX_VISIBLE_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  // Steps 1 to 4 start once, when the overlay is visible and its mode known,
+  // and that moment is the clock the reveal is timed against too — so a slow
+  // initial-URL answer delays both together rather than eating into step 4.
+  // The backdrop comes up over the bare ground inside step 1's hold; it and
+  // the reduced fades opt out of the system Reduce Motion skip, which would
+  // turn them into cuts.
+  const timelineStart = useRef(0);
+  useEffect(() => {
+    if (!visible || !mode || timelineStart.current) return;
+    timelineStart.current = Date.now();
     backdrop.value = withTiming(1, {
-      duration: reduceMotion ? 0 : BACKDROP_FADE_MS,
+      duration: BACKDROP_FADE_MS,
       easing: Easing.out(Easing.quad),
+      reduceMotion: ReduceMotion.Never,
     });
-  }, [visible, reduceMotion, backdrop]);
 
-  // Grow in, then breathe for as long as the app is still loading. Growth
-  // starts when the overlay actually becomes visible, not when it mounts, so
-  // the emblem is still at the native splash's size at the moment of the swap.
-  // Reduce Motion holds one static state instead.
-  useEffect(() => {
-    if (reduceMotion || !visible) return;
-    scale.value = withTiming(SCALE.held, {
-      duration: GROW_MS,
-      easing: Easing.out(Easing.cubic),
-    });
-    const t = setTimeout(() => {
-      scale.value = withRepeat(
-        withSequence(
-          withTiming(SCALE.breatheLow, {
-            duration: BREATHE_MS / 2,
-            easing: Easing.inOut(Easing.quad),
-          }),
-          withTiming(SCALE.breatheHigh, {
-            duration: BREATHE_MS / 2,
-            easing: Easing.inOut(Easing.quad),
-          }),
-        ),
-        -1,
-        true,
-      );
-    }, GROW_MS);
-    return () => clearTimeout(t);
-  }, [reduceMotion, visible, scale]);
-
-  // Readiness decides when to hand over, subject to the minimum-visible floor
-  // and the hard cap. Resolved once, so a re-render cannot move the exit.
-  useEffect(() => {
-    if (!ready) return;
-    setExit((current) => current ?? resolveExit({ readyAtMs: Date.now() - mountedAt, reduceMotion }));
-  }, [ready, reduceMotion, mountedAt]);
-
-  // The app may never report ready; the cap is what guarantees a hand-over.
-  useEffect(() => {
-    if (exit) return;
-    const capped = resolveExit({ readyAtMs: null, reduceMotion });
-    const t = setTimeout(
-      () => setExit((current) => current ?? capped),
-      Math.max(0, capped.startsAtMs - (Date.now() - mountedAt)),
-    );
-    return () => clearTimeout(t);
-  }, [exit, reduceMotion, mountedAt]);
-
-  useEffect(() => {
-    if (!exit) return;
-    const delay = Math.max(0, exit.startsAtMs - (Date.now() - mountedAt));
-    const start = setTimeout(() => {
-      cancelAnimation(scale);
-      scale.value = withTiming(SCALE.rest, {
-        duration: exit.durationMs,
-        easing: Easing.inOut(Easing.quad),
+    const centre = emblemPose(2, height);
+    if (mode !== 'full') {
+      emblemY.value = centre.translateY;
+      emblemScale.value = centre.scale;
+      emblemOpacity.value = 0;
+      emblemOpacity.value = withTiming(1, {
+        duration: BACKDROP_FADE_MS,
+        reduceMotion: ReduceMotion.Never,
       });
-      opacity.value = withTiming(0, { duration: exit.durationMs });
-    }, delay);
-    const end = setTimeout(complete, delay + exit.durationMs);
-    return () => {
-      clearTimeout(start);
-      clearTimeout(end);
+      return;
+    }
+
+    const grown = emblemPose(3, height);
+    const gone = emblemPose(4, height);
+    const dropEnd = STEP_STARTS.drop + STEP_MS.drop;
+    emblemY.value = withSequence(
+      withDelay(
+        STEP_STARTS.drop,
+        withTiming(centre.translateY, { duration: STEP_MS.drop, easing: ease }),
+      ),
+      withDelay(
+        STEP_STARTS.exit - dropEnd,
+        withTiming(gone.translateY, { duration: STEP_MS.exit, easing: ease }),
+      ),
+    );
+    emblemScale.value = withSequence(
+      withDelay(
+        STEP_STARTS.grow,
+        withTiming(grown.scale, { duration: STEP_MS.grow, easing: ease }),
+      ),
+      withDelay(
+        STEP_MS.hold3,
+        withTiming(gone.scale, { duration: STEP_MS.exit, easing: ease }),
+      ),
+    );
+  }, [visible, mode, height, backdrop, emblemY, emblemScale, emblemOpacity]);
+
+  // The reveal is resolved once, when the app is first ready, and scheduled on
+  // the UI thread like the steps it follows. A JS timer backs up the
+  // animation's own callback, so a reveal that is cancelled before it lands
+  // still hands the navigator back its touches.
+  const scheduled = useRef(false);
+  const backstop = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const ready = isRevealReady({ navigatorReady, onboardingDecided, capReached });
+  useEffect(() => {
+    if (!mode || !ready || !timelineStart.current || scheduled.current) return;
+    scheduled.current = true;
+    const elapsed = Date.now() - timelineStart.current;
+    const plan = resolveHomeReveal({ readyAtMs: elapsed, mode });
+    const delay = Math.max(0, plan.startsAtMs - elapsed);
+    const landed = (finished?: boolean) => {
+      'worklet';
+      if (finished) runOnJS(complete)();
     };
-  }, [exit, mountedAt, scale, opacity, complete]);
+    const timing = { duration: plan.durationMs, reduceMotion: ReduceMotion.Never };
+    if (mode === 'full') {
+      revealOpacity.value = 1;
+      revealY.value = withDelay(delay, withTiming(0, { ...timing, easing: ease }, landed));
+    } else {
+      revealY.value = 0;
+      revealOpacity.value = withDelay(delay, withTiming(1, timing, landed));
+    }
+    backstop.current = setTimeout(complete, delay + plan.durationMs + REVEAL_BACKSTOP_MS);
+  }, [mode, ready, visible, revealY, revealOpacity, complete]);
 
-  // An early unmount must still release the caller, or the app would sit behind
-  // a dismissed overlay forever.
-  useEffect(() => complete, [complete]);
+  // An early unmount must still release the caller and leave the navigator at
+  // rest, or the app would sit hidden behind a dismissed overlay.
+  useEffect(
+    () => () => {
+      clearTimeout(backstop.current);
+      cancelAnimation(emblemY);
+      cancelAnimation(emblemScale);
+      cancelAnimation(revealY);
+      cancelAnimation(revealOpacity);
+      revealY.value = 0;
+      revealOpacity.value = 1;
+      complete();
+    },
+    [complete, emblemY, emblemScale, revealY, revealOpacity],
+  );
 
-  const fade = useAnimatedStyle(() => ({ opacity: opacity.value }));
-  const grow = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   const appear = useAnimatedStyle(() => ({ opacity: backdrop.value }));
+  const emblem = useAnimatedStyle(() => ({
+    opacity: emblemOpacity.value,
+    transform: [{ translateY: emblemY.value }, { scale: emblemScale.value }],
+  }));
 
   return (
-    <Animated.View
-      style={[StyleSheet.absoluteFillObject, styles.screen, fade]}
+    <View
+      style={[StyleSheet.absoluteFillObject, styles.screen]}
       pointerEvents="none"
       // The overlay is decorative and transient; keep it out of the
-      // accessibility tree so focus lands on the real screen underneath.
+      // accessibility tree so focus lands on the real screen above it.
       accessible={false}
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants"
     >
       <Animated.View style={[StyleSheet.absoluteFillObject, appear]}>
-      <LinearGradient
-        colors={GRADIENT}
-        locations={GRADIENT_STOPS}
-        style={StyleSheet.absoluteFillObject}
-      />
-      <Image
-        source={PATTERN}
-        style={StyleSheet.absoluteFillObject}
-        // `repeat` keeps the tile at its authored size, so a larger phone shows
-        // more of the pattern rather than a stretched copy. React Native Web
-        // has no such mode, so there it covers instead.
-        resizeMode={Platform.OS === 'web' ? 'cover' : 'repeat'}
-        fadeDuration={0}
-      />
+        <LinearGradient
+          colors={GRADIENT}
+          locations={GRADIENT_STOPS}
+          style={StyleSheet.absoluteFillObject}
+        />
+        {/* Laid out tile by tile at the authored size, so a larger phone
+            shows more of the pattern rather than a stretched copy. The first
+            tile's decode is what releases the native splash. */}
+        {patternTiles(width, height).map((tile, i) => (
+          <Image
+            key={`${tile.left},${tile.top}`}
+            source={PATTERN}
+            style={{
+              position: 'absolute',
+              left: tile.left,
+              top: tile.top,
+              width: tile.size,
+              height: tile.size,
+            }}
+            fadeDuration={0}
+            onLoad={i === 0 ? revealNative : undefined}
+            onError={i === 0 ? revealNative : undefined}
+          />
+        ))}
       </Animated.View>
-      {/* Centred against the frame, not against the space left over by the
-          wordmark — the native splash centres its emblem the same way, so the
-          two line up exactly at hand-over. */}
       <View style={styles.center} pointerEvents="none">
         <Animated.Image
           source={EMBLEM}
-          style={[EMBLEM_SIZE, grow]}
+          style={[EMBLEM_SIZE, emblem]}
           resizeMode="contain"
           fadeDuration={0}
-          onLoad={revealNative}
-          onError={revealNative}
         />
       </View>
       <Animated.View style={[styles.footer, appear]} pointerEvents="none">
         <Image source={WORDMARK} style={WORDMARK_SIZE} resizeMode="contain" fadeDuration={0} />
       </Animated.View>
-    </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   screen: {
-    // Matches the gradient's centre and the native splash's background, so a
-    // frame dropped anywhere in the hand-over still lands on the right colour.
-    backgroundColor: '#F4E7DA',
-    zIndex: 10,
+    // The native splash's ground. A frame dropped anywhere in the hand-over
+    // still lands on the same colour.
+    backgroundColor: SPLASH_GROUND,
   },
   center: {
     ...StyleSheet.absoluteFillObject,
