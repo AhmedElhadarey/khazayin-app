@@ -29,6 +29,7 @@ export function SuggestionChips({ onPick }: Props) {
       keyExtractor={(s) => s}
       horizontal
       inverted
+      keyboardShouldPersistTaps="handled"
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={styles.list}
       renderItem={({ item }) => (

@@ -1,4 +1,4 @@
-import { InlineHeader, SearchPill } from '@/components/khazain';
+import { InlineHeader, SearchPill, SkeletonRowList } from '@/components/khazain';
 import {
   RecentSearchRow,
   SearchGroupHeader,
@@ -9,7 +9,13 @@ import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { startLecturePlayback } from '@/services/lecturePlayback';
-import { createSearchTargetRunner, rowPropsForSearchResult, type SearchTarget } from '@/services/search';
+import {
+  createSearchTargetRunner,
+  isCorpusLoading,
+  rowPropsForSearchResult,
+  searchBodyState,
+  type SearchTarget,
+} from '@/services/search';
 import {
   useBookLecturesStore,
   useBooksStore,
@@ -21,11 +27,12 @@ import {
   useSearchStore,
   useSurahsStore,
 } from '@/store';
-import { useRouter, type Href } from 'expo-router';
+import { router, type Href } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import {
   Alert,
   FlatList,
+  InteractionManager,
   Pressable,
   StyleSheet,
   Text,
@@ -42,8 +49,6 @@ const GROUP_TITLES: Record<'surah' | 'scholar' | 'book' | 'lecture', string> = {
 };
 
 export default function SearchModalScreen() {
-  const router = useRouter();
-
   // ── Search state ──
   const query = useSearchStore((s) => s.query);
   const results = useSearchStore((s) => s.results);
@@ -77,6 +82,18 @@ export default function SearchModalScreen() {
   const queenItems = useQueenLecturesStore((s) => s.items);
   const radioItems = useRadioProgramsStore((s) => s.items);
 
+  // ── Corpus load state: "no results" is only true once every store settled ──
+  const surahsStatus = useSurahsStore((s) => s.status);
+  const scholarsStatus = useScholarsStore((s) => s.status);
+  const booksStatus = useBooksStore((s) => s.status);
+  const prophetStatus = useProphetLecturesStore((s) => s.status);
+  const bookLecStatus = useBookLecturesStore((s) => s.status);
+  const queenStatus = useQueenLecturesStore((s) => s.status);
+  const radioStatus = useRadioProgramsStore((s) => s.status);
+  const corpusLoading = isCorpusLoading([surahsStatus, scholarsStatus, booksStatus,
+    prophetStatus, bookLecStatus, queenStatus, radioStatus]);
+  const body = searchBodyState({ query, resultCount: results.length, status, corpusLoading });
+
   useEffect(() => {
     if (query.trim()) {
       setQuery(query); // re-trigger debounce with current query
@@ -97,15 +114,23 @@ export default function SearchModalScreen() {
     if (q.trim()) addRecent(q.trim());
   };
 
+  // One runner per mount: it acts on the first target only, so a second tap
+  // during the transition is a no-op. The imperative `router` keeps the
+  // closure from going stale.
   const runTarget = useRef(createSearchTargetRunner({
-    dismissTo: (h) => router.dismissTo(h as Href, { withAnchor: true }),
+    // POP_TO at the root stack: pops search and navigates the existing (tabs);
+    // withAnchor loads the Sections index under the destination (design §4.3).
+    dismissTo: (href) => router.dismissTo(href as Href, { withAnchor: true }),
     dismiss: () => router.back(),
-    play: (l) => { void startLecturePlayback(l); },
+    // An Alert raised while the modal is dismissing can be dropped on iOS (R8).
+    play: (lecture) => {
+      InteractionManager.runAfterInteractions(() => { void startLecturePlayback(lecture); });
+    },
   })).current;
 
-  const handleResultPress = (t: SearchTarget) => {
+  const handleResultPress = (target: SearchTarget) => {
     commitQuery(query);
-    runTarget(t);
+    runTarget(target);
   };
 
   const handleConfirmClearRecents = () => {
@@ -120,7 +145,7 @@ export default function SearchModalScreen() {
   };
 
   const goToSections = () => {
-    router.replace('/(tabs)/sections' as any);
+    runTarget({ kind: 'route', href: '/sections' });
   };
 
   return (
@@ -140,14 +165,8 @@ export default function SearchModalScreen() {
         />
       </View>
 
-      {/* Body: empty state OR results OR no-results */}
-      {query.trim() ? (
-        status === 'empty' ? (
-          <NoResults query={query} onSections={goToSections} />
-        ) : (
-          <ResultsList results={results} onPress={handleResultPress} />
-        )
-      ) : (
+      {/* Body: see services/search/searchBodyState.ts */}
+      {body === 'idle' ? (
         <EmptyState
           recents={recents}
           onPickRecent={(q) => setQuery(q)}
@@ -155,7 +174,19 @@ export default function SearchModalScreen() {
           onClearAllRecents={handleConfirmClearRecents}
           onPickSuggestion={(q) => setQuery(q)}
         />
-      )}
+      ) : body === 'results' ? (
+        <ResultsList results={results} onPress={handleResultPress} />
+      ) : body === 'loading' ? (
+        <View style={styles.loadingWrap} accessibilityLabel="جارٍ التحميل">
+          <SkeletonRowList count={4} />
+        </View>
+      ) : body === 'no-results' ? (
+        <NoResults
+          query={query}
+          onSections={goToSections}
+          onPickSuggestion={(q) => setQuery(q)}
+        />
+      ) : null}
     </SafeAreaView>
   );
 }
@@ -181,6 +212,7 @@ function EmptyState({
       contentContainerStyle={styles.scrollContent}
       data={[] as readonly never[]}
       renderItem={() => null}
+      keyboardShouldPersistTaps="handled"
       ListHeaderComponent={
         <>
           {recents.length > 0 ? (
@@ -227,6 +259,7 @@ function ResultsList({
       contentContainerStyle={styles.scrollContent}
       data={results}
       keyExtractor={(g) => g.type}
+      keyboardShouldPersistTaps="handled"
       renderItem={({ item: group }) => (
         <View>
           <SearchGroupHeader title={GROUP_TITLES[group.type]} count={group.items.length} />
@@ -252,11 +285,23 @@ function ResultsList({
   );
 }
 
-function NoResults({ query, onSections }: { query: string; onSections: () => void }) {
+function NoResults({
+  query,
+  onSections,
+  onPickSuggestion,
+}: {
+  query: string;
+  onSections: () => void;
+  onPickSuggestion: (q: string) => void;
+}) {
   return (
     <View style={styles.noResultsWrap}>
       <Text style={styles.noResultsTitle}>لا توجد نتائج لـ &quot;{query}&quot;</Text>
       <Text style={styles.noResultsSubtitle}>جرّب كلمة أخرى أو تصفّح الأقسام</Text>
+      <View style={styles.noResultsSuggestions}>
+        <Text style={styles.suggestionsTitle}>مقترحات</Text>
+        <SuggestionChips onPick={onPickSuggestion} />
+      </View>
       <Pressable onPress={onSections} style={styles.sectionsButton} hitSlop={8}>
         <Text style={styles.sectionsButtonText}>الأقسام</Text>
       </Pressable>
@@ -299,6 +344,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 32,
   },
+  // noResultsWrap centres its children and is not pinned; SuggestionChips is an
+  // `inverted` list, so without a PHYSICAL_BOX container forced RTL and the
+  // inversion flip twice and the first chip lands on the left.
+  noResultsSuggestions: { ...PHYSICAL_BOX, alignSelf: 'stretch', paddingTop: 16 },
+  loadingWrap: { ...PHYSICAL_BOX, paddingHorizontal: 16, paddingTop: 8 },
   noResultsTitle: textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
   noResultsSubtitle: {
     ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle, textAlign: 'center' }),

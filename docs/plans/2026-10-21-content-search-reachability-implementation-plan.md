@@ -1247,3 +1247,7 @@ git commit -m "docs(qa): record content search reachability QA"
   imports the `services/search` barrel, which re-exports `rowProps.tsx` and through it the component
   tree (audio engine → `@sentry/react-native`, untransformed ESM under jest), so the suite would not
   load. The store does not use the row helpers; production code is unchanged.
+- **Task 11** — `services/search/index.ts` also re-exports `isCorpusLoading`, `searchBodyState` and
+  `SearchBody`; step 8 imports them from `@/services/search`, which Task 9 did not export.
+- **Task 11, Step 5 (device gate)** — not run by the implementer; on-device QA belongs to the
+  orchestrator (rows 1, 8, 13, 17, 20, 21, 22 of Task 12). Neither fallback has been applied.

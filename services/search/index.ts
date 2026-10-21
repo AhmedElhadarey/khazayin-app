@@ -13,3 +13,5 @@ export { rowPropsForSearchResult, rowPropsForSavedItem, SurahNumberBadge, Schola
 export type { RowProps, SearchRowProps } from './rowProps';
 export { createSearchTargetRunner, searchTargetFor } from './searchTarget';
 export type { SearchTarget } from './searchTarget';
+export { isCorpusLoading, searchBodyState } from './searchBodyState';
+export type { SearchBody } from './searchBodyState';
