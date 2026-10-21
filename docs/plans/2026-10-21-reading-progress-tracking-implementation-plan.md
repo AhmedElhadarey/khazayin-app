@@ -1,38 +1,28 @@
-# Reading & Listening Progress Tracking: Implementation Plan
+# Reading & Listening Progress Tracking — Implementation Plan (v2)
 
-> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Follow the repo's NON-NEGOTIABLE loop (CLAUDE.md §4): fresh implementer per task, TDD inside it, then spec review, then quality review. Commits carry **no** `Co-Authored-By` or any AI attribution. Never `--no-verify`. Do not push.
+> **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Follow the repo's NON-NEGOTIABLE loop (CLAUDE.md §4): fresh implementer per task → TDD inside → spec review → quality review. Commits carry **no** `Co-Authored-By` or any AI attribution. Never `--no-verify`. Do not push.
 
-**Goal:** Close the audit gaps on Trello card HKTMbpu6. That means real per-page Quran reading tracking inside the existing scrolling reader, correct juz completion, and Library StatCards for pages read, juz completed and lectures listened. The Figma frames 2031:4659, 2349:982 and 2349:829 must stay intact.
+**Goal:** Close the audit gaps on Trello card HKTMbpu6. Quran reading is tracked per page inside the existing scrolling reader. Juz completion is correct. The Library gets StatCards for pages read, juz completed and lectures listened. Figma frames 2031:4659, 2349:982 and 2349:829 stay intact.
 
-**Architecture:** A generated Madani page table (Tanzil, CC BY 3.0) maps every ayah to its page. The reader renders one `<Text>` per page, and a pure `PageDwellTracker` records a page once it has been in view for 8 s. Two new SQLite aggregates, `totalPagesRead` and `listenedCount`, feed new store fields. A new extension StatCard row sits below the Library frame's last section.
+**Architecture:** A generated Madani page table (Tanzil, CC BY 3.0) maps every ayah to its page. The reader renders one `<Text>` per page. A pure `MushafPageTrackingController` decides when reading time counts — the screen is focused, the app is in the foreground and the ayat are on screen. Through a `PageDwellTracker` it records a page after 8 s in view. Two new SQLite totals and `lastReadPage` feed the progress store. A new extension StatCard row sits below the Library frame.
 
-**Tech Stack:** Expo SDK 54, React Native 0.81.5, TypeScript 5.9, Zustand 5, expo-sqlite plus the web shim, jest-expo. No new dependencies.
+**Tech Stack:** Expo SDK 54, React Native 0.81.5, expo-router 6 (`useFocusEffect`), TypeScript 5.9, Zustand 5, expo-sqlite + web shim, jest-expo. No new dependencies.
 
-**Design:** `docs/plans/2026-10-21-reading-progress-tracking-design.md`. Read it for the rationale. Every decision used below is already recorded there.
+**Design:** `docs/plans/2026-10-21-reading-progress-tracking-design.md` (v2). Read it for the rationale and decisions D1 / Q1–Q5.
 
-**Baseline (before Task 1):** `npx jest` gives 73 suites, 828 passed, 1 skipped. `npx tsc --noEmit --pretty false` is clean.
+**Baseline (before Task 1):** `npx jest` → 73 suites, 828 passed, 1 skipped. `npx tsc --noEmit --pretty false` → clean.
 
-**Planning dry run:** every code block in Tasks 1–12 was applied to a throwaway worktree of `0635ea1` during planning. The result was `npx jest` with 80 suites, 880 passed, 1 skipped; `tsc` clean; and no new lint warnings in touched files. The data file was already typed `readonly AyahRef[]` and the `lectureCompletion` import already merged. Treat a different result as a signal to look closer, not as license to adjust the expectation.
+**Planning dry run:** before this plan was committed, every v2 code block (Tasks 1–14, data generated with the Task 1 script) was applied to a throwaway worktree of `0635ea1`. Results: `npx jest` 81 suites / 897 passed / 1 skipped, tsc clean, and no lint warnings in the production files this plan touches. If your result differs, investigate why — don't just update the expected number.
 
-**Worktree:** `/Users/ahmedelhadarey/samer/khazayin-worktrees/progress`, branch `feat/progress-page-tracking`. All paths below are relative to it.
+**Merge order (design §10):** this branch lands **before** the contextual-notes branch, which rebases onto it and scrolls to pages via `MushafPageTrackingController.contentYForPage(page)`. The settings branch also edits `app/settings-about.tsx`. The conflict is trivial: keep both cards and the shared `openExternalUrl` helper.
+
+**Worktree:** `/Users/ahmedelhadarey/samer/khazayin-worktrees/progress`, branch `feat/progress-page-tracking`. Paths below are relative to it. QA captures go to `$QA=/private/tmp/claude-501/-Users-ahmedelhadarey-samer-khazayin-app/ad126e66-b973-46e5-9731-c506a3e034d8/scratchpad/qa`.
 
 ---
 
-## Task 0: Capture visual baselines (no code)
+## Task 0: Visual baselines — **DONE**
 
-The frames must stay pixel-identical, so capture today's app first. That gives an app-vs-app diff alongside the Figma comparison.
-
-1. Build and run on the iOS simulator (argent: `list-devices`, then load the `argent-ios-simulator-setup` and `argent-react-native-app-workflow` skills). Start Metro with `EXPO_PUBLIC_VISUAL_AUDIT=1 npm start`.
-2. Run:
-   ```bash
-   npm run capture:ios -- --out /tmp/khazayin-capture/progress-before --node 2031:4659
-   npm run capture:ios -- --out /tmp/khazayin-capture/progress-before --node 2349:982
-   ```
-3. With argent, take a full-resolution `screenshot` (scale 1.0, `includeImageInContext: false`) for each of these:
-   - `/library` scrolled to the bottom, filter الكل → `library-bottom-before.png`
-   - `/library` with filter السجل, scrolled to the bottom → `library-history-before.png`
-   - `/settings-about` → `about-before.png`
-4. Save everything under `/tmp/khazayin-capture/progress-before/`. Commit nothing.
+The baselines already exist in `$QA/baseline/`. They include `06-2031-4659__library.png` and `16-2349-982__sections-mushaf__surah-2.png`, plus `capture-summary.json`. Frame 15 (2349:829) is a transition state with no app route, so it is checked by eye in Task 15. Nothing to do.
 
 ---
 
@@ -43,18 +33,13 @@ The frames must stay pixel-identical, so capture today's app first. That gives a
 - Create: `constants/quranPages.ts`
 - Test: `__tests__/quranPages.test.ts`
 
-**Step 1: Write the failing test** at `__tests__/quranPages.test.ts`:
+**Step 1: Write the failing test** `__tests__/quranPages.test.ts`:
 
 ```ts
 import { SURAH_START_PAGES } from '@/constants/progress';
-import {
-  JUZ_START_AYAHS,
-  QURAN_PAGE_DATA_CREDIT,
-  QURAN_PAGE_STARTS,
-  pageForAyah,
-} from '@/constants/quranPages';
+import { JUZ_START_AYAHS, QURAN_PAGE_STARTS, pageForAyah } from '@/constants/quranPages';
 
-/** Tanzil quran-data.js v1.0 (CC BY 3.0) — see the design doc §4.1. */
+/** Tanzil quran-data.js v1.0 (CC BY 3.0) — design §4.1. */
 describe('Madani page table', () => {
   it('has 604 page starts and 30 juz starts', () => {
     expect(QURAN_PAGE_STARTS).toHaveLength(604);
@@ -85,9 +70,6 @@ describe('Madani page table', () => {
     expect(pageForAyah(2, 5)).toBe(2);
     expect(pageForAyah(2, 6)).toBe(3);
     expect(pageForAyah(2, 286)).toBe(49);
-    expect(pageForAyah(3, 92)).toBe(62);
-    expect(pageForAyah(3, 93)).toBe(62); // juz 4 begins mid-page
-    expect(pageForAyah(5, 82)).toBe(121); // juz 7 begins mid-page
     expect(pageForAyah(114, 6)).toBe(604);
   });
 
@@ -98,20 +80,15 @@ describe('Madani page table', () => {
     expect(pageForAyah(1.5, 1)).toBeNull();
     expect(pageForAyah(Number.NaN, 1)).toBeNull();
   });
-
-  it('credits Tanzil under CC BY 3.0', () => {
-    expect(QURAN_PAGE_DATA_CREDIT).toContain('Tanzil.net');
-    expect(QURAN_PAGE_DATA_CREDIT).toContain('CC BY 3.0');
-  });
 });
 ```
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
 Run: `npx jest __tests__/quranPages.test.ts`
 Expected: FAIL with `Cannot find module '@/constants/quranPages'`.
 
-**Step 3: Generate `constants/quranPageData.ts`.** The download is untrusted data, so it goes into its own empty directory. The generator lives in a different directory and runs with `python3 -I`. The script below is the generator of record. Keep it in the scratchpad; do not commit it.
+**Step 3: Generate `constants/quranPageData.ts`.** Treat the download as untrusted data. It goes into its own empty directory, and the generator lives in a different directory and runs with `python3 -I`. The script below is the one that produces the file. Keep it in the scratchpad and do not commit it.
 
 ```bash
 SCRATCH=/private/tmp/claude-501/-Users-ahmedelhadarey-samer-khazayin-app/ad126e66-b973-46e5-9731-c506a3e034d8/scratchpad
@@ -152,7 +129,7 @@ out = f'''/**
  * Copyright (C) 2008-2009 Tanzil.info. Licensed under Creative Commons
  * Attribution 3.0 (https://creativecommons.org/licenses/by/3.0/).
  * Changes: sentinel entries removed, arrays converted to TypeScript.
- * Attribution is shown to users in app/settings-about.tsx (QURAN_PAGE_DATA_CREDIT).
+ * The in-app notice lives in app/settings-about.tsx (constants/quranPages.ts).
  */
 
 export type AyahRef = readonly [surah: number, ayah: number];
@@ -171,28 +148,24 @@ open(sys.argv[2], 'w', encoding='utf-8').write(out)
 print('ok', len(pages), len(juz), sha)
 ```
 
-Run (cwd is the scratchpad tools dir, not the download dir):
+Run it with the scratchpad tools directory as the working directory, not the download directory:
 
 ```bash
 cd "$SCRATCH/tools" && python3 -I gen_quran_pages.py "$SCRATCH/tanzil-dl/quran-data.js" /Users/ahmedelhadarey/samer/khazayin-worktrees/progress/constants/quranPageData.ts
 ```
 
-Expected output: `ok 604 30 9e9930c5…ca4`. The arrays are typed `readonly AyahRef[]`, not `ReadonlyArray<…>`, which the repo's `@typescript-eslint/array-type` rule flags. The file is about 103 lines, and its first data row is `[1, 1], [2, 1], [2, 6], [2, 17], [2, 25], [2, 30], [2, 38], [2, 49],`.
+Expected: `ok 604 30 9e9930c5…ca4`, and a file of about 103 lines whose first data row is `[1, 1], [2, 1], [2, 6], [2, 17], [2, 25], [2, 30], [2, 38], [2, 49],`. The arrays are typed `readonly AyahRef[]`, not `ReadonlyArray<…>`, because the repo's `@typescript-eslint/array-type` rule flags the latter.
 
 **Step 4: Write `constants/quranPages.ts`** (hand-written):
 
 ```ts
 /**
- * Ayah → Madani page lookup. The data lives in the generated
- * `quranPageData.ts`; this module adds the lookup and the user-facing credit
- * the CC BY 3.0 licence requires.
+ * Ayah → Madani page lookup over the generated `quranPageData.ts`.
+ * The CC BY 3.0 notice constants are added in Task 14.
  */
 import { JUZ_START_AYAHS, QURAN_PAGE_STARTS, type AyahRef } from './quranPageData';
 
 export { JUZ_START_AYAHS, QURAN_PAGE_STARTS, type AyahRef };
-
-/** Shown in app/settings-about.tsx. Required by CC BY 3.0 (Tanzil). */
-export const QURAN_PAGE_DATA_CREDIT = 'تقسيم صفحات المصحف وأجزائه: Tanzil.net — رخصة CC BY 3.0';
 
 function compareRef(s1: number, a1: number, s2: number, a2: number): number {
   return s1 !== s2 ? s1 - s2 : a1 - a2;
@@ -223,10 +196,10 @@ export function pageForAyah(surah: number, ayah: number): number | null {
 }
 ```
 
-**Step 5: Run it and confirm it passes**
+**Step 5: Run it — it must pass**
 
 Run: `npx jest __tests__/quranPages.test.ts && npx tsc --noEmit --pretty false`
-Expected: 7 tests PASS; tsc prints nothing.
+Expected: 6 PASS; tsc prints nothing.
 
 **Step 6: Commit**
 
@@ -237,13 +210,15 @@ git commit -m "feat(progress): add Madani ayah-to-page table from Tanzil (CC BY 
 
 ---
 
-## Task 2: Correct the four mid-page juz boundaries
+## Task 2: Correct the mid-page juz boundaries, with literal cross-checks
 
 **Files:**
-- Modify: `constants/progress.ts:34-79` (doc comment and 4 entries in `JUZ_PAGE_RANGES`)
+- Modify: `constants/progress.ts:39-79` (doc comment and 4 entries of `JUZ_PAGE_RANGES`)
 - Test: `__tests__/juz.test.ts:4-13` (replace the contiguity block; keep the rest)
 
-**Step 1: Write the failing test.** In `__tests__/juz.test.ts`, replace the `describe('JUZ_PAGE_RANGES data integrity', …)` block (lines 4-13) with the block below, and add `import { JUZ_START_AYAHS, QURAN_PAGE_STARTS, pageForAyah } from '../constants/quranPages';` to the imports.
+**Step 1: Write the failing test.** In `__tests__/juz.test.ts`:
+- Add `import { JUZ_START_AYAHS, QURAN_PAGE_STARTS, pageForAyah } from '../constants/quranPages';` at the top.
+- Replace the `describe('JUZ_PAGE_RANGES data integrity', …)` block (lines 4-13) with:
 
 ```ts
 /** First and last page of juz `j` (1-based), derived from the Tanzil table. */
@@ -263,6 +238,25 @@ describe('JUZ_PAGE_RANGES data integrity', () => {
     expect(JUZ_PAGE_RANGES).toHaveLength(30);
     expect(JUZ_PAGE_RANGES[0].startPage).toBe(1);
     expect(JUZ_PAGE_RANGES[29].endPage).toBe(604);
+  });
+
+  // Literal, not derived: the standard Madani juz openings.
+  it('starts every juz on the standard Madani page', () => {
+    expect(JUZ_PAGE_RANGES.map((r) => r.startPage)).toEqual([
+      1, 22, 42, 62, 82, 102, 121, 142, 162, 182, 201, 222, 242, 262, 282,
+      302, 322, 342, 362, 382, 402, 422, 442, 462, 482, 502, 522, 542, 562, 582,
+    ]);
+  });
+
+  it('prints each mid-page juz opening and the ayah before it on the shared page', () => {
+    expect([pageForAyah(3, 92), pageForAyah(3, 93)]).toEqual([62, 62]);
+    expect([pageForAyah(5, 81), pageForAyah(5, 82)]).toEqual([121, 121]);
+    expect([pageForAyah(9, 92), pageForAyah(9, 93)]).toEqual([201, 201]);
+    expect([pageForAyah(45, 37), pageForAyah(46, 1)]).toEqual([502, 502]);
+  });
+
+  it('opens juz 4 at 3:93, as Tanzil does (design decision D1)', () => {
+    expect(JUZ_START_AYAHS[3]).toEqual([3, 93]);
   });
 
   it('matches the Madani page table for every juz', () => {
@@ -294,31 +288,30 @@ describe('JUZ_PAGE_RANGES data integrity', () => {
 });
 ```
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
 Run: `npx jest __tests__/juz.test.ts`
-Expected: FAIL. "matches the Madani page table" fails on juz 3 (`endPage` 61 vs 62); "shares a boundary page" fails (`[]` vs `[4, 7, 11, 26]`); "needs the shared page" fails.
+Expected: FAIL. "starts every juz…" fails at index 6 (122 vs 121). "matches the Madani page table" fails on juz 3. "shares a boundary page" fails (`[]` vs `[4, 7, 11, 26]`). "needs the shared page" fails.
 
-**Step 3: Minimal implementation** in `constants/progress.ts`:
-- Change exactly these entries: juz 3 `endPage: 61` → `62`; juz 7 `startPage: 122` → `121`; juz 11 `startPage: 202` → `201`; juz 25 `endPage: 501` → `502`.
-- Replace the doc comment at `:39-43` with:
+**Step 3: Minimal implementation** in `constants/progress.ts`. Change exactly these four values: juz 3 `endPage: 61` → `62`; juz 7 `startPage: 122` → `121`; juz 11 `startPage: 202` → `201`; juz 25 `endPage: 501` → `502`. Then replace the doc comment at `:39-43` with:
 
 ```ts
 /**
  * Page ranges (1-based, inclusive) of the 30 ajzāʾ of the 604-page Madani
  * Mushaf. Juz 4, 7, 11 and 26 begin mid-page, so each shares its first page
  * with the end of the previous juz — a juz is complete only when that shared
- * page has been read too. Pinned to `constants/quranPages.ts` (Tanzil) by
- * `__tests__/juz.test.ts`. Used by `completedJuzCount()` (FR-005).
+ * page has been read too. Juz 4 opens at 3:93 as in Tanzil (design decision
+ * D1). Pinned to `constants/quranPages.ts` by `__tests__/juz.test.ts`.
+ * Used by `completedJuzCount()` (FR-005).
  */
 ```
 
-Leave `JUZ_PRESET_PAGES` and its comment (`:13-30`) alone. Its "juz 1 spans 21 pages" remark is still true.
+Leave `JUZ_PRESET_PAGES` (`:13-30`) unchanged.
 
-**Step 4: Run it and confirm it passes**
+**Step 4: Run it — it must pass**
 
 Run: `npx jest __tests__/juz.test.ts __tests__/quranPages.test.ts`
-Expected: all PASS. The existing `countCompletedJuz` / `completedJuzList` tests still pass unchanged.
+Expected: all PASS. The existing `countCompletedJuz` / `completedJuzList` tests still pass as they are.
 
 **Step 5: Commit**
 
@@ -329,14 +322,14 @@ git commit -m "fix(progress): share the boundary page where a juz begins mid-pag
 
 ---
 
-## Task 3: Group ayat into page segments; detect which segments are in view
+## Task 3: Page segments and in-view detection
 
 **Files:**
 - Modify: `constants/progress.ts` (append after `STREAK_MILESTONES`, `:81-82`)
 - Create: `services/mushafPageTracking.ts`
 - Test: `__tests__/mushafPageTracking.test.ts`
 
-**Step 1: Write the failing test** at `__tests__/mushafPageTracking.test.ts`:
+**Step 1: Write the failing test** `__tests__/mushafPageTracking.test.ts`:
 
 ```ts
 import { groupAyatByPage, pagesInView } from '@/services/mushafPageTracking';
@@ -419,14 +412,12 @@ describe('pagesInView', () => {
 });
 ```
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
 Run: `npx jest __tests__/mushafPageTracking.test.ts`
 Expected: FAIL with `Cannot find module '@/services/mushafPageTracking'`.
 
-**Step 3: Minimal implementation.**
-
-Append to `constants/progress.ts` after `STREAK_MILESTONES`:
+**Step 3: Minimal implementation.** Append to `constants/progress.ts` after `STREAK_MILESTONES`:
 
 ```ts
 /**
@@ -450,8 +441,8 @@ Create `services/mushafPageTracking.ts`:
  * Page-level reading detection for the scrolling Mushaf reader.
  *
  * Pure: no React, no storage. `app/(tabs)/sections/mushaf.tsx` renders one
- * <Text> per page segment, feeds measured layouts through `pagesInView`, and
- * hands the result to a `PageDwellTracker`.
+ * <Text> per page segment and forwards its events to a
+ * `MushafPageTrackingController` (below), which owns every gate.
  */
 import {
   PAGE_IN_VIEW_SELF_SHARE,
@@ -505,10 +496,10 @@ export function pagesInView(
 }
 ```
 
-**Step 4: Run it and confirm it passes**
+**Step 4: Run it — it must pass**
 
 Run: `npx jest __tests__/mushafPageTracking.test.ts && npx tsc --noEmit --pretty false`
-Expected: 11 tests PASS; tsc clean.
+Expected: 11 PASS; tsc clean.
 
 **Step 5: Commit**
 
@@ -525,7 +516,7 @@ git commit -m "feat(mushaf): group ayat into page segments and detect pages in v
 - Modify: `services/mushafPageTracking.ts` (append)
 - Test: `__tests__/mushafPageTracking.test.ts` (append a `describe`)
 
-**Step 1: Write the failing test.** Append to `__tests__/mushafPageTracking.test.ts`, and add `PageDwellTracker` to the import:
+**Step 1: Write the failing test.** Add `PageDwellTracker` to the import, then append:
 
 ```ts
 describe('PageDwellTracker', () => {
@@ -555,7 +546,7 @@ describe('PageDwellTracker', () => {
 
   it('adds up time that is not continuous', () => {
     const { t, read } = make();
-    run(t, [2], 0, 4000); // 4 s
+    run(t, [2], 0, 4000);
     run(t, [], 5000, 6000); // the 4000 → 5000 step still credits page 2: 5 s
     run(t, [2], 7000, 9000); // 6 → 7 credits nothing; 7 → 9 credits 2 s: 7 s
     expect(read).toEqual([]);
@@ -589,14 +580,14 @@ describe('PageDwellTracker', () => {
 });
 ```
 
-How the time adds up: each update credits the time since the previous update to the pages that were in view **at that previous update**. In "adds up time…", the updates from 1000 to 5000 credit 5 s. That includes the 4000 → 5000 step, because page 2 was in view at 4000. The updates at 6000 and 7000 credit nothing, since `[]` was in view before each. The updates at 8000 and 9000 add 2 s, for 7 s. The update at 10000 reaches 8 s and fires. These expectations were checked against a JS replica of the class during planning.
+How the time adds up: each update credits the elapsed time to the pages that were in view **at the previous update**, capped at `maxStepMs`. These expectations were checked against a JS replica of the class while planning.
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
 Run: `npx jest __tests__/mushafPageTracking.test.ts -t PageDwellTracker`
-Expected: FAIL with `PageDwellTracker is not a constructor` (or a TS export error).
+Expected: FAIL (`PageDwellTracker` is not exported).
 
-**Step 3: Minimal implementation.** Append to `services/mushafPageTracking.ts`, and extend the progress import with `PAGE_DWELL_MAX_STEP_MS, PAGE_READ_DWELL_MS`:
+**Step 3: Minimal implementation.** Add `PAGE_DWELL_MAX_STEP_MS, PAGE_READ_DWELL_MS` to the `@/constants/progress` import, then append:
 
 ```ts
 /**
@@ -626,7 +617,7 @@ export class PageDwellTracker {
     this.lastAt = nowMs;
   }
 
-  /** App left the foreground or the reader unmounted: credit nothing further. */
+  /** Credit nothing further until the next update re-arms the clock. */
   pause(nowMs: number): void {
     this.accrue(nowMs);
     this.current = [];
@@ -650,10 +641,10 @@ export class PageDwellTracker {
 }
 ```
 
-**Step 4: Run it and confirm it passes**
+**Step 4: Run it — it must pass**
 
 Run: `npx jest __tests__/mushafPageTracking.test.ts && npx tsc --noEmit --pretty false`
-Expected: 17 tests PASS; tsc clean.
+Expected: 17 PASS; tsc clean.
 
 **Step 5: Commit**
 
@@ -664,14 +655,248 @@ git commit -m "feat(mushaf): add PageDwellTracker for page-read detection"
 
 ---
 
-## Task 5: Keep `last_read_page` on the most recent page, even on a same-day re-read
+## Task 5: `MushafPageTrackingController` — focus, app-state and content gates
+
+This puts every gating rule into a pure class, so the rules get behaviour tests instead of regex checks on source (design §4.3).
 
 **Files:**
-- Modify: `db/repositories/pageReads.ts:40` (the `if (before.changes === 0) return;` line)
-- Modify: `db/web-shim.ts:157-159` (the `if (exists) return false;` branch)
-- Test: `__tests__/pageReadsRepo.test.ts` (new; uses the web shim, the established pattern in `__tests__/reset.test.ts:11-34`)
+- Modify: `services/mushafPageTracking.ts` (append)
+- Test: `__tests__/mushafPageTracking.test.ts` (append a `describe`)
 
-**Step 1: Write the failing test** at `__tests__/pageReadsRepo.test.ts`:
+**Step 1: Write the failing test.** Add `MushafPageTrackingController` to the import, then append:
+
+```ts
+describe('MushafPageTrackingController', () => {
+  const VIEW = 800;
+  const make = () => {
+    const read: number[] = [];
+    const c = new MushafPageTrackingController({
+      dwellMs: 8000,
+      maxStepMs: 2000,
+      onRead: (p) => read.push(p),
+    });
+    c.setViewportHeight(VIEW);
+    c.setSegmentLayout(2, 0, 2000);
+    return { c, read };
+  };
+  const ticks = (c: MushafPageTrackingController, from: number, to: number) => {
+    for (let ms = from; ms <= to; ms += 1000) c.tick(ms);
+  };
+  /** Focused, foreground and showing content from `at`. */
+  const open = (c: MushafPageTrackingController, at: number) => {
+    c.setFocused(true, at);
+    c.setContentReady(true, at);
+  };
+
+  it('credits nothing until focused, in the foreground and showing content', () => {
+    const { c, read } = make();
+    ticks(c, 0, 20000);
+    c.setFocused(true, 20000);
+    ticks(c, 21000, 40000); // content still loading
+    expect(read).toEqual([]);
+    expect(c.isObserving).toBe(false);
+    c.setContentReady(true, 40000);
+    expect(c.isObserving).toBe(true);
+    ticks(c, 41000, 47000);
+    expect(read).toEqual([]);
+    c.tick(48000);
+    expect(read).toEqual([2]);
+  });
+
+  it('pauses on blur — a tab switch leaves the reader mounted', () => {
+    const { c, read } = make();
+    open(c, 0);
+    ticks(c, 1000, 5000); // 5 s
+    c.setFocused(false, 5000);
+    ticks(c, 6000, 60000); // on another tab: nothing counts
+    c.setFocused(true, 60000); // re-arms only
+    ticks(c, 61000, 62000); // 7 s
+    expect(read).toEqual([]);
+    c.tick(63000);
+    expect(read).toEqual([2]);
+  });
+
+  it('pauses while the app is in the background', () => {
+    const { c, read } = make();
+    open(c, 0);
+    ticks(c, 1000, 5000); // 5 s
+    c.setAppActive(false, 5000);
+    ticks(c, 6000, 60000);
+    c.setAppActive(true, 60000);
+    ticks(c, 61000, 62000); // 7 s
+    expect(read).toEqual([]);
+    c.tick(63000);
+    expect(read).toEqual([2]);
+  });
+
+  it('drops layouts while the ayat are not on screen, and needs fresh ones after', () => {
+    const { c, read } = make();
+    open(c, 0);
+    ticks(c, 1000, 3000); // 3 s
+    c.setContentReady(false, 3000); // refetch: AsyncContent unmounted the segments
+    expect(c.contentYForPage(2)).toBeNull();
+    c.setContentReady(true, 10000);
+    ticks(c, 11000, 30000); // no layouts → nothing in view
+    expect(read).toEqual([]);
+    c.setSegmentLayout(2, 0, 2000);
+    ticks(c, 31000, 35000); // 31 re-arms with [2]; 32..35 → 7 s
+    expect(read).toEqual([]);
+    c.tick(36000);
+    expect(read).toEqual([2]);
+  });
+
+  it('places segments below the body offset in scroll coordinates', () => {
+    const read: number[] = [];
+    const c = new MushafPageTrackingController({ dwellMs: 8000, maxStepMs: 2000, onRead: (p) => read.push(p) });
+    c.setViewportHeight(VIEW);
+    c.setBodyY(1000);
+    c.setSegmentLayout(5, 0, 300);
+    open(c, 0);
+    ticks(c, 1000, 10000); // segment sits at 1000..1300, below the viewport
+    expect(read).toEqual([]);
+    c.onScroll(900, 10000);
+    ticks(c, 11000, 17000); // 7 s
+    expect(read).toEqual([]);
+    c.tick(18000);
+    expect(read).toEqual([5]);
+    expect(c.contentYForPage(5)).toBe(1000);
+    expect(c.contentYForPage(6)).toBeNull();
+  });
+
+  it('forgets layouts of pages that are no longer rendered', () => {
+    const { c } = make();
+    c.setSegmentLayout(3, 2000, 500);
+    c.retainPages([2]);
+    expect(c.contentYForPage(3)).toBeNull();
+    expect(c.contentYForPage(2)).toBe(0);
+  });
+});
+```
+
+**Step 2: Run it — it must fail**
+
+Run: `npx jest __tests__/mushafPageTracking.test.ts -t MushafPageTrackingController`
+Expected: FAIL (`MushafPageTrackingController` is not exported).
+
+**Step 3: Minimal implementation.** Append to `services/mushafPageTracking.ts`:
+
+```ts
+/**
+ * Decides WHEN reading time counts, so ReadingView only forwards events.
+ * Time is credited only while all three gates are open:
+ *   focused      — tabs keep the reader mounted behind other tabs
+ *   appActive    — the app is in the foreground
+ *   contentReady — the ayat are on screen (AsyncContent unmounts them while
+ *                  loading, empty or on error)
+ * Reopening a gate re-arms the clock; the closed period is never credited.
+ *
+ * `contentYForPage` is the seam the contextual-notes branch scrolls with
+ * (design §10) — do not add a second set of segment measurements.
+ */
+export class MushafPageTrackingController {
+  private readonly tracker: PageDwellTracker;
+  private readonly layouts = new Map<number, { y: number; height: number }>();
+  private bodyY = 0;
+  private scrollY = 0;
+  private viewportHeight = 0;
+  private focused = false;
+  private appActive = true;
+  private contentReady = false;
+
+  constructor(opts: { onRead: (page: number) => void; dwellMs?: number; maxStepMs?: number }) {
+    this.tracker = new PageDwellTracker(opts);
+  }
+
+  get isObserving(): boolean {
+    return this.focused && this.appActive && this.contentReady;
+  }
+
+  setFocused(focused: boolean, nowMs: number): void {
+    this.focused = focused;
+    this.sync(nowMs);
+  }
+
+  setAppActive(active: boolean, nowMs: number): void {
+    this.appActive = active;
+    this.sync(nowMs);
+  }
+
+  /** `false` drops every stored layout: the segments have been unmounted. */
+  setContentReady(ready: boolean, nowMs: number): void {
+    this.contentReady = ready;
+    if (!ready) this.layouts.clear();
+    this.sync(nowMs);
+  }
+
+  setViewportHeight(height: number): void {
+    this.viewportHeight = height;
+  }
+
+  setBodyY(y: number): void {
+    this.bodyY = y;
+  }
+
+  setSegmentLayout(page: number, y: number, height: number): void {
+    this.layouts.set(page, { y, height });
+  }
+
+  /** Forget layouts of pages that are no longer rendered. */
+  retainPages(pages: readonly number[]): void {
+    const live = new Set(pages);
+    for (const page of [...this.layouts.keys()]) {
+      if (!live.has(page)) this.layouts.delete(page);
+    }
+  }
+
+  onScroll(y: number, nowMs: number): void {
+    this.scrollY = y;
+    this.tick(nowMs);
+  }
+
+  /** Scroll-content y of a page's segment, or null when it is not laid out. */
+  contentYForPage(page: number): number | null {
+    const l = this.layouts.get(page);
+    return l ? this.bodyY + l.y : null;
+  }
+
+  tick(nowMs: number): void {
+    if (!this.isObserving) return;
+    const laid: SegmentLayout[] = [];
+    this.layouts.forEach((l, page) => {
+      laid.push({ page, y: this.bodyY + l.y, height: l.height });
+    });
+    this.tracker.update(pagesInView(laid, this.scrollY, this.viewportHeight), nowMs);
+  }
+
+  private sync(nowMs: number): void {
+    if (this.isObserving) this.tick(nowMs);
+    else this.tracker.pause(nowMs);
+  }
+}
+```
+
+**Step 4: Run it — it must pass**
+
+Run: `npx jest __tests__/mushafPageTracking.test.ts && npx tsc --noEmit --pretty false`
+Expected: 23 PASS; tsc clean.
+
+**Step 5: Commit**
+
+```bash
+git add services/mushafPageTracking.ts __tests__/mushafPageTracking.test.ts
+git commit -m "feat(mushaf): gate page tracking on focus, app state and loaded content"
+```
+
+---
+
+## Task 6: `last_read_page` moves on a same-day re-read (repository)
+
+**Files:**
+- Modify: `db/repositories/pageReads.ts:40` (`if (before.changes === 0) return;`)
+- Modify: `db/web-shim.ts:157-159` (`if (exists) return false;`)
+- Test: `__tests__/pageReadsRepo.test.ts` (new; web-shim pattern from `__tests__/reset.test.ts:11-34`)
+
+**Step 1: Write the failing test** `__tests__/pageReadsRepo.test.ts`:
 
 ```ts
 jest.mock('react-native', () => ({ Platform: { OS: 'web' } }));
@@ -709,14 +934,14 @@ describe('recordPageRead and last_read_page', () => {
 });
 ```
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
 Run: `npx jest __tests__/pageReadsRepo.test.ts`
 Expected: FAIL. `getLastReadPage()` returns `7`, not `5`.
 
 **Step 3: Minimal implementation.**
 
-`db/web-shim.ts`, inside `recordPageRead`, replace `if (exists) return false;` with:
+`db/web-shim.ts`: replace `if (exists) return false;` with:
 
 ```ts
       if (exists) {
@@ -727,7 +952,7 @@ Expected: FAIL. `getLastReadPage()` returns `7`, not `5`.
       }
 ```
 
-`db/repositories/pageReads.ts`, inside the transaction, replace `if (before.changes === 0) return;` with:
+`db/repositories/pageReads.ts`: replace `if (before.changes === 0) return;` with:
 
 ```ts
         if (before.changes === 0) {
@@ -742,12 +967,12 @@ Expected: FAIL. `getLastReadPage()` returns `7`, not `5`.
         }
 ```
 
-The return value (`inserted`) is unchanged, so `notePageRead` still skips its refresh for a deduped page (`store/progressStore.ts:163-164`).
+The return value (`inserted`) is unchanged.
 
-**Step 4: Run it and confirm it passes**
+**Step 4: Run it — it must pass**
 
 Run: `npx jest __tests__/pageReadsRepo.test.ts __tests__/reset.test.ts && npx tsc --noEmit --pretty false`
-Expected: PASS; tsc clean.
+Expected: PASS; clean.
 
 **Step 5: Commit**
 
@@ -758,44 +983,194 @@ git commit -m "fix(progress): move last_read_page on a same-day re-read"
 
 ---
 
-## Task 6: Record pages from the reader, not on open
+## Task 7: `lastReadPage` in the progress store; the Library wird card reads it
 
 **Files:**
-- Modify: `app/(tabs)/sections/mushaf.tsx`: imports `:1-28`, `ReadingView` `:148-256` (remove `:153` and the recorder `:166-176`, body `:204-242`)
-- Test: `__tests__/mushafPageTrackingWiring.test.ts` (source contract — same technique as `__tests__/rtlPhysicalContract.test.ts:66-72`)
+- Modify: `store/progressStore.ts`: `ProgressSnapshot` `:37-53`, `EMPTY` `:77-91`, `hydrate` `:105-158`, `notePageRead` `:161-165`
+- Modify: `app/(tabs)/library.tsx`: delete `:103` (`useState` for `lastReadPage`) and `:194-207` (the `todayPct`-keyed effect); add a store selector beside the other progress selectors (`:180-192`)
+- Modify: `__tests__/progressStore-dbFailed.test.ts:13-28` (mocks)
+- Test: `__tests__/progressStore-stats.test.ts` (new), `__tests__/libraryProgressWiring.test.ts` (new)
 
-**Step 1: Write the failing test** at `__tests__/mushafPageTrackingWiring.test.ts`:
+**Step 1: Write the failing tests.**
+
+`__tests__/progressStore-stats.test.ts` (Task 10 extends this file):
+
+```ts
+const mockRecordPageRead = jest.fn(async (_page: number) => true);
+const mockGetLastReadPage = jest.fn(async () => 1);
+const mockTotalPagesRead = jest.fn(async () => 0);
+const mockListenedCount = jest.fn(async () => 0);
+
+jest.mock('@/db', () => ({
+  getRepos: jest.fn(async () => ({})),
+  progressRepo: {
+    recordPageRead: (page: number) => mockRecordPageRead(page),
+    getLastReadPage: () => mockGetLastReadPage(),
+    totalPagesRead: () => mockTotalPagesRead(),
+    pagesReadToday: jest.fn(async () => 0),
+    pagesReadInMonth: jest.fn(async () => 0),
+    currentStreak: jest.fn(async () => 0),
+    completedJuzCount: jest.fn(async () => 0),
+    longestStreakEver: jest.fn(async () => 0),
+    bestWirdDay: jest.fn(async () => null),
+    trendLastNDays: jest.fn(async () => []),
+  },
+  lectureRepo: {
+    upsertSession: jest.fn(async () => ({})),
+    findInProgress: jest.fn(async () => null),
+    totalListenedSec: jest.fn(async () => 0),
+    completedCount: jest.fn(async () => 0),
+    listenedCount: () => mockListenedCount(),
+  },
+  achievementsRepo: { evaluateAll: jest.fn(async () => []) },
+}));
+jest.mock('@/store/wirdStore', () => ({
+  useWirdStore: {
+    getState: () => ({
+      recomputeTodayPct: jest.fn(async () => undefined),
+      reevaluateSuggestion: jest.fn(async () => undefined),
+    }),
+  },
+}));
+jest.mock('@/store/toastStore', () => ({ useToastStore: { getState: () => ({ show: jest.fn() }) } }));
+
+import { useProgressStore } from '@/store/progressStore';
+
+describe('progressStore lastReadPage', () => {
+  it('hydrates lastReadPage from the repository', async () => {
+    mockGetLastReadPage.mockResolvedValueOnce(30);
+    await useProgressStore.getState().hydrate();
+    expect(useProgressStore.getState().lastReadPage).toBe(30);
+  });
+
+  it('moves lastReadPage on a newly recorded page', async () => {
+    mockRecordPageRead.mockResolvedValueOnce(true);
+    await useProgressStore.getState().notePageRead(31);
+    expect(useProgressStore.getState().lastReadPage).toBe(31);
+  });
+
+  it('moves lastReadPage on a same-day re-read the DB deduped', async () => {
+    mockRecordPageRead.mockResolvedValueOnce(false);
+    await useProgressStore.getState().notePageRead(2);
+    expect(useProgressStore.getState().lastReadPage).toBe(2);
+  });
+});
+```
+
+`__tests__/libraryProgressWiring.test.ts` (Task 13 extends this file):
+
+```ts
+import fs from 'fs';
+import path from 'path';
+
+/** Library ↔ progress store wiring, pinned on source text (no RN renderer in this repo). */
+const src = fs
+  .readFileSync(path.resolve(__dirname, '../app/(tabs)/library.tsx'), 'utf8')
+  .replace(/\/\*[\s\S]*?\*\//g, '')
+  .replace(/^\s*\/\/.*$/gm, '');
+
+describe('Library wird card', () => {
+  it('reads lastReadPage from the progress store, not a local effect', () => {
+    expect(src).toMatch(/useProgressStore\(\(s\) => s\.lastReadPage\)/);
+    expect(src).not.toMatch(/setLastReadPage/);
+    expect(src).not.toMatch(/getLastReadPage\(/);
+  });
+});
+```
+
+**Step 2: Run them — they must fail**
+
+Run: `npx jest __tests__/progressStore-stats.test.ts __tests__/libraryProgressWiring.test.ts`
+Expected: FAIL. `lastReadPage` is `undefined`, and `library.tsx` still contains `setLastReadPage`.
+
+**Step 3: Minimal implementation.**
+
+`store/progressStore.ts`:
+- `ProgressSnapshot`: add `lastReadPage: number;` after `pagesToday`. `EMPTY`: add `lastReadPage: 1,`.
+- `hydrate`: add `progressRepo.getLastReadPage()` to the `Promise.all` and the destructuring, and set `lastReadPage`.
+- `notePageRead`: directly after `const inserted = await progressRepo.recordPageRead(pageNumber);`, add:
+
+```ts
+        // Every recorded page is the current reading position, deduped or not
+        // (design §4.3) — the wird card and resume follow it.
+        set({ lastReadPage: pageNumber });
+```
+
+`app/(tabs)/library.tsx`:
+- Delete `const [lastReadPage, setLastReadPage] = useState<number>(1);` (`:103`).
+- Delete the comment and `useEffect` block at `:194-207` (`// last_read_page lives in settings …` through `}, [todayPct]);`).
+- After `const currentStreak = useProgressStore((s) => s.currentStreak);` (`:180`), add `const lastReadPage = useProgressStore((s) => s.lastReadPage);`.
+- Keep the `getRepos, progressRepo` import (`:64`); the السجل history effect still uses it.
+
+`__tests__/progressStore-dbFailed.test.ts`: add `getLastReadPage: jest.fn(async () => 1),` and `totalPagesRead: jest.fn(async () => 0),` to `progressRepo`, and `listenedCount: jest.fn(async () => 0),` to `lectureRepo`. Task 10 needs the last two, and adding them now means this file is edited once.
+
+**Step 4: Run them — they must pass**
+
+Run: `npx jest __tests__/progressStore-stats.test.ts __tests__/libraryProgressWiring.test.ts __tests__/progressStore-dbFailed.test.ts __tests__/wirdStore.test.ts && npx tsc --noEmit --pretty false && npm run lint 2>&1 | grep -E "\(tabs\)/library.tsx|progressStore" -A 2`
+Expected: PASS; tsc clean; no lint output (in particular, no unused `useState` / `useEffect`, since both are still used elsewhere in `library.tsx`).
+
+**Step 5: Commit**
+
+```bash
+git add store/progressStore.ts "app/(tabs)/library.tsx" __tests__/progressStore-stats.test.ts __tests__/libraryProgressWiring.test.ts __tests__/progressStore-dbFailed.test.ts
+git commit -m "fix(library): follow the last read page from the progress store"
+```
+
+---
+
+## Task 8: Record pages from the reader, not on open
+
+**Files:**
+- Modify: `app/(tabs)/sections/mushaf.tsx`: imports `:24-26`, `ReadingView` `:148-256` (remove `:153` and `:166-176`, add the forwarding, body `:204-242`)
+- Test: `__tests__/mushafPageTrackingWiring.test.ts` (source contract — the gating behaviour itself is tested in Task 5)
+
+**Step 1: Write the failing test** `__tests__/mushafPageTrackingWiring.test.ts`:
 
 ```ts
 import fs from 'fs';
 import path from 'path';
 
 /**
- * The reader's page-read wiring, pinned on source text (no RN renderer in
- * this repo). Design 2026-10-21 §4.2-4.3.
+ * ReadingView must only forward events to MushafPageTrackingController,
+ * whose gates are behaviour-tested in mushafPageTracking.test.ts. This pins
+ * that every event is forwarded. Design 2026-10-21 §4.2-4.3.
  */
 const src = fs
   .readFileSync(path.resolve(__dirname, '../app/(tabs)/sections/mushaf.tsx'), 'utf8')
   .replace(/\/\*[\s\S]*?\*\//g, '')
   .replace(/^\s*\/\/.*$/gm, '');
 
-describe('Mushaf reader page tracking', () => {
+describe('Mushaf reader page tracking wiring', () => {
   it('no longer credits the surah start page on open', () => {
     expect(src).not.toMatch(/notePageRead\(\s*currentPage\s*\)/);
     expect(src).not.toMatch(/debounceRef/);
   });
 
-  it('renders one segment per page and records through the dwell tracker', () => {
+  it('renders one segment per page and records through the controller', () => {
     expect(src).toMatch(/groupAyatByPage\(\s*surahNumber\s*,\s*ayat\s*\)/);
-    expect(src).toMatch(/new PageDwellTracker\(/);
-    expect(src).toMatch(/pagesInView\(/);
+    expect(src).toMatch(/new MushafPageTrackingController\(/);
     expect(src).toMatch(/notePageRead\(\s*page\s*\)/);
   });
 
-  it('only accrues while the app is in the foreground', () => {
-    expect(src).toMatch(/AppState\.addEventListener\(\s*'change'/);
-    expect(src).toMatch(/AppState\.currentState\s*!==\s*'active'/);
+  it('follows screen focus, because tabs keep the reader mounted', () => {
+    expect(src).toMatch(/useFocusEffect\(/);
+    expect(src).toMatch(/setFocused\(\s*true/);
+    expect(src).toMatch(/setFocused\(\s*false/);
     expect(src).toMatch(/clearInterval\(/);
+  });
+
+  it('forwards app state and the ayat load status', () => {
+    expect(src).toMatch(/AppState\.addEventListener\(\s*'change'/);
+    expect(src).toMatch(/setAppActive\(/);
+    expect(src).toMatch(/setContentReady\(\s*ayatStatus === 'success'/);
+  });
+
+  it('forwards every layout and scroll measurement', () => {
+    expect(src).toMatch(/setSegmentLayout\(\s*segment\.page/);
+    expect(src).toMatch(/setBodyY\(/);
+    expect(src).toMatch(/setViewportHeight\(/);
+    expect(src).toMatch(/onScroll\(\s*e\.nativeEvent\.contentOffset\.y/);
+    expect(src).toMatch(/retainPages\(/);
   });
 
   it('keeps the meta line on the surah start page (frame 2349:982)', () => {
@@ -804,91 +1179,81 @@ describe('Mushaf reader page tracking', () => {
 });
 ```
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
 Run: `npx jest __tests__/mushafPageTrackingWiring.test.ts`
-Expected: FAIL on the first three tests (the current source has `notePageRead(currentPage)` and `debounceRef`, and no tracker).
+Expected: FAIL on every test except the last.
 
 **Step 3: Implementation** in `app/(tabs)/sections/mushaf.tsx`:
 
 1. Imports:
-   - `:25` becomes `import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';`
-   - `:26` becomes `import { AppState, type AppStateStatus, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';`
-   - Add `import { PageDwellTracker, groupAyatByPage, pagesInView, type SegmentLayout } from '@/services/mushafPageTracking';`
-2. In `ReadingView`, delete `const notePageRead = useProgressStore((s) => s.notePageRead);` (`:153`). Replace the comment at `:156-157` with `// The meta line shows the surah's first page (frame 2349:982); reading is tracked per page below.` Delete the whole debounced recorder (`:166-176`).
+   - `:24` → `import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';`
+   - `:25` → `import React, { useCallback, useEffect, useMemo, useState } from 'react';` (`useRef` is removed; its only user was the deleted debounce)
+   - `:26` → `import { AppState, type AppStateStatus, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';`
+   - add `import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';`
+2. In `ReadingView`:
+   - Delete `const notePageRead = useProgressStore((s) => s.notePageRead);` (`:153`).
+   - Replace the comment at `:156-157` with `// The meta line shows the surah's first page (frame 2349:982); reading is tracked per page below.`
+   - Delete the debounced recorder (`:166-176`).
 3. After `const displayName = …` (`:160`), add:
 
 ```tsx
   const segments = useMemo(() => groupAyatByPage(surahNumber, ayat), [surahNumber, ayat]);
 
-  // ── Page-read tracking (design 2026-10-21 §4.3) ──
-  // Segment offsets are relative to the body wrapper; bodyY lifts them into
-  // scroll-content coordinates. Refs, not state: none of this renders.
-  const layoutsRef = useRef(new Map<number, { y: number; height: number }>());
-  const bodyYRef = useRef(0);
-  const scrollYRef = useRef(0);
-  const viewportHRef = useRef(0);
-  const trackerRef = useRef<PageDwellTracker | null>(null);
-  if (trackerRef.current === null) {
-    trackerRef.current = new PageDwellTracker({
-      onRead: (page) => {
-        useProgressStore.getState().notePageRead(page).catch(() => undefined);
-      },
-    });
-  }
+  // Page-read tracking (design 2026-10-21 §4.3). Every gate lives in the
+  // controller; this component only forwards events to it.
+  const [tracking] = useState(
+    () =>
+      new MushafPageTrackingController({
+        onRead: (page) => {
+          useProgressStore.getState().notePageRead(page).catch(() => undefined);
+        },
+      }),
+  );
 
-  const observe = useCallback(() => {
-    if (AppState.currentState !== 'active') return;
-    const laid: SegmentLayout[] = [];
-    layoutsRef.current.forEach((l, page) => {
-      laid.push({ page, y: bodyYRef.current + l.y, height: l.height });
-    });
-    trackerRef.current?.update(
-      pagesInView(laid, scrollYRef.current, viewportHRef.current),
-      Date.now(),
-    );
-  }, []);
+  // Tabs keep this screen mounted behind other tabs: count time only while focused.
+  useFocusEffect(
+    useCallback(() => {
+      tracking.setFocused(true, Date.now());
+      const tick = setInterval(() => tracking.tick(Date.now()), 1000);
+      return () => {
+        clearInterval(tick);
+        tracking.setFocused(false, Date.now());
+      };
+    }, [tracking]),
+  );
 
   useEffect(() => {
-    const tick = setInterval(observe, 1000);
+    tracking.setAppActive(AppState.currentState === 'active', Date.now());
     const sub = AppState.addEventListener('change', (s: AppStateStatus) => {
-      if (s === 'active') observe();
-      else trackerRef.current?.pause(Date.now());
+      tracking.setAppActive(s === 'active', Date.now());
     });
-    return () => {
-      clearInterval(tick);
-      sub.remove();
-      trackerRef.current?.pause(Date.now());
-    };
-  }, [observe]);
+    return () => sub.remove();
+  }, [tracking]);
 
-  // A refetch can change which pages are rendered; forget stale layouts.
+  // AsyncContent unmounts the segments unless the status is 'success'.
   useEffect(() => {
-    const live = new Set(segments.map((s) => s.page));
-    for (const page of [...layoutsRef.current.keys()]) {
-      if (!live.has(page)) layoutsRef.current.delete(page);
-    }
-  }, [segments]);
+    tracking.setContentReady(ayatStatus === 'success', Date.now());
+  }, [tracking, ayatStatus]);
+
+  useEffect(() => {
+    tracking.retainPages(segments.map((s) => s.page));
+  }, [tracking, segments]);
 ```
 
-4. `ScrollView` (`:204`) gains:
+4. `ScrollView` (`:204`):
 
 ```tsx
       <ScrollView
         contentContainerStyle={styles.pageContent}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={250}
-        onLayout={(e) => {
-          viewportHRef.current = e.nativeEvent.layout.height;
-        }}
-        onScroll={(e) => {
-          scrollYRef.current = e.nativeEvent.contentOffset.y;
-          observe();
-        }}
+        onLayout={(e) => tracking.setViewportHeight(e.nativeEvent.layout.height)}
+        onScroll={(e) => tracking.onScroll(e.nativeEvent.contentOffset.y, Date.now())}
       >
 ```
 
-5. Wrap `<AsyncContent …>` (`:219-241`) in `<View onLayout={(e) => { bodyYRef.current = e.nativeEvent.layout.y; }}> … </View>` (no style). Replace its single `<Text>` child (`:227-240`) with:
+5. Wrap `<AsyncContent …>` (`:219-241`) in `<View onLayout={(e) => tracking.setBodyY(e.nativeEvent.layout.y)}> … </View>` (no style). Replace its single `<Text>` child (`:227-240`) with:
 
 ```tsx
           {segments.map((segment) => (
@@ -896,7 +1261,7 @@ Expected: FAIL on the first three tests (the current source has `notePageRead(cu
               key={segment.page}
               onLayout={(e) => {
                 const { y, height } = e.nativeEvent.layout;
-                layoutsRef.current.set(segment.page, { y, height });
+                tracking.setSegmentLayout(segment.page, y, height);
               }}
               style={[
                 styles.ayatBody,
@@ -916,10 +1281,10 @@ Expected: FAIL on the first three tests (the current source has `notePageRead(cu
 
 Do not touch `styles` (`:300-386`), the header, the meta line (`:188-193`), the footer (`:244-254`), `ListView`, or the resume path (`:41-108`).
 
-**Step 4: Run it and confirm it passes**
+**Step 4: Run it — it must pass**
 
-Run: `npx jest __tests__/mushafPageTrackingWiring.test.ts __tests__/mushafPresentation.test.ts __tests__/designTokens.test.ts && npx tsc --noEmit --pretty false && npm run lint 2>&1 | grep -E "sections/mushaf.tsx" -A 2`
-Expected: tests PASS; tsc clean; lint prints nothing for `mushaf.tsx`. If lint flags `react-hooks/exhaustive-deps` on the `useMemo` because `ayat` comes from the store, leave it: the dependency is correct.
+Run: `npx jest __tests__/mushafPageTrackingWiring.test.ts __tests__/mushafPageTracking.test.ts __tests__/mushafPresentation.test.ts __tests__/designTokens.test.ts && npx tsc --noEmit --pretty false && npm run lint 2>&1 | grep -E "sections/mushaf.tsx" -A 2`
+Expected: PASS; tsc clean; no lint output for `mushaf.tsx`.
 
 **Step 5: Commit**
 
@@ -930,20 +1295,20 @@ git commit -m "feat(mushaf): record each page as it is read instead of on open"
 
 ---
 
-## Task 7: Repository aggregates: total pages read, lectures listened
+## Task 9: Repository totals — pages read, lectures listened
 
 **Files:**
-- Modify: `constants/progress.ts` (append `LECTURE_LISTENED_MIN_SEC`)
-- Modify: `db/helpers/lectureCompletion.ts` (add `isListened`)
+- Modify: `constants/progress.ts` (append `LECTURE_LISTENED_MIN_SEC` after `COMPLETION_THRESHOLD`, `:32`)
+- Modify: `db/helpers/lectureCompletion.ts` (import on line 6; add `isListened`)
 - Modify: `db/types.ts:58-86` (`totalPagesRead`), `:88-101` (`listenedCount`)
-- Modify: `db/repositories/pageReads.ts` (method after `pagesReadInMonth`, `:89-92`)
-- Modify: `db/repositories/lectureSessions.ts` (method after `completedCount`, `:105-110`)
-- Modify: `db/web-shim.ts` (`pageReads` object ~`:178-185`; `lectureSessions` `:331-342`)
+- Modify: `db/repositories/pageReads.ts` (method before `currentStreak`, `:94`)
+- Modify: `db/repositories/lectureSessions.ts` (import; method before `totalListenedSec`, `:112`)
+- Modify: `db/web-shim.ts` (`pageReads` before `currentStreak`; `lectureSessions` before `totalListenedSec`, `:336`; the `lectureCompletion` import)
 - Test: `__tests__/lecture-completion.test.ts` (append), `__tests__/pageReadsRepo.test.ts` (append)
 
 **Step 1: Write the failing tests.**
 
-Append to `__tests__/lecture-completion.test.ts` (and import `isListened`):
+In `__tests__/lecture-completion.test.ts`, change the import to `import { forwardDelta, isCompleted, isListened } from '../db/helpers/lectureCompletion';` and append:
 
 ```ts
 describe('isListened', () => {
@@ -980,7 +1345,7 @@ describe('isListened', () => {
 Append to `__tests__/pageReadsRepo.test.ts`:
 
 ```ts
-describe('progress aggregates (web shim)', () => {
+describe('progress totals (web shim)', () => {
   afterEach(() => jest.useRealTimers());
 
   it('totalPagesRead sums pages over days, counting a re-read on a new day', async () => {
@@ -993,7 +1358,7 @@ describe('progress aggregates (web shim)', () => {
     expect(await pageReads.totalPagesRead()).toBe(3);
   });
 
-  it('listenedCount counts listened lectures and reset clears both aggregates', async () => {
+  it('listenedCount counts listened lectures and reset clears both totals', async () => {
     const repos = createWebRepos();
     const base = { title: 't', author: 'a', durationSec: 1000, nowMs: 1 };
     await repos.lectureSessions.upsertSession({ ...base, lectureId: 'l1', positionSec: 60, forwardListenedDelta: 60 });
@@ -1011,14 +1376,14 @@ describe('progress aggregates (web shim)', () => {
 });
 ```
 
-**Step 2: Run them and confirm they fail**
+**Step 2: Run them — they must fail**
 
 Run: `npx jest __tests__/lecture-completion.test.ts __tests__/pageReadsRepo.test.ts`
-Expected: FAIL. `isListened` is not exported, and `pageReads.totalPagesRead is not a function`.
+Expected: FAIL (`isListened` is not exported; `pageReads.totalPagesRead is not a function`).
 
 **Step 3: Minimal implementation.**
 
-`constants/progress.ts`, append after `COMPLETION_THRESHOLD` (`:32`):
+`constants/progress.ts`, after `COMPLETION_THRESHOLD`:
 
 ```ts
 /**
@@ -1029,7 +1394,7 @@ Expected: FAIL. `isListened` is not exported, and `pageReads.totalPagesRead is n
 export const LECTURE_LISTENED_MIN_SEC = 60;
 ```
 
-`db/helpers/lectureCompletion.ts`: extend the existing import on line 6 to `import { COMPLETION_THRESHOLD, LECTURE_LISTENED_MIN_SEC } from '@/constants/progress';` (a second import of the same module trips `import/no-duplicates`), then append:
+`db/helpers/lectureCompletion.ts`: change line 6 to `import { COMPLETION_THRESHOLD, LECTURE_LISTENED_MIN_SEC } from '@/constants/progress';` (a second import line for the same module trips `import/no-duplicates`), then append:
 
 ```ts
 /** Mirrors the SQL predicate in `lectureSessions.listenedCount()`. */
@@ -1044,21 +1409,21 @@ export function isListened(s: {
 }
 ```
 
-`db/types.ts`. Add to `PageReadsRepository` after `pagesReadInMonth`:
+`db/types.ts`: in `PageReadsRepository`, after `pagesReadInMonth`:
 
 ```ts
   /** All-time SUM(khz_days.pages_read) — pages read summed over days. */
   totalPagesRead(): Promise<number>;
 ```
 
-Add to `LectureSessionsRepository` after `completedCount`:
+In `LectureSessionsRepository`, after `completedCount`:
 
 ```ts
   /** Sessions that are completed or have ≥ LECTURE_LISTENED_MIN_SEC (or the whole clip) of forward listening. */
   listenedCount(): Promise<number>;
 ```
 
-`db/repositories/pageReads.ts`, after `pagesReadInMonth`:
+`db/repositories/pageReads.ts`, before `async currentStreak()`:
 
 ```ts
     async totalPagesRead() {
@@ -1069,7 +1434,7 @@ Add to `LectureSessionsRepository` after `completedCount`:
     },
 ```
 
-`db/repositories/lectureSessions.ts`, after `completedCount` (import `LECTURE_LISTENED_MIN_SEC` from `@/constants/progress`):
+`db/repositories/lectureSessions.ts`: add `import { LECTURE_LISTENED_MIN_SEC } from '@/constants/progress';`, and before `async totalListenedSec()`:
 
 ```ts
     async listenedCount() {
@@ -1084,7 +1449,7 @@ Add to `LectureSessionsRepository` after `completedCount`:
     },
 ```
 
-`db/web-shim.ts`. In `pageReads`, after `pagesReadInMonth`:
+`db/web-shim.ts`: add `isListened` to the existing `./helpers/lectureCompletion` import. In `pageReads`, before `async currentStreak()`:
 
 ```ts
     async totalPagesRead() {
@@ -1093,7 +1458,7 @@ Add to `LectureSessionsRepository` after `completedCount`:
     },
 ```
 
-In `lectureSessions`, after `completedCount` (add `isListened` to the existing `lectureCompletion` import):
+In `lectureSessions`, before `async totalListenedSec()`:
 
 ```ts
     async listenedCount() {
@@ -1102,10 +1467,10 @@ In `lectureSessions`, after `completedCount` (add `isListened` to the existing `
     },
 ```
 
-**Step 4: Run them and confirm they pass**
+**Step 4: Run them — they must pass**
 
 Run: `npx jest __tests__/lecture-completion.test.ts __tests__/pageReadsRepo.test.ts __tests__/reset.test.ts && npx tsc --noEmit --pretty false`
-Expected: PASS. tsc may report the `@/db` test mocks in `__tests__/progressStore-dbFailed.test.ts` / `__tests__/wirdStore.test.ts` only if they are typed against the interfaces. They are untyped `jest.mock` factories, so tsc should be clean.
+Expected: PASS; clean.
 
 **Step 5: Commit**
 
@@ -1116,54 +1481,15 @@ git commit -m "feat(progress): add total-pages-read and lectures-listened aggreg
 
 ---
 
-## Task 8: Expose the new aggregates from `progressStore`
+## Task 10: Expose the totals from `progressStore`
 
 **Files:**
-- Modify: `store/progressStore.ts`: `ProgressSnapshot` `:37-53`, `EMPTY` `:77-91`, `hydrate` `:105-158`, `notePageRead` `:161-208`, `noteLectureTick` `:210-231`
-- Modify: `__tests__/progressStore-dbFailed.test.ts:9-28` (add the two new repo mocks so hydration still succeeds)
-- Test: `__tests__/progressStore-stats.test.ts` (new)
+- Modify: `store/progressStore.ts`: `ProgressSnapshot`, `EMPTY`, `hydrate`, `notePageRead`, `noteLectureTick` (`:210-231`)
+- Test: `__tests__/progressStore-stats.test.ts` (append; its mocks already include `totalPagesRead` / `listenedCount` from Task 7)
 
-**Step 1: Write the failing test** at `__tests__/progressStore-stats.test.ts`:
+**Step 1: Write the failing test.** Append:
 
 ```ts
-const mockTotalPagesRead = jest.fn(async () => 0);
-const mockListenedCount = jest.fn(async () => 0);
-const mockRecordPageRead = jest.fn(async () => true);
-
-jest.mock('@/db', () => ({
-  getRepos: jest.fn(async () => ({})),
-  progressRepo: {
-    recordPageRead: (...a: unknown[]) => mockRecordPageRead(...(a as [])),
-    pagesReadToday: jest.fn(async () => 0),
-    pagesReadInMonth: jest.fn(async () => 0),
-    totalPagesRead: () => mockTotalPagesRead(),
-    currentStreak: jest.fn(async () => 0),
-    completedJuzCount: jest.fn(async () => 0),
-    longestStreakEver: jest.fn(async () => 0),
-    bestWirdDay: jest.fn(async () => null),
-    trendLastNDays: jest.fn(async () => []),
-  },
-  lectureRepo: {
-    upsertSession: jest.fn(async () => ({})),
-    findInProgress: jest.fn(async () => null),
-    totalListenedSec: jest.fn(async () => 0),
-    completedCount: jest.fn(async () => 0),
-    listenedCount: () => mockListenedCount(),
-  },
-  achievementsRepo: { evaluateAll: jest.fn(async () => []) },
-}));
-jest.mock('@/store/wirdStore', () => ({
-  useWirdStore: {
-    getState: () => ({
-      recomputeTodayPct: jest.fn(async () => undefined),
-      reevaluateSuggestion: jest.fn(async () => undefined),
-    }),
-  },
-}));
-jest.mock('@/store/toastStore', () => ({ useToastStore: { getState: () => ({ show: jest.fn() }) } }));
-
-import { useProgressStore } from '@/store/progressStore';
-
 describe('progressStore library stats', () => {
   it('hydrates totalPagesRead and listenedLectureCount', async () => {
     mockTotalPagesRead.mockResolvedValueOnce(42);
@@ -1174,6 +1500,7 @@ describe('progressStore library stats', () => {
   });
 
   it('refreshes totalPagesRead after a newly recorded page', async () => {
+    mockRecordPageRead.mockResolvedValueOnce(true);
     mockTotalPagesRead.mockResolvedValue(43);
     await useProgressStore.getState().notePageRead(3);
     expect(useProgressStore.getState().totalPagesRead).toBe(43);
@@ -1190,41 +1517,38 @@ describe('progressStore library stats', () => {
 });
 ```
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
 Run: `npx jest __tests__/progressStore-stats.test.ts`
-Expected: FAIL. `totalPagesRead` is `undefined` (not 42).
+Expected: the new tests FAIL (`totalPagesRead` is `undefined`); the Task 7 tests still pass.
 
 **Step 3: Minimal implementation** in `store/progressStore.ts`:
-- `ProgressSnapshot`: add `totalPagesRead: number;` after `pagesToday`, and `listenedLectureCount: number;` after `completedLectureCount`.
-- `EMPTY`: add `totalPagesRead: 0,` and `listenedLectureCount: 0,`.
-- `hydrate`: add `progressRepo.totalPagesRead()` and `lectureRepo.listenedCount()` to the `Promise.all` and the destructuring, then set both.
-- `notePageRead`: add `progressRepo.totalPagesRead()` to its `Promise.all` and set `totalPagesRead`.
+- `ProgressSnapshot`: add `totalPagesRead: number;` and `listenedLectureCount: number;`. Add both as `0` in `EMPTY`.
+- `hydrate`: add `progressRepo.totalPagesRead()` and `lectureRepo.listenedCount()` to the `Promise.all` and the destructuring, and set both.
+- `notePageRead`: add `progressRepo.totalPagesRead()` to its refresh `Promise.all` and set `totalPagesRead`.
 - `noteLectureTick`: add `lectureRepo.listenedCount()` to its `Promise.all` and set `listenedLectureCount`.
 
-Then in `__tests__/progressStore-dbFailed.test.ts`, add `totalPagesRead: jest.fn(async () => 0),` to `progressRepo` and `listenedCount: jest.fn(async () => 0),` to `lectureRepo`.
-
-**Step 4: Run it and confirm it passes**
+**Step 4: Run it — it must pass**
 
 Run: `npx jest __tests__/progressStore-stats.test.ts __tests__/progressStore-dbFailed.test.ts __tests__/wirdStore.test.ts && npx tsc --noEmit --pretty false`
-Expected: PASS; tsc clean.
+Expected: PASS; clean.
 
 **Step 5: Commit**
 
 ```bash
-git add store/progressStore.ts __tests__/progressStore-stats.test.ts __tests__/progressStore-dbFailed.test.ts
+git add store/progressStore.ts __tests__/progressStore-stats.test.ts
 git commit -m "feat(progress): expose total pages read and lectures listened in the store"
 ```
 
 ---
 
-## Task 9: Arabic subtitles for the new StatCards
+## Task 11: Arabic number agreement and card subtitles
 
 **Files:**
 - Create: `services/libraryStats.ts`
 - Test: `__tests__/libraryStats.test.ts`
 
-**Step 1: Write the failing test** at `__tests__/libraryStats.test.ts`:
+**Step 1: Write the failing test** `__tests__/libraryStats.test.ts`:
 
 ```ts
 import {
@@ -1233,21 +1557,32 @@ import {
   pagesReadSubtitle,
 } from '@/services/libraryStats';
 
-describe('Library progress subtitles', () => {
-  it('pages: zero state, then Arabic-Indic count', () => {
+describe('Library progress subtitles (design §4.4)', () => {
+  it('pages: zero state, then 1 / 2 / 3–10 / 11+ agreement', () => {
     expect(pagesReadSubtitle(0)).toBe('لم تبدأ بعد');
-    expect(pagesReadSubtitle(142)).toBe('١٤٢ صفحة');
+    expect(pagesReadSubtitle(1)).toBe('صفحة واحدة');
+    expect(pagesReadSubtitle(2)).toBe('صفحتان');
+    expect(pagesReadSubtitle(3)).toBe('٣ صفحات');
+    expect(pagesReadSubtitle(10)).toBe('١٠ صفحات');
+    expect(pagesReadSubtitle(11)).toBe('١١ صفحة');
+    expect(pagesReadSubtitle(21)).toBe('٢١ صفحة');
+    expect(pagesReadSubtitle(100)).toBe('١٠٠ صفحة');
+    expect(pagesReadSubtitle(103)).toBe('١٠٣ صفحات');
+  });
+
+  it('lectures: zero state, agreement, and the completed count', () => {
+    expect(lecturesListenedSubtitle(0, 0)).toBe('لم تستمع بعد');
+    expect(lecturesListenedSubtitle(1, 0)).toBe('محاضرة واحدة');
+    expect(lecturesListenedSubtitle(2, 0)).toBe('محاضرتان');
+    expect(lecturesListenedSubtitle(4, 0)).toBe('٤ محاضرات');
+    expect(lecturesListenedSubtitle(11, 0)).toBe('١١ محاضرة');
+    expect(lecturesListenedSubtitle(1, 1)).toBe('محاضرة واحدة • المكتملة ١');
+    expect(lecturesListenedSubtitle(12, 4)).toBe('١٢ محاضرة • المكتملة ٤');
   });
 
   it('juz: always out of thirty', () => {
     expect(juzCompletedSubtitle(0)).toBe('٠ من ٣٠');
     expect(juzCompletedSubtitle(3)).toBe('٣ من ٣٠');
-  });
-
-  it('lectures: zero state, listened only, listened and completed', () => {
-    expect(lecturesListenedSubtitle(0, 0)).toBe('لم تستمع بعد');
-    expect(lecturesListenedSubtitle(4, 0)).toBe('٤ محاضرة');
-    expect(lecturesListenedSubtitle(12, 4)).toBe('١٢ محاضرة • ٤ مكتملة');
   });
 
   it('never uses the middle dot, which reads as ٠ between Arabic digits', () => {
@@ -1256,12 +1591,12 @@ describe('Library progress subtitles', () => {
 });
 ```
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
 Run: `npx jest __tests__/libraryStats.test.ts`
 Expected: FAIL with `Cannot find module '@/services/libraryStats'`.
 
-**Step 3: Minimal implementation** at `services/libraryStats.ts`:
+**Step 3: Minimal implementation** `services/libraryStats.ts`:
 
 ```ts
 /**
@@ -1271,22 +1606,46 @@ Expected: FAIL with `Cannot find module '@/services/libraryStats'`.
  */
 import { JUZ_PAGE_RANGES, toArabicDigits } from '@/constants/progress';
 
+export type CountForms = { one: string; two: string; few: string; many: string };
+
+/**
+ * Arabic number–noun agreement for n ≥ 1: 1 and 2 have their own words
+ * (واحدة / the dual); when the last two digits are 3–10 the noun is plural
+ * (٣ صفحات، ١٠٣ صفحات); otherwise it is singular (١١ صفحة، ١٠٠ صفحة).
+ */
+export function arabicCount(n: number, forms: CountForms): string {
+  if (n === 1) return forms.one;
+  if (n === 2) return forms.two;
+  const lastTwo = n % 100;
+  const noun = lastTwo >= 3 && lastTwo <= 10 ? forms.few : forms.many;
+  return `${toArabicDigits(n)} ${noun}`;
+}
+
+const PAGE_FORMS: CountForms = { one: 'صفحة واحدة', two: 'صفحتان', few: 'صفحات', many: 'صفحة' };
+const LECTURE_FORMS: CountForms = {
+  one: 'محاضرة واحدة',
+  two: 'محاضرتان',
+  few: 'محاضرات',
+  many: 'محاضرة',
+};
+
 export function pagesReadSubtitle(total: number): string {
-  return total > 0 ? `${toArabicDigits(total)} صفحة` : 'لم تبدأ بعد';
+  return total > 0 ? arabicCount(total, PAGE_FORMS) : 'لم تبدأ بعد';
 }
 
 export function juzCompletedSubtitle(completed: number): string {
   return `${toArabicDigits(completed)} من ${toArabicDigits(JUZ_PAGE_RANGES.length)}`;
 }
 
+/** "المكتملة N" avoids an adjective that would have to agree with N. */
 export function lecturesListenedSubtitle(listened: number, completed: number): string {
   if (listened <= 0) return 'لم تستمع بعد';
-  const head = `${toArabicDigits(listened)} محاضرة`;
-  return completed > 0 ? `${head} • ${toArabicDigits(completed)} مكتملة` : head;
+  const head = arabicCount(listened, LECTURE_FORMS);
+  return completed > 0 ? `${head} • المكتملة ${toArabicDigits(completed)}` : head;
 }
 ```
 
-**Step 4: Run it and confirm it passes**
+**Step 4: Run it — it must pass**
 
 Run: `npx jest __tests__/libraryStats.test.ts`
 Expected: 4 PASS.
@@ -1295,21 +1654,21 @@ Expected: 4 PASS.
 
 ```bash
 git add services/libraryStats.ts __tests__/libraryStats.test.ts
-git commit -m "feat(library): add Arabic subtitles for the progress stat cards"
+git commit -m "feat(library): Arabic number agreement for the progress stat cards"
 ```
 
 ---
 
-## Task 10: `progressStats` section in the Library presentation contract
+## Task 12: `progressStats` in the Library presentation contract
 
 **Files:**
-- Modify: `constants/libraryPresentation.ts:27-33`, `:40-56` (rename `completedLectures` → `progressStats`), add `LIBRARY_PROGRESS_STAT_ORDER` after `:61-67`
+- Modify: `constants/libraryPresentation.ts:27-33`, `:40-56` (`completedLectures` → `progressStats`); add `LIBRARY_PROGRESS_STAT_ORDER` after `:61-67`
 - Test: `__tests__/libraryPresentation.test.ts:44-52`, `:69-73`, `:104-117`
 
 **Step 1: Write the failing test.** In `__tests__/libraryPresentation.test.ts`:
-- In "keeps the newer metrics rather than deleting them" (`:44-52`), replace `'completedLectures'` with `'progressStats'` and keep the array sorted: `['insights', 'progressStats', 'wirdHistory', 'wirdSuggestion', 'wirdTrend']`.
-- In "keeps the audiobook, reminder, and suggestion sections as visible as before" (`:104-117`), replace `'completedLectures'` with `'progressStats'`.
-- Add `LIBRARY_PROGRESS_STAT_ORDER` to the import, and below the "Library summary cards" describe (`:69-73`) add:
+- "keeps the newer metrics rather than deleting them" (`:44-52`): the expected sorted array becomes `['insights', 'progressStats', 'wirdHistory', 'wirdSuggestion', 'wirdTrend']`.
+- "keeps the audiobook, reminder, and suggestion sections as visible as before" (`:104-117`): change `'completedLectures'` to `'progressStats'`.
+- Add `LIBRARY_PROGRESS_STAT_ORDER` to the import. After the "Library summary cards" describe (`:69-73`), add:
 
 ```ts
 describe('Library progress stats row (no frame — design 2026-10-21 §4.4)', () => {
@@ -1324,14 +1683,12 @@ describe('Library progress stats row (no frame — design 2026-10-21 §4.4)', ()
 });
 ```
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
 Run: `npx jest __tests__/libraryPresentation.test.ts`
-Expected: FAIL. `LIBRARY_PROGRESS_STAT_ORDER` is undefined, and the order still contains `completedLectures`.
+Expected: FAIL.
 
-**Step 3: Minimal implementation** in `constants/libraryPresentation.ts`:
-- In both `LIBRARY_EXTENSION_SECTIONS` and `LIBRARY_SECTION_ORDER`, replace `'completedLectures'` with `'progressStats'` (same position, last).
-- After `LibrarySummaryCardKey`, add:
+**Step 3: Minimal implementation** in `constants/libraryPresentation.ts`. Replace `'completedLectures'` with `'progressStats'` in `LIBRARY_EXTENSION_SECTIONS` and `LIBRARY_SECTION_ORDER`, keeping the same (last) position. After `LibrarySummaryCardKey`, add:
 
 ```ts
 /**
@@ -1344,32 +1701,24 @@ export const LIBRARY_PROGRESS_STAT_ORDER = Object.freeze(['lectures', 'juz', 'pa
 export type LibraryProgressStatKey = (typeof LIBRARY_PROGRESS_STAT_ORDER)[number];
 ```
 
-`SECTION_FILTERS` stays as it is. `progressStats` is absent from it, so it stays visible under every filter, as `completedLectures` was.
+Leave `SECTION_FILTERS` alone: `progressStats` isn't in it, so it shows under every filter, as `completedLectures` did.
 
-**Step 4: Run it and confirm it passes**
+**Step 4: Run it — it must pass**
 
 Run: `npx jest __tests__/libraryPresentation.test.ts`
-Expected: PASS. tsc **will** now fail in `app/(tabs)/library.tsx:617` (`completedLectures` is not a `LibrarySectionKey`). That is expected; Task 11 fixes it. Run Task 11 before committing, or commit both together. **Commit Tasks 10 and 11 as one commit** so no commit on the branch fails typecheck.
+Expected: PASS. tsc **will** now fail in `app/(tabs)/library.tsx` (`completedLectures` is no longer a `LibrarySectionKey`). That is expected. **Do not commit yet** — Task 13 fixes the error, and Tasks 12 and 13 go into one commit so no commit on the branch fails typecheck.
 
 ---
 
-## Task 11: Render the `progressStats` row on the Library
+## Task 13: Render the `progressStats` row
 
 **Files:**
-- Modify: `app/(tabs)/library.tsx`: imports `:20-26` and `:61`, selectors `:176-192`, `completedLectures` section `:617-629`
-- Test: `__tests__/libraryProgressStatsWiring.test.ts` (source contract)
+- Modify: `app/(tabs)/library.tsx`: imports `:20-26` and near `:61`; selectors after `completedLectureCount`; `progressStatCards` after the `summaryCards` record; the `completedLectures` section (`:617-629` before Task 7's deletions, so look it up by name)
+- Test: `__tests__/libraryProgressWiring.test.ts` (append)
 
-**Step 1: Write the failing test** at `__tests__/libraryProgressStatsWiring.test.ts`:
+**Step 1: Write the failing test.** Append to `__tests__/libraryProgressWiring.test.ts`:
 
 ```ts
-import fs from 'fs';
-import path from 'path';
-
-const src = fs
-  .readFileSync(path.resolve(__dirname, '../app/(tabs)/library.tsx'), 'utf8')
-  .replace(/\/\*[\s\S]*?\*\//g, '')
-  .replace(/^\s*\/\/.*$/gm, '');
-
 describe('Library progressStats row', () => {
   it('renders the three cards from the physical-order contract inside the frame row style', () => {
     expect(src).toMatch(/progressStats:\s*\(\s*<View style=\{styles\.statsRow\}>/);
@@ -1391,14 +1740,14 @@ describe('Library progressStats row', () => {
 });
 ```
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
-Run: `npx jest __tests__/libraryProgressStatsWiring.test.ts`
-Expected: FAIL on the first two tests.
+Run: `npx jest __tests__/libraryProgressWiring.test.ts`
+Expected: the first two new tests FAIL.
 
 **Step 3: Implementation** in `app/(tabs)/library.tsx`:
-1. In the `@/constants/libraryPresentation` import (`:20-26`), add `LIBRARY_PROGRESS_STAT_ORDER` and `type LibraryProgressStatKey`. Add `import { juzCompletedSubtitle, lecturesListenedSubtitle, pagesReadSubtitle } from '@/services/libraryStats';`.
-2. After `const completedLectureCount = …` (`:189`), add:
+1. Add `LIBRARY_PROGRESS_STAT_ORDER` and `type LibraryProgressStatKey` to the `@/constants/libraryPresentation` import. Add `import { juzCompletedSubtitle, lecturesListenedSubtitle, pagesReadSubtitle } from '@/services/libraryStats';`.
+2. After `const completedLectureCount = …`, add:
 
 ```tsx
   const totalPagesRead = useProgressStore((s) => s.totalPagesRead);
@@ -1406,7 +1755,7 @@ Expected: FAIL on the first two tests.
   const listenedLectureCount = useProgressStore((s) => s.listenedLectureCount);
 ```
 
-3. After the `summaryCards` record (`:305`), add:
+3. After the `summaryCards` record, add:
 
 ```tsx
   // Below the frame (no Figma frame — design 2026-10-21 §4.4). Same StatCard,
@@ -1436,9 +1785,9 @@ Expected: FAIL on the first two tests.
   };
 ```
 
-(`SectionQuran` and `LibraryWird` are monochrome in `components/khazain/icons/generated/figmaIcons.ts`, so `color` applies.)
+`SectionQuran` and `LibraryWird` are both monochrome (`components/khazain/icons/generated/figmaIcons.ts`), so `color` takes effect.
 
-4. Replace the `completedLectures: ( … )` entry (`:617-629`) with:
+4. Replace the `completedLectures: ( … ),` entry with:
 
 ```tsx
     // Physical left → right: محاضرات مسموعة، الأجزاء المكتملة، صفحات مقروءة.
@@ -1451,79 +1800,166 @@ Expected: FAIL on the first two tests.
     ),
 ```
 
-Leave `HeadphonesGlyph` (`:662-672`), `styles`, and every frame section untouched.
+Leave `HeadphonesGlyph`, `styles`, and every frame section as they are.
 
-**Step 4: Run it and confirm it passes**
+**Step 4: Run it — it must pass**
 
-Run: `npx jest __tests__/libraryProgressStatsWiring.test.ts __tests__/libraryPresentation.test.ts __tests__/fontScaleChrome.test.ts __tests__/rtlPhysicalContract.test.ts && npx tsc --noEmit --pretty false && npm run lint 2>&1 | grep -E "\(tabs\)/library.tsx|libraryPresentation|libraryStats" -A 2`
-Expected: PASS; tsc clean; no lint output for these paths.
+Run: `npx jest __tests__/libraryProgressWiring.test.ts __tests__/libraryPresentation.test.ts __tests__/fontScaleChrome.test.ts __tests__/rtlPhysicalContract.test.ts && npx tsc --noEmit --pretty false && npm run lint 2>&1 | grep -E "\(tabs\)/library.tsx|libraryPresentation|libraryStats" -A 2`
+Expected: PASS; tsc clean; no lint output.
 
-**Step 5: Commit (Tasks 10 and 11 together)**
+**Step 5: Commit (Tasks 12 + 13 together)**
 
 ```bash
-git add constants/libraryPresentation.ts __tests__/libraryPresentation.test.ts "app/(tabs)/library.tsx" __tests__/libraryProgressStatsWiring.test.ts
+git add constants/libraryPresentation.ts __tests__/libraryPresentation.test.ts "app/(tabs)/library.tsx" __tests__/libraryProgressWiring.test.ts
 git commit -m "feat(library): show pages read, juz completed and lectures listened"
 ```
 
 ---
 
-## Task 12: Credit the page data in About
+## Task 14: Full CC BY 3.0 notice on About
 
 **Files:**
-- Modify: `app/settings-about.tsx`: imports `:1-8`, body after the `موقع المؤسسة` `Pressable` (`:63-74`), styles (`:131-143`)
-- Test: `__tests__/quranPages.test.ts` (append)
+- Modify: `constants/quranPages.ts` (append the notice constants)
+- Modify: `app/settings-about.tsx`: imports `:1-8`; generalise `openFoundationWebsite` (`:24-34`) into `openExternalUrl`; new card after the `موقع المؤسسة` `Pressable` (`:63-74`); styles (`:131-143`)
+- Test: `__tests__/quranPageNotice.test.ts` (new; `fs`/`path` imported at the top)
 
-**Step 1: Write the failing test.** Append to `__tests__/quranPages.test.ts`:
+**Step 1: Write the failing test** `__tests__/quranPageNotice.test.ts`:
 
 ```ts
 import fs from 'fs';
 import path from 'path';
+import {
+  QURAN_PAGE_DATA_CHANGES,
+  QURAN_PAGE_DATA_CREDIT,
+  QURAN_PAGE_DATA_LICENSE_LABEL,
+  QURAN_PAGE_DATA_LICENSE_URL,
+} from '@/constants/quranPages';
 
-describe('CC BY 3.0 attribution', () => {
-  it('is rendered on the About screen', () => {
-    const src = fs.readFileSync(path.resolve(__dirname, '../app/settings-about.tsx'), 'utf8');
-    expect(src).toMatch(/\{QURAN_PAGE_DATA_CREDIT\}/);
-    expect(src).toMatch(/مصادر البيانات/);
+const about = fs.readFileSync(path.resolve(__dirname, '../app/settings-about.tsx'), 'utf8');
+const data = fs.readFileSync(path.resolve(__dirname, '../constants/quranPageData.ts'), 'utf8');
+
+/** CC BY 3.0 requires credit, the licence URI and a note of changes (design §4.6). */
+describe('CC BY 3.0 notice for the Tanzil page data', () => {
+  it('names the source, the licence URI and the changes', () => {
+    expect(QURAN_PAGE_DATA_CREDIT).toContain('Tanzil.net');
+    expect(QURAN_PAGE_DATA_LICENSE_URL).toBe('https://creativecommons.org/licenses/by/3.0/');
+    expect(QURAN_PAGE_DATA_LICENSE_LABEL).toContain('CC BY 3.0');
+    expect(QURAN_PAGE_DATA_CHANGES.length).toBeGreaterThan(0);
+  });
+
+  it('is rendered on About with a tappable licence link', () => {
+    expect(about).toMatch(/مصادر البيانات/);
+    expect(about).toMatch(/\{QURAN_PAGE_DATA_CREDIT\}/);
+    expect(about).toMatch(/\{QURAN_PAGE_DATA_CHANGES\}/);
+    expect(about).toMatch(/accessibilityRole="link"/);
+    expect(about).toMatch(/openExternalUrl\(\s*QURAN_PAGE_DATA_LICENSE_URL\s*\)/);
+  });
+
+  it('opens links through canOpenURL with the Arabic fallback alert', () => {
+    expect(about).toMatch(/async function openExternalUrl\(url: string\)/);
+    expect(about).toMatch(/Linking\.canOpenURL\(url\)/);
+    expect(about).toMatch(/Alert\.alert\('الرابط غير متاح'/);
+  });
+
+  it('keeps the licence and source in the generated data header', () => {
+    expect(data).toContain('Creative Commons');
+    expect(data).toContain('https://creativecommons.org/licenses/by/3.0/');
+    expect(data).toContain('https://tanzil.net/res/text/metadata/quran-data.js');
   });
 });
 ```
 
-**Step 2: Run it and confirm it fails**
+**Step 2: Run it — it must fail**
 
-Run: `npx jest __tests__/quranPages.test.ts -t attribution`
-Expected: FAIL.
+Run: `npx jest __tests__/quranPageNotice.test.ts`
+Expected: FAIL (the constants are not exported).
 
-**Step 3: Implementation** in `app/settings-about.tsx`:
-- Import: `import { QURAN_PAGE_DATA_CREDIT } from '@/constants/quranPages';`
+**Step 3: Implementation.**
+
+Append to `constants/quranPages.ts`:
+
+```ts
+/**
+ * CC BY 3.0 notice for the page/juz data, rendered in app/settings-about.tsx.
+ * The licence requires credit, the licence URI and a note of changes.
+ */
+export const QURAN_PAGE_DATA_CREDIT =
+  'تقسيم صفحات المصحف وأجزائه: بيانات Tanzil.net (Quran Metadata 1.0، ٢٠٠٨–٢٠٠٩)';
+export const QURAN_PAGE_DATA_CHANGES = 'التعديلات: تحويل الصيغة فقط دون تغيير القيم.';
+export const QURAN_PAGE_DATA_LICENSE_LABEL = 'الرخصة: CC BY 3.0';
+export const QURAN_PAGE_DATA_LICENSE_URL = 'https://creativecommons.org/licenses/by/3.0/';
+```
+
+In `app/settings-about.tsx`:
+- Add the import:
+
+```ts
+import {
+  QURAN_PAGE_DATA_CHANGES,
+  QURAN_PAGE_DATA_CREDIT,
+  QURAN_PAGE_DATA_LICENSE_LABEL,
+  QURAN_PAGE_DATA_LICENSE_URL,
+} from '@/constants/quranPages';
+```
+
+- Replace `openFoundationWebsite` (`:24-34`) with:
+
+```ts
+/** canOpenURL + Arabic fallback alert — the repo's external-link pattern. */
+async function openExternalUrl(url: string) {
+  if (!url) return;
+  try {
+    const can = await Linking.canOpenURL(url);
+    if (!can) throw new Error('cannot open');
+    await Linking.openURL(url);
+  } catch {
+    Alert.alert('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
+  }
+}
+
+function openFoundationWebsite() {
+  void openExternalUrl(MORE_EXTERNAL_URLS.web);
+}
+```
+
 - After the `موقع المؤسسة` `</Pressable>`, add:
 
 ```tsx
-        {/* CC BY 3.0 requires visible credit for the page/juz table (constants/quranPageData.ts). */}
+        {/* CC BY 3.0 notice for the mushaf page/juz data (constants/quranPageData.ts). */}
         <View style={[styles.linkCard, KhazainShadows.card]}>
           <Text style={styles.linkTitle}>مصادر البيانات</Text>
           <Text style={styles.creditValue}>{QURAN_PAGE_DATA_CREDIT}</Text>
+          <Text style={styles.creditValue}>{QURAN_PAGE_DATA_CHANGES}</Text>
+          <Pressable
+            accessibilityRole="link"
+            accessibilityLabel={QURAN_PAGE_DATA_LICENSE_LABEL}
+            hitSlop={8}
+            onPress={() => void openExternalUrl(QURAN_PAGE_DATA_LICENSE_URL)}
+          >
+            <Text style={styles.linkValue}>{QURAN_PAGE_DATA_LICENSE_LABEL}</Text>
+          </Pressable>
         </View>
 ```
 
 - Styles, after `linkValue`: `creditValue: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),`
 
-`linkCard` already spreads `PHYSICAL_BOX` with `alignItems: 'flex-end'` (`:131-140`), so the card is right-anchored. No new RTL handling is needed.
+`linkCard` already spreads `PHYSICAL_BOX` with `alignItems: 'flex-end'` (`:131-140`), so the card sits at the physical right with no extra work. **Settings-branch conflict (design §10):** keep both cards and this `openExternalUrl` helper.
 
-**Step 4: Run it and confirm it passes**
+**Step 4: Run it — it must pass**
 
-Run: `npx jest __tests__/quranPages.test.ts __tests__/rtlPhysicalContract.test.ts && npx tsc --noEmit --pretty false && npm run lint 2>&1 | grep -E "settings-about" -A 2`
+Run: `npx jest __tests__/quranPageNotice.test.ts __tests__/rtlPhysicalContract.test.ts && npx tsc --noEmit --pretty false && npm run lint 2>&1 | grep -E "settings-about|quranPages" -A 2`
 Expected: PASS; clean.
 
 **Step 5: Commit**
 
 ```bash
-git add app/settings-about.tsx __tests__/quranPages.test.ts
-git commit -m "feat(about): credit Tanzil for the mushaf page data (CC BY 3.0)"
+git add constants/quranPages.ts app/settings-about.tsx __tests__/quranPageNotice.test.ts
+git commit -m "feat(about): show the CC BY 3.0 notice for the mushaf page data"
 ```
 
 ---
 
-## Task 13: Full verification and visual QA
+## Task 15: Full verification and QA
 
 **Step 1: Automated gates**
 
@@ -1534,54 +1970,62 @@ npm run lint 2>&1 | grep -E "constants/(progress|quranPages|quranPageData|librar
 git log --oneline 0635ea1..HEAD
 ```
 
-Expected: jest passes everything: 80 suites, 880 passed, 1 skipped, i.e. 7 new suites and 52 new tests on the 73 / 828 baseline. tsc is clean. The lint grep prints nothing. `git log` shows 11 commits plus the plan commit: Tasks 1–9 and 12 one each, 10+11 together.
+Expected:
+- jest: **81 suites, 897 passed, 1 skipped** (planning dry run of v2; baseline 73 / 828).
+- tsc: clean.
+- The lint grep prints only the pre-existing `@typescript-eslint/array-type` warnings on the untouched `JUZ_PAGE_RANGES` / `STREAK_MILESTONES` / `SURAH_START_PAGES` declarations in `constants/progress.ts`, the pre-existing unused `median` in `db/web-shim.ts`, and `import/first` on the new `jest.mock`-before-import test files (`pageReadsRepo`, `progressStore-stats` — the same pattern `progressStore-dbFailed.test.ts` already warns on). Nothing in production code this plan adds.
+- `git log`: the plan commits plus **13** task commits (Tasks 1–11 and 14 one each, 12+13 together).
 
-**Step 2: Visual QA on the iOS simulator** (argent: `list-devices` and prefer a booted simulator; load `argent-device-interact`, `argent-react-native-app-workflow`, `argent-screenshot-diff`). Rebuild if native code changed (it did not). Otherwise reload Metro. `EXPO_PUBLIC_VISUAL_AUDIT=1 npm start`.
+**Step 2: Visual QA — iOS simulator.** Use argent: run `list-devices` and prefer a simulator that is already booted. Load the `argent-device-interact`, `argent-react-native-app-workflow` and `argent-screenshot-diff` skills. No native code changed, so a Metro reload is enough. Run `EXPO_PUBLIC_VISUAL_AUDIT=1 npm start`.
 
 | # | Route / state | Compare against | Must hold |
 |---|---|---|---|
-| V1 | `/library`, filter الكل, first viewport | `docs/audit/2026-09-09/figma-reference/06-2031-4659.png` (main checkout) **and** `/tmp/khazayin-capture/progress-before` (Task 0) | `npm run capture:ios -- --out /tmp/khazayin-capture/progress-after --node 2031:4659` then `screenshot-diff` vs before: **no diff** outside live data (counts / relative times). Summary row still تذكيراتي / ورد القرآن / ملاحظاتي |
-| V2 | `/library`, الكل, scrolled to bottom | no frame — contract `libraryLayout.ts` `STAT_CARD`, `constants/layout.ts` `PHYSICAL_ROW`, `constants/typography.ts` via `StatCard` | Below التذكيرات الذكية: one row of three 115-wide cards, physical left → right محاضرات مسموعة / الأجزاء المكتملة / صفحات مقروءة. Icons navy. No horizontal overflow at 393 pt. The old "محاضرات مكتملة" card is gone |
-| V3 | `/library`, filter السجل, bottom | no frame — same contracts | `progressStats` row present after the history/trend/insights extras |
-| V4 | V2 at the largest Dynamic Type size (Settings → Accessibility, or `xcrun simctl ui booted content_size accessibility-extra-extra-extra-large`) | contract `fontScaleChrome` (`CHROME_MAX_FONT_SCALE`) | Captions stay inside their cards, and the cards grow |
-| V5 | `/sections/mushaf?surah=2`, loaded | `16-2349-982.png` + Task 0 capture | `npm run capture:ios -- --out /tmp/khazayin-capture/progress-after --node 2349:982`. Header `سورة البقرة`, meta `مدنية • ٥ آية • صفحة ٢ من ٦٠٤` (as before), footer الفهرس / الانتقال للعلامة / حفظ علامة: **identical** to Task 0. Body: the 5 ayat as before (one segment) |
-| V6 | Cold start with `last_read_page > 1`, open the Mushaf tab with no `surah` | `15-2349-829.png` | Plain page surface during resume, no list flash. Unchanged |
-| V7 | `/settings-about` | no frame — contract `PHYSICAL_BOX`, `textStyle` | New card مصادر البيانات, right-anchored, Latin "Tanzil.net" and "CC BY 3.0" readable inside the Arabic line |
+| V1 | `/library`, filter الكل, first viewport | `docs/audit/2026-09-09/figma-reference/06-2031-4659.png` (main checkout) and `$QA/baseline/06-2031-4659__library.png` | `npm run capture:ios -- --out $QA/after --node 2031:4659`, then `screenshot-diff` against the baseline: **no diff** except live data (counts, relative times, the wird-card page). The summary row is still تذكيراتي / ورد القرآن / ملاحظاتي |
+| V2 | `/library`, الكل, scrolled to the bottom (below the fold) | No frame. Contract: `libraryLayout.ts` `STAT_CARD`, `constants/layout.ts` `PHYSICAL_ROW`, `constants/typography.ts` via `StatCard` | One row of three 115-wide cards under التذكيرات الذكية, physical left → right محاضرات مسموعة / الأجزاء المكتملة / صفحات مقروءة. Navy icons. No horizontal overflow at 393 pt. "محاضرات مكتملة" is gone |
+| V3 | `/library`, filter السجل, bottom | No frame; same contracts | The `progressStats` row comes after the history, trend and insight extras |
+| V4 | V2 at the largest Dynamic Type size (`xcrun simctl ui booted content_size accessibility-extra-extra-extra-large`) | Contract `fontScaleChrome` (`CHROME_MAX_FONT_SCALE`) | Captions stay inside their cards, which grow to fit |
+| V5 | `/sections/mushaf?surah=2`, loaded | `16-2349-982.png` and `$QA/baseline/16-2349-982__sections-mushaf__surah-2.png` | `npm run capture:ios -- --out $QA/after --node 2349:982`. Header, meta (`… • صفحة ٢ من ٦٠٤`) and footer are **identical** to the baseline. The body shows the 5 ayat as before |
+| V6 | Cold start with `last_read_page > 1`, then open the Mushaf from الأقسام without a `surah` param | `15-2349-829.png` (by eye — a transition with no route) | A plain page surface while resuming, with no flash of the list |
+| V7 | `/settings-about` | No frame. Contract: `PHYSICAL_BOX`, `textStyle` | The مصادر البيانات card sits at the physical right. "Tanzil.net" and "CC BY 3.0" are readable inside the Arabic lines. Tapping "الرخصة: CC BY 3.0" opens `creativecommons.org/licenses/by/3.0/` in the browser |
 
-**Step 3: Functional QA** (same simulator):
+**Step 3: Functional QA** (same simulator; save screenshots under `$QA/after/functional/`):
 
-1. **Reset:** More → الإعدادات → تقدّم القراءة → reset. The Library shows صفحات مقروءة "لم تبدأ بعد", الأجزاء المكتملة "٠ من ٣٠", محاضرات مسموعة "لم تستمع بعد", and a ring at 0 %.
-2. **Fling is not reading:** open البقرة, back out within 3 s. The Library is still at 0.
-3. **Dwell reads a page:** open البقرة and wait ≥ 9 s on screen. Back on the Library: صفحات مقروءة "١ صفحة", the ring at 10 % (default goal 10), ورد القرآن "يوم واحد متتالي", and the wird card "سورة البقرة — صفحة ٢".
-4. **Background pauses:** reset. Open البقرة, wait 4 s, send to home (`button: home`) for 20 s, return, wait 3 s, back out. The Library is still 0, because 7 s < 8 s. Wait the remaining time and it records.
-5. **Juz completion and achievement (seeded, since mock text only reaches page 2).** Terminate the app, then seed pages 1 and 3–21 for yesterday:
+1. **Reset:** More → الإعدادات → تقدّم القراءة → reset. The Library shows صفحات مقروءة "لم تبدأ بعد", الأجزاء المكتملة "٠ من ٣٠", محاضرات مسموعة "لم تستمع بعد", and the ring at 0 %.
+2. **A fling is not a read:** open البقرة and back out within 3 s → nothing changes.
+3. **Dwell reads a page:** open البقرة and wait at least 9 s. The Library then shows صفحات مقروءة "**صفحة واحدة**", the ring at 10 %, ورد القرآن "يوم واحد متتالي", and the wird card "سورة البقرة — صفحة ٢".
+4. **Blur pauses (reader stays mounted):** reset. Open البقرة and wait 4 s. Switch to the مكتبتي tab for 20 s, then go back to الأقسام — the reader is still open. Wait 3 s and check the Library: still 0, because 7 s < 8 s. Return to the reader and wait 2 s more: it records.
+5. **Background pauses:** reset. Open البقرة and wait 4 s. Press `button: home` and wait 20 s. Return, wait 3 s and check: still 0.
+6. **A same-day re-read moves the wird card:** after step 3, terminate the app and run `sqlite3 "$DB" "UPDATE khz_settings SET value='77' WHERE key='last_read_page';"` (find `$DB` as in step 7). Relaunch. The wird card shows "سورة النساء — صفحة ٧٧". Go to الأقسام → قراءة القرآن → البقرة and wait at least 9 s. The Library wird card shows "سورة البقرة — صفحة ٢", and صفحات مقروءة stays "صفحة واحدة" (deduped).
+7. **Juz completion and achievement (seeded, because the mock text only reaches page 2):** reset, terminate the app, then seed pages 1 and 3–21 as read yesterday:
    ```bash
    DB="$(xcrun simctl get_app_container booted com.ahmed.elhadarey94.khazayinapp data)/Documents/SQLite/khazain.db"
    Y=$(date -v-1d +%F)
    sqlite3 "$DB" "INSERT OR IGNORE INTO khz_page_reads (local_day,page_number,recorded_at) SELECT '$Y', value, 0 FROM (WITH RECURSIVE n(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM n WHERE value<21) SELECT value FROM n WHERE value<>2); INSERT OR REPLACE INTO khz_days (local_day,pages_read,wird_target_at_day,wird_completed) VALUES ('$Y',20,10,1);"
    ```
-   Relaunch (`launch-app`). Open البقرة and wait ≥ 9 s. Expect the toast **"أكملت الجزء ١"**. The Library shows الأجزاء المكتملة "١ من ٣٠", صفحات مقروءة "٢١ صفحة", and a streak of 2 days. (If the `Documents/SQLite` path differs, locate it with `find "$(xcrun simctl get_app_container booted com.ahmed.elhadarey94.khazayinapp data)" -name khazain.db`.)
-6. **Lectures listened:** play any lecture with an audio source for ≥ 70 s of real playback (no seeking). The Library shows محاضرات مسموعة "١ محاضرة". Seek to 96 % and wait for a tick: "١ محاضرة • ١ مكتملة". The AudioProgressCard disappears for that lecture, because completed lectures are not "in progress". This is existing behaviour.
-7. **Restart persists:** `restart-app`. All values from steps 5–6 survive.
-8. **Reset again:** everything returns to the zero states in step 1.
+   Relaunch, open البقرة and wait at least 9 s. Expect the toast **"أكملت الجزء ١"**. The Library shows الأجزاء المكتملة "١ من ٣٠", صفحات مقروءة "٢١ صفحة", and a streak of "٢ يوم متتالي". If the path is different, find it with `find "$(xcrun simctl get_app_container booted com.ahmed.elhadarey94.khazayinapp data)" -name khazain.db`.
+8. **Lectures listened:** play a lecture that has an audio source for at least 70 s of real playback, without seeking. The Library shows محاضرات مسموعة "**محاضرة واحدة**". Seek to 96 % and wait for a tick: it shows "محاضرة واحدة • المكتملة ١".
+9. **Restart keeps everything:** `restart-app`. The values from steps 7–8 are still there.
+10. **Reset again:** everything goes back to the zero states from step 1.
 
-Record the results, with screenshots and diff outputs, in `docs/plans/2026-10-21-reading-progress-tracking-qa.md`, mirroring `docs/plans/2026-09-12-more-screen-qa.md`, and commit it as `docs(qa): reading progress tracking QA record`. When done, call `stop-all-simulator-servers` with `devices: [<the simulator UDID used>]`.
+Record the results, with screenshots and diff output, in `docs/plans/2026-10-21-reading-progress-tracking-qa.md` (mirror `docs/plans/2026-09-12-more-screen-qa.md`), including the **release note** from design §7. Commit with `docs(qa): reading progress tracking QA record`. When you're done, call `stop-all-simulator-servers` with `devices: [<the simulator UDID used>]`.
 
 ---
 
 ## Task index
 
-0. Capture visual baselines (no code)
+0. Visual baselines — **DONE** (`$QA/baseline`)
 1. Madani page table and `pageForAyah`
-2. Correct the four mid-page juz boundaries
-3. Group ayat into page segments; detect pages in view
+2. Correct the mid-page juz boundaries, with literal cross-checks (D1)
+3. Page segments and in-view detection
 4. `PageDwellTracker`
-5. `last_read_page` follows a same-day re-read
-6. Record pages from the reader, not on open
-7. Repository aggregates: total pages read, lectures listened
-8. Expose the aggregates from `progressStore`
-9. Arabic subtitles for the new StatCards
-10. `progressStats` section in the Library presentation contract (committed with 11)
-11. Render the `progressStats` row on the Library
-12. Credit the page data in About
-13. Full verification and visual QA
+5. `MushafPageTrackingController` — focus, app-state and content gates
+6. `last_read_page` moves on a same-day re-read (repository)
+7. `lastReadPage` in the progress store; the Library wird card reads it
+8. Record pages from the reader, not on open (`useFocusEffect` wiring)
+9. Repository totals — pages read, lectures listened
+10. Expose the totals from `progressStore`
+11. Arabic number agreement and card subtitles
+12. `progressStats` in the Library presentation contract (committed with 13)
+13. Render the `progressStats` row
+14. Full CC BY 3.0 notice on About
+15. Full verification and QA
