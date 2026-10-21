@@ -13,6 +13,7 @@ import { Platform } from 'react-native';
 import TrackPlayer, {
   AppKilledPlaybackBehavior,
   Capability,
+  Event,
   State,
 } from 'react-native-track-player';
 import * as Sentry from '@sentry/react-native';
@@ -20,7 +21,8 @@ import { usePlayerStore } from '@/store/playerStore';
 import { useProgressStore } from '@/store/progressStore';
 import { useToastStore } from '@/store/toastStore';
 import { fetchItemMetadata } from './archive/archiveClient';
-import { resolveEpisodes } from './archive/episodeResolver';
+import { resolveEpisodes, type ArchiveEpisode } from './archive/episodeResolver';
+import type { LectureSession } from '@/db/types';
 import type { Lecture } from '@/types/content';
 
 const isWeb = () => Platform.OS === 'web';
@@ -124,12 +126,82 @@ export class NoAudioError extends Error {
   }
 }
 
+/** An explicit start point: a specific episode at a specific second (a note's source). */
+export type LectureStart = { episodeId: string; positionSec: number };
+
+/** Playback may begin this many seconds short of the target before we correct it. */
+const SEEK_CORRECTION_TOLERANCE_SEC = 2;
+
+/** Cap a start position one second inside the episode so it never ends instantly. */
+export function clampStartPosition(positionSec: number, durationSec: number): number {
+  const pos = Math.max(0, positionSec);
+  return durationSec > 0 ? Math.min(pos, durationSec - 1) : pos;
+}
+
+/** True when playback began well short of where it was asked to start. */
+export function needsSeekCorrection(actualSec: number, targetSec: number): boolean {
+  return actualSec < targetSec - SEEK_CORRECTION_TOLERANCE_SEC;
+}
+
 /**
- * Resolve a lecture's archive series into the RNTP queue and start playback,
- * resuming from the saved position when the in-progress session matches an
- * episode. Mirrors UI state onto the player store.
+ * Where to start: an explicit `start` whose episode exists in the series wins;
+ * otherwise resume the saved in-progress session; otherwise the top.
  */
-export async function playLecture(lecture: Lecture): Promise<void> {
+export function resolveStartPoint(
+  episodes: readonly Pick<ArchiveEpisode, 'id' | 'durationSec'>[],
+  inProgress: Pick<LectureSession, 'lectureId' | 'positionSec' | 'completed'> | null | undefined,
+  start: LectureStart | undefined,
+): { index: number; positionSec: number } {
+  if (start) {
+    const idx = episodes.findIndex((e) => e.id === start.episodeId);
+    if (idx >= 0) {
+      return { index: idx, positionSec: clampStartPosition(start.positionSec, episodes[idx].durationSec) };
+    }
+  }
+  if (inProgress && !inProgress.completed) {
+    const idx = episodes.findIndex((e) => e.id === inProgress.lectureId);
+    if (idx >= 0) {
+      return { index: idx, positionSec: clampStartPosition(inProgress.positionSec, episodes[idx].durationSec) };
+    }
+  }
+  return { index: 0, positionSec: 0 };
+}
+
+let _cancelSeekCorrection: (() => void) | null = null;
+
+/**
+ * `skip(index, initialPosition)` can be ignored by a stream that is not ready
+ * yet. On the first Ready/Playing state, check the real position once and seek
+ * if it is well short of the target.
+ */
+function armSeekCorrection(targetSec: number): void {
+  _cancelSeekCorrection?.();
+  let done = false;
+  const sub = TrackPlayer.addEventListener(Event.PlaybackState, async (e: { state: string }) => {
+    if (done || (e.state !== State.Ready && e.state !== State.Playing)) return;
+    done = true;
+    sub.remove();
+    _cancelSeekCorrection = null;
+    try {
+      const { position } = await TrackPlayer.getProgress();
+      if (needsSeekCorrection(position, targetSec)) await TrackPlayer.seekTo(targetSec);
+    } catch (err) {
+      Sentry.captureException(err);
+    }
+  });
+  _cancelSeekCorrection = () => {
+    done = true;
+    sub.remove();
+  };
+}
+
+/**
+ * Resolve a lecture's archive series into the RNTP queue and start playback.
+ * Starts at `start` when given (a note's episode and second), otherwise resumes
+ * the saved position when the in-progress session matches an episode. Mirrors
+ * UI state onto the player store.
+ */
+export async function playLecture(lecture: Lecture, start?: LectureStart): Promise<void> {
   if (isWeb()) return;
   if (!lecture.archiveId) throw new NoAudioError();
 
@@ -138,19 +210,14 @@ export async function playLecture(lecture: Lecture): Promise<void> {
   const episodes = resolveEpisodes(lecture.archiveId, meta);
   if (episodes.length === 0) throw new NoAudioError();
 
-  // Resume: if the in-progress lecture session matches an episode in this
-  // series (and isn't finished), start there at the saved position.
-  const inProgress = useProgressStore.getState().inProgressLecture;
-  let startIndex = 0;
-  let startPos = 0;
-  if (inProgress && !inProgress.completed) {
-    const idx = episodes.findIndex((e) => e.id === inProgress.lectureId);
-    if (idx >= 0) {
-      startIndex = idx;
-      startPos = Math.max(0, inProgress.positionSec);
-    }
-  }
+  const { index: startIndex, positionSec: startPos } = resolveStartPoint(
+    episodes,
+    useProgressStore.getState().inProgressLecture,
+    start,
+  );
 
+  _cancelSeekCorrection?.();
+  _cancelSeekCorrection = null;
   await TrackPlayer.reset();
   await TrackPlayer.setQueue(
     episodes.map((e) => ({
@@ -161,9 +228,12 @@ export async function playLecture(lecture: Lecture): Promise<void> {
       duration: e.durationSec > 0 ? e.durationSec : undefined,
     })),
   );
-  if (startIndex > 0) await TrackPlayer.skip(startIndex);
-  if (startPos > 0) await TrackPlayer.seekTo(startPos);
+  // One call lands the first audible frame on the right second.
+  if (startPos > 0 || startIndex > 0) {
+    await TrackPlayer.skip(startIndex, startPos > 0 ? startPos : undefined);
+  }
   await TrackPlayer.play();
+  if (startPos > 0) armSeekCorrection(startPos);
 
   const startEp = episodes[startIndex];
   const initialProgress = startEp.durationSec > 0 ? startPos / startEp.durationSec : 0;

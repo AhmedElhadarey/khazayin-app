@@ -26,6 +26,13 @@ describe('startLecturePlayback', () => {
     expect(alertSpy).not.toHaveBeenCalled();
   });
 
+  it('passes an explicit start point through to the engine', async () => {
+    (playLecture as jest.Mock).mockResolvedValue(undefined);
+    const start = { episodeId: 'ABC/002.mp3', positionSec: 754 };
+    await startLecturePlayback(LECTURE, start);
+    expect(playLecture).toHaveBeenCalledWith(LECTURE, start);
+  });
+
   it('shows the "no recording" alert on NoAudioError', async () => {
     (playLecture as jest.Mock).mockRejectedValue(new (NoAudioError as any)());
     await startLecturePlayback(LECTURE);

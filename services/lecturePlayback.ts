@@ -7,11 +7,13 @@
  */
 import { Alert } from 'react-native';
 import type { Lecture } from '@/types/content';
-import { playLecture, NoAudioError } from '@/services/audioEngine';
+import { playLecture, NoAudioError, type LectureStart } from '@/services/audioEngine';
 
-export async function startLecturePlayback(lecture: Lecture): Promise<void> {
+export async function startLecturePlayback(lecture: Lecture, start?: LectureStart): Promise<void> {
   try {
-    await playLecture(lecture);
+    // Omit the argument entirely when there is no start so callers and tests
+    // that only know about `playLecture(lecture)` see the same call.
+    await (start ? playLecture(lecture, start) : playLecture(lecture));
   } catch (err) {
     if (err instanceof NoAudioError) {
       Alert.alert(lecture.title, 'لا يتوفر تسجيل صوتي لهذه المادة');

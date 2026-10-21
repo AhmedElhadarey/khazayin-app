@@ -18,7 +18,7 @@ jest.mock('@/store/toastStore', () => ({
 }));
 jest.mock('@sentry/react-native', () => ({ captureException: jest.fn() }));
 
-import TrackPlayer, { Capability, State } from 'react-native-track-player';
+import TrackPlayer, { Capability, Event, State } from 'react-native-track-player';
 import { Platform } from 'react-native';
 import * as engine from '../../audioEngine';
 import { fetchItemMetadata } from '../../archive/archiveClient';
@@ -142,14 +142,96 @@ describe('playLecture', () => {
     expect(mockSetIsPlaying).toHaveBeenCalledWith(true);
   });
 
-  it('resumes: skips to the saved episode and seeks to its position', async () => {
+  // Changed deliberately (contextual notes): resume now starts via
+  // skip(index, initialPosition) in one call instead of skip(index) + seekTo.
+  it('resumes: starts the saved episode at its position in one skip', async () => {
     mockInProgress = { lectureId: 'ABC/002.mp3', positionSec: 120, durationSec: 900, completed: false, title: 'ح2', author: 'x', forwardListenedSec: 0, lastListenedAt: 0 };
     await engine.playLecture(LECTURE as any);
-    expect(TrackPlayer.skip).toHaveBeenCalledWith(1);
-    expect(TrackPlayer.seekTo).toHaveBeenCalledWith(120);
+    expect(TrackPlayer.skip).toHaveBeenCalledWith(1, 120);
+    expect(TrackPlayer.seekTo).not.toHaveBeenCalled();
     // initialProgress passed to setTrack = 120/900
     const [, initialProgress] = (mockSetTrack as jest.Mock).mock.calls[0];
     expect(initialProgress).toBeCloseTo(120 / 900);
+  });
+
+  it('resumes on episode 0 via skip(0, pos)', async () => {
+    mockInProgress = { lectureId: 'ABC/001.mp3', positionSec: 90, durationSec: 600, completed: false };
+    await engine.playLecture(LECTURE as any);
+    expect(TrackPlayer.skip).toHaveBeenCalledWith(0, 90);
+  });
+
+  it('explicit start beats the saved session', async () => {
+    mockInProgress = { lectureId: 'ABC/002.mp3', positionSec: 120, durationSec: 900, completed: false };
+    await engine.playLecture(LECTURE as any, { episodeId: 'ABC/003.mp3', positionSec: 45 });
+    expect(TrackPlayer.skip).toHaveBeenCalledWith(2, 45);
+    const [track, initialProgress] = (mockSetTrack as jest.Mock).mock.calls[0];
+    expect(track.id).toBe('ABC/003.mp3');
+    expect(initialProgress).toBeCloseTo(45 / 800);
+  });
+
+  it('explicit start falls back to resume when the episode is not in the series', async () => {
+    mockInProgress = { lectureId: 'ABC/002.mp3', positionSec: 120, durationSec: 900, completed: false };
+    await engine.playLecture(LECTURE as any, { episodeId: 'ABC/999.mp3', positionSec: 45 });
+    expect(TrackPlayer.skip).toHaveBeenCalledWith(1, 120);
+  });
+
+  it('start is capped at duration - 1', async () => {
+    await engine.playLecture(LECTURE as any, { episodeId: 'ABC/001.mp3', positionSec: 5000 });
+    expect(TrackPlayer.skip).toHaveBeenCalledWith(0, 599);
+  });
+
+  describe('one-shot seek correction', () => {
+    const arm = async () => {
+      const remove = jest.fn();
+      (TrackPlayer.addEventListener as jest.Mock).mockReturnValueOnce({ remove });
+      await engine.playLecture(LECTURE as any, { episodeId: 'ABC/001.mp3', positionSec: 45 });
+      const call = (TrackPlayer.addEventListener as jest.Mock).mock.calls.find(
+        (c) => c[0] === Event.PlaybackState,
+      );
+      return { cb: call![1] as (e: { state: string }) => Promise<void>, remove };
+    };
+
+    it('seeks once when playback starts short, then removes itself', async () => {
+      const { cb, remove } = await arm();
+      (TrackPlayer.getProgress as jest.Mock).mockResolvedValue({ position: 0, duration: 600, buffered: 0 });
+      await cb({ state: State.Ready });
+      expect(TrackPlayer.seekTo).toHaveBeenCalledWith(45);
+      expect(remove).toHaveBeenCalled();
+      await cb({ state: State.Playing });
+      expect(TrackPlayer.seekTo).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not seek within 2 s of the target', async () => {
+      const { cb } = await arm();
+      (TrackPlayer.getProgress as jest.Mock).mockResolvedValue({ position: 44, duration: 600, buffered: 0 });
+      await cb({ state: State.Playing });
+      expect(TrackPlayer.seekTo).not.toHaveBeenCalled();
+    });
+
+    it('ignores states before the item is ready', async () => {
+      const { cb } = await arm();
+      await cb({ state: State.Buffering });
+      expect(TrackPlayer.getProgress).not.toHaveBeenCalled();
+    });
+
+    it('arms no listener when starting from the top', async () => {
+      await engine.playLecture(LECTURE as any);
+      expect(TrackPlayer.addEventListener).not.toHaveBeenCalled();
+    });
+  });
+
+  it('pure start helpers', () => {
+    const eps = [
+      { id: 'ABC/001.mp3', durationSec: 600 },
+      { id: 'ABC/002.mp3', durationSec: 900 },
+    ] as any;
+    expect(engine.resolveStartPoint(eps, null, undefined)).toEqual({ index: 0, positionSec: 0 });
+    expect(engine.resolveStartPoint(eps, null, { episodeId: 'ABC/002.mp3', positionSec: 30 })).toEqual({ index: 1, positionSec: 30 });
+    expect(engine.clampStartPosition(-5, 600)).toBe(0);
+    expect(engine.clampStartPosition(700, 0)).toBe(700);
+    expect(engine.clampStartPosition(5000, 600)).toBe(599);
+    expect(engine.needsSeekCorrection(0, 45)).toBe(true);
+    expect(engine.needsSeekCorrection(43.5, 45)).toBe(false);
   });
 
   it('ignores a completed in-progress session (starts from the top)', async () => {
