@@ -120,3 +120,22 @@ describe('book detail', () => {
     expect(src).toContain("useLinkedNotes('book', ");
   });
 });
+
+describe('long-press rule', () => {
+  it('lecture rows never take a note gesture', () => {
+    for (const f of ['LectureCard', 'RibbonCard']) {
+      const src = read(`components/khazain/primitives/${f}.tsx`);
+      expect(src).not.toMatch(/services\/note(Actions|Refs|Navigation)/);
+    }
+  });
+  it('note surfaces never take a save gesture', () => {
+    for (const f of ['app/(tabs)/sections/mushaf.tsx', 'components/khazain/primitives/MiniPlayer.tsx']) {
+      expect(read(f)).not.toMatch(/saveGestureProps|useSaveGesture/);
+    }
+  });
+  it('CLAUDE.md records the rule', () => {
+    const doc = read('CLAUDE.md');
+    expect(doc).toMatch(/Long-press.*SAVE/);
+    expect(doc).toMatch(/Long-press.*NOTE/);
+  });
+});
