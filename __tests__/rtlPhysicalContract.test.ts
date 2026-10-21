@@ -60,6 +60,7 @@ const PINNED_SCREENS = [
   'components/khazain/onboarding/SelectableRow.tsx',
   'components/khazain/onboarding/QiraaStep.tsx',
   'components/khazain/onboarding/ReciterStep.tsx',
+  'components/khazain/onboarding/WelcomeStep.tsx',
 ] as const;
 
 /** Strip `//` and `/* *\/` comments so a prose mention of a banned rule passes. */

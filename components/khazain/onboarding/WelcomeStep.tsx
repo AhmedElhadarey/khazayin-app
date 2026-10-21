@@ -4,12 +4,22 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { FoundationMark } from '@/components/khazain/home/FoundationMark';
 import { Wordmark } from '@/components/khazain/primitives';
+import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 
+/** The four "how the app works" highlights, folded in from the old feature screens. */
+export const WELCOME_HIGHLIGHTS: readonly { key: string; text: string }[] = Object.freeze([
+  { key: 'quran', text: 'القرآن الكريم بالقراءات والروايات وبصوت قارئك المفضّل' },
+  { key: 'wird', text: 'وِردك اليومي مع التذكير ومتابعة إنجازك' },
+  { key: 'library', text: 'مكتبتك الشخصية وملاحظاتك على ما تقرأ' },
+  { key: 'scholars', text: 'العلماء والكتب وتصاميم الدعوة الجاهزة للمشاركة' },
+]);
+
 /**
- * Onboarding step 0 (track 003, US1): foundation identity + mission.
- * The real emblem + Wordmark + a concise Arabic mission statement, all RTL.
- * Purely presentational.
+ * Onboarding step 0 (track 003, US1): foundation identity + mission, then the
+ * four feature highlights (`WELCOME_HIGHLIGHTS`) that used to be their own
+ * screens. The real emblem + Wordmark + a concise Arabic mission statement,
+ * all RTL. Purely presentational.
  *
  * This drew `LogoBadge` — a generic octagon with a "خر" monogram in Amiri,
  * not the foundation's mark. The home header has always rendered the real
@@ -39,6 +49,16 @@ export function WelcomeStep(): React.ReactElement {
         منصّتك للقرآن الكريم بالقراءات والروايات، ومكتبة العلماء والكتب والدروس،
         وتصاميم الدعوة — كل ذلك في مكان واحد.
       </Text>
+
+        <View style={styles.highlights} accessibilityRole="list">
+          {WELCOME_HIGHLIGHTS.map((h) => (
+            <View key={h.key} style={styles.highlightRow}>
+              {/* Physical left → right: text, bullet — the bullet leads at the right edge. */}
+              <Text style={styles.highlightText}>{h.text}</Text>
+              <View style={styles.bullet} />
+            </View>
+          ))}
+        </View>
 
         <Text style={styles.hint}>لنُهيّئ التطبيق على ذوقك في خطوات قصيرة.</Text>
       </ScrollView>
@@ -76,6 +96,29 @@ const styles = StyleSheet.create({
     color: KhazainColors.ink700,
     writingDirection: 'rtl',
     textAlign: 'center',
+  },
+  highlights: {
+    alignSelf: 'stretch',
+    gap: 10,
+  },
+  highlightRow: {
+    ...PHYSICAL_ROW,
+    alignItems: 'center',
+    gap: 10,
+  },
+  highlightText: {
+    ...RTL_TEXT,
+    flex: 1,
+    fontFamily: 'TheSansArabic',
+    fontSize: 15,
+    lineHeight: 24,
+    color: KhazainColors.ink700,
+  },
+  bullet: {
+    width: 7,
+    height: 7,
+    backgroundColor: KhazainColors.goldAccent,
+    transform: [{ rotate: '45deg' }],
   },
   hint: {
     fontFamily: 'TheSansArabic',
