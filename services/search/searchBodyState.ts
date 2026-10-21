@@ -8,14 +8,8 @@
  *   pending    — inside the debounce window with nothing to show yet
  */
 import type { SearchStatus } from '@/store/searchStore';
-import type { LoadState } from '@/types/content';
 
 export type SearchBody = 'idle' | 'results' | 'loading' | 'no-results' | 'pending';
-
-/** A store that has not settled yet. `error` is settled — design R4. */
-export function isCorpusLoading(statuses: readonly LoadState[]): boolean {
-  return statuses.some((s) => s === 'idle' || s === 'loading');
-}
 
 export function searchBodyState(i: {
   query: string;

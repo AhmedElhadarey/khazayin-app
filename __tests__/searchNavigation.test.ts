@@ -3,8 +3,15 @@ import path from 'path';
 
 // `mock` prefix: babel-jest only lets a jest.mock factory reference mock*-named variables.
 const mockPush = jest.fn();
-jest.mock('expo-router', () => ({ router: { push: (...a: unknown[]) => mockPush(...a) } }));
+const mockNavigate = jest.fn();
+jest.mock('expo-router', () => ({
+  router: {
+    push: (...a: unknown[]) => mockPush(...a),
+    navigate: (...a: unknown[]) => mockNavigate(...a),
+  },
+}));
 
+import { CommonActions, StackActions, StackRouter } from '@react-navigation/native';
 import { SEARCH_ROUTE, openSearch } from '@/services/searchNavigation';
 
 const ROOT = path.resolve(__dirname, '..');
@@ -17,7 +24,7 @@ function walk(dir: string): string[] {
 }
 
 describe('search route', () => {
-  beforeEach(() => mockPush.mockClear());
+  beforeEach(() => { mockPush.mockClear(); mockNavigate.mockClear(); });
 
   it('is /content-search, never the bare /search the legacy tab owns', () => {
     // '/search' resolves to app/(tabs)/search.tsx from inside (tabs): expo-router 6 ranks the
@@ -25,10 +32,39 @@ describe('search route', () => {
     expect(SEARCH_ROUTE).toBe('/content-search');
   });
 
-  it('openSearch pushes the search route exactly once', () => {
+  it('openSearch navigates (never pushes) to the search route', () => {
     openSearch();
-    expect(mockPush).toHaveBeenCalledTimes(1);
-    expect(mockPush).toHaveBeenCalledWith('/content-search');
+    expect(mockNavigate).toHaveBeenCalledTimes(1);
+    expect(mockNavigate).toHaveBeenCalledWith('/content-search');
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+});
+
+describe('a double tap on a search pill', () => {
+  // The root stack's router: NAVIGATE to the route already on top reuses it,
+  // PUSH stacks a copy. That is why openSearch navigates.
+  const router = StackRouter({});
+  const options = {
+    routeNames: ['(tabs)', 'content-search'],
+    routeParamList: {},
+    routeGetIdList: {},
+  };
+  const names = (s: { routes: readonly { name: string }[] }) => s.routes.map((r) => r.name);
+
+  it('opens one search screen when it navigates twice', () => {
+    let state = router.getInitialState(options);
+    for (let i = 0; i < 2; i += 1) {
+      state = router.getStateForAction(state, CommonActions.navigate('content-search'), options) as typeof state;
+    }
+    expect(names(state)).toEqual(['(tabs)', 'content-search']);
+  });
+
+  it('would stack two if it pushed (the behaviour navigate avoids)', () => {
+    let state = router.getInitialState(options);
+    for (let i = 0; i < 2; i += 1) {
+      state = router.getStateForAction(state, StackActions.push('content-search'), options) as typeof state;
+    }
+    expect(names(state)).toEqual(['(tabs)', 'content-search', 'content-search']);
   });
 });
 

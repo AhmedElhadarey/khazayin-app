@@ -30,7 +30,11 @@ export function searchTargetFor(group: SearchResultGroup, item: { id: string }):
 export function createSearchTargetRunner(deps: {
   dismissTo: (href: string) => void;
   dismiss: () => void;
-  play: (lecture: Lecture) => void;
+  /**
+   * Arm playback to start once search has closed. Called BEFORE `dismiss`, so
+   * a close-transition listener is in place before the transition begins.
+   */
+  playAfterDismiss: (lecture: Lecture) => void;
 }): (target: SearchTarget) => boolean {
   let used = false;
   return (target) => {
@@ -39,8 +43,8 @@ export function createSearchTargetRunner(deps: {
     if (target.kind === 'route') {
       deps.dismissTo(target.href);
     } else {
+      deps.playAfterDismiss(target.lecture);
       deps.dismiss();
-      deps.play(target.lecture);
     }
     return true;
   };

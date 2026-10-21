@@ -5,7 +5,7 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { resolveBookDetail } from '@/services/bookDetail';
 import { startLecturePlayback } from '@/services/lecturePlayback';
-import { isCorpusLoading } from '@/services/search/searchBodyState';
+import { isCorpusLoading } from '@/services/loadState';
 import { useBookLecturesStore, useBooksStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';

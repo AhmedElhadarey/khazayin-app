@@ -19,12 +19,21 @@ describe('content search screen', () => {
     expect(src).not.toMatch(/router\.push\(/);
   });
 
-  it('starts playback only after the dismissal settles', () =>
-    expect(src).toMatch(/InteractionManager\.runAfterInteractions\(/));
+  it('starts playback when the modal finishes closing, not on the next tick', () => {
+    // InteractionManager is a setImmediate stub on RN 0.81, so it cannot wait
+    // for the dismissal (R8). The once-only logic is runOnceAfterDismissal.
+    expect(src).toMatch(/runOnceAfterDismissal\(/);
+    expect(src).toMatch(/addListener\('transitionEnd'/);
+    expect(src).toMatch(/e\.data\.closing/);
+    expect(src).not.toMatch(/InteractionManager/);
+  });
 
-  it('records what the user typed as the recent search, not the tapped title', () => {
+  it('creates its one-shot runner once per mount', () =>
+    expect(src).toMatch(/const \[runTarget\] = useState\(\(\) => createSearchTargetRunner\(/));
+
+  it('records the typed query only when the tap actually navigated', () => {
     expect(src).not.toMatch(/onPress\(route, title\)/);
-    expect(src).toMatch(/commitQuery\(query\)/);
+    expect(src).toMatch(/if \(runTarget\(target\)\) commitQuery\(query\);/);
   });
 
   it('offers suggestion chips on no-results inside a pinned physical box', () => {

@@ -25,7 +25,7 @@ describe('searchStore', () => {
   });
   afterEach(() => { jest.useRealTimers(); jest.restoreAllMocks(); });
 
-  it('debounces under the 300ms criterion', () => expect(DEBOUNCE_MS).toBeLessThanOrEqual(250));
+  it('debounces in less than the 300ms criterion', () => expect(DEBOUNCE_MS).toBeLessThan(300));
 
   it('shows results by 300ms after the last keystroke', () => {
     useSearchStore.getState().setQuery('البقرة');

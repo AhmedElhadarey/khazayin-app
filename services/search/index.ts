@@ -13,5 +13,7 @@ export { rowPropsForSearchResult, rowPropsForSavedItem, SurahNumberBadge, Schola
 export type { RowProps, SearchRowProps } from './rowProps';
 export { createSearchTargetRunner, searchTargetFor } from './searchTarget';
 export type { SearchTarget } from './searchTarget';
-export { isCorpusLoading, searchBodyState } from './searchBodyState';
+export { isCorpusLoading } from '../loadState';
+export { searchBodyState } from './searchBodyState';
+export { DISMISS_FALLBACK_MS, runOnceAfterDismissal } from './afterDismissal';
 export type { SearchBody } from './searchBodyState';

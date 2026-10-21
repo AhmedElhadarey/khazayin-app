@@ -87,9 +87,12 @@ Rejected — `router.replace(route)` (status quo): same divergence; replaces the
 ### 3.3 Lecture result
 
 **Chosen — dismiss, then play through `startLecturePlayback`** (`services/lecturePlayback.ts`),
-deferred with `InteractionManager.runAfterInteractions` so the no-audio `Alert` is not presented
-while the modal is mid-dismissal (iOS drops an alert presented on a view controller that is being
-dismissed — R8). Lectures have no detail screen; every lecture list treats tap = play.
+started when the modal has finished closing so the no-audio `Alert` is not presented while the
+modal is mid-dismissal (iOS drops an alert presented on a view controller that is being dismissed —
+R8). *(Code review:* `InteractionManager.runAfterInteractions` is a `setImmediate` stub on RN 0.81,
+so it cannot wait. Playback is armed before `dismiss()` on the screen's native-stack
+`transitionEnd` event with `data.closing`, with a `DISMISS_FALLBACK_MS` (500 ms) timer as a bound;
+`services/search/afterDismissal.ts` guarantees it starts exactly once.*)* Lectures have no detail screen; every lecture list treats tap = play.
 
 Rejected — route to the category list (status quo): a list, not the item.
 Rejected — scholar detail via `scholarId`: the search corpus rows carry no `scholarId`.
@@ -104,7 +107,8 @@ Rejected — keep `/sections/books`: that list shows book *lectures*, not `Book`
 ### 4.1 Route + helper
 
 `services/searchNavigation.ts`: `SEARCH_ROUTE = '/content-search'`, `openSearch()` →
-`router.push(SEARCH_ROUTE)`. All 14 call sites (§5.1) become `onPress={openSearch}` (Home:
+`router.navigate(SEARCH_ROUTE)` (code review: `navigate` reuses a search screen already on top, so
+a double tap cannot stack two). All 14 call sites (§5.1) become `onPress={openSearch}` (Home:
 `onSearchOpen={openSearch}`, forwarded by `components/khazain/home/HomeHeader.tsx:51`).
 `app/(tabs)/_legacy-home.tsx:532` pushes `'/(tabs)/search'` and stays untouched.
 
@@ -125,7 +129,7 @@ export function searchTargetFor(group: SearchResultGroup, item: { id: string }):
 export function createSearchTargetRunner(deps: {
   dismissTo: (href: string) => void; // router.dismissTo(href as Href, { withAnchor: true }) — the one cast
   dismiss: () => void;               // router.back()
-  play: (lecture: Lecture) => void;  // runAfterInteractions → startLecturePlayback
+  playAfterDismiss: (lecture: Lecture) => void; // armed before dismiss(); starts on the close transition
 }): (target: SearchTarget) => boolean;
 ```
 
@@ -136,8 +140,9 @@ export function createSearchTargetRunner(deps: {
 | book | `bookDetailHref(id)` = `/sections/book/<id>` |
 | lecture | play |
 
-Runner: route → `dismissTo(href)` only; play → `dismiss()` then `play(lecture)`. The screen
-creates one runner per mount (`useRef`), so a second tap during the transition is a no-op.
+Runner: route → `dismissTo(href)` only; play → `playAfterDismiss(lecture)` (arms the close
+listener) then `dismiss()`. The screen creates one runner per mount (`useState` initialiser), so a
+second tap during the transition is a no-op; the typed query is recorded only when the runner acted.
 `rowPropsForSearchResult` returns `SearchRowProps = Omit<RowProps, 'route'> & { target }`;
 `rowPropsForSavedItem` / `RowProps.route` unchanged.
 
@@ -185,7 +190,7 @@ the relevant code.
 
 ### 4.6 Loading state
 
-`services/search/searchBodyState.ts`: `isCorpusLoading(statuses)` (any `idle`/`loading`) and
+`services/loadState.ts`: `isCorpusLoading(statuses)` (any `idle`/`loading`); `services/search/searchBodyState.ts`:
 `searchBodyState({ query, resultCount, status, corpusLoading })` → `idle | results | loading |
 no-results | pending`. `loading` renders `SkeletonRowList count={4}`.
 
@@ -268,7 +273,7 @@ No frame (contracts govern): `/content-search`, `/sections/book/[id]`.
 | R5 | (v1: Books list play became two taps) — removed with the Books/Home wiring cut. | — |
 | R6 | Typed routes for new paths. | `as Href` confined to `searchNavigation.ts` and the single `dismissTo` call in the screen; hrefs stay plain strings in the pure helpers (keeps their tests free of router types). |
 | R7 | **Book identity split.** The same book exists as `Book` `bk2` and book-lecture `b4` ("شرح رياض الصالحين"). Search opens `/sections/book/bk2`; the Home card's bookmark saves `b4` (`BookCard.tsx:66-71` saves whatever `id` it is given). A future entry point with `b*` ids would need its own page or a mapping, and notes keyed by book id would split across the two. | Not solved here. Flagged for the Contextual Notes ticket, which must pick one canonical book id before keying notes to it. |
-| R8 | No-audio `Alert` raised while the modal is dismissing can be dropped on iOS. | Play after `InteractionManager.runAfterInteractions`; device QA row 22. |
+| R8 | No-audio `Alert` raised while the modal is dismissing can be dropped on iOS. | Play on the native-stack `transitionEnd` (closing) event, bounded by a 500 ms fallback, once only (`runOnceAfterDismissal`); device QA row 22. |
 
 ## 10. Open questions (defaults chosen)
 

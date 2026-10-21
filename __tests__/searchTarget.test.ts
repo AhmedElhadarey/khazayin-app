@@ -32,7 +32,7 @@ describe('createSearchTargetRunner', () => {
     const run = createSearchTargetRunner({
       dismissTo: (h) => log.push(`dismissTo ${h}`),
       dismiss: () => log.push('dismiss'),
-      play: (l) => log.push(`play ${l.id}`),
+      playAfterDismiss: (l) => log.push(`play ${l.id}`),
     });
     return { log, run };
   }
@@ -44,10 +44,10 @@ describe('createSearchTargetRunner', () => {
     expect(log).toEqual(['dismissTo /sections/book/bk2']);
   });
 
-  it('dismisses search before starting playback', () => {
+  it('arms playback before dismissing, so it can start on the close transition', () => {
     const { log, run } = harness();
     run({ kind: 'play', lecture: BOOK_LECTURES[0] });
-    expect(log).toEqual(['dismiss', 'play b1']);
+    expect(log).toEqual(['play b1', 'dismiss']);
   });
 
   it('ignores a second tap during the transition', () => {

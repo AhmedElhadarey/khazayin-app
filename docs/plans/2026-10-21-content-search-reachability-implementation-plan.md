@@ -1251,3 +1251,8 @@ git commit -m "docs(qa): record content search reachability QA"
   `SearchBody`; step 8 imports them from `@/services/search`, which Task 9 did not export.
 - **Task 11, Step 5 (device gate)** — not run by the implementer; on-device QA belongs to the
   orchestrator (rows 1, 8, 13, 17, 20, 21, 22 of Task 12). Neither fallback has been applied.
+- **Code review (search screen)** — `InteractionManager.runAfterInteractions` replaced by
+  `runOnceAfterDismissal` (`services/search/afterDismissal.ts`) on the native-stack `transitionEnd`
+  closing event + a 500 ms fallback; the runner's `play` dep is now `playAfterDismiss`, called before
+  `dismiss()`. Runner held in `useState`; recents recorded only when the runner acted.
+  `isCorpusLoading` moved to `services/loadState.ts`. `openSearch` uses `router.navigate`.
