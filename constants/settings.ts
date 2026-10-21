@@ -52,12 +52,20 @@ export const SETTINGS_STORAGE_KEY = '@khazain/settings/v1';
 export const SETTINGS_SCHEMA_VERSION = 3 as const;
 
 /**
- * Number of steps in the first-run onboarding flow (track 003):
- * Welcome → Qira'a → Reciter → 4 feature-showcase screens → Channels.
- * LOCKSTEP: changing this requires updating `renderStep` (`app/onboarding.tsx`)
- * and the `FEATURE_STEPS` list — otherwise a step silently renders Welcome.
+ * First-run onboarding steps, in flow order (ticket QTQYqLBB: 3-4 screens).
+ * `app/onboarding.tsx` renders by id, so adding an id without a case fails tsc.
+ * The four feature-showcase screens (d74bfc1) were folded into Welcome.
  */
-export const ONBOARDING_STEP_COUNT = 8 as const;
+export const ONBOARDING_STEPS = Object.freeze(['welcome', 'qiraa', 'reciter', 'channels'] as const);
+export type OnboardingStepId = (typeof ONBOARDING_STEPS)[number];
+export const ONBOARDING_STEP_COUNT = ONBOARDING_STEPS.length;
+
+/**
+ * Step count of the 8-step layout (welcome, qiraa, reciter, 4 features, channels)
+ * that installs before 2026-10 persisted `onboardingStep` against. Used only by
+ * `coerceSettings` to map an in-flight resume onto the shorter flow.
+ */
+export const LEGACY_ONBOARDING_STEP_COUNT = 8;
 
 /**
  * Primary foundation community channels promoted during onboarding (track 003).
