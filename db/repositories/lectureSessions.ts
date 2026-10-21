@@ -1,4 +1,5 @@
 import type * as SQLite from 'expo-sqlite';
+import { LECTURE_LISTENED_MIN_SEC } from '@/constants/progress';
 import { isCompleted } from '../helpers/lectureCompletion';
 import type { LectureSession, LectureSessionsRepository } from '../types';
 
@@ -105,6 +106,17 @@ export function createLectureSessionsRepository(
     async completedCount() {
       const row = await db.getFirstAsync<{ n: number }>(
         'SELECT COUNT(*) AS n FROM khz_lecture_sessions WHERE completed = 1',
+      );
+      return row?.n ?? 0;
+    },
+
+    async listenedCount() {
+      // Mirrors isListened() in ../helpers/lectureCompletion.
+      const row = await db.getFirstAsync<{ n: number }>(
+        `SELECT COUNT(*) AS n FROM khz_lecture_sessions
+           WHERE completed = 1
+              OR (duration_sec > 0 AND forward_listened_sec >= MIN(?, duration_sec))`,
+        LECTURE_LISTENED_MIN_SEC,
       );
       return row?.n ?? 0;
     },

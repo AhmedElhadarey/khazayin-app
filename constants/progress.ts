@@ -29,6 +29,12 @@ export const JUZ_PRESET_PAGES: Readonly<Record<JuzPreset, number>> = {
 };
 
 export const COMPLETION_THRESHOLD = 0.95; // spec FR-011
+/**
+ * A lecture counts as "listened" (Library card محاضرات مسموعة) once this much
+ * real forward listening is recorded — or the whole clip, if shorter — or it
+ * reached COMPLETION_THRESHOLD. Design 2026-10-21 §4.5.
+ */
+export const LECTURE_LISTENED_MIN_SEC = 60;
 
 export const SUGGESTION_COOLDOWN_DAYS = 14; // research R7
 export const SUGGESTION_MIN_ACTIVE_DAYS = 14;

@@ -3,7 +3,7 @@
  * Tested in `__tests__/lecture-completion.test.ts`.
  */
 
-import { COMPLETION_THRESHOLD } from '@/constants/progress';
+import { COMPLETION_THRESHOLD, LECTURE_LISTENED_MIN_SEC } from '@/constants/progress';
 
 export function isCompleted(positionSec: number, durationSec: number): boolean {
   if (!Number.isFinite(positionSec) || !Number.isFinite(durationSec)) return false;
@@ -20,4 +20,15 @@ export function forwardDelta(prevPositionSec: number, newPositionSec: number): n
   if (!Number.isFinite(prevPositionSec) || !Number.isFinite(newPositionSec)) return 0;
   const delta = newPositionSec - prevPositionSec;
   return delta > 0 ? delta : 0;
+}
+
+/** Mirrors the SQL predicate in `lectureSessions.listenedCount()`. */
+export function isListened(s: {
+  durationSec: number;
+  forwardListenedSec: number;
+  completed: boolean;
+}): boolean {
+  if (s.completed) return true;
+  if (!(s.durationSec > 0)) return false;
+  return s.forwardListenedSec >= Math.min(LECTURE_LISTENED_MIN_SEC, s.durationSec);
 }

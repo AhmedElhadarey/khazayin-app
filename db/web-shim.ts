@@ -17,7 +17,7 @@ import {
 } from '@/constants/progress';
 import { hasPerfectWirdWeek, shiftDay } from './helpers/calendar';
 import { completedJuzList, countCompletedJuz } from './helpers/juz';
-import { isCompleted } from './helpers/lectureCompletion';
+import { isCompleted, isListened } from './helpers/lectureCompletion';
 import { median } from './helpers/median';
 import { computeCurrentStreak, computeLongestStreak } from './helpers/streak';
 import { decideSuggestion } from './helpers/suggestion';
@@ -197,6 +197,11 @@ export function createWebRepos(): Repos {
       return total;
     },
 
+    async totalPagesRead() {
+      await load();
+      return Object.values(ensure().days).reduce((acc, d) => acc + d.pagesRead, 0);
+    },
+
     async currentStreak() {
       await load();
       const days = Object.entries(ensure().days)
@@ -336,6 +341,11 @@ export function createWebRepos(): Repos {
     async completedCount() {
       await load();
       return Object.values(ensure().lectures).filter((l) => l.completed).length;
+    },
+
+    async listenedCount() {
+      await load();
+      return Object.values(ensure().lectures).filter(isListened).length;
     },
 
     async totalListenedSec() {

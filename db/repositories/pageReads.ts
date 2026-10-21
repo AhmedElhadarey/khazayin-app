@@ -100,6 +100,13 @@ export function createPageReadsRepository(db: SQLite.SQLiteDatabase): PageReadsR
       return monthPagesRead(db, ym);
     },
 
+    async totalPagesRead() {
+      const row = await db.getFirstAsync<{ n: number | null }>(
+        'SELECT COALESCE(SUM(pages_read), 0) AS n FROM khz_days',
+      );
+      return row?.n ?? 0;
+    },
+
     async currentStreak() {
       return currentStreakFromDb(db, toLocalDay());
     },
