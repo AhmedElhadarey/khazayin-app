@@ -51,6 +51,7 @@ type MockSurface = typeof MockNotifications & {
   __getScheduledNotifications: () => readonly {
     identifier: string;
     content: { data?: Record<string, unknown> };
+    trigger?: { type: string; date?: unknown; channelId?: string } | null;
   }[];
   __resetMock: () => void;
 };
@@ -127,7 +128,8 @@ describe('T-NHS-3 surplus entries cancelled', () => {
   it('cancels stale ours-entries and leaves foreign categories untouched', async () => {
     Mock.__setScheduledNotifications([
       { identifier: 'stale', content: { data: { category: 'prayer-fajr', localDay: '2026-07-01' } } },
-      { identifier: 'keep', content: { data: { category: 'prayer-fajr', localDay: '2026-07-09' } } },
+      { identifier: 'keep', content: { data: { category: 'prayer-fajr', localDay: '2026-07-09',
+        fireAt: entry('prayer-fajr', '2026-07-09', 5).fireAt.getTime() } } },
       { identifier: 'announce', content: { data: { category: 'announcements-general' } } },
     ]);
 
@@ -185,14 +187,21 @@ describe('T-NHS-5 trigger type is DATE', () => {
 });
 
 // ---------------------------------------------------------------------------
-// T-NHS-6: every scheduled notification carries data { category, localDay }
+// T-NHS-6: every scheduled notification carries data { category, localDay, fireAt }
 // ---------------------------------------------------------------------------
 describe('T-NHS-6 data payload', () => {
-  it('tags every notification with category and localDay', async () => {
-    await reconcileHorizonAsync([entry('prayer-isha', '2026-07-11', 19)]);
+  it('tags every notification with category, localDay and fireAt (epoch ms)', async () => {
+    const e = entry('prayer-isha', '2026-07-11', 19);
+    await reconcileHorizonAsync([e]);
     const call = Mock.__getScheduleCalls()[0];
     expect(call.content.data).toEqual(
       expect.objectContaining({ category: 'prayer-isha', localDay: '2026-07-11' }),
+    );
+    expect(typeof call.content.data!.fireAt).toBe('number');
+    expect(call.content.data!.fireAt).toBe(e.fireAt.getTime());
+    // Mock realism: the pending request keeps its trigger.
+    expect(Mock.__getScheduledNotifications()[0].trigger).toEqual(
+      expect.objectContaining({ type: 'date' }),
     );
   });
 });
@@ -205,6 +214,64 @@ describe('T-NHS-7 permission gate', () => {
     Mock.__setPermissionResponse('denied');
     await reconcileHorizonAsync([entry('prayer-fajr', '2026-07-09', 5)]);
     expect(Mock.__getScheduleCalls()).toHaveLength(0);
+  });
+
+  it('T-NHS-7b: with permission denied, surplus entries are still CANCELLED (only scheduling is gated)', async () => {
+    Mock.__setScheduledNotifications([{ identifier: 'stale', content: { data: { category: 'prayer-fajr', localDay: '2026-07-01' } } }]);
+    Mock.__setPermissionResponse('denied');
+    await reconcileHorizonAsync([]);
+    expect(Mock.__getCancelCalls()).toEqual(['stale']);
+    expect(Mock.__getScheduleCalls()).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-NHS-9: the reconcile key includes the fire time
+// ---------------------------------------------------------------------------
+describe('T-NHS-9 a changed fire time re-arms the same (category, localDay)', () => {
+  it('cancels the 05:00 entry and schedules the 06:00 one', async () => {
+    await reconcileHorizonAsync([entry('prayer-fajr', '2026-07-10', 5)]);
+    await reconcileHorizonAsync([entry('prayer-fajr', '2026-07-10', 6)]);
+    const pending = Mock.__getScheduledNotifications().filter((n) => n.content.data?.category === 'prayer-fajr');
+    expect(pending).toHaveLength(1);
+    expect(new Date(Number(pending[0].content.data!.fireAt)).getHours()).toBe(6);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-NHS-11: the key tolerates the native bridge's serialisation of `data`
+// ---------------------------------------------------------------------------
+describe('T-NHS-11 tolerant key', () => {
+  it('treats a string-serialised fireAt as the same key (no churn)', async () => {
+    const e = entry('prayer-fajr', '2026-07-10', 5);
+    Mock.__setScheduledNotifications([{ identifier: 'str', content: { data: { category: 'prayer-fajr', localDay: '2026-07-10', fireAt: String(e.fireAt.getTime()) } } }]);
+    await reconcileHorizonAsync([e]);
+    expect(Mock.__getCancelCalls()).toHaveLength(0);
+    expect(Mock.__getScheduleCalls()).toHaveLength(0);
+  });
+  it('cancels an entry whose fireAt is missing or non-finite', async () => {
+    Mock.__setScheduledNotifications([
+      { identifier: 'nofire', content: { data: { category: 'prayer-fajr', localDay: '2026-07-10' } } },
+      { identifier: 'nan', content: { data: { category: 'prayer-fajr', localDay: '2026-07-10', fireAt: 'abc' } } },
+    ]);
+    await reconcileHorizonAsync([]);
+    expect([...Mock.__getCancelCalls()].sort()).toEqual(['nan', 'nofire']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-NHS-12: two consecutive reconciles are a no-op (mirrors on-device QA B8)
+// ---------------------------------------------------------------------------
+describe('T-NHS-12 two consecutive reconciles are a no-op (mirrors QA B8)', () => {
+  it('zero cancels/schedules on the second run; identical identifiers', async () => {
+    const intended = [entry('prayer-fajr', '2026-07-10', 5), entry('prayer-isha', '2026-07-10', 19)];
+    await reconcileHorizonAsync(intended);
+    const ids = Mock.__getScheduledNotifications().map((n) => n.identifier).sort();
+    const [c0, s0] = [Mock.__getCancelCalls().length, Mock.__getScheduleCalls().length];
+    await reconcileHorizonAsync(intended);
+    expect(Mock.__getCancelCalls().length).toBe(c0);
+    expect(Mock.__getScheduleCalls().length).toBe(s0);
+    expect(Mock.__getScheduledNotifications().map((n) => n.identifier).sort()).toEqual(ids);
   });
 });
 

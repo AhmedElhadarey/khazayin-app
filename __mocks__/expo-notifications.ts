@@ -64,6 +64,7 @@ export interface MockScheduleRequest {
 export interface MockScheduledNotification {
   identifier: string;
   content: { data?: { category?: string } & Json };
+  trigger?: MockTriggerInput;
 }
 
 export interface MockNotificationHandler {
@@ -115,9 +116,15 @@ export async function scheduleNotificationAsync(
   nextIdentifier += 1;
   scheduleCalls.push({ ...request, identifier });
   // Reflect into the "currently scheduled" list so cancel flow can see it.
+  // `data` is JSON round-tripped, as the native bridge serialises it: whatever
+  // the scheduler reads back from `getAllScheduledNotificationsAsync` is a
+  // copy, never the object it scheduled.
   scheduledNotifications.push({
     identifier,
-    content: { data: (request.content.data ?? {}) as { category?: string } & Json },
+    content: {
+      data: JSON.parse(JSON.stringify(request.content.data ?? {})) as { category?: string } & Json,
+    },
+    trigger: request.trigger,
   });
   return identifier;
 }

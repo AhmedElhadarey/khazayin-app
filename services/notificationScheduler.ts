@@ -280,8 +280,29 @@ function contentFor(categoryId: NotificationCategoryId): NotifContent {
   return { title: label, body: PRAYER_BODY_PLACEHOLDER, channelId: PRAYERS_CHANNEL };
 }
 
-function keyOf(category: string, localDay: string): string {
-  return `${category}|${localDay}`;
+// Reconcile identity is (category, localDay, fireAt). Including the instant
+// means a changed fire time (a new wird reminder time, a moved prayer) re-arms
+// instead of leaving the stale entry armed under a matching (category, day).
+function keyOf(category: string, localDay: string, fireAtMs: number): string {
+  return `${category}|${localDay}|${fireAtMs}`;
+}
+
+// The key of an already-pending request, or null (meaning: cancel it). The
+// native bridge round-trips `data` through serialisation, so `fireAt` is read
+// tolerantly via Number(); entries armed by older builds carry no `fireAt` and
+// are cancelled and re-armed once, which is harmless.
+function keyOfPending(data: Readonly<Record<string, unknown>>): string | null {
+  const { category, localDay, fireAt } = data;
+  if (typeof category !== 'string' || typeof localDay !== 'string') return null;
+  if (typeof fireAt !== 'number' && (typeof fireAt !== 'string' || fireAt.trim() === '')) {
+    return null;
+  }
+  const fireAtMs = Number(fireAt);
+  return Number.isFinite(fireAtMs) ? keyOf(category, localDay, fireAtMs) : null;
+}
+
+function keyOfEntry(entry: HorizonEntry): string {
+  return keyOf(entry.categoryId, entry.localDay, entry.fireAt.getTime());
 }
 
 async function cancelByIdAsync(identifier: string): Promise<void> {
@@ -298,7 +319,11 @@ async function scheduleHorizonEntryAsync(entry: HorizonEntry): Promise<void> {
     content: {
       title: content.title,
       body: content.body,
-      data: { category: entry.categoryId, localDay: entry.localDay },
+      data: {
+        category: entry.categoryId,
+        localDay: entry.localDay,
+        fireAt: entry.fireAt.getTime(),
+      },
     },
     trigger: {
       // One-shot wall-clock instant. NEVER TIME_INTERVAL (relative, drifts) and
@@ -312,11 +337,14 @@ async function scheduleHorizonEntryAsync(entry: HorizonEntry): Promise<void> {
 
 /**
  * Idempotent, TOTAL reconcile: diff `intended` against the actually-pending
- * requests and apply only the delta.
+ * requests and apply only the delta. Identity is (category, localDay, fireAt).
  *
  * - Cancels every one of OUR entries (the five `prayer-*` categories) not
- *   present in `intended`.
- * - Schedules every `intended` entry not already armed.
+ *   present in `intended`. The cancel pass is NOT gated on permission: a user
+ *   who disables a category while permission is revoked must not keep stale
+ *   pending requests.
+ * - Then, only if permission is granted, ensures the Android channels and
+ *   schedules every `intended` entry not already armed.
  * - Leaves matching entries untouched (no cancel-and-reschedule churn).
  *
  * NEVER touches the `wird-daily` category. Per the spec amendment "US4 descoped;
@@ -333,29 +361,18 @@ export async function reconcileHorizonAsync(
   intended: readonly HorizonEntry[],
 ): Promise<void> {
   try {
-    const permission = await Notifications.getPermissionsAsync();
-    if (normalizeStatus(permission?.status) !== 'granted') return;
-
-    await ensureAndroidChannelAsync();
-    await ensurePrayersChannelAsync();
-
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     const ours: ScheduledNotificationLike[] = (scheduled ?? []).filter((n) => {
       const cat = n.content.data?.category;
       return typeof cat === 'string' && OUR_CATEGORIES.has(cat);
     });
 
-    const intendedKeys = new Set(intended.map((e) => keyOf(e.categoryId, e.localDay)));
+    const intendedKeys = new Set(intended.map(keyOfEntry));
     const armedKeys = new Set<string>();
 
+    // Cancel pass — ungated.
     for (const n of ours) {
-      const data = n.content.data ?? {};
-      const category = data.category;
-      const localDay = data.localDay;
-      const key =
-        typeof category === 'string' && typeof localDay === 'string'
-          ? keyOf(category, localDay)
-          : null;
+      const key = keyOfPending(n.content.data ?? {});
       if (key !== null && intendedKeys.has(key)) {
         armedKeys.add(key); // already armed and still wanted — leave it
       } else {
@@ -363,8 +380,15 @@ export async function reconcileHorizonAsync(
       }
     }
 
+    // Schedule pass — gated on permission.
+    const permission = await Notifications.getPermissionsAsync();
+    if (normalizeStatus(permission?.status) !== 'granted') return;
+
+    await ensureAndroidChannelAsync();
+    await ensurePrayersChannelAsync();
+
     for (const entry of intended) {
-      if (armedKeys.has(keyOf(entry.categoryId, entry.localDay))) continue;
+      if (armedKeys.has(keyOfEntry(entry))) continue;
       await scheduleHorizonEntryAsync(entry);
     }
   } catch (err) {

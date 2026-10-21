@@ -1173,3 +1173,9 @@ git commit -m "docs(qa): daily wird reminders on-device verification"
   real `process.env` through `vm.runInThisContext('process.env')`, sets TZ in
   `beforeAll` and restores it in `afterAll`, because the worker goes on to run
   other files. No dependency, no global Jest config change.
+- **Task 3, Step 2.** T-NHS-11 (both cases) and T-NHS-12 already pass under
+  the old `category|localDay` key, so they did not fail first: the old key
+  ignores `fireAt` entirely, which makes the string-`fireAt` case a match and
+  leaves the missing/non-finite case to the "not intended" cancel. They are
+  guards for the new key rather than red tests; T-NHS-6, T-NHS-7b and T-NHS-9
+  failed for the stated reasons.
