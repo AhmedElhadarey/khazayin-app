@@ -8,7 +8,17 @@ import {
 } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
-import { findSurahIdForPage, normalizeSurahParam, surahMetaLine } from '@/services/mushafNavigation';
+import {
+  ayahCharOffset,
+  ayahScrollY,
+  findSurahIdForPage,
+  normalizeAyahParam,
+  normalizeSurahParam,
+  segmentCharLength,
+  segmentForAyah,
+  surahMetaLine,
+  type TextLine,
+} from '@/services/mushafNavigation';
 import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -26,7 +36,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { takeAyahNoteParams } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
@@ -45,7 +55,7 @@ const MUSHAF_BG = KhazainColors.pageBg;
 
 export default function MushafScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams<{ surah?: string }>();
+  const params = useLocalSearchParams<{ surah?: string; ayah?: string }>();
   const setVisible = usePlayerStore((s) => s.setVisible);
 
   // Hide MiniPlayer while mushaf is mounted. Restore on unmount.
@@ -96,7 +106,14 @@ export default function MushafScreen() {
   // each surah session (Rules of Hooks).
   const surahId = normalizeSurahParam(params.surah);
   if (surahId) {
-    return <ReadingView key={surahId} onBack={() => router.back()} surahId={surahId} />;
+    return (
+      <ReadingView
+        key={surahId}
+        onBack={() => router.back()}
+        surahId={surahId}
+        rawAyah={params.ayah}
+      />
+    );
   }
   if (!resumeChecked) {
     // Node 2349:829 — a stable page surface, not the index and not a spinner
@@ -148,7 +165,15 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
   );
 }
 
-function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string }) {
+function ReadingView({
+  onBack,
+  surahId,
+  rawAyah,
+}: {
+  onBack: () => void;
+  surahId: string;
+  rawAyah?: string;
+}) {
   const router = useRouter();
   // Per-surah Zustand store hook. The parent keys this component by surahId so
   // the hook reference is stable across re-renders of the same surah.
@@ -208,6 +233,50 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
     fetchAyat();
   }, [fetchAyat]);
 
+  // ---- `?ayah=` deep link: scroll to the ayah's line and highlight it --------
+  // ReadingView is keyed by surah, so `?ayah=255` -> `?ayah=286` does NOT
+  // remount: remember the last ayah scrolled to (not a boolean) so a changed
+  // target scrolls again and a null target re-arms the same ayah.
+  const targetAyah = normalizeAyahParam(rawAyah, ayat.length || undefined);
+  const scrollRef = useRef<ScrollView>(null);
+  const bodyYRef = useRef(0);
+  const layoutsRef = useRef(new Map<number, { y: number; height: number }>());
+  const linesRef = useRef(new Map<number, TextLine[]>());
+  const scrolledAyahRef = useRef<number | null>(null);
+  const scrolledPreciseRef = useRef(false);
+
+  const tryScroll = useCallback(() => {
+    if (targetAyah == null) {
+      scrolledAyahRef.current = null;
+      scrolledPreciseRef.current = false;
+      return;
+    }
+    const i = segmentForAyah(segments, targetAyah);
+    if (i < 0) return;
+    const segment = segments[i];
+    const layout = layoutsRef.current.get(segment.page);
+    if (!layout) return; // a later layout callback retries
+    const lines = linesRef.current.get(segment.page);
+    const precise = !!lines && lines.length > 0;
+    // Already there; only a first scroll made without line data may refine.
+    if (targetAyah === scrolledAyahRef.current && (scrolledPreciseRef.current || !precise)) return;
+    const y = ayahScrollY({
+      bodyY: bodyYRef.current,
+      segmentY: layout.y,
+      segmentHeight: layout.height,
+      lines,
+      offset: ayahCharOffset(segment.ayat, targetAyah),
+      expectedLength: segmentCharLength(segment.ayat),
+    });
+    scrollRef.current?.scrollTo({ y: Math.max(0, y - 80), animated: false });
+    scrolledAyahRef.current = targetAyah;
+    scrolledPreciseRef.current = precise;
+  }, [targetAyah, segments]);
+
+  useEffect(() => {
+    tryScroll();
+  }, [tryScroll]);
+
   // Long-press an ayah (or the VoiceOver/TalkBack action, which has no ayah)
   // opens the note editor linked to it. Long-press on an ayah means NOTE; it
   // is never a save gesture (see CLAUDE.md "Long-press means").
@@ -248,6 +317,7 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
         <Text style={styles.subtitle}>{metaLine}</Text>
       </View>
       <ScrollView
+        ref={scrollRef}
         contentContainerStyle={styles.pageContent}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={250}
@@ -269,7 +339,13 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
               : `سورة ${displayName}`}
           </Text>
         </View>
-        <View onLayout={(e) => tracking.setBodyY(e.nativeEvent.layout.y)}>
+        <View
+          onLayout={(e) => {
+            bodyYRef.current = e.nativeEvent.layout.y;
+            tracking.setBodyY(e.nativeEvent.layout.y);
+            tryScroll();
+          }}
+        >
           <AsyncContent
             status={ayatStatus}
             error={ayatError}
@@ -283,6 +359,12 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
                 onLayout={(e) => {
                   const { y, height } = e.nativeEvent.layout;
                   tracking.setSegmentLayout(segment.page, y, height);
+                  layoutsRef.current.set(segment.page, { y, height });
+                  tryScroll();
+                }}
+                onTextLayout={(e) => {
+                  linesRef.current.set(segment.page, e.nativeEvent.lines);
+                  tryScroll();
                 }}
                 style={[
                   styles.ayatBody,
@@ -295,7 +377,11 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
               >
                 {segment.ayat.map((a, i) => (
                   <React.Fragment key={a.number}>
-                    <Text onLongPress={() => takeAyahNote(a.number)} suppressHighlighting>
+                    <Text
+                      onLongPress={() => takeAyahNote(a.number)}
+                      suppressHighlighting
+                      style={a.number === targetAyah ? styles.ayahHighlight : undefined}
+                    >
                       {a.text}
                     </Text>
                     <AyahNum n={String(a.number)} />
@@ -426,6 +512,7 @@ const styles = StyleSheet.create({
     textAlign: 'justify',
     writingDirection: 'rtl',
   },
+  ayahHighlight: { backgroundColor: KhazainColors.cream200 },
   ayahNum: {
     fontSize: 14,
     color: KhazainColors.gold600,

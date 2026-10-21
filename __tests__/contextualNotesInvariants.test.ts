@@ -42,6 +42,17 @@ describe('mushaf reader', () => {
   it('has no save gesture (long-press on an ayah means NOTE)', () => {
     expect(src).not.toMatch(/saveGestureProps|useSaveGesture/);
   });
+  it('remembers the last ayah scrolled to, not a boolean', () => {
+    expect(src).toMatch(/scrolledAyahRef = useRef<number \| null>\(null\)/);
+    expect(src).not.toMatch(/didScroll/);
+  });
+  it('ReadingView stays keyed by surah', () => {
+    expect(src).toMatch(/<ReadingView\s+key=\{surahId\}/);
+  });
+  it('the scroll effect reads one segment-layout map', () => {
+    expect(src).toMatch(/layoutsRef\.current\.get\(/);
+    expect(src.match(/layoutsRef\.current\.set\(/g)).toHaveLength(1);
+  });
   it('ayah long-press uses the pure params', () => {
     expect(src).toMatch(/takeAyahNoteParams\(surahId, /);
   });
