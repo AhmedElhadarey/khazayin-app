@@ -1,5 +1,8 @@
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
-import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
+import { editorSeed, linkedNoteRow, NoteRefLink } from '@/components/khazain/notes';
+import { useNotesStore } from '@/store/notesStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -16,7 +19,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-type Params = { id?: string; title?: string };
+// `id`/`title` predate linked notes; the `ref*` keys are written by
+// services/noteRefs.ts `noteRefToParams` (prefixed to avoid clashing with them).
+type Params = {
+  id?: string;
+  title?: string;
+  refType?: string;
+  refId?: string;
+  refPos?: string;
+  refPage?: string;
+  refLabel?: string;
+  refContext?: string;
+  refTitle?: string;
+  refSpeaker?: string;
+};
 
 // Bottom-sheet styled note editor (Figma page-07).
 // Visual contract:
@@ -29,7 +45,7 @@ export default function NoteEditor() {
   const router = useRouter();
   const params = useLocalSearchParams<Params>();
   const editingId = typeof params.id === 'string' ? params.id : undefined;
-  const seedTitle = typeof params.title === 'string' ? params.title : undefined;
+  const { ref: seedRef, legacyTitle: seedTitle } = editorSeed(params);
 
   const addNote = useNotesStore((s) => s.addNote);
   const updateNote = useNotesStore((s) => s.updateNote);
@@ -46,6 +62,7 @@ export default function NoteEditor() {
   );
   // Preserved-title state for edit mode; we keep it in sync silently so the
   // notesStore public API (title + body) is unchanged.
+  const shownRef = existing?.ref ?? seedRef;
   const titleRef = useRef<string>(existing?.title ?? seedTitle ?? '');
 
   const didUnmount = useRef(false);
@@ -73,7 +90,7 @@ export default function NoteEditor() {
     if (editingId) {
       updateNote(editingId, { title: derivedTitle, body: cleanBody });
     } else {
-      addNote(derivedTitle, cleanBody);
+      addNote(derivedTitle, cleanBody, seedRef);
     }
     close();
   };
@@ -94,15 +111,17 @@ export default function NoteEditor() {
   };
 
   return (
-    // Backdrop — tap outside the sheet to dismiss.
-    <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
-      {/* Stop touches from propagating into the dismiss handler. */}
-      <Pressable onPress={() => {}} style={styles.sheetOuter}>
-        <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
-          <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          >
+    // Wraps the full-screen backdrop: inside the content-sized sheet a KAV can
+    // only pad the sheet's content, not move the sheet above the keyboard.
+    <KeyboardAvoidingView
+      style={styles.root}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* Backdrop — tap outside the sheet to dismiss. */}
+      <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
+        {/* Stop touches from propagating into the dismiss handler. */}
+        <Pressable onPress={() => {}} style={styles.sheetOuter}>
+          <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
             <View style={styles.handleWrap}>
               <View style={styles.handle} />
             </View>
@@ -115,6 +134,8 @@ export default function NoteEditor() {
               <Text style={styles.sheetTitle}>
                 {editingId ? 'تعديل الملاحظة' : 'إضافة ملاحظة'}
               </Text>
+
+              {shownRef ? <NoteRefLink label={`مرتبطة بـ ${shownRef.label}`} /> : null}
 
               <View style={styles.bodyCard}>
                 <TextInput
@@ -132,15 +153,12 @@ export default function NoteEditor() {
 
               {/*
                 Toolbar: format buttons on the RIGHT (RTL leading), حفظ on the LEFT.
-                JSX-first lands visually on the right under forceRTL+row.
+                Authored physical left -> right inside PHYSICAL_ROW, so the order
+                is fixed rather than left to forceRTL's row auto-flip — which
+                CLAUDE.md bans because it differs between a cold start, Fast
+                Refresh and web.
               */}
               <View style={styles.toolbar}>
-                <FormatBtn bold>B</FormatBtn>
-                <FormatBtn italic>I</FormatBtn>
-                <FormatBtn>
-                  <ListGlyph />
-                </FormatBtn>
-                <View style={{ flex: 1 }} />
                 <Pressable
                   onPress={save}
                   style={({ pressed }) => [styles.saveBtn, { opacity: pressed ? 0.85 : 1 }]}
@@ -148,6 +166,12 @@ export default function NoteEditor() {
                 >
                   <Text style={styles.saveLabel}>حفظ</Text>
                 </Pressable>
+                <View style={{ flex: 1 }} />
+                <FormatBtn>
+                  <ListGlyph />
+                </FormatBtn>
+                <FormatBtn italic>I</FormatBtn>
+                <FormatBtn bold>B</FormatBtn>
               </View>
 
               {editingId ? (
@@ -164,27 +188,30 @@ export default function NoteEditor() {
               {recentNotes.length > 0 ? (
                 <View style={styles.recentBlock}>
                   <Text style={styles.recentHeader}>آخر الملاحظات</Text>
-                  {recentNotes.map((n) => (
-                    <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
-                      {/*
-                        JSX-first → visual RIGHT under forceRTL+row. Figma shows title on the RIGHT,
-                        relative time on the LEFT — so title goes first.
-                      */}
-                      <Text style={styles.recentTitle} numberOfLines={1}>
-                        {n.title || 'ملاحظة بلا عنوان'}
-                      </Text>
-                      <Text style={styles.recentTime} numberOfLines={1}>
-                        {formatRelativeAr(n.updatedAt)}
-                      </Text>
-                    </View>
-                  ))}
+                  {recentNotes.map((n) => {
+                    const row = linkedNoteRow(n);
+                    return (
+                      <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
+                        {/* Physical left -> right: relative time, title (+ source label). */}
+                        <Text style={styles.recentTime} numberOfLines={1}>
+                          {row.time}
+                        </Text>
+                        <View style={styles.recentColumn}>
+                          <Text style={styles.recentTitle} numberOfLines={1}>
+                            {row.title}
+                          </Text>
+                          {row.label ? <NoteRefLink label={row.label} /> : null}
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               ) : null}
             </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
+          </SafeAreaView>
+        </Pressable>
       </Pressable>
-    </Pressable>
+    </KeyboardAvoidingView>
   );
 }
 
@@ -232,9 +259,14 @@ function ListGlyph() {
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  // The dim lives on the KAV so its padding strip under the keyboard is dimmed
+  // too (it shows through translucent keyboard corners and while animating).
+  root: {
     flex: 1,
     backgroundColor: 'rgba(20,30,30,0.35)',
+  },
+  backdrop: {
+    flex: 1,
     justifyContent: 'flex-end',
   },
   sheetOuter: {
@@ -257,19 +289,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(120,100,80,0.25)',
   },
   scrollContent: {
+    // Pinned so the sheet title and the "آخر الملاحظات" heading resolve
+    // `textAlign: 'right'` to the physical right. Unpinned they rendered left.
+    ...PHYSICAL_BOX,
     paddingHorizontal: 18,
     paddingTop: 12,
     paddingBottom: 24,
     gap: 14,
   },
-  sheetTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  sheetTitle: textStyle('bodyLarge', { color: KhazainColors.ink900 }),
   bodyCard: {
     backgroundColor: KhazainColors.cream50,
     borderRadius: KhazainRadius.lg,
@@ -280,15 +308,11 @@ const styles = StyleSheet.create({
     paddingVertical: 14,
   },
   bodyInput: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.ink900,
+    ...textStyle('bodyCompact', { color: KhazainColors.ink900 }),
     minHeight: 110,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
   toolbar: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 8,
   },
@@ -300,40 +324,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveLabel: {
-    color: '#fff',
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '700',
-    writingDirection: 'rtl',
-  },
+  saveLabel: textStyle('cardTitle', { color: '#fff' }),
   deleteRow: {
+    ...PHYSICAL_BOX,
     paddingVertical: 4,
     alignItems: 'flex-end',
   },
-  deleteLabel: {
-    color: '#B43838',
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '600',
-    writingDirection: 'rtl',
-  },
+  deleteLabel: textStyle('label', { color: '#B43838' }),
   recentBlock: {
     marginTop: 4,
     gap: 8,
   },
-  recentHeader: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '700',
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  // Recent row visual: title right, relative time left.
-  // JSX-first → visual right under forceRTL+row, so we put time first, title after.
+  recentHeader: textStyle('cardTitle', { color: KhazainColors.ink700 }),
+  // Recent row visual: title right, relative time left — authored physical
+  // left -> right inside PHYSICAL_ROW.
   recentRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     backgroundColor: KhazainColors.cream50,
     borderRadius: KhazainRadius.md,
@@ -343,21 +349,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     gap: 8,
   },
-  recentTime: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    color: KhazainColors.ink400,
-    writingDirection: 'rtl',
-  },
-  recentTitle: {
-    flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
+  recentTime: textStyle('caption', { color: KhazainColors.ink400 }),
+  recentColumn: { flex: 1, gap: 2 },
+  recentTitle: textStyle('cardTitle', { color: KhazainColors.ink900 }),
 });
 
 const formatStyles = StyleSheet.create({

@@ -6,15 +6,19 @@ import {
   SearchPill,
   SkeletonRibbonList,
 } from '@/components/khazain';
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useRadioProgramsStore } from '@/store';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Page 35: برامج إذاعية — paginated denser radio program cards (compact LectureCard variant).
+// Page 35: برامج إذاعية — paginated radio programme cards. Node 2606:3830
+// draws the same `DIV-139` as prophet, queen and books: 64 tall at radius 16
+// behind a `#D9D6D3` hairline. It is NOT the rail-list row.
 // FlatList for virtualisation + onEndReached infinite scroll.
 // onEndReachedThreshold = 0.4: trigger fetchMore when 40% of viewport remains
 // scrolled past the last rendered item. Tuned for finger-flick momentum on
@@ -32,10 +36,10 @@ export default function RadioScreen() {
   useEffect(() => { fetch(); }, [fetch]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title="برامج إذاعية" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <FlatList
         data={items}
@@ -45,8 +49,7 @@ export default function RadioScreen() {
           <LectureCard
             id={item.id}
             category={item.category}
-            compact
-            iconNode={<MicBadge size={40} />}
+            iconNode={<MicBadge size={CARD_DENSITY.lectureBadgeDisc} />}
             title={item.title}
             scholar={item.scholar}
             duration={item.duration}
@@ -79,6 +82,6 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 4,
-    gap: 8,
+    gap: CARD_DENSITY.lectureListGap,
   },
 });

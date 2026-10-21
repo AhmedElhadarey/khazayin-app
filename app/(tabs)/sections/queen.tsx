@@ -6,9 +6,11 @@ import {
   SkeletonRibbonList,
   TulipBadge,
 } from '@/components/khazain';
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useQueenLecturesStore } from '@/store';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -32,10 +34,10 @@ export default function QueenScreen() {
   useEffect(() => { fetch(); }, [fetch]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title="أنتِ ملكة" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <FlatList
         data={items}
@@ -45,7 +47,7 @@ export default function QueenScreen() {
           <LectureCard
             id={item.id}
             category={item.category}
-            iconNode={<TulipBadge size={48} />}
+            iconNode={<TulipBadge size={CARD_DENSITY.lectureBadgeDisc} />}
             title={item.title}
             scholar={item.scholar}
             duration={item.duration}
@@ -78,6 +80,6 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 4,
-    gap: 10,
+    gap: CARD_DENSITY.lectureListGap,
   },
 });

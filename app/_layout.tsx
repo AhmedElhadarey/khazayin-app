@@ -1,20 +1,26 @@
+import { LaunchSequence, shouldRunLaunchSequence } from '@/components/khazain/launch';
+import { FONT_ASSET_MODULES } from '@/constants/fonts';
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import { notifyRootRevealed } from '@/services/search/rootReveal';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { I18nManager, LogBox, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { I18nManager, LogBox, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import { useHorizonReconcile } from '@/hooks/useHorizonReconcile';
+import { useDayRollover } from '@/hooks/useDayRollover';
 import { ToastOverlay } from '@/components/khazain';
 import { useProgressStore } from '@/store/progressStore';
-import { useWirdStore } from '@/store/wirdStore';
+import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
+import { shouldSuppressWirdNotification } from '@/services/wirdReminder';
+import { toLocalDay } from '@/constants/progress';
 import { registerCacheRoot } from '@/services/cacheFacade';
 import { registerPlaybackService, restoreLastLecture, setupPlayer } from '@/services/audioEngine';
 import { registerPlaybackListeners } from '@/services/audioEngine/syncBridge';
@@ -27,7 +33,39 @@ import 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
 I18nManager.forceRTL(true);
-LogBox.ignoreLogs(['Require cycle:']);
+
+/**
+ * Bound the OS font-size multiplier for the whole app.
+ *
+ * Android multiplies every `fontSize` by the system font scale and nothing
+ * here opted out. Samsung's slider goes far past stock: the Galaxy A30 this
+ * was found on reports `font_scale = 1.7` with Screen zoom also raised
+ * (density override 450 -> 384dp). At 1.7 the 12pt nav label became ~20pt in a
+ * fixed 49pt item — truncating الرئيسية to الرئيس… and pushing the icon out of
+ * its box — the library stat captions spilled off their cards, and onboarding
+ * grew taller than the screen, floating the brand mark over the status bar.
+ *
+ * `maxFontSizeMultiplier` on the Text/TextInput defaults applies the ceiling
+ * once, at the root, instead of per call site. Text still honours the setting
+ * up to 1.2x, so the preference keeps working — it just cannot break a layout.
+ * Individual screens may pass a lower value; none may raise it.
+ */
+const MAX_FONT_SCALE = 1.2;
+type ScalableText = { defaultProps?: Record<string, unknown> };
+for (const Component of [Text, TextInput] as unknown as ScalableText[]) {
+  Component.defaultProps = {
+    ...(Component.defaultProps ?? {}),
+    maxFontSizeMultiplier: MAX_FONT_SCALE,
+  };
+}
+if (__DEV__ && process.env.EXPO_PUBLIC_VISUAL_AUDIT === '1') {
+  // Debug LogBox toasts cover the bottom navigation and invalidate visual
+  // comparisons. Capture runs opt in explicitly; ordinary development keeps
+  // every warning visible.
+  LogBox.ignoreAllLogs();
+} else {
+  LogBox.ignoreLogs(['Require cycle:']);
+}
 
 // Crash + error reporting. The DSN is supplied via env (EXPO_PUBLIC_SENTRY_DSN)
 // so no secret is committed; when unset, reporting is disabled and the app runs
@@ -144,7 +182,7 @@ function useOnboardingRedirect(navigatorReady: boolean) {
     const complete = useSettingsStore.getState().onboardingComplete;
     const inOnboarding = segments[0] === 'onboarding';
 
-    // `navigatorReady` gates on the root <Stack> being mounted (fonts loaded):
+    // `navigatorReady` gates on the root <Stack> being mounted (fonts + settings):
     // navigating while RootLayout still returns `null` is a race that can crash
     // or silently no-op (T1.3).
     if (
@@ -175,21 +213,45 @@ function useSettingsHydrated(): boolean {
   return hydrated;
 }
 
+/**
+ * Boot readiness never waits forever. `onFinishHydration` fires on failure as
+ * well as success, but a wedged AsyncStorage would otherwise pin the app on the
+ * native splash with no way out, so readiness is capped.
+ */
+const SETTINGS_HYDRATION_CAP_MS = 3000;
+
+function useSettingsSettled(): boolean {
+  const hydrated = useSettingsHydrated();
+  const [capped, setCapped] = useState(false);
+  useEffect(() => {
+    if (hydrated) return;
+    const t = setTimeout(() => {
+      console.warn('[khazayin] settings hydration exceeded the boot cap; continuing');
+      setCapped(true);
+    }, SETTINGS_HYDRATION_CAP_MS);
+    return () => clearTimeout(t);
+  }, [hydrated]);
+  return hydrated || capped;
+}
+
 function RootLayout() {
   const colorScheme = useColorScheme();
-  const settingsHydrated = useSettingsHydrated();
+  const settingsSettled = useSettingsSettled();
 
-  const [fontsLoaded, fontError] = useFonts({
-    Amiri: require('../assets/fonts/Amiri-Regular.ttf'),
-    'Amiri-Bold': require('../assets/fonts/Amiri-Bold.ttf'),
-    NotoSansArabic: require('../assets/fonts/NotoSansArabic-VF.ttf'),
-    NotoNaskhArabic: require('../assets/fonts/NotoNaskhArabic-VF.ttf'),
-  });
+  // Every family the app may reference lives in constants/fonts.ts; this is
+  // the only useFonts call. A fontFamily missing from that registry fails
+  // __tests__/fontRegistry.test.ts rather than silently falling back to the
+  // platform Arabic face.
+  const [fontsLoaded, fontError] = useFonts(FONT_ASSET_MODULES);
 
-  // The root <Stack> only renders once fonts resolve (or error). Gate the
-  // onboarding redirect on this so navigation never fires during the `null`
-  // render before the Navigator mounts (T1.3).
-  const navigatorReady = fontsLoaded || !!fontError;
+  // The root <Stack> only renders once fonts resolve (or error) AND the settings
+  // store has read AsyncStorage. Design section 6.1 (node 2001:835) requires
+  // that Home never appears before fonts *and* settings hydrate; fonts resolve
+  // independently of AsyncStorage, so gating on fonts alone would paint a
+  // screen built from default settings. Gate the onboarding redirect on the
+  // same flag so navigation never fires during the `null` render before the
+  // Navigator mounts (T1.3).
+  const navigatorReady = (fontsLoaded || !!fontError) && settingsSettled;
   useOnboardingRedirect(navigatorReady);
   useBackgroundRefresh();
   // Keep the rolling notification horizon armed: register the background top-up
@@ -200,19 +262,44 @@ function RootLayout() {
   // default settings and arm a schedule the user never chose. `assembleAndReconcile`
   // also guards this internally (the background task has no React lifecycle);
   // this gate just avoids a wasted pre-hydration pass.
-  useHorizonReconcile(fontsLoaded && settingsHydrated);
+  useHorizonReconcile(navigatorReady);
+  // Audit gap 2: reset the Library wird ring when the local day changes while
+  // the app is still in memory (on foreground, and at local midnight).
+  useDayRollover(navigatorReady);
+
+  // The native splash stays up for the whole gate, so there is no blank frame
+  // between it and the launch overlay.
+  // Cold-start only: `shouldRunLaunchSequence` returns true exactly once per
+  // app session, so a tab return or a Fast Refresh never replays the sequence.
+  const [showLaunch, setShowLaunch] = useState(() => shouldRunLaunchSequence());
 
   useEffect(() => {
-    if (fontsLoaded || fontError) {
+    // When the launch overlay is mounted it owns the hand-over: it hides the
+    // native splash once its own emblem has drawn, so the two never trade
+    // places through a blank frame. Without the overlay, readiness is the cue.
+    if (showLaunch) return;
+    if (navigatorReady) {
       SplashScreen.hideAsync().catch(() => undefined);
     }
-  }, [fontsLoaded, fontError]);
+  }, [navigatorReady, showLaunch]);
 
   // Progress-tracking hydration. Failures fall back to zero values so the
   // Library tab never crashes if the DB layer mis-initializes.
   useEffect(() => {
-    if (!fontsLoaded) return;
-    bootstrapNotificationHandler();
+    if (!navigatorReady) return;
+    // Hide a foreground wird reminder once today's goal is met (defence in
+    // depth for the reconcile that cancels it; design 2026-10-21 §3.1).
+    bootstrapNotificationHandler({
+      suppress: (data) => {
+        const w = useWirdStore.getState();
+        const today = toLocalDay();
+        return shouldSuppressWirdNotification(data, {
+          goalMetToday: selectGoalMetToday(w, today),
+          snapshotDay: w.snapshotDay,
+          todayLocalDay: today,
+        });
+      },
+    });
     Promise.all([
       useProgressStore.getState().hydrate(),
       useWirdStore.getState().hydrate(),
@@ -226,7 +313,7 @@ function RootLayout() {
     setupPlayer()
       .then(() => registerPlaybackListeners())
       .catch((err) => console.warn('[khazayin] audio engine setup failed', err));
-  }, [fontsLoaded]);
+  }, [navigatorReady]);
 
   // Env preflight — warn once at root mount if the API base URL is not
   // configured. The app will run on mockAdapter silently; this log reminds
@@ -239,15 +326,16 @@ function RootLayout() {
     }
   }, []);
 
-  if (!fontsLoaded && !fontError) {
-    return null;
-  }
-
   return (
     <Sentry.ErrorBoundary
       fallback={({ resetError }) => <RootErrorFallback onRetry={resetError} />}
     >
     <ThemeProvider value={colorScheme === 'dark' ? KhazayinDarkTheme : KhazayinLightTheme}>
+      {/* Home still never appears before fonts *and* settings resolve. The
+          launch overlay is a sibling rather than a wrapper, so it can mount on
+          the first JS frame and show the wait rather than follow it. */}
+      {navigatorReady ? (
+      <>
       <Stack
         screenOptions={{
           headerShown: false,
@@ -260,7 +348,18 @@ function RootLayout() {
           animation: Platform.OS === 'android' ? 'slide_from_right' : 'default',
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false }}
+          // When a full-screen modal over the tabs (search) finishes closing,
+          // (tabs) gets onAppear → transitionEnd {closing: false}. The modal's
+          // own closing event never arrives — see services/search/rootReveal.ts.
+          listeners={{
+            transitionEnd: (e) => {
+              if (!e.data.closing) notifyRootRevealed();
+            },
+          }}
+        />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen
           name="resource/[id]"
@@ -332,10 +431,12 @@ function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="search"
+          name="content-search"
           options={{
             headerShown: false,
-            presentation: 'modal',
+            // Full-screen, not a page sheet: the ticket asks for a full-screen
+            // search view; 'modal' is a card with the previous screen peeking on iOS.
+            presentation: 'fullScreenModal',
             animation: Platform.OS === 'android' ? 'slide_from_left' : 'default',
           }}
         />
@@ -405,7 +506,14 @@ function RootLayout() {
         />
       </Stack>
       <ToastOverlay />
+      </>
+      ) : null}
       <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+      {/* Last child, so it paints over the navigator during the hand-over —
+          Figma nodes 2001:888, 2001:914, 2007:511. */}
+      {showLaunch ? (
+        <LaunchSequence ready={navigatorReady} onDone={() => setShowLaunch(false)} />
+      ) : null}
     </ThemeProvider>
     </Sentry.ErrorBoundary>
   );

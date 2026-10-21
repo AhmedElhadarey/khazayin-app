@@ -1,7 +1,9 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 
 // Compact "المزيد" button used inside hero and queen cards.
 // 4px vertical × 19px horizontal padding, bg navy, radius 4, tiny left-pointing chevron.
@@ -31,7 +33,9 @@ export function SmallMoreButton({ onPress }: { onPress?: () => void }) {
 
 const styles = StyleSheet.create({
   btn: {
-    flexDirection: 'row',
+    // Physical order is [chevron][label], pinned rather than left to
+    // flexDirection auto-flip — see the RTL contract in constants/layout.ts.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 2,
     paddingHorizontal: 19,
@@ -40,10 +44,10 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   label: {
-    fontFamily: 'Amiri',
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FDF9F2',
-    writingDirection: 'rtl',
+    // Figma sets this pill's label in TheMixArab Regular. It states 6pt, but
+    // there it is a picture of a label; live text floors at MIN_BODY_SIZE.
+    // The old style asked Amiri Regular to render at weight 700, which is a
+    // synthetic bold of a face the design never uses here.
+    ...textStyle('caption', { color: '#FDF9F2' }),
   },
 });

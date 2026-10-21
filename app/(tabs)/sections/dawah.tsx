@@ -1,14 +1,15 @@
 import { AsyncContent, InlineHeader, MoonMountainBadge, SkeletonCardList } from '@/components/khazain';
-import { OrnamentPattern } from '@/components/khazain/patterns';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { HeaderArt } from '@/components/khazain/patterns';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { useDawahMonthsStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { I18nManager, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // JSX order is [text, badge]. Want text on left, badge on right.
-const HEAD_FLEX: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row-reverse' : 'row';
 
 // Page 29: تصميمات دعوية — month-pair cards.
 // Data sourced from useDawahMonthsStore (content service layer).
@@ -26,8 +27,8 @@ export default function DawahScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <HeaderArt corners="single" />
       <InlineHeader title="تصميمات دعوية" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
@@ -40,29 +41,31 @@ export default function DawahScreen() {
           skeleton={<SkeletonCardList count={5} />}
           emptyMessage="لا يوجد ملصقات دعوية"
         >
+          {/* The gap sits on a view of our own: AsyncContent renders its
+              children inside a wrapper, so a `gap` on the scroll container
+              never reaches the rows. */}
+          <View style={styles.rows}>
           {data.map((g) => (
             <Pressable
               key={g.id}
               onPress={() => openDetail(g.id)}
               style={({ pressed }) => [
                 styles.row,
-                KhazainShadows.card,
                 { transform: [{ scale: pressed ? 0.98 : 1 }] },
               ]}
             >
-              {/* Right edge: icon + title (absolute-positioned for RTL safety). */}
-              <View style={styles.headBlock}>
-                <Text style={styles.title} numberOfLines={1}>
-                  {g.title}
-                </Text>
-                <MoonMountainBadge size={44} />
-              </View>
-              {/* Left edge: count chip. */}
+              {/* Physical left → right: count, title, month badge
+                  (Figma node 2120:942). */}
               <View style={styles.countBlock}>
                 <Text style={styles.count}>{g.count}</Text>
               </View>
+              <Text style={styles.title} numberOfLines={1}>
+                {g.title}
+              </Text>
+              <MoonMountainBadge size={CARD_DENSITY.lectureBadgeDisc} />
             </Pressable>
           ))}
+          </View>
         </AsyncContent>
       </ScrollView>
     </SafeAreaView>
@@ -74,48 +77,33 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 12,
-    gap: 10,
   },
+  // node 2120:942 `DIV-139` steps 60 over a 56 row.
+  rows: {
+    gap: CARD_DENSITY.dawahListGap,
+  },
+  // Node 2120:942 `DIV-139` — 361 x 56 at radius 16 behind a 1pt `#D9D6D3`
+  // hairline, inset 8, casting no shadow.
   row: {
-    minHeight: 70,
-    borderRadius: 16,
+    ...PHYSICAL_ROW,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.08)',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    position: 'relative',
-    justifyContent: 'center',
-  },
-  headBlock: {
-    position: 'absolute',
-    right: 14,
-    top: 0,
-    bottom: 0,
-    flexDirection: HEAD_FLEX,
+    borderColor: KhazainColors.hairlineWarm,
+    paddingVertical: 8,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 17,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('cardTitle', { color: KhazainColors.inkTitle }),
+    flex: 1,
+    minWidth: 0,
   },
   countBlock: {
-    position: 'absolute',
-    left: 14,
-    top: 0,
-    bottom: 0,
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  count: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '500',
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-  },
+  count: textStyle('label', { color: KhazainColors.ink500 }),
 });

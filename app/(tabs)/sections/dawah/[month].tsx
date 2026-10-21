@@ -1,4 +1,5 @@
 import { AsyncContent, DawahPosterRow, InlineHeader, SkeletonPosterList } from '@/components/khazain';
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { useDawahByMonthStore, useDawahMonthsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -37,7 +38,7 @@ export default function DawahMonthScreen() {
   const handleDownload = () => Alert.alert('تنزيل', 'سيتم التنزيل قريباً');
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title={title} onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
@@ -75,6 +76,6 @@ const styles = StyleSheet.create({
     paddingTop: 12,
   },
   gap: {
-    gap: 10,
+    gap: CARD_DENSITY.dawahListGap,
   },
 });

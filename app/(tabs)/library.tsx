@@ -2,6 +2,7 @@ import {
   AsyncContent,
   AudioProgressCard,
   CircularProgress,
+  RtlCarousel,
   SearchPill,
   SkeletonPillList,
   StatCard,
@@ -10,13 +11,39 @@ import {
 import {
   EmptyInProgressCard,
   InsightRow,
+  ReminderList,
   MySavedSection,
   TrendSparkline,
   WirdHistory,
   WirdSuggestionBanner,
 } from '@/components/khazain/library';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import {
+  LIBRARY_PROGRESS_STAT_ORDER,
+  LIBRARY_SUMMARY_CARD_ORDER,
+  type LibraryProgressStatKey,
+  type LibrarySectionKey,
+  type LibraryFilter,
+  type LibrarySummaryCardKey,
+  visibleLibrarySections,
+} from '@/constants/libraryPresentation';
+import { juzCompletedSubtitle, lecturesListenedSubtitle, pagesReadSubtitle } from '@/services/libraryStats';
+import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import {
+  FILTER_CHIP,
+  LIBRARY_CARD_RADIUS,
+  LIBRARY_DESIGN,
+  LIBRARY_SECTION_GAP,
+  NOTE_FIELD,
+  QUICK_NOTE_CARD,
+  RECENT_NOTE_ROW,
+  STAT_CARD,
+  WIRD_CARD,
+} from '@/components/khazain/library/libraryLayout';
 import {
   SURAH_NAMES_AR,
   SURAH_START_PAGES,
@@ -36,8 +63,10 @@ import { setWirdReminderEnabled } from '@/services/wirdReminderToggle';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useProgressStore } from '@/store/progressStore';
-import { useWirdStore } from '@/store/wirdStore';
+import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { getRepos, progressRepo } from '@/db';
+import { lectureNoteParamsFromSession } from '@/services/noteActions';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -65,13 +94,17 @@ function lastReadingLabel(trend: { localDay: string; pagesRead: number }[]): str
   return 'لم تبدأ القراءة بعد';
 }
 
+/** `DIV-46` draws its stat glyph at 22.2 x 21.3 inside a 40pt chip. */
+const STAT_GLYPH = 22;
+/** `BUTTON-113` draws its toolbar mark at 16.7 x 16 inside a 32pt button. */
+const FORMAT_GLYPH = 16;
+
 export default function LibraryScreen() {
   const router = useRouter();
   const notes = useNotesStore((s) => s.notes);
   const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
 
-  const [filter, setFilter] = useState('all');
-  const [lastReadPage, setLastReadPage] = useState<number>(1);
+  const [filter, setFilter] = useState<LibraryFilter>('all');
 
   // Wird completion history (US5). Loaded lazily when the السجل pill is active.
   // The window defaults to 12 weeks and grows via the "show more" affordance so
@@ -88,20 +121,24 @@ export default function LibraryScreen() {
 
   // Wird reminder state lives in settingsStore (the single source of truth that
   // the scheduler reads), not in local component state. Toggling here persists
-  // the preference AND re-arms/cancels the repeating DAILY trigger (T047).
+  // the preference AND re-arms/cancels the wird reminder horizon (T047).
   //
   // Routed through `setWirdReminderEnabled` so this toggle has the SAME
   // permission semantics as the one in settings-notifications. Without it, a
   // user who has denied notification permission could switch this on: the
   // preference would persist, the card would render a next-reminder time, and
-  // `scheduleWirdReminderAsync` would silently no-op — the card would be
+  // the scheduler would silently arm nothing — the card would be
   // advertising a reminder that can never fire.
   const wirdReminderOn = useSettingsStore((s) => s.notifications['wird-daily']);
   const wirdReminderTime = useSettingsStore((s) => s.wirdReminderTime);
   const notificationPermission = useNotificationPermission();
+  // Once today's goal is met, today's reminder is cancelled, so the caption
+  // names tomorrow (design 2026-10-21 §3.5). Same DB-derived flag as the horizon.
+  const goalMetToday = useWirdStore((s) => selectGoalMetToday(s, toLocalDay()));
   const reminder = describeWirdReminder(new Date(), wirdReminderTime, {
     enabled: wirdReminderOn,
     permission: notificationPermission,
+    goalMetToday,
   });
   const onToggleWirdReminder = (next: boolean) => {
     void setWirdReminderEnabled(next).then((outcome) => {
@@ -129,8 +166,6 @@ export default function LibraryScreen() {
     fetchFilters();
   }, [fetchFilters]);
 
-  const recentNotes = notes.slice(0, 2);
-
   const savedCount = useSavedStore((s) => s.items.length);
 
   // T1.2 — if progress hydration failed at boot, surface a retry instead of
@@ -151,6 +186,7 @@ export default function LibraryScreen() {
 
   // Progress snapshot (SQLite-backed, hydrated at app boot).
   const currentStreak = useProgressStore((s) => s.currentStreak);
+  const lastReadPage = useProgressStore((s) => s.lastReadPage);
   const trendLast28 = useProgressStore((s) => s.trendLast28);
   const longestStreak = useProgressStore((s) => s.longestStreakEver);
   const bestDayPages = useProgressStore((s) => s.bestWirdDayPages);
@@ -160,24 +196,12 @@ export default function LibraryScreen() {
   const wirdTarget = useWirdStore((s) => s.target);
   const inProgressLecture = useProgressStore((s) => s.inProgressLecture);
   const completedLectureCount = useProgressStore((s) => s.completedLectureCount);
+  const totalPagesRead = useProgressStore((s) => s.totalPagesRead);
+  const completedJuzCount = useProgressStore((s) => s.completedJuzCount);
+  const listenedLectureCount = useProgressStore((s) => s.listenedLectureCount);
   const pendingSuggestion = useWirdStore((s) => s.pendingSuggestion);
   const acceptSuggestion = useWirdStore((s) => s.acceptSuggestion);
   const dismissSuggestion = useWirdStore((s) => s.dismissSuggestion);
-
-  // last_read_page lives in settings — refresh whenever the wird ring nudges
-  // (proxy for "user just recorded a page"). Awaits `getRepos()` so the Proxy
-  // accessor never throws the pre-hydration error.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      await getRepos();
-      const p = await progressRepo.getLastReadPage();
-      if (!cancelled) setLastReadPage(p);
-    })().catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [todayPct]);
 
   // Load completion history when the السجل pill is active. Re-runs when the
   // window grows (show more) or when today's wird ring nudges (a fresh page
@@ -225,9 +249,15 @@ export default function LibraryScreen() {
         f.count,
     }));
 
-  const showSaved = filter === 'all' || filter === 'saved';
-  const showNotes = filter === 'all' || filter === 'notes';
-  const showHistory = filter === 'history';
+  // Reminder categories that are both shipped and switched on. Derived from the
+  // notification registry, so the Library never advertises a reminder that has
+  // no scheduler behind it.
+  // Subscribe to the notifications slice so the list re-renders on a toggle;
+  // `isCategoryEnabled` owns the backfill semantics for unregistered ids.
+  useSettingsStore((st) => st.notifications);
+  const activeReminders = NOTIFICATION_CATEGORIES.filter(
+    (category) => category.available && isCategoryEnabled(category.id),
+  );
 
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
   const openNewNote = (seedTitle?: string) =>
@@ -235,357 +265,421 @@ export default function LibraryScreen() {
   const openExistingNote = (id: string) =>
     router.push({ pathname: '/note-editor' as any, params: { id } });
 
+  // The three Figma summary cards, keyed so LIBRARY_SUMMARY_CARD_ORDER can
+  // place them without the JSX order mattering.
+  const summaryCards: Record<LibrarySummaryCardKey, React.ReactNode> = {
+    reminders: (
+      <StatCard
+        title="تذكيراتي"
+        subtitle={
+          activeReminders.length === 0
+            ? 'لا تذكيرات نشطة'
+            : `${toArNum(activeReminders.length)} تذكيرات نشطة`
+        }
+        icon={<FigmaIcon name="LibraryReminders" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+      />
+    ),
+    quranWird: (
+      <StatCard
+        title="ورد القرآن"
+        subtitle={
+          currentStreak === 0
+            ? 'لم تبدأ بعد'
+            : currentStreak === 1
+              ? 'يوم واحد متتالي'
+              : `${toArNum(currentStreak)} يوم متتالي`
+        }
+        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+      />
+    ),
+    notes: (
+      <StatCard
+        title="ملاحظاتي"
+        subtitle={`${toArNum(notes.length)} ملاحظة`}
+        icon={<FigmaIcon name="LibraryNotes" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+      />
+    ),
+  };
+
+  // Below the frame (no Figma frame — design 2026-10-21 §4.4). Same StatCard,
+  // geometry and PHYSICAL_ROW as the frame's summary row.
+  const progressStatCards: Record<LibraryProgressStatKey, React.ReactNode> = {
+    lectures: (
+      <StatCard
+        title="محاضرات مسموعة"
+        subtitle={lecturesListenedSubtitle(listenedLectureCount, completedLectureCount)}
+        icon={<HeadphonesGlyph size={STAT_GLYPH} />}
+      />
+    ),
+    juz: (
+      <StatCard
+        title="الأجزاء المكتملة"
+        subtitle={juzCompletedSubtitle(completedJuzCount)}
+        icon={<FigmaIcon name="SectionQuran" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+      />
+    ),
+    pages: (
+      <StatCard
+        title="صفحات مقروءة"
+        subtitle={pagesReadSubtitle(totalPagesRead)}
+        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+      />
+    ),
+  };
+
+  const audiobookProgressCard = inProgressLecture ? (
+    (() => {
+      const lecture = inProgressLecture;
+      const pct = lecture.durationSec > 0
+        ? Math.min(100, Math.round((lecture.positionSec / lecture.durationSec) * 100))
+        : 0;
+      const resume = () => {
+        usePlayerStore.getState().setTrack({
+          id: lecture.lectureId,
+          title: lecture.title,
+          reciter: lecture.author,
+          durationSec: lecture.durationSec,
+        });
+        usePlayerStore.getState().setProgress(
+          lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0,
+        );
+        usePlayerStore.getState().setVisible(true);
+      };
+      return (
+        <AudioProgressCard
+          title={lecture.title}
+          author={lecture.author}
+          pct={pct}
+          subtitle={`${toArNum(pct)}٪ مكتمل`}
+          primaryLabel="متابعة"
+          secondaryLabel="إضافة ملاحظة"
+          onPrimary={resume}
+          onSecondary={() => {
+            // Linked to the saved second. A session whose id is not an episode
+            // id cannot be linked, so it keeps the old title-seeded note.
+            const linked = lectureNoteParamsFromSession(lecture);
+            if (!linked) openNewNote(lecture.title);
+            else router.push({ pathname: '/note-editor' as any, params: linked });
+          }}
+        />
+      );
+    })()
+  ) : (
+    <EmptyInProgressCard onBrowse={() => router.push('/(tabs)/sections/scholar' as any)} />
+  );
+
+  // Rendered from LIBRARY_SECTION_ORDER so the reference hierarchy is a
+  // single declaration, and every newer metric provably sits below it.
+  const sections: Partial<Record<LibrarySectionKey, React.ReactNode>> = {
+    header: (
+      <View style={styles.headerBlock}>
+        <Text style={styles.h1}>مكتبتي</Text>
+      </View>
+    ),
+
+    search: (
+      <View style={styles.searchBlock}>
+        <SearchPill onPress={openSearch} />
+      </View>
+    ),
+
+    // T1.2 — DB hydration failure banner with retry.
+    dbError: dbFailed ? (
+      <View style={styles.dbErrorBanner}>
+        <Text style={styles.dbErrorText}>
+          تعذّر تحميل بيانات التقدّم. الأرقام أدناه قد تكون غير دقيقة.
+        </Text>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="إعادة المحاولة"
+          onPress={retryHydrate}
+          disabled={retrying}
+          style={({ pressed }) => [styles.dbErrorBtn, { opacity: pressed ? 0.8 : 1 }]}
+        >
+          <Text style={styles.dbErrorBtnLabel}>إعادة المحاولة</Text>
+        </Pressable>
+      </View>
+    ) : null,
+
+    // Physical left → right: تذكيراتي، ورد القرآن، ملاحظاتي.
+    summaryCards: (
+      <View style={styles.statsRow}>
+        {LIBRARY_SUMMARY_CARD_ORDER.map((key) => (
+          <React.Fragment key={key}>{summaryCards[key]}</React.Fragment>
+        ))}
+      </View>
+    ),
+
+    dailyWird: (
+      <View style={styles.block}>
+        {/* Three rows, as the frame draws them: ring + title, then the start
+            button beside the reading summary, then the toggle on its own. */}
+        <View style={styles.wirdCard}>
+          <View style={styles.wirdTop}>
+            {/* The ring is the goal area — tap it to edit the daily target. */}
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="تعديل هدف الورد اليومي"
+              hitSlop={8}
+              onPress={() => router.push('/settings-wird-goal' as any)}
+            >
+              <CircularProgress pct={todayPct} size={WIRD_CARD.ring} />
+            </Pressable>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.wirdTitle}>ورد القرآن اليومي</Text>
+            </View>
+          </View>
+          {/* Physical left → right: "بدء الورد", then the reading summary. */}
+          <View style={styles.wirdActions}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="بدء الورد"
+              onPress={() =>
+                router.push({
+                  pathname: '/(tabs)/sections/mushaf' as any,
+                  params: lastSurah ? { surah: String(lastSurah.surahNumber) } : {},
+                })
+              }
+              style={({ pressed }) => [styles.startBtn, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={styles.startBtnLabel}>بدء الورد</Text>
+            </Pressable>
+            <View style={{ flex: 1 }} />
+            <View>
+              <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
+              <Text style={styles.wirdHighlight}>
+                {lastSurah
+                  ? `سورة ${lastSurah.name} — صفحة ${toArNum(lastReadPage)}`
+                  : 'لم تبدأ القراءة بعد'}
+              </Text>
+            </View>
+          </View>
+          {/* Physical left → right: the toggle, then its label. */}
+          <View style={styles.reminderInline}>
+            <Toggle on={reminder.armed} onChange={onToggleWirdReminder} label="التذكير اليومي" />
+            <View style={{ flex: 1 }} />
+            <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
+          </View>
+          {/* The design has no frame for a blocked reminder, so this line is
+              drawn only when there is something the reader has to act on. */}
+          {reminder.caption ? (
+            <Text style={styles.wirdReminderNext}>{reminder.caption}</Text>
+          ) : null}
+        </View>
+      </View>
+    ),
+
+    quickNote: (
+      <View style={styles.block}>
+        <View style={styles.quickNoteCard}>
+          <Text style={styles.quickNoteTitle}>ملاحظة سريعة</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="اكتب ملاحظة"
+            onPress={() => openNewNote()}
+            style={styles.noteBody}
+          >
+            <Text style={styles.noteBodyPlaceholder}>اكتب ملاحظتك هنا...</Text>
+          </Pressable>
+          {/* Physical left → right: حفظ, then the format buttons at the right. */}
+          <View style={styles.noteToolbar}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="حفظ الملاحظة"
+              onPress={() => openNewNote()}
+              style={({ pressed }) => [styles.noteSaveBtn, { opacity: pressed ? 0.85 : 1 }]}
+            >
+              <Text style={styles.noteSaveLabel}>حفظ</Text>
+            </Pressable>
+            <View style={{ flex: 1 }} />
+            <FormatBtn>
+              <FigmaIcon name="NoteListFormat" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+            </FormatBtn>
+            <FormatBtn>
+              <FigmaIcon name="NoteItalic" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+            </FormatBtn>
+            <FormatBtn>
+              <FigmaIcon name="NoteBold" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+            </FormatBtn>
+          </View>
+          <View style={styles.recentBlock}>
+            <Text style={styles.recentHeader}>آخر الملاحظات</Text>
+            {notes.length === 0 ? (
+              <Text style={styles.recentEmpty}>لا توجد ملاحظات بعد</Text>
+            ) : (
+              notes.slice(0, 3).map((n) => (
+                <Pressable
+                  key={n.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={n.title}
+                  onPress={() => openExistingNote(n.id)}
+                  style={styles.recentRow}
+                >
+                  <Text style={styles.recentTime}>{formatRelativeAr(n.updatedAt)}</Text>
+                  <Text style={styles.recentTitle} numberOfLines={1}>
+                    {n.title}
+                  </Text>
+                </Pressable>
+              ))
+            )}
+          </View>
+        </View>
+      </View>
+    ),
+
+    filters: (
+      <AsyncContent
+        status={filtersStatus}
+        error={filtersError}
+        onRetry={refreshFilters}
+        skeleton={<SkeletonPillList count={3} />}
+        emptyMessage="لا توجد تصنيفات"
+      >
+        {/* The frame's chips run out past the leading edge, so the rail
+            scrolls rather than wrapping. The row style has to sit on the
+            content container: AsyncContent renders its children inside a view
+            of its own, which would otherwise stack the chips vertically. */}
+        {/* Logical order, not physical: RtlCarousel puts the first child at
+            the visual right, which is where the frame puts الكل. */}
+        <RtlCarousel contentContainerStyle={styles.filtersRow}>
+          {realFilters.map((f) => {
+            const active = filter === f.id;
+            return (
+              <Pressable
+                key={f.id}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                accessibilityLabel={f.label}
+                onPress={() => setFilter(f.id as LibraryFilter)}
+                style={[styles.filterPill, active && styles.filterPillActive]}
+              >
+                {/* The frame sets the label at 14 and the count at 12, with a
+                    12pt gap — physical left → right: count, then label. */}
+                <Text style={[styles.filterCount, active && styles.filterLabelActive]}>
+                  {f.count}
+                </Text>
+                <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
+                  {f.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </RtlCarousel>
+      </AsyncContent>
+    ),
+
+    savedList: <MySavedSection />,
+
+    audiobookProgress: (
+      <>
+        <Text style={styles.sectionTitle}>تقدم الكتب المسموعة</Text>
+        <View style={styles.block}>{audiobookProgressCard}</View>
+      </>
+    ),
+
+    smartReminders: (
+      <>
+        <Text style={styles.sectionTitle}>التذكيرات الذكية</Text>
+        <View style={styles.block}>
+          <ReminderList
+            reminders={activeReminders.map((c) => ({
+              id: c.id,
+              labelAr: c.labelAr,
+              descriptionAr: c.descriptionAr,
+            }))}
+            onManage={() => router.push('/settings-notifications' as any)}
+          />
+        </View>
+      </>
+    ),
+
+    // ── Sections added after the design; never above the reference set. ──
+
+    wirdHistory: dbFailed ? null : history ? (
+      <WirdHistory
+        byWeekday={history.byWeekday}
+        weeks={history.weeks}
+        hasHistory={history.hasHistory}
+        onShowMore={
+          historyWeeks < HISTORY_WEEKS_MAX
+            ? () => setHistoryWeeks((w) => Math.min(HISTORY_WEEKS_MAX, w + HISTORY_WEEKS_STEP))
+            : undefined
+        }
+      />
+    ) : (
+      <View style={styles.block}>
+        <Text style={styles.historyLoading}>جارٍ تحميل السجل…</Text>
+      </View>
+    ),
+
+    wirdTrend: (
+      <View style={styles.block}>
+        <View style={styles.card}>
+          <Text style={styles.quickNoteTitle}>آخر ٢٨ يومًا</Text>
+          <View style={styles.sparklineBlock}>
+            <TrendSparkline points={trendLast28} wirdTarget={wirdTarget} />
+          </View>
+        </View>
+      </View>
+    ),
+
+    insights: (
+      <InsightRow
+        longestStreak={longestStreak}
+        bestDayPages={bestDayPages}
+        monthDeltaPct={monthDeltaPct}
+      />
+    ),
+
+    wirdSuggestion: pendingSuggestion?.shouldSuggest ? (
+      <WirdSuggestionBanner
+        suggestedTarget={pendingSuggestion.suggestedTarget}
+        onAccept={() => {
+          acceptSuggestion().catch(() => undefined);
+        }}
+        onDismiss={() => {
+          dismissSuggestion().catch(() => undefined);
+        }}
+      />
+    ) : null,
+
+    // Physical left → right: محاضرات مسموعة، الأجزاء المكتملة، صفحات مقروءة.
+    progressStats: (
+      <View style={styles.statsRow}>
+        {LIBRARY_PROGRESS_STAT_ORDER.map((key) => (
+          <React.Fragment key={key}>{progressStatCards[key]}</React.Fragment>
+        ))}
+      </View>
+    ),
+  };
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
         contentContainerStyle={{ paddingBottom: 24 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View style={styles.headerBlock}>
-          <Text style={styles.h1}>مكتبتي</Text>
-        </View>
-        <View style={styles.searchBlock}>
-          <SearchPill placeholder="ابحث في مكتبتك..." onPress={() => router.push('/search' as any)} />
-        </View>
-
-        {/* T1.2 — DB hydration failure banner with retry. */}
-        {dbFailed ? (
-          <View style={styles.dbErrorBanner}>
-            <Text style={styles.dbErrorText}>
-              تعذّر تحميل بياناتك. تحقّق ثم أعد المحاولة.
-            </Text>
-            <Pressable
-              onPress={retryHydrate}
-              disabled={retrying}
-              accessibilityRole="button"
-              accessibilityLabel="إعادة المحاولة"
-              accessibilityState={{ disabled: retrying, busy: retrying }}
-              style={({ pressed }) => [
-                styles.dbErrorBtn,
-                { opacity: pressed || retrying ? 0.6 : 1 },
-              ]}
-            >
-              <Text style={styles.dbErrorBtnLabel}>
-                {retrying ? 'جارٍ المحاولة…' : 'إعادة المحاولة'}
-              </Text>
-            </Pressable>
-          </View>
-        ) : null}
-
-        {/* Stats row */}
-        <View style={styles.statsRow}>
-          <StatCard
-            title="ملاحظاتي"
-            subtitle={`${toArNum(notes.length)} ملاحظة`}
-            icon={<PencilGlyph />}
-          />
-          <StatCard
-            title="ورد القرآن"
-            subtitle={
-              currentStreak === 0
-                ? 'لم تبدأ بعد'
-                : currentStreak === 1
-                  ? 'يوم واحد متتالي'
-                  : `${toArNum(currentStreak)} يوم متتالي`
-            }
-            icon={<BookGlyph />}
-          />
-          <StatCard
-            title="محاضرات مكتملة"
-            subtitle={
-              completedLectureCount === 0
-                ? 'لم تكتمل بعد'
-                : `${toArNum(completedLectureCount)} محاضرة`
-            }
-            icon={<HeadphonesGlyph />}
-          />
-        </View>
-
-        {/* Insight row — longest streak / best wird day / month delta. */}
-        <InsightRow
-          longestStreak={longestStreak}
-          bestDayPages={bestDayPages}
-          monthDeltaPct={monthDeltaPct}
-        />
-
-        {/* Adaptive wird-target suggestion (research R7) */}
-        {pendingSuggestion?.shouldSuggest ? (
-          <WirdSuggestionBanner
-            suggestedTarget={pendingSuggestion.suggestedTarget}
-            onAccept={() => {
-              acceptSuggestion().catch(() => undefined);
-            }}
-            onDismiss={() => {
-              dismissSuggestion().catch(() => undefined);
-            }}
-          />
-        ) : null}
-
-        {/* Daily Wird card */}
-        <View style={styles.block}>
-          <View style={[styles.card, KhazainShadows.card]}>
-            <View style={styles.wirdTop}>
-              {/* The ring is the goal area — tap it to edit the daily target.
-                  Same route the Settings entry uses (one value, two doors). */}
-              <Pressable
-                onPress={() => router.push('/settings-wird-goal' as any)}
-                accessibilityRole="button"
-                accessibilityLabel={`هدف الورد اليومي، ${toArNum(wirdTarget)} صفحة`}
-                style={({ pressed }) => ({ opacity: pressed ? 0.85 : 1 })}
-              >
-                <CircularProgress pct={todayPct} />
-              </Pressable>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.wirdTitle}>وردُ القرآن اليومي</Text>
-                <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
-                <Text style={styles.wirdHighlight}>
-                  {lastSurah
-                    ? `سورة ${lastSurah.name} · الصفحة ${toArNum(lastReadPage)}`
-                    : `الصفحة ${toArNum(lastReadPage)} من ٦٠٤`}
-                </Text>
-              </View>
-
-            </View>
-            {/* 28-day pages-per-day sparkline below the ring. */}
-            <View style={styles.sparklineBlock}>
-              <TrendSparkline points={trendLast28} wirdTarget={wirdTarget} />
-            </View>
-            {/* Actions row: "بدء الورد" navy pill on RIGHT (first), toggle row on LEFT.
-                Under forceRTL+row, JSX-first lands visually on the right. */}
-            <View style={styles.wirdActions}>
-              <Pressable
-                onPress={() => {
-                  // Open the Mushaf at the surah owning the last-read page so the
-                  // user resumes exactly where they stopped (FR-008). Falls back
-                  // to the Mushaf index when no page has been read yet.
-                  const target = lastSurah
-                    ? `/(tabs)/sections/mushaf?surah=${lastSurah.surahNumber}`
-                    : '/(tabs)/sections/mushaf';
-                  router.push(target as any);
-                }}
-                accessibilityRole="button"
-                accessibilityLabel="بدء الورد"
-                style={({ pressed }) => [styles.startBtn, { opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Text style={styles.startBtnLabel}>بدء الورد</Text>
-              </Pressable>
-              <View style={{ flex: 1 }} />
-              <View style={styles.reminderInline}>
-                <Toggle on={reminder.armed} onChange={onToggleWirdReminder} label="التذكير اليومي" />
-
-                <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
-              </View>
-            </View>
-            {/* Shows a time ONLY when the reminder is genuinely armed — i.e. the
-                user wants it AND the OS permits it. `wird-daily` defaults to true
-                and nothing requests permission at boot, so keying this off the
-                stored preference alone would advertise a reminder that cannot
-                fire. See `describeWirdReminder`. */}
-            <Text style={styles.wirdReminderNext}>{reminder.caption}</Text>
-          </View>
-        </View>
-
-        {/* Quick note */}
-        {showNotes ? (
-        <View style={styles.block}>
-          <View style={[styles.card, KhazainShadows.card]}>
-            <Text style={styles.quickNoteTitle}>ملاحظة سريعة</Text>
-            <Pressable
-              onPress={() => openNewNote()}
-              style={({ pressed }) => [styles.noteBody, { opacity: pressed ? 0.85 : 1 }]}
-            >
-              <Text style={styles.noteBodyPlaceholder}>اكتب ملاحظتك هنا...</Text>
-            </Pressable>
-            {/* Toolbar: format buttons on the RIGHT (RTL leading), save pill on the LEFT.
-                JSX order is right→left under forceRTL+row, so format btns come first. */}
-            <View style={styles.noteToolbar}>
-              <FormatBtn bold>B</FormatBtn>
-              <FormatBtn italic>I</FormatBtn>
-              <FormatBtn>
-                <ListGlyph />
-              </FormatBtn>
-              <View style={{ flex: 1 }} />
-              <Pressable
-                onPress={() => openNewNote()}
-                style={({ pressed }) => [styles.noteSaveBtn, { opacity: pressed ? 0.85 : 1 }]}
-              >
-                <Text style={styles.noteSaveLabel}>حفظ</Text>
-              </Pressable>
-            </View>
-            <View style={styles.recentBlock}>
-              <Text style={styles.recentHeader}>آخر الملاحظات</Text>
-              {recentNotes.length === 0 ? (
-                <Text style={styles.recentEmpty}>لا توجد ملاحظات بعد</Text>
-              ) : (
-                recentNotes.map((n) => (
-                  <Pressable
-                    key={n.id}
-                    onPress={() => openExistingNote(n.id)}
-                    style={({ pressed }) => [styles.recentRow, { opacity: pressed ? 0.7 : 1 }]}
-                  >
-                    <Text style={styles.recentTitle} numberOfLines={1}>
-                      {n.title || 'ملاحظة بلا عنوان'}
-                    </Text>
-                    <Text style={styles.recentTime}>{formatRelativeAr(n.updatedAt)}</Text>
-                  </Pressable>
-                ))
-              )}
-            </View>
-          </View>
-        </View>
-        ) : null}
-
-        {/* Filter pills */}
-        <View style={styles.filtersRow}>
-          <AsyncContent
-            status={filtersStatus}
-            error={filtersError}
-            onRetry={refreshFilters}
-            skeleton={<SkeletonPillList count={3} />}
-            emptyMessage="لا توجد تصنيفات"
-          >
-            {realFilters.map((f) => {
-              const active = filter === f.id;
-              return (
-                <Pressable
-                  key={f.id}
-                  onPress={() => setFilter(f.id)}
-                  style={({ pressed }) => [
-                    styles.filterPill,
-                    active ? styles.filterPillActive : styles.filterPillInactive,
-                    { opacity: pressed ? 0.85 : 1 },
-                  ]}
-                >
-                  <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
-                    {f.count ? `${f.label} ${f.count}` : f.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </AsyncContent>
-        </View>
-
-        {showHistory && !dbFailed ? (
-          history ? (
-            <WirdHistory
-              byWeekday={history.byWeekday}
-              weeks={history.weeks}
-              hasHistory={history.hasHistory}
-              onShowMore={
-                historyWeeks < HISTORY_WEEKS_MAX
-                  ? () =>
-                      setHistoryWeeks((w) => Math.min(HISTORY_WEEKS_MAX, w + HISTORY_WEEKS_STEP))
-                  : undefined
-              }
-            />
-          ) : (
-            <View style={styles.block}>
-              <Text style={styles.historyLoading}>جارٍ تحميل السجل…</Text>
-            </View>
-          )
-        ) : null}
-
-        {showSaved ? <MySavedSection /> : null}
-
-        {/* Audio progress — real in-progress lecture from progressStore. */}
-        <Text style={styles.sectionTitle}>تقدّم الكتب المسموعة</Text>
-        <View style={styles.block}>
-          {inProgressLecture ? (
-            (() => {
-              const lecture = inProgressLecture;
-              const pct = lecture.durationSec > 0
-                ? Math.min(100, Math.round((lecture.positionSec / lecture.durationSec) * 100))
-                : 0;
-              const resume = () => {
-                usePlayerStore.getState().setTrack({
-                  id: lecture.lectureId,
-                  title: lecture.title,
-                  reciter: lecture.author,
-                  durationSec: lecture.durationSec,
-                });
-                usePlayerStore.getState().setProgress(
-                  lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0,
-                );
-                usePlayerStore.getState().setVisible(true);
-              };
-              return (
-                <AudioProgressCard
-                  title={lecture.title}
-                  author={lecture.author}
-                  pct={pct}
-                  subtitle={`${toArNum(pct)}٪ مكتمل`}
-                  primaryLabel="متابعة"
-                  secondaryLabel="إضافة ملاحظة"
-                  onPrimary={resume}
-                  onSecondary={() => openNewNote(lecture.title)}
-                />
-              );
-            })()
-          ) : (
-            <EmptyInProgressCard
-              onBrowse={() => router.push('/(tabs)/sections/scholar' as any)}
-            />
-          )}
-        </View>
-
+        {visibleLibrarySections(filter).map((key) => (
+          <React.Fragment key={key}>{sections[key]}</React.Fragment>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// ── Small inline components / glyphs ──────────────────────────────
+// ── Small inline components / glyphs ──
 
-function FormatBtn({
-  children,
-  bold,
-  italic,
-}: {
-  children: React.ReactNode;
-  bold?: boolean;
-  italic?: boolean;
-}) {
+/**
+ * A button in the quick-note toolbar — nodes `BUTTON-113` / `BUTTON-116` /
+ * `BUTTON-119` on 2031:4659, all 32 at radius 16 on `#FCFAF8`. The file draws
+ * all three marks, including the bold and italic ones the app had been setting
+ * as styled letters.
+ */
+function FormatBtn({ children }: { children: React.ReactNode }) {
   return (
     <Pressable style={({ pressed }) => [formatStyles.btn, { opacity: pressed ? 0.75 : 1 }]}>
-      {typeof children === 'string' ? (
-        <Text
-          style={[
-            formatStyles.label,
-            bold && { fontWeight: '700' },
-            italic && { fontStyle: 'italic' },
-          ]}
-        >
-          {children}
-        </Text>
-      ) : (
-        children
-      )}
+      {children}
     </Pressable>
-  );
-}
-
-function PencilGlyph({ size = 16 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M3 17l1-4 10-10 3 3L7 16l-4 1z"
-        stroke={KhazainColors.gold500}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function BookGlyph({ size = 16 }: { size?: number }) {
-  return (
-    <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M4 4h12v14H6a2 2 0 01-2-2V4z"
-        stroke={KhazainColors.gold500}
-        strokeWidth={1.5}
-      />
-    </Svg>
   );
 }
 
@@ -601,30 +695,21 @@ function HeadphonesGlyph({ size = 16 }: { size?: number }) {
   );
 }
 
-function ListGlyph() {
-  return (
-    <Svg width={12} height={12} viewBox="0 0 14 14">
-      <Path
-        d="M2 3h10M2 7h10M2 11h10"
-        stroke={KhazainColors.ink700}
-        strokeWidth={1.3}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  headerBlock: { paddingHorizontal: 18, paddingTop: 14, paddingBottom: 8, alignItems: 'center' },
-  h1: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
+  // Figma node 2031:4659 anchors the page title at the physical right.
+  headerBlock: {
+    ...PHYSICAL_BOX,
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
+    paddingTop: 8,
+    paddingBottom: 16,
+    alignItems: 'flex-end',
   },
-  searchBlock: { paddingHorizontal: 18, paddingBottom: 14 },
+  // The frame sets the page title in the body face, not the display face:
+  // TheMixArab Regular 18 in ink, where every heading below it is
+  // TheSansArabic Bold.
+  h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
+  searchBlock: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, paddingBottom: 8 },
   dbErrorBanner: {
     marginHorizontal: 14,
     marginBottom: 14,
@@ -658,163 +743,133 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   statsRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 14,
-    marginBottom: 16,
+    ...PHYSICAL_ROW,
+    gap: STAT_CARD.gap,
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
+    marginBottom: LIBRARY_SECTION_GAP,
   },
-  block: { paddingHorizontal: 14, marginBottom: 14 },
+  block: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, marginBottom: LIBRARY_SECTION_GAP },
   sparklineBlock: {
     marginTop: 12,
     alignItems: 'stretch',
   },
+  // Every card in the frame is a flat fill with a 1pt hairline. None of them
+  // casts a shadow, so none is drawn with one.
   card: {
     padding: 16,
-    borderRadius: 20,
-    backgroundColor: KhazainColors.cream50,
+    borderRadius: LIBRARY_CARD_RADIUS,
+    backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.1)',
+    borderColor: KhazainColors.hairline,
   },
-  wirdTop: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  wirdTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+  // The daily-wird card is the one card the frame tints, which is what makes
+  // it read as the page's focal card rather than another white panel.
+  // The frame's vertical rhythm inside the card: 16 above the 48pt ring, 14
+  // to the 36pt button row, 14 to the toggle, 12 below.
+  wirdCard: {
+    paddingHorizontal: WIRD_CARD.padding,
+    paddingTop: 16,
+    paddingBottom: 12,
+    borderRadius: WIRD_CARD.radius,
+    backgroundColor: KhazainColors.iconChipBg,
   },
-  wirdMeta: {
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    marginTop: 4,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  // Physical left → right: progress ring, then the reading summary.
+  wirdTop: { ...PHYSICAL_ROW, alignItems: 'center', gap: 14 },
+  wirdTitle: textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
+  wirdMeta: textStyle('cardTitle', { color: KhazainColors.inkTitle }),
   wirdHighlight: {
-    fontSize: 12,
-    color: KhazainColors.ink700,
-    marginTop: 2,
-    fontWeight: '600',
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('label', { color: KhazainColors.ink500 }),
+    marginTop: 4,
   },
+  // Physical left → right: بدء الورد, spacer, daily-reminder toggle.
   wirdActions: {
-    flexDirection: 'row',
-    gap: 8,
+    ...PHYSICAL_ROW,
     marginTop: 14,
-    alignItems: 'center',
+    alignItems: 'flex-start',
   },
   startBtn: {
-    paddingVertical: 9,
-    paddingHorizontal: 18,
-    borderRadius: 10,
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  startBtnLabel: {
-    color: '#fff',
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    fontWeight: '600',
-  },
+  startBtnLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
   reminderInline: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 4,
+    marginTop: 14,
   },
-  reminderInlineLabel: {
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-  },
+  reminderInlineLabel: textStyle('cardTitle', { color: KhazainColors.ink500 }),
   wirdReminderNext: {
-    fontSize: 11,
-    color: KhazainColors.gold600,
-    marginTop: 10,
-    fontWeight: '500',
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  quickNoteTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 15,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    marginBottom: 8,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  noteBody: {
-    backgroundColor: KhazainColors.cream100,
-    borderRadius: 12,
-    padding: 10,
-    paddingHorizontal: 12,
-    minHeight: 56,
-    justifyContent: 'center',
-  },
-  noteBodyPlaceholder: {
-    fontSize: 12,
-    color: KhazainColors.ink400,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  noteToolbar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
+    ...textStyle('label', { color: KhazainColors.gold600 }),
     marginTop: 8,
   },
-  noteSaveBtn: {
-    paddingVertical: 7,
-    paddingHorizontal: 16,
-    borderRadius: 10,
-    backgroundColor: KhazainColors.navy800,
+  quickNoteTitle: {
+    ...textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
+    marginBottom: 12,
   },
-  noteSaveLabel: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-    fontFamily: 'TheSansArabic',
+  // The frame inverts the usual pairing here: the card takes the page colour
+  // and the field inside it is the lighter surface.
+  quickNoteCard: {
+    padding: QUICK_NOTE_CARD.padding,
+    paddingTop: 17,
+    paddingBottom: QUICK_NOTE_CARD.paddingBottom,
+    borderRadius: QUICK_NOTE_CARD.radius,
+    backgroundColor: KhazainColors.pageBg,
+    borderWidth: 1,
+    borderColor: KhazainColors.hairline,
   },
-  recentBlock: {
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(141,107,52,0.1)',
+  noteBody: {
+    backgroundColor: KhazainColors.cardBg,
+    borderRadius: NOTE_FIELD.radius,
+    borderWidth: 1,
+    borderColor: KhazainColors.hairlineWarm,
+    height: NOTE_FIELD.height,
+    paddingHorizontal: 12,
+    paddingTop: 12,
+  },
+  noteBodyPlaceholder: textStyle('cardTitle', { color: KhazainColors.ink400 }),
+  // Physical left → right: حفظ, spacer, then the format buttons at the right.
+  noteToolbar: {
+    ...PHYSICAL_ROW,
+    alignItems: 'center',
+    gap: 8,
     marginTop: 12,
-    paddingTop: 10,
+  },
+  noteSaveBtn: {
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    backgroundColor: KhazainColors.navy800,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  noteSaveLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
+  // DIV-122 carries no rule; the design separates the block with space.
+  recentBlock: {
+    marginTop: 12,
+    paddingBottom: 16,
   },
   recentHeader: {
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    marginBottom: 6,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('cardTitle', { color: KhazainColors.ink500 }),
+    marginBottom: 8,
   },
+  // Physical left → right: relative time, then the note title at the right.
+  // DIV-127/134: each recent note is its own 36pt card, not a bare row.
   recentRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
+    alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 5,
+    height: 36,
+    marginBottom: RECENT_NOTE_ROW.gap,
+    paddingHorizontal: 8,
+    borderRadius: RECENT_NOTE_ROW.radius,
+    backgroundColor: KhazainColors.cardBg,
   },
-  recentTitle: {
-    color: KhazainColors.ink900,
-    fontWeight: '500',
-    fontSize: 12,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-  },
-  recentTime: {
-    color: KhazainColors.ink400,
-    fontSize: 12,
-    fontFamily: 'TheSansArabic',
-  },
+  recentTitle: textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  recentTime: textStyle('label', { color: KhazainColors.ink500 }),
   recentEmpty: {
     color: KhazainColors.ink400,
     fontSize: 12,
@@ -824,40 +879,30 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   filtersRow: {
-    flexDirection: 'row',
-    gap: 8,
-    paddingHorizontal: 18,
-    paddingBottom: 10,
+    gap: FILTER_CHIP.gap,
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
+    paddingBottom: LIBRARY_SECTION_GAP,
+    alignItems: 'center',
   },
   filterPill: {
-    paddingVertical: 7,
-    paddingHorizontal: 14,
-    borderRadius: 999,
+    ...PHYSICAL_ROW,
+    height: FILTER_CHIP.height,
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 12,
+    borderRadius: FILTER_CHIP.radius,
+    backgroundColor: KhazainColors.iconChipBg,
   },
   filterPillActive: {
     backgroundColor: KhazainColors.navy800,
   },
-  filterPillInactive: {
-    backgroundColor: KhazainColors.cream50,
-  },
-  filterLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: KhazainColors.ink700,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-  },
-  filterLabelActive: { color: '#fff' },
+  filterLabel: textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  filterCount: textStyle('label', { color: KhazainColors.ink500 }),
+  filterLabelActive: { color: KhazainColors.pageBg },
   sectionTitle: {
-    paddingHorizontal: 18,
+    ...textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
     paddingBottom: 8,
-    marginTop: 4,
-    fontSize: 14,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
   historyLoading: {
     fontFamily: 'TheSansArabic',
@@ -870,11 +915,12 @@ const styles = StyleSheet.create({
 });
 
 const formatStyles = StyleSheet.create({
+  // BUTTON-113/116/119: 32 x 32 discs on the card's lighter surface.
   btn: {
-    width: 28,
-    height: 28,
-    borderRadius: 8,
-    backgroundColor: KhazainColors.cream100,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: KhazainColors.cardBg,
     alignItems: 'center',
     justifyContent: 'center',
   },

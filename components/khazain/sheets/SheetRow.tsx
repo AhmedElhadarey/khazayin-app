@@ -1,3 +1,4 @@
+import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -45,6 +46,10 @@ export function SheetRow({
 
 const styles = StyleSheet.create({
   row: {
+    // PHYSICAL_BOX so the disc's absolute `right: 12`, the text column's
+    // `paddingRight: 56` and the two `textAlign: 'right'` rules all mean the
+    // physical right. Unpinned, forceRTL mirrors every one of them to the left.
+    ...PHYSICAL_BOX,
     backgroundColor: KhazainColors.cream50,
     borderRadius: 14,
     borderWidth: 1,
@@ -64,11 +69,10 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     minHeight: 64,
   },
-  // Anchored to the visual right (RTL start) via absolute positioning so the
-  // visual order is deterministic regardless of native flexDirection flipping.
-  // Vertical centering is achieved with `top: '50%'` + a transform of half the
-  // disc height (RN doesn't honour `margin: auto` for absolutely positioned
-  // elements).
+  // Anchored to the physical right (RTL start), unambiguous because the row is
+  // a PHYSICAL_BOX. Vertical centering is achieved with `top: '50%'` + a
+  // transform of half the disc height (RN doesn't honour `margin: auto` for
+  // absolutely positioned elements).
   disc: {
     position: 'absolute',
     right: 12,

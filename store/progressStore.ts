@@ -39,6 +39,7 @@ export type ProgressSnapshot = {
   currentStreak: number;
   completedJuzCount: number;
   pagesToday: number;
+  lastReadPage: number;
   longestStreakEver: number;
   bestWirdDayPages: number;
   trendLast28: TrendPoint[];
@@ -46,6 +47,8 @@ export type ProgressSnapshot = {
   inProgressLecture: LectureSession | null;
   totalListenedMinutes: number;
   completedLectureCount: number;
+  totalPagesRead: number;
+  listenedLectureCount: number;
 
   ready: boolean;
   /** Set when hydration failed (DB open/read error). The Library tab shows a
@@ -82,12 +85,15 @@ const EMPTY: ProgressSnapshot = {
   currentStreak: 0,
   completedJuzCount: 0,
   pagesToday: 0,
+  lastReadPage: 1,
   longestStreakEver: 0,
   bestWirdDayPages: 0,
   trendLast28: [],
   inProgressLecture: null,
   totalListenedMinutes: 0,
   completedLectureCount: 0,
+  totalPagesRead: 0,
+  listenedLectureCount: 0,
   ready: false,
   dbFailed: false,
 };
@@ -112,6 +118,7 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
         await getRepos();
         const [
           pagesToday,
+          lastReadPage,
           pagesReadThisMonth,
           pagesReadLastMonth,
           currentStreak,
@@ -122,8 +129,11 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
           inProgressLecture,
           totalListenedSec,
           completedLectureCount,
+          totalPagesRead,
+          listenedLectureCount,
         ] = await Promise.all([
           progressRepo.pagesReadToday(),
+          progressRepo.getLastReadPage(),
           progressRepo.pagesReadInMonth(),
           progressRepo.pagesReadInMonth(previousMonthString()),
           progressRepo.currentStreak(),
@@ -134,9 +144,12 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
           lectureRepo.findInProgress(),
           lectureRepo.totalListenedSec(),
           lectureRepo.completedCount(),
+          progressRepo.totalPagesRead(),
+          lectureRepo.listenedCount(),
         ]);
         set({
           pagesToday,
+          lastReadPage,
           pagesReadThisMonth,
           pagesReadLastMonth,
           currentStreak,
@@ -147,6 +160,8 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
           inProgressLecture,
           totalListenedMinutes: Math.floor(totalListenedSec / 60),
           completedLectureCount,
+          totalPagesRead,
+          listenedLectureCount,
           ready: true,
           dbFailed: false,
         });
@@ -161,6 +176,9 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
     notePageRead(pageNumber) {
       const job = _notePageQueue.then(async () => {
         const inserted = await progressRepo.recordPageRead(pageNumber);
+        // Every recorded page is the current reading position, deduped or not
+        // (design §4.3) — the wird card and resume follow it.
+        set({ lastReadPage: pageNumber });
         if (!inserted) return;
         const [
           pagesToday,
@@ -170,6 +188,7 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
           longestStreakEver,
           bestWirdDay,
           trendLast28,
+          totalPagesRead,
         ] = await Promise.all([
           progressRepo.pagesReadToday(),
           progressRepo.pagesReadInMonth(),
@@ -178,6 +197,7 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
           progressRepo.longestStreakEver(),
           progressRepo.bestWirdDay(),
           progressRepo.trendLastNDays(TREND_DAYS),
+          progressRepo.totalPagesRead(),
         ]);
         set({
           pagesToday,
@@ -187,6 +207,7 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
           longestStreakEver,
           bestWirdDayPages: bestWirdDay?.pagesRead ?? 0,
           trendLast28,
+          totalPagesRead,
         });
         await useWirdStore.getState().recomputeTodayPct();
         await useWirdStore.getState().reevaluateSuggestion();
@@ -217,16 +238,18 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
       const now = Date.now();
       if (now - _lastLectureRefreshAt < LECTURE_TICK_REFRESH_MS) return;
       _lastLectureRefreshAt = now;
-      const [inProgressLecture, totalListenedSec, completedLectureCount] =
+      const [inProgressLecture, totalListenedSec, completedLectureCount, listenedLectureCount] =
         await Promise.all([
           lectureRepo.findInProgress(),
           lectureRepo.totalListenedSec(),
           lectureRepo.completedCount(),
+          lectureRepo.listenedCount(),
         ]);
       set({
         inProgressLecture,
         totalListenedMinutes: Math.floor(totalListenedSec / 60),
         completedLectureCount,
+        listenedLectureCount,
       });
     },
 

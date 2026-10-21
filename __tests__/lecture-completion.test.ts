@@ -1,4 +1,4 @@
-import { forwardDelta, isCompleted } from '../db/helpers/lectureCompletion';
+import { forwardDelta, isCompleted, isListened } from '../db/helpers/lectureCompletion';
 
 describe('isCompleted', () => {
   it('latches at exactly 95%', () => {
@@ -53,5 +53,35 @@ describe('forwardDelta', () => {
     }
     // 10 + 12 + 8 + 0 + 12 = 42
     expect(total).toBe(42);
+  });
+});
+
+describe('isListened', () => {
+  const s = (over: Partial<{ durationSec: number; forwardListenedSec: number; completed: boolean }>) => ({
+    durationSec: 1000,
+    forwardListenedSec: 0,
+    completed: false,
+    ...over,
+  });
+
+  it('counts 60 s of forward listening', () => {
+    expect(isListened(s({ forwardListenedSec: 60 }))).toBe(true);
+  });
+
+  it('does not count 59 s', () => {
+    expect(isListened(s({ forwardListenedSec: 59 }))).toBe(false);
+  });
+
+  it('counts a completed lecture whatever its forward time', () => {
+    expect(isListened(s({ completed: true, forwardListenedSec: 0 }))).toBe(true);
+  });
+
+  it('counts a clip shorter than 60 s once played through', () => {
+    expect(isListened(s({ durationSec: 45, forwardListenedSec: 45 }))).toBe(true);
+    expect(isListened(s({ durationSec: 45, forwardListenedSec: 44 }))).toBe(false);
+  });
+
+  it('never counts a zero-duration session', () => {
+    expect(isListened(s({ durationSec: 0, forwardListenedSec: 0 }))).toBe(false);
   });
 });

@@ -1,4 +1,6 @@
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import { LIST_CARD } from './libraryLayout';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -25,7 +27,7 @@ export function AudioProgressCard({
 }) {
   const clamped = Math.max(0, Math.min(100, pct));
   return (
-    <View style={[styles.card, KhazainShadows.card]}>
+    <View style={styles.card}>
       <View style={styles.topRow}>
         <View style={styles.cover}>
           <Text style={styles.coverText}>﷽</Text>
@@ -76,12 +78,14 @@ export function AudioProgressCard({
 }
 
 const styles = StyleSheet.create({
+  // Figma node 2031:4659: 361 x 156 at radius 20, a flat fill with a faint
+  // hairline and no shadow.
   card: {
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: KhazainColors.cream50,
+    padding: 16,
+    borderRadius: LIST_CARD.radius,
+    backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.1)',
+    borderColor: KhazainColors.hairlineFaint,
   },
   topRow: {
     flexDirection: 'row',
@@ -103,39 +107,24 @@ const styles = StyleSheet.create({
     color: KhazainColors.gold300,
     fontWeight: '700',
   },
-  title: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  title: textStyle('cardTitle', { color: KhazainColors.inkHeading }),
   author: {
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    marginTop: 2,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('label', { color: KhazainColors.ink500 }),
+    marginTop: 4,
   },
   track: {
-    height: 4,
-    backgroundColor: 'rgba(141,107,52,0.15)',
-    borderRadius: 2,
+    height: 6,
+    backgroundColor: KhazainColors.hairline,
+    borderRadius: 3,
     overflow: 'hidden',
   },
   fill: {
     height: '100%',
   },
   sub: {
-    fontSize: 12,
-    color: KhazainColors.ink500,
-    marginTop: 6,
-    marginBottom: 10,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('label', { color: KhazainColors.ink500 }),
+    marginTop: 8,
+    marginBottom: 12,
   },
   actions: {
     flexDirection: 'row',
@@ -143,32 +132,23 @@ const styles = StyleSheet.create({
   },
   primaryBtn: {
     flex: 1,
-    paddingVertical: 8,
+    height: 36,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  primaryLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
+  primaryLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
+  // The design fills the secondary action with the same tint it uses for the
+  // filter chips rather than outlining it.
   secondaryBtn: {
     flex: 1,
-    paddingVertical: 8,
+    height: 36,
     paddingHorizontal: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: KhazainColors.navy800,
+    borderRadius: 8,
+    backgroundColor: KhazainColors.iconChipBg,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  secondaryLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '600',
-    color: KhazainColors.navy800,
-  },
+  secondaryLabel: textStyle('cardTitle', { color: KhazainColors.ink500 }),
 });

@@ -3,6 +3,8 @@ import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
+import { PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useSettingsStore } from '@/store';
 import { applyWirdReminderTime } from '@/services/wirdReminderToggle';
@@ -74,7 +76,7 @@ export default function SettingsWirdReminderScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
         <View style={styles.handle} />
       </View>
@@ -104,8 +106,9 @@ export default function SettingsWirdReminderScreen() {
         />
 
         <View style={styles.periodRow}>
-          <PeriodPill label="صباحًا" selected={period === 'ص'} onPress={() => setPeriod('ص')} />
+          {/* Physical left -> right: evening, morning — so صباحًا reads first. */}
           <PeriodPill label="مساءً" selected={period === 'م'} onPress={() => setPeriod('م')} />
+          <PeriodPill label="صباحًا" selected={period === 'ص'} onPress={() => setPeriod('ص')} />
         </View>
       </ScrollView>
       <View style={styles.footer}>
@@ -137,12 +140,12 @@ function Stepper({
 }) {
   return (
     <View style={[styles.stepperRow, KhazainShadows.card]}>
-      <Text style={styles.stepperLabel}>{label}</Text>
       <View style={styles.stepperControls}>
-        {/* Minus on the left, plus on the right (RTL visual order via row-reverse). */}
+        {/* Physical left -> right: minus, plus. */}
         <StepButton onPress={onDecrement} accessibilityLabel={decrementLabel} sign="minus" />
         <StepButton onPress={onIncrement} accessibilityLabel={incrementLabel} sign="plus" />
       </View>
+      <Text style={styles.stepperLabel}>{label}</Text>
     </View>
   );
 }
@@ -211,14 +214,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,30,19,0.18)',
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   body: { paddingHorizontal: 16, gap: 12 },
   preview: {
@@ -240,7 +238,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   stepperRow: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: stepper controls, label.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: 56,
@@ -252,16 +251,11 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.cardBorder,
   },
   stepperLabel: {
+    ...textStyle('sectionTitle', { color: KhazainColors.ink900 }),
     flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '600',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
   stepperControls: {
-    flexDirection: 'row-reverse',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
   },
@@ -276,7 +270,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   periodRow: {
-    flexDirection: 'row-reverse',
+    ...PHYSICAL_ROW,
     gap: 8,
     marginTop: 4,
   },
@@ -296,13 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
     borderColor: KhazainColors.cardBorder,
   },
-  periodLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    fontWeight: '600',
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-  },
+  periodLabel: textStyle('sectionTitle', { color: KhazainColors.ink700 }),
   periodLabelActive: { color: '#fff' },
   footer: {
     paddingHorizontal: 16,
@@ -319,11 +307,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  applyBtnLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    writingDirection: 'rtl',
-  },
+  applyBtnLabel: textStyle('sectionTitle', { color: '#fff' }),
 });

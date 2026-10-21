@@ -2,45 +2,68 @@ import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PHYSICAL_ROW, TAB_BAR, TAB_PHYSICAL_ORDER } from '@/constants/layout';
+import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
 import {
-  BookmarkIcon,
-  GridIcon,
-  HouseIcon,
-  IconProps,
-  MenuLinesIcon,
-} from '../icons';
+  NavHomeIcon,
+  NavLibraryIcon,
+  NavMoreIcon,
+  NavSectionsIcon,
+  type NavIconProps,
+} from '../icons/nav';
+import { usePlayerStore as usePlayerStoreLocal } from '@/store/playerStore';
 import { MiniPlayer } from './MiniPlayer';
 
 // "index" is the home tab (expo-router's default route name within the (tabs) group).
 type TabKey = 'index' | 'library' | 'sections' | 'more';
 
+// Figma component 2001:17457 pairs each tab with a Vuesax icon and ships two
+// variants of it — outline while inactive, solid (`bulk`) while active.
 const TAB_META: Record<
   TabKey,
-  { label: string; Icon: React.ComponentType<IconProps> }
+  { label: string; Icon: React.ComponentType<NavIconProps> }
 > = {
-  index: { label: 'الرئيسية', Icon: HouseIcon },
-  library: { label: 'مكتبتي', Icon: BookmarkIcon },
-  sections: { label: 'الأقسام', Icon: GridIcon },
-  more: { label: 'المزيد', Icon: MenuLinesIcon },
+  index: { label: 'الرئيسية', Icon: NavHomeIcon },
+  library: { label: 'مكتبتي', Icon: NavLibraryIcon },
+  sections: { label: 'الأقسام', Icon: NavSectionsIcon },
+  more: { label: 'المزيد', Icon: NavMoreIcon },
 };
 
-// Visual RTL order (right → left): home, library, sections, more.
+// Physical order is authored left → right and pinned with `PHYSICAL_ROW`
+// (`direction: 'ltr'`), so it renders identically on iOS, Android, web, a cold
+// start, and a Fast Refresh. See the RTL contract in `constants/layout.ts`.
 //
-// The FIRST JSX child lands on the LEFT. (The previous comment here claimed the
-// opposite, which contradicts the array directly below it: `more` is first and
-// `more` is the leftmost tab.) We do not depend on `forceRTL` auto-flipping
-// `flexDirection: 'row'` — that flip is unreliable on web and across stale dev
-// reloads. Instead the typed order below is authored in visual left→right order
-// and wins deterministically. Any other row of RTL-ordered children in this repo
-// must follow the same rule; see `WirdHistory`'s COLUMN_ORDER.
-const TAB_ORDER: TabKey[] = ['more', 'sections', 'library', 'index'];
+// Left → right: More, Sections, Library, Home — matching the `navigation`
+// instance in Figma node 2031:5675 (the Sections frame that carries the bar).
 
-// Colors pulled from the new spec.
-const BAR_BG = '#184B76'; // KhazainColors.navy
-const INACTIVE = 'rgba(241, 231, 221, 0.85)'; // #F1E7DD at 85%
-const ACTIVE_INK = '#281E13';
-const ACTIVE_CHIP_BG = '#F1E7DD';
-const GOLD_BAR = '#C1A584';
+/**
+ * The MiniPlayer on its own, for the routes that do not carry the navy bar.
+ *
+ * The bar is a four-root control — `shouldShowMainTabBar` keeps it to `/`,
+ * `/library`, `/sections` and `/more`, which is what the frames draw. But the
+ * MiniPlayer used to live *inside* it, and playback always starts on a nested
+ * route (a scholar's lectures, a reciter's surahs). So audio would start, the
+ * foreground service would come up, and the screen would show no player at
+ * all: nothing to pause, nothing naming the track. Verified on device —
+ * `MusicService` foregrounded and `AudioTrack` running with no control on
+ * screen.
+ *
+ * Rendering the dock instead of `null` puts the player wherever it is playing
+ * without putting the bar where the design does not want it. It returns `null`
+ * when nothing is playing, so React Navigation measures no inset and a quiet
+ * nested screen is laid out exactly as before.
+ */
+export function MiniPlayerDock() {
+  const insets = useSafeAreaInsets();
+  const isVisible = usePlayerStoreLocal((s) => s.isVisible);
+  const track = usePlayerStoreLocal((s) => s.track);
+  if (!isVisible || !track) return null;
+  return (
+    <View style={[styles.miniPlayerWrap, { marginBottom: 8 + insets.bottom }]}>
+      <MiniPlayer />
+    </View>
+  );
+}
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -60,7 +83,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
         ]}
       >
         <View style={styles.row}>
-          {TAB_ORDER.map((key) => {
+          {TAB_PHYSICAL_ORDER.map((key) => {
             const route = routesByName.get(key);
             if (!route) return null;
             const active = activeRouteName === key;
@@ -86,25 +109,21 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityLabel={label}
                 style={styles.tabWrap}
               >
-                {active ? (
-                  // Active: cream chip with gold top bar + drop shadow.
-                  // Branched render so shadow/gold bar can't leak onto inactive tabs.
-                  <View style={styles.activeChip}>
-                    <View style={styles.goldBar} />
-                    <Icon size={20} color={ACTIVE_INK} strokeWidth={1.6} />
-                    <Text style={styles.activeLabel} numberOfLines={1}>
-                      {label}
-                    </Text>
-                  </View>
-                ) : (
-                  // Inactive: glyph + label sit directly on navy.
-                  <View style={styles.inactive}>
-                    <Icon size={20} color={INACTIVE} strokeWidth={1.6} />
-                    <Text style={styles.inactiveLabel} numberOfLines={1}>
-                      {label}
-                    </Text>
-                  </View>
-                )}
+                <View style={[styles.item, active && styles.itemActive]}>
+                  {active ? <View style={styles.indicator} /> : null}
+                  <Icon
+                    size={TAB_BAR.iconSize}
+                    color={active ? TAB_BAR.activeInk : TAB_BAR.inactiveInk}
+                    active={active}
+                  />
+                  <Text
+                    style={[styles.label, active && styles.labelActive]}
+                    numberOfLines={1}
+                    maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+                  >
+                    {label}
+                  </Text>
+                </View>
               </Pressable>
             );
           })}
@@ -123,70 +142,52 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   bar: {
-    backgroundColor: BAR_BG,
+    backgroundColor: TAB_BAR.background,
     borderTopLeftRadius: 32,
     borderTopRightRadius: 32,
-    paddingTop: 14,
     paddingHorizontal: 10,
-    // paddingBottom: 22 + safe-area, injected at call site
+    // paddingBottom: the safe-area inset, injected once at the call site.
   },
   row: {
-    flexDirection: 'row',
-    gap: 6,
+    ...PHYSICAL_ROW,
+    // minHeight, not height: at a large system font scale the label's line box
+    // grows and a fixed height clipped the icon straight out of the item.
+    minHeight: TAB_BAR.controlsHeight,
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
   tabWrap: {
+    // Each item caps at the reference 67pt and `space-between` spreads the
+    // leftover width, so the four tabs stay evenly placed from 320pt to 480pt
+    // without any item stretching into a slab.
     flex: 1,
+    maxWidth: TAB_BAR.itemWidth,
   },
-  inactive: {
+  item: {
+    minHeight: TAB_BAR.itemHeight,
+    borderRadius: TAB_BAR.itemRadius,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
-    minHeight: 48, // ≥44pt touch target (a11y) — no-op if content is taller
-    paddingTop: 10,
-    paddingBottom: 10,
-    paddingHorizontal: 6,
+    gap: 2,
+    paddingHorizontal: 4,
   },
-  inactiveLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '500',
-    color: INACTIVE,
-    writingDirection: 'rtl',
+  itemActive: {
+    backgroundColor: TAB_BAR.activeFill,
   },
-  activeChip: {
-    backgroundColor: ACTIVE_CHIP_BG,
-    borderRadius: 14,
-    minHeight: 48, // ≥44pt touch target (a11y)
-    paddingTop: 10,
-    paddingBottom: 10,
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 4,
-    overflow: 'hidden', // clips gold bar to match chip's rounded top corners
-    // Drop shadow per spec: 0 2 6 rgba(0,0,0,0.18)
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.18,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  goldBar: {
+  indicator: {
     position: 'absolute',
     top: 0,
-    left: '18%',
-    right: '18%',
-    height: 4,
-    backgroundColor: GOLD_BAR,
-    // Bottom corners rounded only — top stays square/flush with the chip's top edge.
-    borderBottomLeftRadius: 2,
-    borderBottomRightRadius: 2,
+    width: TAB_BAR.indicatorWidth,
+    height: TAB_BAR.indicatorHeight,
+    borderRadius: TAB_BAR.indicatorHeight / 2,
+    backgroundColor: TAB_BAR.indicatorColor,
   },
-  activeLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '700',
-    color: ACTIVE_INK,
-    writingDirection: 'rtl',
+  label: {
+    // Figma 2001:17457 sets this in TheSansArabic Bold 12; `label` is that
+    // role. It was 11 at weight 500.
+    ...textStyle('label', { color: TAB_BAR.inactiveInk }),
+  },
+  labelActive: {
+    color: TAB_BAR.activeInk,
   },
 });

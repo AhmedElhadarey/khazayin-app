@@ -1,11 +1,18 @@
-import { ChevronIcon } from '@/components/khazain/icons';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
-import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-// Deterministic RTL row direction (see ListRowCard): 'row' when isRTL (native,
-// unchanged), 'row-reverse' as the web/stale-reload fallback.
-const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
+// The same row as `ListRowCard variant="more"` (node 2102:2711
+// `websiteLink-13`) with the subtitle moved out to a trailing value column.
+// It sits directly beside those rows in the Settings list, so it has to draw
+// the same box: 82 at radius 16, a `#F1E7DD` hairline over a 2pt shadow at
+// y+1, inset 16, and a 48pt rounded-square chip with no stroke.
+//
+// Physical left → right: disclosure, current value, title, icon chip — pinned
+// by PHYSICAL_ROW.
 
 type Props = {
   title: string;
@@ -20,42 +27,42 @@ export function SettingsValueRow({ title, value, icon, onPress }: Props) {
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={`${title}، ${value}`}
-      style={({ pressed }) => [
-        styles.card,
-        KhazainShadows.card,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
+      style={({ pressed }) => [styles.card, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
     >
-      <View style={styles.iconChip}>{icon}</View>
+      <FigmaIcon name="DisclosureCircle" size={24} color={KhazainColors.navy800} />
+      <View style={styles.valueWrap}>
+        <Text style={styles.value} numberOfLines={1}>
+          {value}
+        </Text>
+      </View>
       <View style={styles.textCol}>
         <Text style={styles.title} numberOfLines={1}>
           {title}
         </Text>
       </View>
-      <Text style={styles.value} numberOfLines={1}>
-        {value}
-      </Text>
-      <ChevronIcon size={20} color={KhazainColors.inkTitle} direction="start" />
+      <View style={styles.iconChip}>{icon}</View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: ROW_DIR,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    // The same 16 the rows beside it use.
+    gap: 16,
+    minHeight: CARD_DENSITY.moreCardHeight,
+    paddingHorizontal: CARD_DENSITY.moreCardPaddingHorizontal,
+    borderRadius: CARD_DENSITY.moreCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineCream,
+    ...KhazainShadows.listRow,
   },
   iconChip: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: CARD_DENSITY.moreChipSize,
+    height: CARD_DENSITY.moreChipSize,
+    borderRadius: CARD_DENSITY.moreChipRadius,
     backgroundColor: KhazainColors.iconChipBg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -65,22 +72,12 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
   },
-  title: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    lineHeight: 22,
-    fontWeight: '600',
-    color: KhazainColors.inkTitle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+  title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  valueWrap: {
+    flexShrink: 0,
   },
   value: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    lineHeight: 20,
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
     maxWidth: 140,
   },
 });

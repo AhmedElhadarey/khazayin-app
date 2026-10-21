@@ -1,5 +1,7 @@
-import { KhazainColors, KhazainRadius } from '@/constants/theme';
-import { BookmarkButton } from '@/components/khazain/primitives';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import { BookmarkButton, SurahStar } from '@/components/khazain/primitives';
 import type { Surah } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -9,6 +11,15 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
  * JSX in app/(tabs)/sections/mushaf.tsx during the savedStore track so
  * the bookmark slot has a sensible home. Future surah-detail track gets
  * a reusable row for free.
+ *
+ * Physical left → right: bookmark, name and meta, index badge — Figma node
+ * 2207:17898. `DIV-67` there is the same row 2207:5270 draws for a reciter's
+ * surahs: 60 tall at radius 16 behind a 1pt `#D9D6D3` hairline, inset 12, with
+ * the numbered 36pt star badge at the trailing edge.
+ *
+ * The frame puts a play triangle at the physical left; this app puts its own
+ * bookmark control there, because tapping the row opens the reader rather than
+ * starting audio.
  *
  * Track: khazain-saved_20260511  T13
  */
@@ -27,22 +38,7 @@ export function SurahRow({
         { transform: [{ scale: pressed ? 0.99 : 1 }], opacity: pressed ? 0.92 : 1 },
       ]}
     >
-      {/* Index badge — visual right under RTL */}
-      <View style={styles.indexBadge}>
-        <Text style={styles.indexText}>{surah.displayNumber}</Text>
-      </View>
-
-      {/* Body — name + meta */}
-      <View style={styles.body}>
-        <Text style={styles.name} numberOfLines={1}>
-          {surah.name}
-        </Text>
-        <Text style={styles.meta} numberOfLines={1}>
-          {surah.meta}
-        </Text>
-      </View>
-
-      {/* Bookmark — visual left (RTL-end) */}
+      {/* Physical left — bookmark */}
       <BookmarkButton
         type="surah"
         entityId={surah.id}
@@ -54,58 +50,41 @@ export function SurahRow({
         }}
         variant="light"
       />
+
+      {/* Centre — name + meta */}
+      <View style={styles.body}>
+        <Text style={styles.name} numberOfLines={1}>
+          {surah.name}
+        </Text>
+        <Text style={styles.meta} numberOfLines={1}>
+          {surah.meta}
+        </Text>
+      </View>
+
+      {/* Physical right — the numbered star badge, `DIV-79`. */}
+      <SurahStar index={surah.displayNumber} size={CARD_DENSITY.surahBadgeDisc} />
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 64,
-    backgroundColor: KhazainColors.cream50,
-    borderRadius: KhazainRadius.lg,
+    ...PHYSICAL_ROW,
+    minHeight: CARD_DENSITY.surahRowMinHeight,
+    backgroundColor: KhazainColors.cardBg,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.10)',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    flexDirection: 'row',
+    borderColor: KhazainColors.hairlineWarm,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     alignItems: 'center',
-    marginBottom: 8,
     gap: 12,
-  },
-  indexBadge: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: KhazainColors.cream100,
-    borderWidth: 1,
-    borderColor: KhazainColors.gold200,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  indexText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '700',
-    color: KhazainColors.gold200,
   },
   body: {
     flex: 1,
+    minWidth: 0,
     alignItems: 'flex-end',
   },
-  name: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 16,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
-  meta: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    color: KhazainColors.ink500,
-    marginTop: 2,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
+  name: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  meta: textStyle('caption', { color: KhazainColors.ink500 }),
 });

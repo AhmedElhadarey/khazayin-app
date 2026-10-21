@@ -1,0 +1,220 @@
+# Home screen remediation — QA record
+
+**Date:** 2026-09-10 · **Branch:** `008-home-screen-defects`
+**Plan:** `2026-09-09-home-screen-defects.md`, as corrected by
+`2026-09-09-home-geometry-findings.md`.
+
+**Typography ruling.** The design sets book titles and scholar names as
+calligraphy images, so it declares no font for them; the app's titles are data
+and must choose one. Asked directly, the client chose to keep a Naskh face
+where the design used calligraphy and move everything the design sets as text
+onto `TheSansArabic Bold` / `TheMixArab Regular`. `constants/typography.ts`
+encodes that as an explicit `calligraphy` role rather than leaving it implied.
+
+## How this was verified
+
+Both platforms were driven live against the Metro dev server and captured:
+
+- **iOS** — iPhone 16 simulator, 393 × 852 pt at 3×.
+- **Android** — Pixel 7 emulator, 412 × 915 dp at 3×.
+
+Captures are in `docs/audit/2026-09-10-home-qa/` (untracked, like the other
+audit directories).
+
+Sections below the fold could not be reached on iOS: the simulator takes no
+scroll injection, and neither `idb` nor `cliclick` is installed. They were
+brought into the first viewport instead by temporarily reordering
+`HOME_SECTION_ORDER`, capturing, and reverting — the same trick as the
+temporary audit route used for the original measurements. The reorder is not
+committed; `constants/homePresentation.ts` is unchanged on this branch.
+
+## Results
+
+| # | Item | iOS | Android | Note |
+|---|---|---|---|---|
+| D1 | Carousel card widths | ✅ | ✅ | Scholar card holds 216.1 at the reference width, second card runs off the edge as the design does. Book card 192. |
+| D2 | Prophet hero artwork | ✅ | ✅ | Subsumed by D3 — the right-edge emblem is present, from the `.fig` layer rather than an asset swap. |
+| D3 | Heroes as layers | ✅ | ✅ | Artwork, live text, and an independently tappable `المزيد`. |
+| D4 | Bottom navigation | ✅ | ✅ | Vuesax glyphs, outline inactive / solid active, label `TheSansArabic Bold 12`. |
+| D5 | Scholar SVG aspect | n/a | n/a | Superseded — the card no longer draws an SVG. See below. |
+| D6 | Quick-chip truncation | ⚠️ | ⚠️ | Does not reproduce, and **nothing was changed**. See below. |
+| D7 | Book row height parity | ✅ | ✅ | Card is a fixed 192 × 81, so the row is the same height on both. See the caveat below. |
+| D8 | Dawah fan | ◐ | ◐ | Poster size and step-down match; the outermost pair does not. See below. |
+| D9 | Screen manifest | n/a | n/a | Not a defect — see below. |
+| D10 | Decoder tracked | ✅ | — | `scripts/figma/` is in the repo. |
+| T1 | Two faces, one file | ⛔ | ⛔ | Blocked on the licensed fonts. |
+| T2–T5 | Type scale | ✅ | ✅ | Home and the tab bar; the rest of the app is untouched. |
+| — | Scholar card interior | ✅ | ✅ | Not a numbered defect; you spotted it, twice. See below. |
+| — | Book card calligraphy | ✅ | ✅ | Not a numbered defect; you spotted it. See below. |
+| — | Queen card dead strip | ✅ | ✅ | Not a numbered defect; you spotted it. See below. |
+
+### D6 did not reproduce, and nothing was changed for it
+
+The plan recorded `حصريات خزائن الرحمن` truncating to `حصريات خزائن الرح…` on
+Android. On a Pixel 7 at its native 412 dp it sets in full, and so does every
+other chip. No code was written for this: `QuickChip` is byte-equivalent apart
+from routing its label through the type scale at the same family, size and
+weight.
+
+The likely cause of the original reading is the measurement harness rather
+than the app. Those captures rendered `HomeScreen` inside a 393 pt container
+*on a 411 dp device*, so the chips were laid out ~18 pt narrower than the
+device actually gives them. A genuinely 393 dp-wide Android device may still
+truncate. Worth re-checking on real hardware before calling it closed.
+
+### D8's outermost posters are not where the design puts them
+
+The design's fan is not evenly spaced: neighbours sit 116.11 from the middle
+and the outermost pair 176, closer than a second even step would put them.
+The carousel steps uniformly, so the outermost pair lands at 232 — **56 pt
+further out than the design**.
+
+This is deliberate. Placing them at 176 needs a per-slot shift whose direction
+depends on which way the scroll axis runs, and that is precisely the thing
+this screen cannot predict: the app forces RTL but also pins `direction: 'ltr'`
+on layout containers. The two defects that were actually visible — the focused
+poster being 56% of the window instead of 39%, and the step-down being too
+shallow — are fixed. The outermost pair is mostly off-screen at that distance.
+
+### The scholar card: react-native-svg was magnifying the name 2.4×
+
+Not in the plan; spotted on device, and it took two passes.
+
+The design composes that card from **two** images — the gold
+`سماحة الشيخ العلامة` honorific (74.63 × 22.39, at y 8.91) above the scholar's
+name in calligraphy (178.23 × 43.69, at y 35.76), both centred. The app drew
+one bundled SVG per scholar instead, sized to the card's full inner width
+(198.28) and centred vertically; the first pass corrected that to the design's
+178.23 and top offset.
+
+That was necessary but not the real fault. Those SVGs paint both images
+through `<pattern patternContentUnits="objectBoundingBox">`. librsvg renders
+them correctly — proving the SVG itself is sound — but **react-native-svg does
+not**: on device it magnified the name roughly 2.4× and tiled it, which is the
+"zoomed in" the second report described.
+
+The fix stops asking react-native-svg to resolve those patterns. The card now
+places the `.fig`'s own two images at the design's own rects, via `expo-image`:
+
+- Honorific `74.6329 × 22.3949` at y `8.91`, centred. Its fill is an identity
+  transform, so it paints flush to its box.
+- Name box `178.228 × 43.6946` at y `35.7606`, centred. Its fill is **not**
+  flush: the `.fig` sets a paint transform which Figma's own SVG export
+  resolves to `matrix(0.00227964 0 0 0.00925926 -0.00699635 0.0548105)` over
+  the 439 × 100 source. So the art is 7.4% shorter than its box, sits 2.4
+  lower, and hangs 1.25 off the leading edge, where Figma clips it.
+  `scholarCardLayout` states that offset and the card clips it.
+
+One RTL trap on the way: under forced RTL, React Native swaps `left` and
+`right` on the children of an RTL box, which mirrored that 1.25 overhang to
+the wrong edge — a 2.36 pt error, visible only in measurement. The clipping
+box now pins its own direction, per the contract in `constants/layout.ts`.
+
+Measured against a render composited straight from the `.fig` images at the
+design's geometry, normalised to a 1000 px-wide card:
+
+| | honorific | name |
+|---|---|---|
+| design | `x 327..672`, h 103 | `x 88..907`, h 187 |
+| iOS | `x 327..673`, h 104 | `x 88..907`, h 189 |
+| Android | `x 328..674`, h 105 | `x 88..908`, h 189 |
+
+`scholarSvgs.ts` (123 KB of base64), `assets/khazain/home/she5-{1,2,3}.svg`
+and `scripts/generate-scholar-svgs.js` are now unreferenced. They are left on
+disk: deleting is the user's call.
+
+### The names the design never drew
+
+Figma carries exactly **one** scholar lockup (`عبد العزيز بن عبد الله بن باز`)
+and **one** book lockup (`إضاءات على زاد المعاد`), and reuses each across every
+card in its row. Reading every image fill in the file confirms it: of 129
+distinct images, only those two are name art.
+
+For books that settles it — the app extracts the lockup and reuses it the same
+way. For scholars it cannot, because those are three different people, so
+setting the two missing names in a typeface was tried: **Diwan Thuluth**, which
+ships with macOS, is the same script family as the design's hand, thickened
+with a same-colour stroke. It is a thinner hand with none of the interlocking
+composition, and on device it did not read as the same art.
+
+**Ruling (yours): use the extracted lockup on all three cards, as the design
+does.** The other two cards read `ابن باز` until a calligrapher delivers their
+names. The generator (`scripts/figma/generate-calligraphy.js`) and its two
+assets were removed with that ruling; commit `c62e967` has them if the question
+reopens. Live text is not a substitute — the design's name is calligraphy, not
+type.
+
+### The book card draws calligraphy too
+
+You spotted this: the design gives book titles the scholar card's treatment
+inverted — navy `#0d5779` calligraphy on cream `#ede0d1` instead of cream on
+navy. Node 2001:940 states a 192 × 81 card, radius 7.71, a 113.77 × 3.86 navy
+stripe straddling the top edge, and the title as one image centred in a
+160 × 37 rect with an identity fill transform (so, unlike the scholar name,
+no inset to model). The app was rendering live Naskh text there.
+
+`BookCard` now draws that lockup, extracted from the `.fig` at its native
+450 × 108 and squeezed into the rect with `contentFit="fill"`, which is what
+the design's STRETCH fill does. Every card reads `إضاءات على زاد المعاد`, as
+every card in the design does. A book with no lockup still falls back to live
+text, which is how every card rendered before.
+
+Measured on Android: the card comes out 504 × 213 px, aspect 2.366 against the
+design's 2.370.
+
+### The queen card had a dead strip
+
+Also not in the plan. Its export carried the page background as a margin —
+18 px above the card and 74 below — so the card drew a band of `#F8F2ED` along
+its bottom edge. The asset is cropped to the card and the aspect ratio is the
+design's 361 × 96.
+
+### D7 caveat
+
+The row heights now match, which was the defect. The *wrapping* still differs:
+`الإعجاز العلمي في السنة النبوية` sets on one line on iOS and two on Android.
+That is a platform text-measurement difference in the substituted face, and it
+no longer changes the layout because the card height is fixed. It should
+disappear when the licensed faces land, and is worth re-checking then.
+
+### D9 was not a defect
+
+The plan said `figma-mobile-screen-map.json` mislabels node `2001:835` as a
+splash frame. Reading the node out of the `.fig` shows it **is** a splash
+frame — named "Splash", 393 × 852, holding the emblem, the tagline
+`تأخـذ بيـــدك إلى الجنـة`, and the wordmark. What is wrong is the *export*:
+`docs/audit/2026-09-09/figma-reference/01-2001-835.png` is a render of Home.
+The manifest needs no change; the reference images do, and they are untracked.
+
+`2026-09-09-splash-rebuild-design.md` repeats the same wrong conclusion and
+has been corrected.
+
+## Still open
+
+- **T1.** `TheSansArabic` and `TheMixArab` both resolve to `NotoSansArabic-VF.ttf`,
+  so the design's display/body contrast still does not exist. The scale is
+  built so this is a one-line change in `constants/fonts.ts` when the licensed
+  files arrive; no component changes.
+- **The rest of the app is not on the scale.** Home is migrated and a test
+  fails if a raw font literal reappears there. Roughly 50 other files still
+  declare families and sizes inline, including 65 non-legacy `Amiri` uses.
+  That sweep is deliberately not in this branch.
+- **The design's own type sizes are below a legibility floor.** The Prophet
+  hero's body is 9pt in Figma, the queen card's 8pt, the `المزيد` label 6pt.
+  Live text floors at 12. That copy runs to about seven lines in the design's
+  161pt column, so the Prophet hero renders roughly **205–210pt tall against
+  the design's 149** — about 40% taller. It is the one deliberate visual
+  divergence here and it is the item most worth the client's opinion: the
+  alternative is setting that paragraph at a size the design states but which
+  is hard to read on a phone.
+- **Both hero tap targets currently go to the same place.** The `المزيد` pill
+  is now its own `Pressable` rather than part of a flattened image, which is
+  what D3 asked for, but `app/(tabs)/index.tsx` passes only `onMore`, so the
+  card and the pill both route to `/sections`. Giving them different
+  destinations is a product decision, not a layout one.
+- **Three flattened exports are now unreferenced** —
+  `hero-prophet-card.webp`, `hero-prophet-card-cropped.webp` and
+  `hero-quran-card.webp`, 164 KB together. Left on disk deliberately: deleting
+  is USER_ONLY per `conductor/authority-matrix.md`.
+- **Web is unverified.** Both changes that touch scroll behaviour — the dawah
+  fan and the carousel widths — were checked on iOS and Android only.

@@ -1,6 +1,14 @@
-import { DetailHeader } from '@/components/khazain';
-import { OrnamentPattern } from '@/components/khazain/patterns';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { InlineHeader, ListRowCard } from '@/components/khazain';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
+import { HeaderArt } from '@/components/khazain/patterns';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import {
+  CONTACT_INCOMPLETE_ALERT,
+  CONTACT_SENT_ALERT,
+  isContactFormComplete,
+} from '@/services/contactForm';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -16,12 +24,21 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
 
 // Real phone / email values to be supplied by the foundation. Defaults match
 // the Figma mock.
 const CONTACT_PHONE = '01228888888';
+/**
+ * The same number as the file states it — node 2548:1631 reads
+ * `٠١٢٢٨٨٨٨٨٨٨٨٨٨`. The Latin form above is what `wa.me` needs, so the two
+ * cannot be one constant.
+ */
+const CONTACT_PHONE_AR = '٠١٢٢٨٨٨٨٨٨٨٨٨٨';
 const CONTACT_EMAIL = 'khazayin@email.com';
+
+/** `Icon` inside `DIV-66` is 21 x 20; both chips draw at that size. */
+const CONTACT_GLYPH = 20;
 
 export default function ContactScreen() {
   const router = useRouter();
@@ -44,42 +61,49 @@ export default function ContactScreen() {
   const onEmail = () => open(`mailto:${CONTACT_EMAIL}`, 'البريد');
 
   const submit = () => {
-    if (!name.trim() || !email.trim() || !message.trim()) {
-      Alert.alert('البيانات ناقصة', 'يرجى ملء جميع الحقول.');
+    if (!isContactFormComplete({ name, email, message })) {
+      Alert.alert(CONTACT_INCOMPLETE_ALERT.title, CONTACT_INCOMPLETE_ALERT.body);
       return;
     }
     // INTENTIONAL PLACEHOLDER (T7.8 / D3): the form does not yet transmit the
     // message anywhere — it validates and confirms only. Wire to the foundation's
     // email/Telegram/endpoint when the backend channel is provided. Until then
     // this is a known stub, not a bug.
-    Alert.alert('تم الإرسال', 'سنعود إليك قريباً إن شاء الله.', [
+    Alert.alert(CONTACT_SENT_ALERT.title, CONTACT_SENT_ALERT.body, [
       { text: 'حسناً', onPress: () => router.back() },
     ]);
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
-      <DetailHeader title="تواصل معنا" onBack={() => router.back()} />
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <HeaderArt corners="single" />
+      <InlineHeader title="تواصل معنا" onBack={() => router.back()} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: 160 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: 24 }]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <ActionCard
+          {/* `telegramChannels-41` and `contactUs-55` — the same 82pt More row,
+              minus the disclosure column: `DIV-42` here is 335 wide where the
+              More root's is 359. */}
+          <ListRowCard
+            variant="more"
+            chevron={false}
             title="إرسال رسالة"
-            value={CONTACT_PHONE}
+            subtitle={CONTACT_PHONE_AR}
             icon={<WhatsappGlyph />}
             onPress={onWhatsApp}
           />
-          <ActionCard
+          <ListRowCard
+            variant="more"
+            chevron={false}
             title="إرسال بريد اليكتروني"
-            value={CONTACT_EMAIL}
-            icon={<MailGlyph />}
+            subtitle={CONTACT_EMAIL}
+            icon={<FigmaIcon name="ContactMail" size={CONTACT_GLYPH} color={KhazainColors.navy800} />}
             onPress={onEmail}
           />
           {/* Form is wrapped in a single large card per Figma. */}
@@ -122,38 +146,6 @@ export default function ContactScreen() {
   );
 }
 
-function ActionCard({
-  title,
-  value,
-  icon,
-  onPress,
-}: {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.actionCard,
-        KhazainShadows.card,
-        { transform: [{ scale: pressed ? 0.99 : 1 }] },
-      ]}
-    >
-      {/* Light cream disc, anchored to the right (RTL start) so the visual
-          order is deterministic across platforms regardless of flexDirection
-          flipping. */}
-      <View style={styles.actionTile}>{icon}</View>
-      <View style={styles.actionTextCol}>
-        <Text style={styles.actionTitle}>{title}</Text>
-        <Text style={styles.actionValue}>{value}</Text>
-      </View>
-    </Pressable>
-  );
-}
-
 function Field({
   label,
   value,
@@ -185,10 +177,11 @@ function Field({
         autoCapitalize={autoCapitalize}
         style={[
           styles.fieldInput,
+          // `TEXTAREA` — 311 x 106 at the same radius.
           multi && {
-            minHeight: 110,
+            minHeight: 106,
             textAlignVertical: 'top',
-            paddingTop: 14,
+            paddingTop: 12,
           },
         ]}
       />
@@ -196,9 +189,16 @@ function Field({
   );
 }
 
+/**
+ * The whatsapp row's chip. Node 2106:2598 `DIV-52` holds an INSTANCE named
+ * `Yu` — a 28pt disc filled `#9F9178` behind a navy hairline, with nothing
+ * inside it — the same unfinished placeholder the More root carries, so the
+ * app keeps its own mark. The email row beside it does have a real glyph, and
+ * that one comes from the file.
+ */
 function WhatsappGlyph() {
   return (
-    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
+    <Svg width={CONTACT_GLYPH} height={CONTACT_GLYPH} viewBox="0 0 20 20" fill="none">
       <Path
         d="M10 2.5a7.5 7.5 0 00-6.5 11.2L2.5 17.5l3.9-1a7.5 7.5 0 103.6-14zm-2.7 4.7c.3 0 .6.3.9.7l.4 1.4-.8.8c.4 1 1.4 2 2.4 2.4l.8-.8 1.4.4c.4.3.7.6.7 1 0 .9-.9 1.7-1.8 1.7-2.7 0-5.4-2.7-5.4-5.4 0-1 .8-1.8 1.7-1.8z"
         fill={KhazainColors.navy800}
@@ -207,133 +207,65 @@ function WhatsappGlyph() {
   );
 }
 
-function MailGlyph() {
-  return (
-    <Svg width={20} height={20} viewBox="0 0 20 20" fill="none">
-      <Rect
-        x={2.5}
-        y={4.5}
-        width={15}
-        height={11}
-        rx={2}
-        stroke={KhazainColors.navy800}
-        strokeWidth={1.5}
-      />
-      <Path d="M3 6.5l7 4.5 7-4.5" stroke={KhazainColors.navy800} strokeWidth={1.5} />
-    </Svg>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   body: {
-    paddingHorizontal: 14,
-    paddingTop: 6,
-    gap: 12,
+    paddingHorizontal: 16,
+    paddingTop: 4,
+    // Each `margin-wrap` is 94 over an 82 card, as on the More root.
+    gap: CARD_DENSITY.moreListGap,
   },
-  // Action cards: cream card with a cream-tinted disc on the RTL-start side
-  // (right edge) and a two-line text block to its left.
-  actionCard: {
-    position: 'relative',
-    backgroundColor: KhazainColors.cream50,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.10)',
-    minHeight: 70,
-    paddingVertical: 14,
-    paddingLeft: 16,
-    paddingRight: 70, // disc 46 + 12 inset + 12 gap
-    justifyContent: 'center',
-  },
-  actionTile: {
-    position: 'absolute',
-    right: 12,
-    top: '50%',
-    width: 46,
-    height: 46,
-    borderRadius: 23,
-    backgroundColor: KhazainColors.iconChipBg,
-    borderWidth: 1,
-    borderColor: 'rgba(26,53,87,0.15)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateY: -23 }],
-  },
-  actionTextCol: {
-    gap: 2,
-  },
-  actionTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  actionValue: {
-    fontSize: 12,
-    color: KhazainColors.ink500,
-    marginTop: 2,
-    writingDirection: 'ltr',
-    textAlign: 'right',
-    fontFamily: 'TheSansArabic',
-  },
-  // Single form card containing the title, three fields and the submit btn.
+  // `DIV-126` — 343 x 446 at radius 16 behind a 1pt `#D9D6D3` hairline, inset
+  // 16, and sitting 9 further in than the rows above it.
+  //
+  // It has **no fill**: its one paint is `visible: false`, so the page ground
+  // shows through and the `#FCFAF8` fields read as wells inside it. Drawing the
+  // card in `#FCFAF8` instead — which is what the paint says if you do not
+  // check whether it is switched on — makes the fields vanish into it.
   formCard: {
-    marginTop: 6,
+    ...PHYSICAL_BOX,
+    // `contactUs-55` ends at 269 and `DIV-126` starts at 293, so the gap over
+    // the 12 the rows already carry is 12 more.
+    marginTop: 12,
+    marginHorizontal: 9,
     padding: 16,
-    paddingTop: 18,
-    backgroundColor: KhazainColors.cream50,
-    borderRadius: 18,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.10)',
-    gap: 12,
+    borderColor: KhazainColors.hairlineWarm,
+    // `DIV-128` ends at 416 and `DIV-133` starts at 432.
+    gap: 16,
   },
+  // The one place the file sets the body face at 20 — every other title on a
+  // More screen is 18 or 14.
   formTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
-    writingDirection: 'rtl',
-    marginBottom: 4,
+    ...textStyle('bodyTitle', { color: KhazainColors.inkTitle, textAlign: 'center' }),
+    // `DIV-126` starts at 293, the title at 309, and `FORM-127` at 342.
+    marginBottom: -4,
   },
   fieldGroup: {
-    gap: 6,
+    // `LABEL-129` ends at 362 and `INPUT` starts at 370.
+    gap: 8,
   },
-  fieldLabel: {
-    fontSize: 12,
-    color: KhazainColors.ink700,
-    fontFamily: 'TheSansArabic',
-    fontWeight: '600',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  fieldLabel: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  // `INPUT` — 311 x 46 at radius 16. Its stroke is `#FCFAF8`, the same as its
+  // fill, so the field reads as a flat well rather than an outlined box; the
+  // app had been drawing a visible warm border it does not have.
   fieldInput: {
-    backgroundColor: KhazainColors.cream100,
-    borderRadius: 14,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.08)',
-    fontSize: 13,
-    color: KhazainColors.ink900,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+    minHeight: 46,
+    backgroundColor: KhazainColors.cardBg,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
+    paddingVertical: 12,
+    paddingHorizontal: 13,
   },
+  // `BUTTON-143` — 311 x 45 at radius 8, `#184B76`, its label in the body
+  // face at 14. Not the 14pt radius and 15pt bold label the app had.
   submitBtn: {
-    marginTop: 4,
-    paddingVertical: 16,
-    borderRadius: 14,
+    minHeight: 45,
+    borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  submitLabel: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#fff',
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-  },
+  submitLabel: textStyle('bodyCompact', { color: KhazainColors.cardBg }),
 });

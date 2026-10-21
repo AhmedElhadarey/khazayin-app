@@ -1,4 +1,7 @@
-import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
+import { PAGE_CHROME, PHYSICAL_ROW } from '@/constants/layout';
+import { SEARCH_PILL_ORDER, type SearchPillSlot } from '@/constants/rtlContracts';
+import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import {
   Pressable,
@@ -10,7 +13,7 @@ import {
   View,
   ViewStyle,
 } from 'react-native';
-import { SearchIcon } from '../icons';
+import { FigmaIcon } from '../icons/FigmaIcon';
 
 type Props = Omit<TextInputProps, 'style'> & {
   dark?: boolean;
@@ -24,19 +27,34 @@ type Props = Omit<TextInputProps, 'style'> & {
    */
   onPress?: () => void;
   /**
-   * Input mode only: when set AND `value` is non-empty, renders an X icon
-   * on the trailing edge. Tapping it calls onClear.
+   * Input mode only: when set AND `value` is non-empty, renders an X icon at
+   * the physical RIGHT of the pill — the RTL start edge, opposite the
+   * magnifier, per SEARCH_PILL_ORDER. Tapping it calls onClear.
    */
   onClear?: () => void;
 };
 
-// 40-tall rounded search input with leading magnifier.
+// The search control, node "Inputs" — redrawn identically in all seventeen
+// Sections frames and in Home and Library: 361 x 40 at radius 12, on `cardBg`
+// with a `#D9D6D3` hairline and a soft drop shadow.
+//
+// It is deliberately 40 rather than the 44pt touch minimum, because that is
+// what the file states; the target is made up with `hitSlop` instead, which is
+// the pattern CARD_DENSITY already records for controls inside a row.
+//
+// The magnifier sits at the physical LEFT with the Arabic placeholder
+// right-aligned beside it (Figma nodes 2031:5675, 2102:2975);
+// SEARCH_PILL_ORDER records that contract and PHYSICAL_ROW stops forceRTL from
+// swapping the two.
 // `dark` variant for MushafScreen per handoff §6.
 //
 // Dual-mode (added 2026-05-11):
 //   - Button mode (onPress provided): a Pressable styled identically to the
 //     input. Used by 13 host screens to open the search modal.
-//   - Input mode (onPress omitted): real TextInput. Used only by app/search.tsx.
+//   - Input mode (onPress omitted): real TextInput. Used only by app/content-search.tsx.
+/** Node `Inputs` instances `vuesax/bulk/search-normal` at 24. */
+const SEARCH_GLYPH = 24;
+
 export function SearchPill({
   dark,
   containerStyle,
@@ -47,7 +65,7 @@ export function SearchPill({
   ...rest
 }: Props) {
   const bg = dark ? 'rgba(255,255,255,0.08)' : KhazainColors.cardBg;
-  const border = dark ? 'rgba(255,255,255,0.12)' : KhazainColors.cardBorder;
+  const border = dark ? 'rgba(255,255,255,0.12)' : KhazainColors.hairlineWarm;
   const textColor = dark ? KhazainColors.cream100 : KhazainColors.ink900;
   const placeholderColor = dark ? 'rgba(255,255,255,0.5)' : KhazainColors.inkPlaceholder;
   const iconColor = dark ? KhazainColors.cream200 : KhazainColors.inkPlaceholder;
@@ -59,6 +77,8 @@ export function SearchPill({
         onPress={onPress}
         accessibilityRole="button"
         accessibilityLabel={typeof placeholder === 'string' ? placeholder : 'بحث'}
+        // The pill draws at the design's 40; hitSlop carries it to 44.
+        hitSlop={{ top: 2, bottom: 2 }}
         style={({ pressed }) => [
           styles.pill,
           KhazainShadows.input,
@@ -66,13 +86,18 @@ export function SearchPill({
           containerStyle,
         ]}
       >
-        <SearchIcon size={16} color={iconColor} />
-        <Text
-          style={[styles.placeholderText, { color: placeholderColor }]}
-          numberOfLines={1}
-        >
-          {placeholder}
-        </Text>
+        {renderSlots({
+          icon: <FigmaIcon name="Search" size={SEARCH_GLYPH} color={iconColor} />,
+          field: (
+            <Text
+              style={[styles.placeholderText, { color: placeholderColor }]}
+              numberOfLines={1}
+            >
+              {placeholder}
+            </Text>
+          ),
+          clear: null,
+        })}
       </Pressable>
     );
   }
@@ -89,28 +114,39 @@ export function SearchPill({
         containerStyle,
       ]}
     >
-      <SearchIcon size={16} color={iconColor} />
-      <TextInput
-        {...rest}
-        value={value}
-        placeholder={placeholder}
-        placeholderTextColor={placeholderColor}
-        style={[styles.input, { color: textColor }]}
-        textAlign="right"
-      />
-      {showClear ? (
-        <Pressable
-          onPress={onClear}
-          accessibilityRole="button"
-          accessibilityLabel="مسح البحث"
-          hitSlop={8}
-          style={styles.clearBtn}
-        >
-          <ClearGlyph color={iconColor} />
-        </Pressable>
-      ) : null}
+      {renderSlots({
+        icon: <FigmaIcon name="Search" size={SEARCH_GLYPH} color={iconColor} />,
+        field: (
+          <TextInput
+            {...rest}
+            value={value}
+            placeholder={placeholder}
+            placeholderTextColor={placeholderColor}
+            style={[styles.input, { color: textColor }]}
+            textAlign="right"
+          />
+        ),
+        clear: showClear ? (
+          <Pressable
+            onPress={onClear}
+            accessibilityRole="button"
+            accessibilityLabel="مسح البحث"
+            hitSlop={8}
+            style={styles.clearBtn}
+          >
+            <ClearGlyph color={iconColor} />
+          </Pressable>
+        ) : null,
+      })}
     </View>
   );
+}
+
+/** Renders the pill's children in the physical left → right contract order. */
+function renderSlots(slots: Record<SearchPillSlot, React.ReactNode>) {
+  return SEARCH_PILL_ORDER.map((slot) => (
+    <React.Fragment key={slot}>{slots[slot]}</React.Fragment>
+  ));
 }
 
 // Simple X glyph rendered as two crossed strokes. Inline to avoid pulling in
@@ -126,29 +162,25 @@ function ClearGlyph({ color }: { color: string }) {
 
 const styles = StyleSheet.create({
   pill: {
-    height: 40,
-    borderRadius: KhazainRadius.md,
+    ...PHYSICAL_ROW,
+    minHeight: PAGE_CHROME.searchHeight,
+    borderRadius: PAGE_CHROME.searchRadius,
     borderWidth: 1,
-    flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingHorizontal: 12,
+    // The magnifier sits 8 from the physical left edge; the placeholder ends
+    // 12 from the right.
+    paddingLeft: 8,
+    paddingRight: 12,
   },
   input: {
     flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '400',
+    ...textStyle('bodyCompact'),
     paddingVertical: 0,
-    writingDirection: 'rtl',
   },
   placeholderText: {
     flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '400',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('bodyCompact'),
   },
   clearBtn: {
     width: 24,

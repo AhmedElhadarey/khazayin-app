@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
+import { PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useQiratStore, useSettingsStore } from '@/store';
 
@@ -23,7 +25,7 @@ export default function SettingsQiraaScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
         <View style={styles.handle} />
       </View>
@@ -72,9 +74,6 @@ function SelectableRow({
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <Text style={styles.rowTitle} numberOfLines={1}>
-        {title}
-      </Text>
       {selected ? (
         <Svg width={18} height={18} viewBox="0 0 18 18">
           <Path
@@ -87,6 +86,9 @@ function SelectableRow({
           />
         </Svg>
       ) : null}
+      <Text style={styles.rowTitle} numberOfLines={1}>
+        {title}
+      </Text>
     </Pressable>
   );
 }
@@ -101,18 +103,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,30,19,0.18)',
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   list: { paddingHorizontal: 16, gap: 8 },
   row: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: tick, title. See settings-font-size for why
+    // `row-reverse` on an unpinned row lands them the wrong way round.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     minHeight: 56,

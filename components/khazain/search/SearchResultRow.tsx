@@ -1,3 +1,4 @@
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -24,10 +25,15 @@ export function SearchResultRow({ iconNode, title, subtitle, meta, onPress }: Pr
         { transform: [{ scale: pressed ? 0.99 : 1 }], opacity: pressed ? 0.92 : 1 },
       ]}
     >
-      {/* Icon on visual right (RTL-start). Absolute. */}
-      <View style={styles.iconSlot}>{iconNode}</View>
+      {/* Physical left → right: meta chip, title block, icon. */}
+      {meta ? (
+        <View style={styles.metaChip}>
+          <Text style={styles.metaText} numberOfLines={1}>
+            {meta}
+          </Text>
+        </View>
+      ) : null}
 
-      {/* Body: title + subtitle, right-aligned. paddingRight reserves space for icon. */}
       <View style={styles.body}>
         <Text style={styles.title} numberOfLines={1}>
           {title}
@@ -39,44 +45,35 @@ export function SearchResultRow({ iconNode, title, subtitle, meta, onPress }: Pr
         ) : null}
       </View>
 
-      {/* Meta chip (optional, e.g. duration) on visual left. */}
-      {meta ? (
-        <View style={styles.metaChip}>
-          <Text style={styles.metaText} numberOfLines={1}>
-            {meta}
-          </Text>
-        </View>
-      ) : null}
+      <View style={styles.iconSlot}>{iconNode}</View>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 64,
+    ...PHYSICAL_ROW,
+    alignItems: 'center',
+    gap: 12,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
     backgroundColor: KhazainColors.cream50,
     borderRadius: KhazainRadius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.10)',
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 8,
+    paddingVertical: 8,
+    marginBottom: CARD_DENSITY.listGap,
+    borderColor: KhazainColors.cardBorder,
   },
   iconSlot: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
     width: 40,
     height: 40,
-    transform: [{ translateY: -20 }],
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
   body: {
     flex: 1,
-    paddingRight: 56, // 40 icon + 16 gap
+    minWidth: 0,
     alignItems: 'flex-end',
   },
   title: {

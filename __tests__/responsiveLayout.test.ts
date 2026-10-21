@@ -1,0 +1,371 @@
+import {
+  CARD_DENSITY,
+  CONTENT_MAX_WIDTH,
+  MIN_TOUCH_TARGET,
+  PHYSICAL_ROW,
+  REFERENCE_WIDTH,
+  RTL_TEXT,
+  SEGMENT_TABS,
+  TAB_BAR,
+  TAB_PHYSICAL_ORDER,
+  tabBarHeight,
+  RESERVED_COLUMNS,
+  SCREEN_BOTTOM_BREATHING,
+  contentWidth,
+  physicalTabOrder,
+  rowTextWidth,
+  horizontalGutter,
+  responsiveCarouselCardWidth,
+  shouldShowMainTabBar,
+  widthProfile,
+} from '@/constants/layout';
+
+describe('responsive layout helpers', () => {
+  describe('shouldShowMainTabBar', () => {
+    it.each(['/', '/library', '/sections', '/more', '/sections/']) (
+      'shows the tab bar on the root route %s',
+      (pathname) => {
+        expect(shouldShowMainTabBar(pathname)).toBe(true);
+      },
+    );
+
+    it.each([
+      '/sections/books',
+      '/sections/scholar/s1',
+      '/sections/mushaf',
+      '/more/contact',
+      '/more/settings',
+      '/search',
+      '/content-search',
+      '/sections/book/bk1',
+    ])('hides the tab bar on the secondary route %s', (pathname) => {
+      expect(shouldShowMainTabBar(pathname)).toBe(false);
+    });
+  });
+
+  describe('responsiveCarouselCardWidth', () => {
+    // Figma node 2001:940 states two different carousel card widths: the
+    // scholar ribbon is 216.1 wide and the book card 192, both with a 12 gap
+    // inside the 16pt page padding. The reference device is 393pt, so the
+    // designed size has to be reachable there — the old formula only reached
+    // it at 430pt and no shipping phone is that wide.
+    it('renders the designed scholar card at the reference width', () => {
+      expect(responsiveCarouselCardWidth(REFERENCE_WIDTH, 'scholar')).toBeCloseTo(216.1, 2);
+    });
+
+    it('renders the designed book card at the reference width', () => {
+      expect(responsiveCarouselCardWidth(REFERENCE_WIDTH, 'book')).toBeCloseTo(192, 2);
+    });
+
+    it('holds the designed width above the reference rather than growing', () => {
+      // Figma lets the second card run off the screen edge; it does not
+      // stretch the card to fill a wider window.
+      expect(responsiveCarouselCardWidth(430, 'scholar')).toBeCloseTo(216.1, 2);
+      expect(responsiveCarouselCardWidth(1024, 'scholar')).toBeCloseTo(216.1, 2);
+      expect(responsiveCarouselCardWidth(1024, 'book')).toBeCloseTo(192, 2);
+    });
+
+    it('scales down proportionally below the reference width', () => {
+      // 320pt has 288 of content against the reference's 361.
+      expect(responsiveCarouselCardWidth(320, 'scholar')).toBeCloseTo(216.1 * 288 / 361, 1);
+      expect(responsiveCarouselCardWidth(320, 'book')).toBeCloseTo(192 * 288 / 361, 1);
+    });
+
+    it('does not shrink below the supported compact width', () => {
+      expect(responsiveCarouselCardWidth(240, 'scholar')).toBe(150);
+      expect(responsiveCarouselCardWidth(240, 'book')).toBe(150);
+    });
+
+    it('keeps the scholar card wider than the book card at every width', () => {
+      [320, 360, 375, 393, 411, 430].forEach((w) => {
+        expect(responsiveCarouselCardWidth(w, 'scholar')).toBeGreaterThan(
+          responsiveCarouselCardWidth(w, 'book'),
+        );
+      });
+    });
+  });
+});
+
+describe('physical RTL layout contract', () => {
+  it('authors the bottom navigation in physical left-to-right order', () => {
+    // Figma node 2031:5675, left → right: More, Sections, Library, Home.
+    expect(TAB_PHYSICAL_ORDER).toEqual(['more', 'sections', 'library', 'index']);
+  });
+
+  it('pins a physically authored row to left-to-right regardless of I18nManager', () => {
+    expect(PHYSICAL_ROW).toEqual({ flexDirection: 'row', direction: 'ltr' });
+  });
+
+  it('keeps Arabic text right-aligned and right-to-left', () => {
+    expect(RTL_TEXT).toEqual({ writingDirection: 'rtl', textAlign: 'right' });
+  });
+
+  it('does not read I18nManager to decide physical order', () => {
+    // A frozen literal cannot depend on runtime locale state, which is the
+    // whole point: module-init order must not change between platforms.
+    expect(Object.isFrozen(PHYSICAL_ROW)).toBe(true);
+    expect(Object.isFrozen(TAB_PHYSICAL_ORDER)).toBe(true);
+  });
+
+  it('keeps the audited reference width and content cap', () => {
+    expect(REFERENCE_WIDTH).toBe(393);
+    expect(CONTENT_MAX_WIDTH).toBe(480);
+    expect(MIN_TOUCH_TARGET).toBe(44);
+  });
+});
+
+describe('width profiles', () => {
+  it.each([320, 360, 374])('treats %ipt as compact', (width) => {
+    expect(widthProfile(width)).toBe('compact');
+  });
+
+  it.each([375, 393, 411, 430])('treats %ipt as a regular phone', (width) => {
+    expect(widthProfile(width)).toBe('regular');
+  });
+
+  it.each([431, 480, 1024])('treats %ipt as wide', (width) => {
+    expect(widthProfile(width)).toBe('wide');
+  });
+
+  describe('horizontalGutter', () => {
+    it('uses the Figma 16pt gutter at and above 375', () => {
+      expect(horizontalGutter(375)).toBe(16);
+      expect(horizontalGutter(393)).toBe(16);
+      expect(horizontalGutter(480)).toBe(16);
+    });
+
+    it('reduces the gutter before touching type on narrow phones', () => {
+      expect(horizontalGutter(320)).toBe(12);
+      expect(horizontalGutter(360)).toBe(12);
+    });
+  });
+
+  describe('contentWidth', () => {
+    it('fills the screen minus gutters through 480', () => {
+      expect(contentWidth(320)).toBe(296);
+      expect(contentWidth(393)).toBe(361);
+      expect(contentWidth(411)).toBe(379);
+      expect(contentWidth(480)).toBe(448);
+    });
+
+    it('caps content above the widest supported phone instead of stretching', () => {
+      expect(contentWidth(768)).toBe(448);
+      expect(contentWidth(1024)).toBe(448);
+    });
+  });
+});
+
+describe('bottom navigation geometry', () => {
+  // Every figure below is quoted from design specification section 5.2 and
+  // measured against Figma node 2031:5675.
+  it('uses the Figma navy and gold', () => {
+    expect(TAB_BAR.background).toBe('#184B76');
+    expect(TAB_BAR.indicatorColor).toBe('#C1A584');
+    expect(TAB_BAR.activeFill).toBe('rgba(215, 185, 149, 0.16)');
+  });
+
+  it('sizes the active item and its indicator to the reference frame', () => {
+    expect(TAB_BAR.itemWidth).toBe(67);
+    expect(TAB_BAR.itemHeight).toBe(49);
+    expect(TAB_BAR.itemRadius).toBe(8);
+    expect(TAB_BAR.indicatorWidth).toBe(40);
+    expect(TAB_BAR.indicatorHeight).toBe(4);
+    expect(TAB_BAR.iconSize).toBe(24);
+  });
+
+  it('keeps the active item at or above the minimum touch target', () => {
+    expect(TAB_BAR.itemHeight).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+    expect(TAB_BAR.itemWidth).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+  });
+
+  it('adds the safe-area inset exactly once', () => {
+    // 49pt controls + 34pt iPhone home-indicator inset = the audited 83pt bar.
+    expect(tabBarHeight(34)).toBe(83);
+    expect(TAB_BAR.controlsHeight).toBe(49);
+  });
+
+  it('collapses to the controls row on devices without a bottom inset', () => {
+    expect(tabBarHeight(0)).toBe(49);
+  });
+
+  it('never subtracts a negative inset', () => {
+    expect(tabBarHeight(-10)).toBe(49);
+  });
+});
+
+describe('root route tab-bar visibility', () => {
+  it('shows the bar on exactly the four Figma tab roots', () => {
+    const roots = TAB_PHYSICAL_ORDER.map((tab) => (tab === 'index' ? '/' : `/${tab}`));
+    expect(roots.every(shouldShowMainTabBar)).toBe(true);
+  });
+});
+
+describe('segmented tab strip', () => {
+  const RECITER_TABS = [
+    { key: 'tajweed', label: 'المصحف المجوّد' },
+    { key: 'murattal', label: 'المصحف المرتل' },
+    { key: 'muallam', label: 'المصحف المعلّم' },
+    { key: 'qiraat', label: 'قراءات' },
+  ];
+
+  it('renders RTL-authored tabs in reversed physical order', () => {
+    // Figma node 2031:6193, left → right: قراءات، المعلّم، المرتل، المجوّد.
+    expect(physicalTabOrder(RECITER_TABS).map((t) => t.key)).toEqual([
+      'qiraat',
+      'muallam',
+      'murattal',
+      'tajweed',
+    ]);
+  });
+
+  it('puts the first authored tab at the physical right, where the default lives', () => {
+    const physical = physicalTabOrder(RECITER_TABS);
+    expect(physical[physical.length - 1].key).toBe(RECITER_TABS[0].key);
+  });
+
+  it('does not mutate the caller\'s tab array', () => {
+    const original = [...RECITER_TABS];
+    physicalTabOrder(RECITER_TABS);
+    expect(RECITER_TABS).toEqual(original);
+  });
+
+  it('never grows vertically, so no void appears between tabs and the list', () => {
+    expect(SEGMENT_TABS.strip.flexGrow).toBe(0);
+    expect(SEGMENT_TABS.strip.flexShrink).toBe(0);
+  });
+
+  it('keeps the Figma spacing between search, tabs, and the first row', () => {
+    expect(SEGMENT_TABS.stripPaddingVertical).toBeGreaterThanOrEqual(6);
+    expect(SEGMENT_TABS.stripPaddingVertical).toBeLessThanOrEqual(8);
+    expect(SEGMENT_TABS.gap).toBe(8);
+  });
+
+  it('keeps every tab at least a comfortable touch width but lets it scroll at 320', () => {
+    // 84 is the width node 2031:6193 states: four tabs and three 8pt gaps
+    // fill the 360pt strip exactly at the 393pt reference width.
+    expect(SEGMENT_TABS.minTabWidth).toBe(84);
+    const stripWidth = 4 * SEGMENT_TABS.minTabWidth + 3 * SEGMENT_TABS.gap;
+    // Wider than the narrowest supported screen — so the strip must scroll
+    // horizontally rather than wrap onto a second line.
+    expect(stripWidth).toBeGreaterThan(320);
+  });
+});
+
+describe('shared card density', () => {
+  // Design specification section 5.2, measured against the numbered frames in
+  // docs/audit/2026-09-09/figma-reference.
+  it('keeps the section card at the audited 96pt with a 64pt disc', () => {
+    expect(CARD_DENSITY.sectionCardHeight).toBe(96);
+    expect(CARD_DENSITY.sectionIconDisc).toBe(64);
+    expect(CARD_DENSITY.sectionCardRadius).toBe(20);
+  });
+
+  it('insets the section card less than its own disc box implies', () => {
+    // `DIV-43` is 96 = 16 + `DIV-44` + 16, and `DIV-44` is exactly the 64pt
+    // disc. But the text beside the disc (`DIV-48`) is 68 and overflows that
+    // box in the file too, so the inset the frame renders from the card edge
+    // to its first line of type is 14, not 16.
+    expect(16 * 2 + CARD_DENSITY.sectionIconDisc).toBe(CARD_DENSITY.sectionCardHeight);
+    expect(CARD_DENSITY.sectionCardPaddingVertical).toBeLessThan(16);
+  });
+
+  it('targets 64-68pt for a one-line lecture card, not the old 84pt floor', () => {
+    expect(CARD_DENSITY.lectureCardMinHeight).toBeGreaterThanOrEqual(64);
+    expect(CARD_DENSITY.lectureCardMinHeight).toBeLessThanOrEqual(68);
+  });
+
+  it('targets 56-64pt for reciter, qiraa, and scholar rows', () => {
+    [CARD_DENSITY.reciterRowMinHeight, CARD_DENSITY.scholarRowMinHeight].forEach((height) => {
+      expect(height).toBeGreaterThanOrEqual(56);
+      expect(height).toBeLessThanOrEqual(64);
+    });
+  });
+
+  it('uses an 8pt vertical list gap', () => {
+    expect(CARD_DENSITY.listGap).toBe(8);
+  });
+
+  it('keeps every row above the minimum touch target despite the compaction', () => {
+    [
+      CARD_DENSITY.sectionCardHeight,
+      CARD_DENSITY.lectureCardMinHeight,
+      CARD_DENSITY.reciterRowMinHeight,
+      CARD_DENSITY.scholarRowMinHeight,
+    ].forEach((height) => {
+      expect(height).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+    });
+  });
+
+  it('gives skeletons the same geometry as the rows they stand in for', () => {
+    expect(CARD_DENSITY.skeletonRowHeight).toBe(CARD_DENSITY.lectureCardMinHeight);
+    expect(CARD_DENSITY.skeletonRibbonHeight).toBe(CARD_DENSITY.reciterRowMinHeight);
+    expect(CARD_DENSITY.skeletonGap).toBe(CARD_DENSITY.listGap);
+  });
+
+  it('keeps Android elevation as subtle as the iOS shadow', () => {
+    // The audit found heavy grey outlines around Android cards.
+    expect(CARD_DENSITY.cardElevation).toBeLessThanOrEqual(1);
+  });
+});
+
+const WIDTH_PROFILES = [320, 360, 375, 393, 411, 430, 480] as const;
+const TABLET_WIDTH = 834;
+
+describe('responsive profile coverage', () => {
+  it.each(WIDTH_PROFILES)('never collapses the gutter at %ipt', (width) => {
+    expect(horizontalGutter(width)).toBeGreaterThanOrEqual(12);
+    expect(horizontalGutter(width)).toBeLessThanOrEqual(16);
+  });
+
+  it.each(WIDTH_PROFILES)('leaves usable content width at %ipt', (width) => {
+    expect(contentWidth(width)).toBeGreaterThan(width * 0.85);
+  });
+
+  it('centres rather than stretches on a tablet', () => {
+    expect(contentWidth(TABLET_WIDTH)).toBe(contentWidth(CONTENT_MAX_WIDTH));
+    expect(widthProfile(TABLET_WIDTH)).toBe('wide');
+    // The leftover is what centres the column.
+    expect(TABLET_WIDTH - contentWidth(TABLET_WIDTH)).toBeGreaterThan(0);
+  });
+
+  it.each(WIDTH_PROFILES)('keeps room for row text at %ipt', (width) => {
+    // Reserved columns are fixed, so this is what a title actually gets.
+    expect(rowTextWidth(width)).toBeGreaterThan(150);
+  });
+
+  it('keeps the icon and disclosure columns fixed across every width', () => {
+    const widths = WIDTH_PROFILES.map((w) => rowTextWidth(w));
+    // Text width grows with the screen; the reserved columns never move.
+    expect(widths).toEqual([...widths].sort((a, b) => a - b));
+    expect(RESERVED_COLUMNS.iconBadge).toBe(40);
+    expect(RESERVED_COLUMNS.disclosure).toBe(20);
+  });
+
+  it('reserves more than the rail width beside a letter rail', () => {
+    expect(RESERVED_COLUMNS.letterRailInset).toBeGreaterThan(RESERVED_COLUMNS.letterRail);
+  });
+
+  it('keeps the tab strip scrollable rather than wrapped at every width', () => {
+    const stripWidth = 4 * SEGMENT_TABS.minTabWidth + 3 * SEGMENT_TABS.gap;
+    WIDTH_PROFILES.forEach((width) => {
+      if (stripWidth > contentWidth(width)) {
+        // Wider than the column: it must scroll, which it does — the strip is
+        // a horizontal ScrollView with a non-growing height.
+        expect(SEGMENT_TABS.strip.flexGrow).toBe(0);
+      }
+    });
+  });
+
+  it('counts the bottom inset exactly once', () => {
+    // React Navigation already insets every screen by the measured tab bar, so
+    // a screen's own bottom padding is breathing room only — never the bar.
+    expect(SCREEN_BOTTOM_BREATHING).toBeLessThan(tabBarHeight(34));
+  });
+
+  it('keeps every reserved control at or above the touch minimum with hitSlop', () => {
+    // The visual columns are smaller than 44pt by design; the rows they sit in
+    // are not, which is what the press target actually follows.
+    expect(CARD_DENSITY.lectureCardMinHeight).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+    expect(CARD_DENSITY.reciterRowMinHeight).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
+  });
+});

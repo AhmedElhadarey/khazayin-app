@@ -1,5 +1,5 @@
-import { ListRowCard } from '@/components/khazain';
-import { OrnamentPattern } from '@/components/khazain/patterns';
+import { InlineHeader, ListRowCard } from '@/components/khazain';
+import { HeaderArt } from '@/components/khazain/patterns';
 import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
 import { toArabicDigits as toArNum } from '@/constants/progress';
 import { PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
@@ -9,6 +9,7 @@ import { KhazainColors } from '@/constants/theme';
 import { clearAppCache } from '@/services/cacheFacade';
 import { shareNotes } from '@/services/notesExporter';
 import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
+import { openPrivacyPolicy } from '@/services/privacyPolicy';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { LEGACY_ONBOARDING_FLAG_KEY } from '@/services/onboardingGate';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,7 +25,7 @@ import type { FontSizeLevel } from '@/types/settings';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
@@ -83,18 +84,12 @@ export default function SettingsScreen() {
     fetchReciters();
   }, [fetchQiraat, fetchReciters]);
 
-  const openPrivacyPolicy = async () => {
-    const url = KhazainConfig.privacyPolicyUrl;
-    if (!url) {
-      Alert.alert('سياسة الخصوصية', 'سياسة الخصوصية ستُضاف قريبًا.');
-      return;
-    }
-    try {
-      await WebBrowser.openBrowserAsync(url);
-    } catch {
-      Alert.alert('سياسة الخصوصية', 'تعذّر فتح سياسة الخصوصية. حاول مجددًا.');
-    }
-  };
+  const onOpenPrivacyPolicy = () =>
+    openPrivacyPolicy({
+      url: KhazainConfig.privacyPolicyUrl,
+      openBrowser: (url) => WebBrowser.openBrowserAsync(url),
+      alert: (title, body) => Alert.alert(title, body),
+    });
 
   const onClearCache = () => {
     Alert.alert(
@@ -148,23 +143,30 @@ export default function SettingsScreen() {
     reciters.find((r) => r.id === preferredReciterId)?.name ?? '—';
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <HeaderArt />
       <ScrollView
         contentContainerStyle={{ paddingBottom: 60 }}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerBlock}>
-          <Text style={styles.h1}>الإعدادات</Text>
-        </View>
+        {/*
+          InlineHeader, not a bare title: this is a nested route under the More
+          stack and it was the one live screen in the app with no way back on
+          screen at all — only the system gesture. Its four siblings
+          (about, archive, contact, settings-progress) all use it, so this is
+          the header they already share rather than a new one.
+        */}
+        <InlineHeader title="الإعدادات" onBack={() => router.back()} />
         <SettingsSection title="التلاوة">
           <ListRowCard
+            variant="more"
             title="القراءة الافتراضية"
             subtitle={qiraaName}
             icon={<QiraaIcon />}
             onPress={() => router.push('/settings-qiraa' as any)}
           />
           <ListRowCard
+            variant="more"
             title="القارئ المفضّل"
             subtitle={reciterName}
             icon={<ReciterIcon />}
@@ -173,6 +175,7 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="القراءة">
           <ListRowCard
+            variant="more"
             title="حجم خط القرآن"
             subtitle={FONT_LEVEL_LABELS[fontSizeLevel]}
             icon={<FontSizeIcon />}
@@ -187,6 +190,7 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="الإشعارات">
           <ListRowCard
+            variant="more"
             title="الإشعارات"
             subtitle={notificationsSummary}
             icon={<BellIcon />}
@@ -195,6 +199,7 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="مواقيت الصلاة">
           <ListRowCard
+            variant="more"
             title="مواقيت الصلاة"
             subtitle={prayerSubtitle}
             icon={<PrayerTimesIcon />}
@@ -203,6 +208,7 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="التطبيق">
           <ListRowCard
+            variant="more"
             title="اللغة"
             subtitle="العربية"
             icon={<GlobeIcon />}
@@ -211,6 +217,7 @@ export default function SettingsScreen() {
             }
           />
           <ListRowCard
+            variant="more"
             title="حول التطبيق"
             subtitle="الإصدار والمؤسسة"
             icon={<AboutIcon />}
@@ -219,12 +226,14 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="البيانات">
           <ListRowCard
+            variant="more"
             title="تفريغ الذاكرة المؤقتة"
             subtitle=""
             icon={<TrashIcon />}
             onPress={onClearCache}
           />
           <ListRowCard
+            variant="more"
             title="تصدير الملاحظات"
             subtitle=""
             icon={<ExportIcon />}
@@ -233,21 +242,24 @@ export default function SettingsScreen() {
         </SettingsSection>
         <SettingsSection title="قانوني">
           <ListRowCard
+            variant="more"
             title="سياسة الخصوصية"
             subtitle=""
             icon={<PrivacyIcon />}
-            onPress={openPrivacyPolicy}
+            onPress={onOpenPrivacyPolicy}
           />
         </SettingsSection>
         {__DEV__ ? (
           <SettingsSection title="مطوّر (Dev)">
             <ListRowCard
+            variant="more"
               title="إعادة الإعداد الأولي"
               subtitle="عرض شاشة الترحيب من جديد"
               icon={<AboutIcon />}
               onPress={onResetOnboarding}
             />
             <ListRowCard
+            variant="more"
               title="إرسال حدث تجريبي إلى Sentry"
               subtitle="للتحقق من تسجيل الأعطال"
               icon={<AboutIcon />}
@@ -437,18 +449,4 @@ function ExportIcon() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  headerBlock: {
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 6,
-    alignItems: 'flex-end',
-  },
-  h1: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
 });

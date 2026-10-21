@@ -99,15 +99,34 @@ For every task in the plan:
   I18nManager.allowRTL(true);
   I18nManager.forceRTL(true);
   ```
-- **Do not rely on `flexDirection: 'row'` auto-flip.** It works on native after a reload but fails on Expo web and stale dev reloads. Two safe patterns already established in the repo:
-  1. **Absolute positioning** for left/right-pinned groups (see `components/khazain/home/HomeSectionHeader.tsx` and `primitives/SectionHeader.tsx`).
-  2. **Hardcoded JSX order matching the visual RTL order** (see `primitives/CustomTabBar.tsx` where `TAB_ORDER = ['more', 'sections', 'library', 'index']` — more on the left, index/home on the right — because with forceRTL unreliable across targets, the typed order wins deterministically).
-- Use `writingDirection: 'rtl'` + `textAlign: 'right'` on every Text style. There is no English copy anywhere in the UI.
+- **Do not rely on `flexDirection: 'row'` auto-flip.** It works on native after a reload but fails on Expo web and stale dev reloads, and some platform views flip a second time — which is exactly what produced the reversed tab bar, list rows, headers, rails, and Mushaf footer found in the 2026-09-09 Figma audit.
+- **The contract lives in `constants/layout.ts`.** Separate the two concerns:
+  1. **Text direction** — spread `RTL_TEXT` (`writingDirection: 'rtl'` + `textAlign: 'right'`) on every Text style. There is no English copy anywhere in the UI.
+  2. **Physical child order** — a row whose children are authored in visual left→right order spreads `PHYSICAL_ROW`, which pins `direction: 'ltr'` so the authored order is what renders. Text inside it keeps its own RTL direction.
+- Prefer logical `start`/`end` for semantically leading/trailing content. Use physical `left`/`right` only inside a container whose direction you have explicitly set.
+- Nothing in the layout contract reads `I18nManager` — the exports are frozen literals, so physical order cannot drift with module-initialization order or platform. Do not reintroduce `const dir = I18nManager.isRTL ? 'row' : 'row-reverse'` at module scope.
+- **One deliberate exception: `primitives/RtlCarousel.tsx`.** It still branches on `I18nManager.isRTL`, because a horizontal `ScrollView` has a *second* RTL concern the style contract does not cover — the native scroll origin, which `direction: 'ltr'` on the content container does not move. Pinning the container while the ScrollView keeps an RTL origin would land the carousel scrolled to the wrong end on some platforms. It renders correctly on iOS, Android and web today; changing it needs a paired capture on all three, not a style swap.
+- Required physical orders (left → right): bottom nav = More, Sections, Library, Home (`TAB_PHYSICAL_ORDER`); list cards = disclosure, text, icon badge; Mushaf footer = Index, Go to bookmark, Save bookmark. The letter index rail sits at the physical right edge.
+- Absolute positioning is still fine for pinning a group to one edge, but it must not be used to *reverse* a row — use `PHYSICAL_ROW` for that.
 
 ## Design source is the spec
 
-- `design_source/app/{home,sections,library,more,shared}.jsx` + `styles.css` + `mobile.html` is a faithful HTML/React prototype.
-- **The mocks win over `handoff.md` whenever they disagree** (handoff copy sometimes lags the mock). Dimensions, colors, Arabic copy — port verbatim.
+Authority order, highest first: **`KHAZAYIN.fig` node → the in-repo contracts.**
+
+> **`design_source/` and `handoff.md` do not exist.** They are named throughout
+> this file as the second and third authorities, but neither is in the working
+> tree and neither is in git history — checked 2026-09-12. Treat every mention
+> of them below as historical. For a screen the 28 frames do not cover there is
+> **no external spec at all**; the authority is `constants/layout.ts` (RTL and
+> geometry), `constants/typography.ts` (the type scale, itself derived from the
+> file's 1,153 text nodes) and `constants/rtlContracts.ts` (physical slot
+> order). Say which one you used — never write "matches Figma" for a screen
+> with no frame.
+
+- **The Figma file is on disk at `docs/KHAZAYIN.fig`** — no cloud URL is needed, and no MCP round-trip. It is a ZIP: `unzip -l docs/KHAZAYIN.fig` lists `canvas.fig` (the binary node graph), `thumbnail.png`, `meta.json`, and `images/` — 181 raw, full-resolution source images keyed by content hash, with alpha intact. When a screen needs real client art, extract it from there rather than deriving it from a flattened frame export or redrawing it as SVG. Rendered frame exports live in `docs/audit/<date>/figma-reference/` (untracked).
+- The 28 top-level mobile frames in `KHAZAYIN.fig` are the current spec for every screen they cover. `docs/visual-regression/figma-mobile-screen-map.json` maps node → route, and `docs/plans/2026-09-09-figma-style-remediation-{design,implementation-plan,qa}.md` record what was measured against them and where the export is unusable.
+- ~~`design_source/app/*.jsx` is the spec for anything the 28 frames do not cover.~~ **Missing — see the note above.** The 28 frames cover Home, Library, Sections and its twelve sub-screens, and More and its three. They cover none of the settings modals, the note screens, search, or the sheets.
+- Where the file's *stated* values and its *rendered* export disagree, the render wins — proved twice, in opposite directions (a component override the export dropped, and a chevron inset the stored transform does not survive auto-layout for).
 - Illustrations (rehl, scroll, crown+book, mosque) are ports of the inline SVGs in the mocks. When real client art arrives they'll replace the SVGs but keep the component API.
 
 ---
@@ -126,6 +145,8 @@ app/                              ← expo-router file-based routing
       _layout.tsx                 ← <Stack> for sections
       index.tsx                   ← 9-item list
       reciter.tsx / mushaf.tsx / qiraat.tsx / scholar.tsx / dawah.tsx
+      reciter/[id].tsx            ← surah list for one reciter
+      audiobooks.tsx / exclusive.tsx  ← both render <RailedLectureList/>
     more/                         ← stack-per-tab
       _layout.tsx
       index.tsx / contact.tsx / about.tsx / archive.tsx / settings.tsx (track 002)
@@ -148,11 +169,19 @@ components/khazain/               ← all new UI lives here
                                      HomeSectionHeader, HeroQuran, HeroProphet, ScholarCard,
                                      BookCard, QuickChip, QueenCard, DawahPoster, SmallMoreButton)
   library/                        ← StatCard, CircularProgress, AudioProgressCard, ReminderCard
+  launch/                         ← LaunchSequence + launchTiming (post-splash overlay)
+  sections/                       ← ReciterSurahRow, RailedLectureList
   sheets/                         ← SheetShell, SheetRow
   settings/                       ← SettingsSection, SettingsValueRow, SettingsToggleRow,
                                      FontSizePreview (track 002)
+  notes/                          ← LinkedNotesSection, NoteRefLink, linkedNotesModel (pure row
+                                     model + editorSeed + surahNotesBlock): notes linked to content
 
 services/                         ← non-store side-effect modules
+  contactForm.ts                  ← contact validation, extracted so it is testable
+  reciterNavigation.ts            ← reciterDestination + surahAsLecture
+  surahPlayback.ts                ← surah → the single startLecturePlayback path
+  mushafNavigation.ts             ← page/surah param normalisation, 604-page bounds
   notificationRegistry.ts         ← category metadata + isCategoryEnabled snapshot read (track 002)
   notificationScheduler.ts        ← SINGLE boundary touching expo-notifications (track 002)
   cacheFacade.ts                  ← registry-based clearAppCache, user-content-safe (track 002)
@@ -165,31 +194,48 @@ store/                            ← Zustand stores
   settingsStore.ts                ← user preferences, persisted under @khazain/settings/v1
                                      (track 002). Exports useSettingsStore + useFontScale hook
 
-constants/theme.ts                ← two exports:
+constants/                        ← design + layout contracts (all imported widely)
+  layout.ts                       ← RTL contract (PHYSICAL_ROW/PHYSICAL_BOX), width
+                                     profiles, tab-bar + card geometry, reserved columns
+  rtlContracts.ts                 ← frozen physical slot orders (left → right) per row type
+  figmaTokens.ts                  ← locked Figma palette, compared against KhazainColors
+  fonts.ts                        ← the single font registry (see Fonts, below)
+  homePresentation.ts             ← Home section running order + quick chips
+  libraryPresentation.ts          ← Library section order and filter visibility
+theme.ts                          ← two exports:
                                      - Colors/Shadows/Spacing/Border/Typography (legacy)
                                      - KhazainColors/KhazainFonts/KhazainWeights/KhazainRadius/
                                        KhazainShadows/KhazainSpacing (new design system)
 
 assets/fonts/                     ← Amiri-Regular/Bold.ttf + NotoSansArabic-VF.ttf + NotoNaskhArabic-VF.ttf
 
-design_source/                    ← HTML/React mocks, treat as the spec
+scripts/visual-audit/             ← 28-frame Figma↔app capture harness (iOS + Android)
+docs/visual-regression/           ← figma-mobile-screen-map.json (node → route manifest)
+docs/plans/                       ← designs, implementation plans, QA records
+
+design_source/                    ← REFERENCED THROUGHOUT THIS FILE BUT ABSENT
 handoff.md                        ← initial client handoff; mocks supersede where they disagree
 conductor/                        ← track-based workflow history (see below)
 ```
 
-## Fonts — known inconsistency
+## Fonts — aliases, pending real licences
 
-`app/_layout.tsx` registers these four families:
-- `Amiri` (static, 400)
-- `Amiri-Bold` (static, 700)
-- `NotoSansArabic` (variable TTF)
-- `NotoNaskhArabic` (variable TTF)
+Every family the app may reference lives in **`constants/fonts.ts`**, and
+`app/_layout.tsx` has exactly one `useFonts(FONT_ASSET_MODULES)` call. Registered:
+- `Amiri` / `Amiri-Bold` (static)
+- `NotoSansArabic` / `NotoNaskhArabic` (variable TTF)
+- `TheSansArabic` and `TheMixArab` — **aliases** mapped by `FONT_SUBSTITUTIONS`
+  to `NotoSansArabic-VF.ttf` until the licensed files arrive.
 
-**But** many components now reference `'TheSansArabic'` and `'TheMixArab'` in `fontFamily`. Those names are not registered — RN will silently fall back to the system font. Two options when you touch a component:
-1. Leave it (user is iterating; silent fallback is intentional while real proprietary fonts are pending).
-2. If the user asks to fix: register aliases in `app/_layout.tsx` `useFonts({...})` so `TheSansArabic` resolves to the Noto Sans Arabic TTF until real licensed fonts arrive.
+This is option 2 of the old note: the proprietary names now resolve to a real
+face instead of silently falling back to the platform Arabic font.
+`__tests__/fontRegistry.test.ts` fails if a component names a family the
+registry does not carry, so add the family there rather than in a screen.
 
-Do not change `TheSansArabic` → `NotoSansArabic` without asking — the user has intentionally edited files to use the proprietary names.
+`typographyParityResolved()` still returns **false**: the substitution is a
+stand-in, not parity. Do not change `TheSansArabic` → `NotoSansArabic` in
+components — the user is intentionally using the proprietary names, and the
+alias is what makes them render.
 
 ---
 
@@ -214,7 +260,7 @@ Expo-router's typed-routes index (`.expo/types/router.d.ts`) regenerates on `exp
 ## State
 
 - **`playerStore`** (`store/playerStore.ts`) — UI state only. `{ track, isPlaying, progress, isVisible, togglePlay, setProgress, setVisible, setTrack }`. Seeded with a mock Fatiha track. The file has a JSDoc block at the top documenting the **audio integration boundary** — read it before wiring a real player (expo-av / react-native-track-player).
-- **`notesStore`** (`store/notesStore.ts`) — persisted via `zustand/middleware` + AsyncStorage at `@khazain/notes`. API: `addNote / updateNote / deleteNote`. Also exports `formatRelativeAr(ts)` helper for Arabic relative time strings.
+- **`notesStore`** (`store/notesStore.ts`) — persisted via `zustand/middleware` + AsyncStorage at `@khazain/notes`. API: `addNote / updateNote / deleteNote`. Also exports `formatRelativeAr(ts)` helper for Arabic relative time strings. **Linked notes:** `addNote(title, body, ref?)` takes an optional `NoteRef` (`type` ayah/lecture/book, `id`, `position`, frozen Arabic `label`, ...). Persist uses `merge` + `coerceNotes` and deliberately has **no `version`/`migrate`**: bumping the persist version makes an older build discard the record on downgrade, losing every note. Unknown ref types and keys are kept so a newer build's refs survive. Selectors: `notesFor`, `notesForLectureSeries`, `useLinkedNotes(type, id)` (filter in a memo, never inside the zustand selector). Pure logic lives in `services/noteRefs.ts` (types, labels, route params), `services/noteActions.ts` (params each take-note action pushes) and `services/noteNavigation.ts` (ref -> route or playback; never dismisses).
 - **`useAppStore`** (`store/useAppStore.ts`) — legacy, used by legacy tabs. Don't extend it; new features use `notesStore` / new dedicated stores.
 - **`progressStore`** + **`wirdStore`** (`store/progressStore.ts`, `store/wirdStore.ts`) — SQLite-backed Quran + lecture progress. NOT persisted via zustand middleware: the DB is the source of truth. Hydrated once in `app/_layout.tsx` after fonts load. Library tab subscribes for `pagesToday`, `currentStreak`, `trendLast28`, `inProgressLecture`, etc. New code reads via `progressRepo` / `lectureRepo` / `wirdRepo` / `achievementsRepo` / `resetFacade` re-exports from `@/db` — NEVER write raw SQL outside `db/`. Web build uses an AsyncStorage-backed shim at `db/web-shim.ts` (same interface, in-memory cache + throttle-flush).
 
@@ -280,6 +326,8 @@ npx tsc --noEmit       # type-check — use this liberally, it's fast
   npm run lint 2>&1 | grep -E "<path-glob>" -A 2
   ```
 - On-device visual QA is the only way to verify RTL layout, font rendering, and the floating MiniPlayer. Typecheck and lint pass doesn't mean it renders correctly.
+- **An icon can be the right geometry and still be wrong.** The file uses one component in two orientations and puts the flip on the *instance* (`transform.m00: -1`), never on the SYMBOL master the generator copies. `FigmaIcon`'s `mirrored` prop carries it; `__tests__/figmaIcons.test.ts` pins which call sites set it.
+- **`alignItems: 'flex-end'` and `textAlign: 'right'` mean the physical LEFT** in a container whose direction is left to `forceRTL`, and `flexDirection: 'row-reverse'` on such a row renders left→right. Spread `PHYSICAL_BOX` / `PHYSICAL_ROW` from `constants/layout.ts`. Guarded by `__tests__/rtlPhysicalContract.test.ts`.
 
 ---
 
@@ -287,7 +335,7 @@ npx tsc --noEmit       # type-check — use this liberally, it's fast
 
 - Don't add dependencies without asking (`authority-matrix.md` marks this USER_ONLY).
 - Don't `git commit` / `git push` unless explicitly told to.
-- Don't rename or delete anything under `design_source/` — it's the spec.
+- Don't rename or delete anything under `design_source/` if it ever arrives — it's the spec. It is not in the repo today.
 - Don't replace `TheSansArabic` / `TheMixArab` font references — the user is intentionally using proprietary names.
 - Don't touch legacy files just to clean up — they're preserved intentionally.
 - Don't add `--no-verify` / `--no-gpg-sign` to any git operation.
@@ -295,11 +343,13 @@ npx tsc --noEmit       # type-check — use this liberally, it's fast
 
 ## Things TO do
 
-- When porting a new screen: read the matching `design_source/app/*.jsx` first, port component-by-component into `components/khazain/`, then assemble in `app/...`.
+- When porting a new screen: find its node in `docs/visual-regression/figma-mobile-screen-map.json` and read the frame out of `docs/KHAZAYIN.fig` with `scripts/figma/extract-geometry.js` / `extract-text-styles.js`. If it has no frame, build from the `constants/*` contracts and say so.
 - When adding a new route: register it in the appropriate layout's `<Stack>` / `<Tabs>`, then test navigation with `router.push(... as any)` until typed routes regenerate.
 - When adding new state: prefer a new small Zustand store over extending `useAppStore`.
 - When adding an external URL or share target: use `Linking.openURL` with a `canOpenURL` check + Arabic Alert fallback (pattern in `app/share-sheet.tsx`).
 - When touching progress data: go through `progressRepo` / `lectureRepo` / `wirdRepo` / `achievementsRepo` / `resetFacade` (re-exports from `@/db`). Never write raw SQL outside `db/`; never persist progress fields via zustand middleware.
+
+- **Long-press means** (app-wide): long-press on a lecture row (`LectureCard`, `RibbonCard`) is **SAVE** to المحفوظات; long-press on an ayah in the Mushaf reader, or on the MiniPlayer, is **NOTE**. The two never share a surface. `__tests__/contextualNotesInvariants.test.ts` pins this.
 
 ## Active Technologies
 - TypeScript 5.9, React 19.1, React Native 0.81.5 (Expo SDK 54) (001-progress-tracking)

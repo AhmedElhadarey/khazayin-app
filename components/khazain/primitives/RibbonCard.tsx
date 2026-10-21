@@ -1,38 +1,82 @@
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import type { SaveTarget } from '@/services/savedToggle';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { BookmarkButton } from './BookmarkButton';
+import { useSaveGesture } from './useSaveGesture';
 
 // Cream card with a thin gold vertical ribbon on the RIGHT edge (start-side in RTL).
 // Used on العلماء والمشايخ (page 26), كل الشرح (page 28).
 //
-// Layout uses absolute-positioning of inner content so it survives `forceRTL`
-// inconsistencies on web (per CLAUDE.md). Title and subtitle are right-aligned
-// with the ribbon flush to the right edge.
+// The two frames draw genuinely different cards, so the `badge` branch is a
+// shape switch rather than only a swapped child:
+//   - scholar list, node 2102:2975 `DIV-107` — 64 tall at radius 20, no stroke,
+//     inset 16, with the 40pt disc at the physical right;
+//   - scholar detail, node 2510:1990 `DIV-139` — 56 tall at radius 12 behind a
+//     1pt `#D9D6D3` hairline, inset 8, with a 12 x 54 `#A88051` ribbon rounded
+//     on its outer side only.
+//
+// Physical left → right: duration, title block, trailing adornment. The
+// adornment is a badge disc on the scholar list (node 2102:2975) and the gold
+// ribbon on the scholar detail list (node 2510:1990).
+//
+// `save` (scholar detail only) makes the lecture saveable by long-press through
+// useSaveGesture. The frame draws no bookmark, so the unsaved card is unchanged;
+// once saved, the physical left becomes a [duration, bookmark] cluster.
 export function RibbonCard({
   pretitle,
   title,
   meta,
   duration,
+  badge,
+  save,
   onPress,
 }: {
   pretitle?: string;
   title: string;
   meta?: string;
   duration?: string;
+  /**
+   * Trailing adornment. The scholar list uses a quill badge disc (node
+   * 2102:2975); the scholar detail list keeps the gold ribbon (node
+   * 2510:1990). Omit for the ribbon.
+   */
+  badge?: React.ReactNode;
+  /** Opt-in lecture save (long-press + bookmark once saved). Scholar detail only. */
+  save?: SaveTarget;
   onPress?: () => void;
 }) {
+  const { saved, gestureProps } = useSaveGesture(save);
+  const durationNode = duration ? <Text style={styles.duration}>{duration}</Text> : null;
+
   return (
     <Pressable
       onPress={onPress}
+      {...gestureProps}
       style={({ pressed }) => [
         styles.card,
-        KhazainShadows.card,
+        badge ? styles.cardWithBadge : styles.cardWithRibbon,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      {/* Right-edge gold ribbon */}
-      <View style={styles.ribbon} />
-      {/* Title block — pinned to the right (visual leading edge in RTL) */}
+      {/* Physical left — duration; plus a bookmark once saved (frame draws none). */}
+      {saved && save ? (
+        <View style={styles.metaCluster}>
+          {durationNode}
+          <BookmarkButton
+            type={save.type}
+            entityId={save.entityId}
+            snapshot={save.snapshot}
+            variant="light"
+          />
+        </View>
+      ) : (
+        durationNode
+      )}
+
+      {/* Centre — title block, right-aligned */}
       <View style={styles.titleBlock}>
         {pretitle ? <Text style={styles.pretitle}>{pretitle}</Text> : null}
         <Text style={styles.title} numberOfLines={2}>
@@ -44,81 +88,58 @@ export function RibbonCard({
           </Text>
         ) : null}
       </View>
-      {/* Duration / count chip — pinned to the left */}
-      {duration ? (
-        <View style={styles.durationBlock}>
-          <Text style={styles.duration}>{duration}</Text>
-        </View>
-      ) : null}
+
+      {/* Physical right — badge disc, or the gold ribbon when none is given */}
+      {badge ?? <View style={styles.ribbon} />}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: 76,
-    borderRadius: 16,
+    ...PHYSICAL_ROW,
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.08)',
-    paddingVertical: 14,
-    paddingRight: 22, // extra space for ribbon
-    paddingLeft: 16,
-    position: 'relative',
     overflow: 'hidden',
-    justifyContent: 'center',
+  },
+  cardWithBadge: {
+    minHeight: CARD_DENSITY.scholarRowMinHeight,
+    borderRadius: CARD_DENSITY.railRowRadius,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+  },
+  cardWithRibbon: {
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
+    borderWidth: 1,
+    borderColor: KhazainColors.hairlineWarm,
+    paddingVertical: 4,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
   },
   ribbon: {
-    position: 'absolute',
-    right: 0,
-    top: 8,
-    bottom: 8,
-    width: 5,
-    borderRadius: 3,
-    backgroundColor: KhazainColors.goldBar,
+    alignSelf: 'stretch',
+    // The ribbon reaches the card's own edge, past the row's inset.
+    marginVertical: 1,
+    marginRight: -CARD_DENSITY.lectureCardPaddingHorizontal,
+    width: 12,
+    borderTopRightRadius: 11,
+    borderBottomRightRadius: 11,
+    backgroundColor: KhazainColors.goldAccent,
+    flexShrink: 0,
   },
   titleBlock: {
-    paddingRight: 0,
+    flex: 1,
+    minWidth: 0,
     alignItems: 'flex-end',
-    gap: 4,
+    gap: 2,
   },
-  pretitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    fontWeight: '500',
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    lineHeight: 26,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  meta: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.ink500,
-    marginTop: 2,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  durationBlock: {
-    position: 'absolute',
-    left: 14,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
+  pretitle: textStyle('caption', { color: KhazainColors.ink500 }),
+  title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  meta: textStyle('caption', { color: KhazainColors.ink500 }),
   duration: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '600',
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
+    ...textStyle('label', { color: KhazainColors.ink500 }),
+    flexShrink: 0,
   },
+  metaCluster: { ...PHYSICAL_ROW, alignItems: 'center', gap: 6, flexShrink: 0 },
 });

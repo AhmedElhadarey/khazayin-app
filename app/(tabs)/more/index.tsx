@@ -1,14 +1,20 @@
 import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
-import { OrnamentPattern } from '@/components/khazain/patterns';
+import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
+import { HeaderArt } from '@/components/khazain/patterns';
+import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
-import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
+import { textStyle } from '@/constants/typography';
+import { MORE_EXTENSION_ROWS, MORE_EXTERNAL_URLS } from '@/data/content/sections';
 import { useMoreRowsStore } from '@/store';
 import type { MoreRow as MoreRowData } from '@/types/content';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import Svg, { Path } from 'react-native-svg';
+
+/** Node 2102:2711 draws each row glyph at ~20pt inside the 48pt squircle. */
+const MORE_GLYPH = 20;
 
 export default function MoreScreen() {
   const router = useRouter();
@@ -47,42 +53,39 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <OrnamentPattern style={StyleSheet.absoluteFillObject} opacity={0.08} />
+      <HeaderArt />
       <ScrollView
-        // The floating MiniPlayer + tab bar covers ~140 of the bottom — leave
-        // room so the wordmark sits comfortably above the bar instead of being
-        // hidden under it.
-        contentContainerStyle={{ paddingBottom: 160 }}
+        // React Navigation already reserves the measured tab-bar height.
+        contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_BREATHING }}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerBlock}>
           <Text style={styles.h1}>المزيد</Text>
         </View>
         <View style={styles.list}>
-          {/* Local-state entry rows render immediately — no need to wait
-              on the More-rows fetch (they don't depend on remote data). */}
-          <ListRowCard
-            title="الإعدادات"
-            subtitle="التلاوة · القراءة · الإشعارات · البيانات"
-            icon={<RowGlyph id="settings" />}
-            onPress={() => router.push('/(tabs)/more/settings' as any)}
-          />
-          <ListRowCard
-            title="إعدادات التقدّم"
-            subtitle="هدف الورد اليومي · إعادة تعيين"
-            icon={<RowGlyph id="progress" />}
-            onPress={() => router.push('/(tabs)/more/settings-progress' as any)}
-          />
+          {/* The Figma reference group first, so the initial viewport starts
+              with the website row exactly as node 2102:2711 does. */}
           <AsyncContent
             status={status}
             error={error}
             onRetry={refresh}
-            skeleton={<SkeletonRibbonList count={8} />}
+            // The gap goes here, not on `styles.list`: the fade wrapper is a
+            // real layout box, so a gap on the container around it spaces the
+            // wrapper from its siblings and never reaches these rows.
+            style={styles.rows}
+            skeleton={
+              <SkeletonRibbonList
+                count={8}
+                height={CARD_DENSITY.moreCardHeight}
+                gap={CARD_DENSITY.moreListGap}
+              />
+            }
             emptyMessage="لا توجد عناصر"
           >
             {data.map((r) => (
               <ListRowCard
                 key={r.id}
+                variant="more"
                 title={r.title}
                 subtitle={r.subtitle}
                 icon={<RowGlyph id={r.id} />}
@@ -90,6 +93,18 @@ export default function MoreScreen() {
               />
             ))}
           </AsyncContent>
+          {/* This app's own entry rows follow. They are local state, so they
+              render immediately and never wait on the More-rows fetch. */}
+          {MORE_EXTENSION_ROWS.map((row) => (
+            <ListRowCard
+              key={row.id}
+              variant="more"
+              title={row.title}
+              subtitle={row.subtitle}
+              icon={<RowGlyph id={row.id} />}
+              onPress={() => router.push(row.route as any)}
+            />
+          ))}
         </View>
         <View style={styles.footer}>
           <Wordmark size={16} />
@@ -99,112 +114,53 @@ export default function MoreScreen() {
   );
 }
 
-// Icon glyph for the More-row chip. Sized to fill the 64×64 ListRowCard
-// chip proportionally (matches the section icons via SECTION_ICONS).
+/**
+ * The glyph inside a More row's 48pt squircle.
+ *
+ * All eight rows in node 2102:2711 draw a real mark, and all eight come out of
+ * the file. The whatsapp one took two passes to find: it sits inside an
+ * INSTANCE named `Yu` whose own paints are a disc, and the glyph under it is
+ * addressed by `overrideKey` rather than by guid — so the first read found the
+ * disc and nothing else, and looked like an unfinished placeholder.
+ *
+ * The rows below the frame's eight (settings, progress) have no frame at all,
+ * so they keep their drawn glyphs.
+ */
+const ROW_ICONS: Partial<Record<string, FigmaIconName>> = {
+  web: 'MoreWeb',
+  youtube: 'MoreYoutube',
+  telegram: 'MoreTelegram',
+  whatsapp: 'MoreWhatsapp',
+  soundcloud: 'MoreSoundcloud',
+  archive: 'MoreArchive',
+  contact: 'MoreContact',
+  about: 'MoreAbout',
+};
+
 function RowGlyph({ id }: { id: string }) {
+  const fromFile = ROW_ICONS[id];
+  if (fromFile) {
+    return <FigmaIcon name={fromFile} size={MORE_GLYPH} color={KhazainColors.navy800} />;
+  }
+  return <DrawnRowGlyph id={id} />;
+}
+
+/** The two rows the design file has no frame for. */
+function DrawnRowGlyph({ id }: { id: string }) {
   const c = KhazainColors.navy800;
-  const size = 32;
+  const size = MORE_GLYPH;
   switch (id) {
-    case 'web':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Circle cx={10} cy={10} r={7} stroke={c} strokeWidth={1.5} />
-          <Path
-            d="M3 10h14M10 3c2.5 3 2.5 11 0 14M10 3c-2.5 3-2.5 11 0 14"
-            stroke={c}
-            strokeWidth={1.3}
-          />
-        </Svg>
-      );
-    case 'youtube':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Rect x={2} y={5} width={16} height={10} rx={2} stroke={c} strokeWidth={1.5} />
-          <Path d="M9 8l3 2-3 2V8z" fill={c} />
-        </Svg>
-      );
-    case 'telegram':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Path
-            d="M3 10L17 3l-3 14-4-6-7-1z"
-            stroke={c}
-            strokeWidth={1.5}
-            strokeLinejoin="round"
-          />
-        </Svg>
-      );
-    case 'whatsapp':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Path
-            d="M3 9a6 6 0 0112 0 6 6 0 01-9 5l-3 1 1-3a6 6 0 01-1-3z"
-            stroke={c}
-            strokeWidth={1.5}
-            strokeLinejoin="round"
-          />
-        </Svg>
-      );
-    case 'soundcloud':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Path
-            d="M6 14h9a3 3 0 000-6 4 4 0 00-7.7-1A3 3 0 006 14z"
-            stroke={c}
-            strokeWidth={1.5}
-            strokeLinejoin="round"
-          />
-        </Svg>
-      );
-    case 'archive':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Rect x={3} y={3} width={14} height={4} rx={1} stroke={c} strokeWidth={1.5} />
-          <Path
-            d="M4 7v9a1 1 0 001 1h10a1 1 0 001-1V7M8 11h4"
-            stroke={c}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-          />
-        </Svg>
-      );
-    case 'contact':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Path
-            d="M4 11v-1a6 6 0 0112 0v1M4 11v3a2 2 0 002 2v-5H4zm12 0v5a2 2 0 002-2v-3h-2z"
-            stroke={c}
-            strokeWidth={1.5}
-          />
-        </Svg>
-      );
-    case 'about':
-      return (
-        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Circle cx={10} cy={10} r={7} stroke={c} strokeWidth={1.5} />
-          <Path d="M10 9v5M10 6v.5" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
-        </Svg>
-      );
     case 'progress':
       return (
         <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Path
-            d="M10 3a7 7 0 11-7 7"
-            stroke={c}
-            strokeWidth={1.5}
-            strokeLinecap="round"
-          />
+          <Path d="M10 3a7 7 0 11-7 7" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
           <Path d="M10 7v3l2 1" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
         </Svg>
       );
     case 'settings':
       return (
         <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
-          <Path
-            d="M10 13a3 3 0 100-6 3 3 0 000 6z"
-            stroke={c}
-            strokeWidth={1.5}
-          />
+          <Path d="M10 13a3 3 0 100-6 3 3 0 000 6z" stroke={c} strokeWidth={1.5} />
           <Path
             d="M16 11.6l1.4.7-.9 2-1.5-.5a6 6 0 01-1.4.8l-.3 1.5h-2.2l-.3-1.5a6 6 0 01-1.4-.8l-1.5.5-.9-2 1.4-.7a6 6 0 010-1.6L3 9.3l.9-2 1.5.5a6 6 0 011.4-.8l.3-1.5h2.2l.3 1.5a6 6 0 011.4.8l1.5-.5.9 2-1.4.7a6 6 0 010 1.6z"
             stroke={c}
@@ -220,25 +176,25 @@ function RowGlyph({ id }: { id: string }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
+  // Node 2102:2711 `Header` — a 35pt band under the 45pt status bar, with the
+  // title box starting at y=53. Identical to the Sections root.
   headerBlock: {
-    paddingHorizontal: 18,
-    paddingTop: 14,
-    paddingBottom: 6,
+    // PHYSICAL_BOX so `flex-end` means the physical right, not the RTL end.
+    ...PHYSICAL_BOX,
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.headerPaddingTop,
+    // The title box starts 8 into the header band and the first card at 60.
+    // The app's line box is 28 where the file's is 19, so this is what is left.
+    paddingBottom: 24,
     alignItems: 'flex-end',
   },
-  h1: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  // Match sections/index.tsx list spacing so the two screens read identically.
+  // The file sets every page title in the body face at 18, not the display one.
+  h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
   list: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: CARD_DENSITY.moreListGap,
   },
+  rows: { gap: CARD_DENSITY.moreListGap },
   footer: {
     paddingHorizontal: 18,
     paddingTop: 18,

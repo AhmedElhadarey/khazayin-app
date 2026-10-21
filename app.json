@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon-khazain.png",
     "scheme": "khazayinapp",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "extra": {
       "rtl": true,
       "router": {},
@@ -19,7 +19,9 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.ahmed.elhadarey94.khazayinapp",
       "infoPlist": {
-        "UIBackgroundModes": ["audio"]
+        "UIBackgroundModes": [
+          "audio"
+        ]
       }
     },
     "android": {
@@ -45,13 +47,10 @@
       [
         "expo-splash-screen",
         {
-          "image": "./assets/images/splash-khazain.png",
-          "imageWidth": 393,
-          "resizeMode": "cover",
-          "backgroundColor": "#F5EDE4",
-          "dark": {
-            "backgroundColor": "#121212"
-          }
+          "image": "./assets/images/splash-emblem.png",
+          "imageWidth": 131,
+          "resizeMode": "contain",
+          "backgroundColor": "#F4E7DA"
         }
       ],
       "expo-sqlite",
@@ -66,7 +65,8 @@
           "locationWhenInUsePermission": "يستخدم التطبيق موقعك لحساب مواقيت الصلاة بدقة في مدينتك."
         }
       ],
-      "./plugins/withExactAlarmPermissions"
+      "./plugins/withExactAlarmPermissions",
+      "./plugins/withSplashWindowBackground"
     ],
     "experiments": {
       "typedRoutes": true,

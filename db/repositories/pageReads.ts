@@ -14,6 +14,15 @@ import {
   trendLastNDays,
 } from './insights';
 
+/** Writes the resume point (`khz_settings.last_read_page`). */
+async function upsertLastReadPage(db: SQLite.SQLiteDatabase, page: number): Promise<void> {
+  await db.runAsync(
+    `INSERT INTO khz_settings (key, value) VALUES ('last_read_page', ?)
+       ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+    JSON.stringify(page),
+  );
+}
+
 export function createPageReadsRepository(db: SQLite.SQLiteDatabase): PageReadsRepository {
   async function getWirdTarget(): Promise<number> {
     const row = await db.getFirstAsync<{ value: string }>(
@@ -39,7 +48,12 @@ export function createPageReadsRepository(db: SQLite.SQLiteDatabase): PageReadsR
           pageNumber,
           nowMs,
         );
-        if (before.changes === 0) return;
+        if (before.changes === 0) {
+          // Already counted today — but it is still the page being read now,
+          // so the resume point moves (design 2026-10-21 §4.3).
+          await upsertLastReadPage(db, pageNumber);
+          return;
+        }
         inserted = true;
 
         const target = await getWirdTarget();
@@ -68,11 +82,7 @@ export function createPageReadsRepository(db: SQLite.SQLiteDatabase): PageReadsR
             localDay,
           );
         }
-        await db.runAsync(
-          `INSERT INTO khz_settings (key, value) VALUES ('last_read_page', ?)
-             ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-          JSON.stringify(pageNumber),
-        );
+        await upsertLastReadPage(db, pageNumber);
       });
       return inserted;
     },
@@ -89,6 +99,13 @@ export function createPageReadsRepository(db: SQLite.SQLiteDatabase): PageReadsR
     async pagesReadInMonth(yearMonth) {
       const ym = yearMonth ?? toLocalDay().slice(0, 7);
       return monthPagesRead(db, ym);
+    },
+
+    async totalPagesRead() {
+      const row = await db.getFirstAsync<{ n: number | null }>(
+        'SELECT COALESCE(SUM(pages_read), 0) AS n FROM khz_days',
+      );
+      return row?.n ?? 0;
     },
 
     async currentStreak() {
@@ -133,11 +150,7 @@ export function createPageReadsRepository(db: SQLite.SQLiteDatabase): PageReadsR
 
     async setLastReadPage(page) {
       if (!Number.isInteger(page) || page < 1 || page > 604) return;
-      await db.runAsync(
-        `INSERT INTO khz_settings (key, value) VALUES ('last_read_page', ?)
-           ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-        JSON.stringify(page),
-      );
+      await upsertLastReadPage(db, page);
     },
 
     async getLastReadPage() {

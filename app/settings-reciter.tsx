@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
+import { PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useRecitersStore, useSettingsStore } from '@/store';
 
@@ -23,7 +25,7 @@ export default function SettingsReciterScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
         <View style={styles.handle} />
       </View>
@@ -75,16 +77,6 @@ function SelectableReciterRow({
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <View style={styles.textCol}>
-        <Text style={styles.rowTitle} numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={styles.rowSubtitle} numberOfLines={1}>
-            {subtitle}
-          </Text>
-        ) : null}
-      </View>
       {selected ? (
         <Svg width={18} height={18} viewBox="0 0 18 18">
           <Path
@@ -97,6 +89,16 @@ function SelectableReciterRow({
           />
         </Svg>
       ) : null}
+      <View style={styles.textCol}>
+        <Text style={styles.rowTitle} numberOfLines={1}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text style={styles.rowSubtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -111,18 +113,14 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,30,19,0.18)',
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   list: { paddingHorizontal: 16, gap: 8 },
   row: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: tick, text column.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     minHeight: 64,
@@ -146,11 +144,5 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
-  rowSubtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  rowSubtitle: textStyle('bodyCompact', { color: KhazainColors.ink500 }),
 });

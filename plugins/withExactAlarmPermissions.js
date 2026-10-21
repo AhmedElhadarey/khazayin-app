@@ -28,7 +28,7 @@ const { withAndroidManifest, AndroidConfig } = require('expo/config-plugins');
  */
 const withExactAlarmPermissions = (config) =>
   withAndroidManifest(config, (cfg) => {
-    const manifest = cfg.modResults;
+    const manifest = cfg.modResults.manifest;
     manifest['uses-permission'] = manifest['uses-permission'] ?? [];
 
     const declare = (name, attrs = {}) => {

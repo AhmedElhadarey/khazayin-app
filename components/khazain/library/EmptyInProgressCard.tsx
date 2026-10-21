@@ -1,4 +1,6 @@
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import { LIST_CARD } from './libraryLayout';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
@@ -13,7 +15,7 @@ export function EmptyInProgressCard({
   onBrowse?: () => void;
 }) {
   return (
-    <View style={[styles.card, KhazainShadows.card]}>
+    <View style={styles.card}>
       <View style={styles.cover}>
         <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
           <Path
@@ -45,11 +47,11 @@ export function EmptyInProgressCard({
 
 const styles = StyleSheet.create({
   card: {
-    padding: 14,
-    borderRadius: 16,
-    backgroundColor: KhazainColors.cream50,
+    padding: 16,
+    borderRadius: LIST_CARD.radius,
+    backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.1)',
+    borderColor: KhazainColors.hairlineFaint,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -64,33 +66,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  title: textStyle('cardTitle', { color: KhazainColors.inkHeading }),
   subtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    marginTop: 2,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('label', { color: KhazainColors.ink500 }),
+    marginTop: 4,
   },
   cta: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 10,
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  ctaLabel: {
-    color: '#fff',
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    fontWeight: '700',
-    writingDirection: 'rtl',
-  },
+  ctaLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
 });

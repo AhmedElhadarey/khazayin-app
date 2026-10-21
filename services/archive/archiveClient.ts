@@ -31,7 +31,15 @@ export class ArchiveError extends Error {
 }
 
 const METADATA_BASE = 'https://archive.org/metadata';
-const TIMEOUT_MS = 10_000;
+/**
+ * Measured against the real endpoint, not guessed: five samples of
+ * `archive.org/metadata/<id>` from this machine returned in 1.8, 2.6, 2.8, 5.2
+ * and 10.3 s, with a cold first call at 17.5 s. A 10 s budget therefore aborts
+ * a request that was going to succeed, and the user gets "تعذّر التشغيل" for a
+ * lecture that is perfectly playable. archive.org is a slow origin and this is
+ * one metadata call before playback, so waiting is cheaper than failing.
+ */
+const TIMEOUT_MS = 30_000;
 
 const _cache = new Map<string, ArchiveItemMetadata>();
 

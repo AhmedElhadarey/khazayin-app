@@ -21,22 +21,26 @@ import type { LibraryFilter, Lookup, MoreRow, SectionEntry } from '../../types/c
 /**
  * `iconKey` corresponds to the keys in SECTION_ICONS from
  * `components/khazain/icons/sections`. Resolved at render-time.
+ *
+ * Order, copy, and counts are the reference dataset for Figma node 2031:5675
+ * and are asserted by `__tests__/sectionPresentation.test.ts`. In API mode the
+ * counts come from the backend and may differ; only the geometry is fixed.
  */
 export const SECTIONS: SectionEntry[] = [
   {
     id:       'quran',
     route:    '/sections/reciter',
     title:    'القرآن حياة',
-    subtitle: 'تلاوات وتفسير وتدبّر القرآن الكريم',
-    count:    '١٥١ حلقة',
+    subtitle: 'تلاوات وتفسير وتدبر القرآن الكريم',
+    count:    '١٥٦ حلقة',
     iconKey:  'quran',
   },
   {
     id:       'prophet',
     route:    '/sections/prophet',
     title:    'رسول الله ﷺ',
-    subtitle: 'السيرة النبوية والشمائل المحمدية',
-    count:    '٢٥٣ حلقة',
+    subtitle: 'محاضرات ودروس كبار العلماء',
+    count:    '٢٤٣ حلقة',
     iconKey:  'prophet',
   },
   {
@@ -44,7 +48,7 @@ export const SECTIONS: SectionEntry[] = [
     route:    '/sections/scholar',
     title:    'العلماء والمشايخ',
     subtitle: 'محاضرات ودروس كبار العلماء',
-    count:    '٢٥٣ حلقة',
+    count:    '٢٤٣ حلقة',
     iconKey:  'scholar',
   },
   {
@@ -60,20 +64,20 @@ export const SECTIONS: SectionEntry[] = [
     route:    '/sections/queen',
     title:    'أنتِ ملكة',
     subtitle: 'ملكةٌ أنتِ لا سواكِ',
-    count:    null,
+    count:    '١٢٨ حلقة',
     iconKey:  'crown',
   },
   {
     id:       'audiobooks',
-    route:    null,
+    route:    '/sections/audiobooks',
     title:    'كتب صوتية',
     subtitle: 'كتب إسلامية مقروءة بصوت عذب',
-    count:    '١٧ كتاباً',
+    count:    '٦٧ كتاب',
     iconKey:  'headphones',
   },
   {
     id:       'exclusive',
-    route:    null,
+    route:    '/sections/exclusive',
     title:    'حصريات خزائن الرحمن',
     subtitle: 'محتوى حصري ومميّز',
     count:    '٣١ حلقة',
@@ -97,10 +101,22 @@ export const SECTIONS: SectionEntry[] = [
   },
 ];
 
+/**
+ * Sections whose Figma screen has no route yet. Empty now that every section
+ * is implemented; the sections screen still falls back to a "قريباً" alert
+ * rather than pushing a dead route if one is ever added here again.
+ */
+export const PENDING_SECTION_ROUTES: readonly string[] = [];
+
 // ---------------------------------------------------------------------------
 // MORE_ROWS — More tab list (more/index.tsx)
 // ---------------------------------------------------------------------------
 
+/**
+ * The eight rows Figma node 2102:2711 opens with, in frame order. The audit
+ * found the tab opening with two settings rows the frame does not have, which
+ * pushed this whole group off the initial viewport.
+ */
 export const MORE_ROWS: MoreRow[] = [
   { id: 'web',       title: 'الموقع الإلكتروني',   subtitle: 'زيارة الموقع الرسمي للمؤسسة',   iconKey: 'web',       isExternal: true,  externalKey: 'web'       },
   { id: 'youtube',   title: 'قنوات اليوتيوب',      subtitle: '٦٥ قناة للأعمال والمشايخ',       iconKey: 'youtube',   isExternal: false, route: '/youtube-sheet'  },
@@ -110,6 +126,33 @@ export const MORE_ROWS: MoreRow[] = [
   { id: 'archive',   title: 'الأرشيف',             subtitle: 'أرشيف المؤسسة',                   iconKey: 'archive',   isExternal: false, route: '/more/archive'   },
   { id: 'contact',   title: 'تواصل معنا',          subtitle: 'راسلنا أو اتصل بنا مباشرة',      iconKey: 'contact',   isExternal: false, route: '/more/contact'   },
   { id: 'about',     title: 'نبذة عن المؤسسة',    subtitle: 'تعرّف على رؤيتنا وأهدافنا',      iconKey: 'about',     isExternal: false, route: '/more/about'     },
+];
+
+/** The reference order, asserted separately so a reorder is a test failure. */
+export const MORE_REFERENCE_ORDER: readonly string[] = MORE_ROWS.map((row) => row.id);
+
+/**
+ * Rows this app added after the design. They stay available but render after
+ * the reference group, so the initial viewport matches the frame.
+ */
+export const MORE_EXTENSION_ROWS: readonly {
+  id: string;
+  title: string;
+  subtitle: string;
+  route: string;
+}[] = [
+  {
+    id: 'settings',
+    title: 'الإعدادات',
+    subtitle: 'التلاوة · القراءة · الإشعارات · البيانات',
+    route: '/(tabs)/more/settings',
+  },
+  {
+    id: 'progress',
+    title: 'إعدادات التقدّم',
+    subtitle: 'هدف الورد اليومي · إعادة تعيين',
+    route: '/(tabs)/more/settings-progress',
+  },
 ];
 
 // ---------------------------------------------------------------------------

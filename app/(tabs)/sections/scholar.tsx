@@ -2,12 +2,16 @@ import {
   AsyncContent,
   InlineHeader,
   LetterIndex,
+  QuillBadge,
   RibbonCard,
   SearchPill,
   SkeletonRibbonList,
 } from '@/components/khazain';
+import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
+import { LETTER_INDEX_EDGE } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { useScholarsStore } from '@/store';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -27,10 +31,10 @@ export default function ScholarScreen() {
   }, [fetch]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title="العلماء والمشايخ" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <View style={styles.body}>
         {/* Virtualized on success; AsyncContent owns loading/empty/error (T3.1). */}
@@ -41,6 +45,7 @@ export default function ScholarScreen() {
             renderItem={({ item: s }) => (
               <RibbonCard
                 pretitle="فضيلة الشيخ"
+                badge={<QuillBadge size={CARD_DENSITY.lectureBadgeDisc} />}
                 title={s.name}
                 onPress={() => router.push(`/sections/scholar/${s.id}` as any)}
               />
@@ -74,6 +79,9 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
   body: {
+    // PHYSICAL_BOX pins the rail's `right` offset and the list's `paddingRight`
+    // to real physical edges; without it forceRTL swaps both to the left.
+    ...PHYSICAL_BOX,
     flex: 1,
     paddingTop: 8,
     position: 'relative',
@@ -81,17 +89,20 @@ const styles = StyleSheet.create({
   list: {
     flex: 1,
     paddingLeft: 16,
-    paddingRight: 36,
+    paddingRight: RESERVED_COLUMNS.letterRailInset,
   },
   listContent: {
-    gap: 10,
+    gap: CARD_DENSITY.listGap,
   },
   rail: {
+    // LETTER_INDEX_EDGE — the alphabet rail lives on the physical right edge.
     position: 'absolute',
     top: 8,
     bottom: 0,
-    right: 4,
-    width: 26,
+    // LETTER_INDEX_EDGE — the rail lives on the physical right edge, hard
+    // against the 16pt page margin.
+    [LETTER_INDEX_EDGE]: 16,
+    width: RESERVED_COLUMNS.letterRail,
     alignItems: 'center',
   },
 });

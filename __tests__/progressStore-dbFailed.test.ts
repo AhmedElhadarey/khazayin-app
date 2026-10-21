@@ -13,6 +13,8 @@ jest.mock('@/db', () => ({
   }),
   progressRepo: {
     pagesReadToday: jest.fn(async () => 0),
+    getLastReadPage: jest.fn(async () => 1),
+    totalPagesRead: jest.fn(async () => 0),
     pagesReadInMonth: jest.fn(async () => 0),
     currentStreak: jest.fn(async () => 0),
     completedJuzCount: jest.fn(async () => 0),
@@ -24,6 +26,7 @@ jest.mock('@/db', () => ({
     findInProgress: jest.fn(async () => null),
     totalListenedSec: jest.fn(async () => 0),
     completedCount: jest.fn(async () => 0),
+    listenedCount: jest.fn(async () => 0),
   },
   achievementsRepo: { evaluateAll: jest.fn(async () => []) },
 }));

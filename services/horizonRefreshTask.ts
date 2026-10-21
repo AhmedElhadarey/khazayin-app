@@ -1,27 +1,28 @@
 /**
- * horizonRefreshTask — best-effort background top-up for the PRAYER notification
- * horizon (track 004, T115).
+ * horizonRefreshTask — best-effort background top-up for the notification
+ * horizon (track 004, T115): the five prayer categories AND the wird reminder.
  *
- * SCOPE (spec amendment "US4 descoped; wird moves to a repeating trigger"): this
- * task exists ONLY for the five one-shot prayer categories. The WIRD reminder no
- * longer depends on it at all — it is a single repeating `DAILY` trigger that the
- * OS re-arms forever with no app wake-up, so it survives force-quit and never
- * drains. Do not reintroduce a wird dependency on this task.
+ * SCOPE: the wird reminder depends on this task too. Since 2026-10-21 it is one
+ * one-shot DATE entry per local day on a WIRD_HORIZON_DAYS (14) day horizon, so
+ * that today's entry can be dropped once the goal is met (design
+ * docs/plans/2026-10-21-daily-wird-reminders-design.md §3.1). Like the prayers,
+ * it drains if nothing re-arms it.
  *
- * WHAT IT DOES: the 7-day prayer horizon is refilled on every app foreground. A
- * user who does not open the app for `horizonDaysFor(5)` (= 7) days would then
- * get NO prayer reminders from that day onward, silently. This registers an OS
- * background task that calls the same `assembleAndReconcile()` to top the prayer
- * horizon back up between foregrounds.
+ * WHAT IT DOES: the horizon is refilled on every app foreground. A user who does
+ * not open the app for `horizonDaysFor(5)` (= 7) days would then get NO prayer
+ * reminders from that day onward, and after WIRD_HORIZON_DAYS days no wird
+ * reminders, silently. This registers an OS background task that calls the same
+ * `assembleAndReconcile()` to top the horizon back up between foregrounds.
  *
  * BRUTAL HONESTY (spec amendment "FR-024a weakened to best-effort" / FR-069):
  * this task DOES NOT close the drain cliff — it only shrinks the window.
  *   - iOS: after the user force-quits the app, the OS gives it NO background time
  *     until the user manually relaunches (Apple DTS). So on iOS this task does
  *     NOT run at all in the exact scenario that matters, and the prayer horizon
- *     still goes silent after ~7 days. Every shipped competitor has the same
- *     limitation (Muslim Pro, Muslim Toolbox, Pillars) and discloses it; it is
- *     industry-wide and unsolved for iOS local notifications.
+ *     still goes silent after ~7 days (the wird horizon after 14). Every
+ *     shipped competitor has the same limitation (Muslim Pro, Muslim Toolbox,
+ *     Pillars) and discloses it; it is industry-wide and unsolved for iOS local
+ *     notifications.
  *   - Android: Doze and OEM battery managers (Xiaomi/MIUI, Huawei, Oppo) can
  *     defer this task for days or suppress it entirely, and nothing in the app
  *     can detect that.
@@ -45,9 +46,9 @@ const IS_EXPO_GO =
 export const HORIZON_REFRESH_TASK = 'khazain-horizon-refresh';
 
 /**
- * Minimum inexact wake interval (minutes). The horizon spans 7 days, so a
- * roughly-daily top-up is ample headroom; the OS treats this as a floor and
- * will usually run less often.
+ * Minimum inexact wake interval (minutes). The horizon spans 7 days for
+ * prayers and 14 for wird, so a roughly-daily top-up is ample headroom; the OS
+ * treats this as a floor and will usually run less often.
  */
 const HORIZON_REFRESH_MIN_INTERVAL_MINUTES = 60 * 12;
 

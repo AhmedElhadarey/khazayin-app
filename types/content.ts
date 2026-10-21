@@ -55,6 +55,12 @@ export interface Reciter {
   name: string;         // e.g. "محمد صديق المنشاوي"
   style: string;        // tab-key: "tajweed" | "murattal" | "mujawwad" | "hafs"
   styleLabel: string;   // Arabic label shown in the UI
+  /**
+   * Internet Archive series id for this reciter's recitation, mirroring
+   * `Lecture.archiveId`. Absent until a reciter audio source exists, in which
+   * case the surah list reports "no recording" and stays on the screen.
+   */
+  archiveId?: string;
 }
 
 export interface Qiraat {

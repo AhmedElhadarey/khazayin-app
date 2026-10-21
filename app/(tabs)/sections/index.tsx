@@ -1,8 +1,11 @@
 import { AsyncContent, ListRowCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
 import { SECTION_ICONS, SectionIconKey } from '@/components/khazain/icons/sections';
+import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { useSectionsStore } from '@/store';
 import type { SectionEntry } from '@/types/content';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -34,7 +37,9 @@ export default function SectionsScreen() {
           <Text style={styles.h1}>الأقسام</Text>
         </View>
         <View style={styles.searchBlock}>
-          <SearchPill placeholder="ابحث في الأقسام.." onPress={() => router.push('/search' as any)} />
+          {/* `بحث..` is what the file sets, on all twelve frames that carry a
+              search pill — this screen was the only one paraphrasing it. */}
+          <SearchPill placeholder="بحث.." onPress={openSearch} />
         </View>
         <AsyncContent
           status={status}
@@ -53,7 +58,7 @@ export default function SectionsScreen() {
                   subtitle={s.subtitle}
                   count={s.count ?? undefined}
                   onPress={() => open(s)}
-                  icon={<Icon size={34} />}
+                  icon={<Icon />}
                 />
               );
             })}
@@ -67,26 +72,23 @@ export default function SectionsScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   container: { paddingTop: 0 },
+  // Figma node 2031:5675 anchors the page title at the physical right.
   headerBlock: {
+    // PHYSICAL_BOX so `flex-end` means the physical right, not the RTL end.
+    ...PHYSICAL_BOX,
     paddingHorizontal: 16,
-    paddingTop: 12,
+    paddingTop: PAGE_CHROME.headerPaddingTop,
     paddingBottom: 8,
-    alignItems: 'center',
+    alignItems: 'flex-end',
   },
-  h1: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 18,
-    lineHeight: 28,
-    fontWeight: '700',
-    color: KhazainColors.inkTitle,
-    writingDirection: 'rtl',
-  },
+  // The file sets every page title in the body face at 18, not the display one.
+  h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
   searchBlock: {
     paddingHorizontal: 16,
     paddingBottom: 12,
   },
   list: {
     paddingHorizontal: 16,
-    gap: 8,
+    gap: CARD_DENSITY.listGap,
   },
 });

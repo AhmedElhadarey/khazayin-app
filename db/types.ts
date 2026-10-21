@@ -59,6 +59,8 @@ export interface PageReadsRepository {
   recordPageRead(pageNumber: number): Promise<boolean>;
   pagesReadToday(): Promise<number>;
   pagesReadInMonth(yearMonth?: string): Promise<number>;
+  /** All-time SUM(khz_days.pages_read) — pages read summed over days. */
+  totalPagesRead(): Promise<number>;
   currentStreak(): Promise<number>;
   completedJuzCount(): Promise<number>;
   longestStreakEver(): Promise<number>;
@@ -97,6 +99,8 @@ export interface LectureSessionsRepository {
   }): Promise<LectureSession>;
   findInProgress(): Promise<LectureSession | null>;
   completedCount(): Promise<number>;
+  /** Sessions that are completed or have ≥ LECTURE_LISTENED_MIN_SEC (or the whole clip) of forward listening. */
+  listenedCount(): Promise<number>;
   totalListenedSec(): Promise<number>;
 }
 

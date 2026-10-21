@@ -1,16 +1,26 @@
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
+import {
+  listRowAccessibilityLabel,
+  RECITER_ROW_ORDER,
+  type ReciterRowSlot,
+} from '@/constants/rtlContracts';
+import { KhazainColors } from '@/constants/theme';
 import React from 'react';
-import { I18nManager, Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { FigmaIcon } from '../icons/FigmaIcon';
 import { QuranBadge } from './QuranBadge';
-
-// JSX order is [textCol, badge]. We want textCol visually on the LEFT and
-// badge visually on the RIGHT. Picks 'row' on LTR / 'row-reverse' on RTL.
-const HEAD_FLEX: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row-reverse' : 'row';
 
 // Reciter / Quran-list row used on pages 13/14 (reciter tabs list) and
 // page 16 (qiraat sheet — `chevron` only, no subtitle).
-// Visual order (RTL): [QuranBadge disc] [title + subtitle] (...) [navy `◀` chevron]
+//
+// `DIV-139` on 2031:6193 and 2457:954: 56 tall at radius 12, `#FCFAF8` behind
+// a 1pt `#D9D6D3` hairline, inset 8, and casting no shadow.
+//
+// Physical order (left → right) is disclosure, text, Quran badge — Figma
+// nodes 2031:6193 and 2457:954, driven by RECITER_ROW_ORDER so the row cannot
+// reverse under forceRTL. The previous absolute head/chevron blocks are gone:
+// they pinned the two clusters to opposite edges and left the middle empty.
 export function ReciterRow({
   title,
   subtitle,
@@ -22,105 +32,76 @@ export function ReciterRow({
   onPress?: () => void;
   isDefault?: boolean;
 }) {
+  const slots: Record<ReciterRowSlot, React.ReactNode> = {
+    // `vuesax/bulk/arrow-right` at 20, mirrored — 10 instances on 2457:954 and
+    // 7 on 2031:6193, every one of them carrying `transform.m00: -1`. This
+    // replaces a hand-drawn stroked chevron, which was both the wrong shape
+    // (an outline where the file draws a filled wedge) and the wrong size.
+    disclosure: (
+      <FigmaIcon name="Back" size={20} color={KhazainColors.navy800} mirrored />
+    ),
+    text: (
+      <View style={styles.textCol}>
+        <Text style={styles.title} numberOfLines={1}>
+          {title}
+        </Text>
+        {subtitle ? (
+          <Text style={styles.subtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null}
+        {isDefault ? <Text style={styles.defaultBadge}>الافتراضي</Text> : null}
+      </View>
+    ),
+    quranBadge: <QuranBadge size={CARD_DENSITY.lectureBadgeDisc} />,
+  };
+
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={listRowAccessibilityLabel({ title, subtitle })}
       style={({ pressed }) => [
         styles.row,
-        KhazainShadows.card,
         isDefault ? styles.rowDefault : null,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <View style={styles.headBlock}>
-        <View style={styles.textCol}>
-          <Text style={styles.title} numberOfLines={1}>
-            {title}
-          </Text>
-          {subtitle ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
-              {subtitle}
-            </Text>
-          ) : null}
-          {isDefault ? <Text style={styles.defaultBadge}>الافتراضي</Text> : null}
-        </View>
-        <QuranBadge size={44} />
-      </View>
-      <View style={styles.chevronBlock}>
-        <Svg width={12} height={14} viewBox="0 0 12 14">
-          <Path
-            d="M9 1 L3 7 L9 13"
-            stroke={KhazainColors.navy800}
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </Svg>
-      </View>
+      {RECITER_ROW_ORDER.map((slot) => (
+        <React.Fragment key={slot}>{slots[slot]}</React.Fragment>
+      ))}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
-    minHeight: 64,
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderRadius: 16,
+    ...PHYSICAL_ROW,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
+    paddingVertical: 4,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
+    gap: 8,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.08)',
-    position: 'relative',
-    justifyContent: 'center',
+    borderColor: KhazainColors.hairlineWarm,
+    alignItems: 'center',
   },
   rowDefault: {
     borderColor: KhazainColors.goldAccent,
     borderWidth: 1.5,
   },
   defaultBadge: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    fontWeight: '600',
-    color: KhazainColors.goldAccent,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('label', { color: KhazainColors.goldAccent }),
     marginTop: 2,
   },
-  headBlock: {
-    position: 'absolute',
-    right: 14,
-    top: 0,
-    bottom: 0,
-    flexDirection: HEAD_FLEX,
-    alignItems: 'center',
-    gap: 12,
-  },
   textCol: {
+    flex: 1,
+    minWidth: 0,
     alignItems: 'flex-end',
     gap: 2,
   },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 17,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-    lineHeight: 24,
-  },
-  subtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  chevronBlock: {
-    position: 'absolute',
-    left: 14,
-    top: 0,
-    bottom: 0,
-    justifyContent: 'center',
-  },
+  // `H3-145` is TheMixArab Regular 14, `P-148` TheMixArab Regular 12.
+  title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  subtitle: textStyle('caption', { color: KhazainColors.ink500 }),
 });

@@ -1,4 +1,5 @@
 import { KhazainColors } from '@/constants/theme';
+import { textStyle, CHROME_MAX_FONT_SCALE } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -24,7 +25,11 @@ export function QuickChip({
       style={({ pressed }) => [styles.chip, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
     >
       <View style={[styles.badge, { backgroundColor: iconBg }]}>{children}</View>
-      <Text style={styles.label} numberOfLines={1}>
+      <Text
+        style={styles.label}
+        numberOfLines={1}
+        maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+      >
         {label}
       </Text>
       <View style={styles.navyStripe} />
@@ -56,15 +61,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    lineHeight: 16,
-    fontWeight: '700',
-    color: KhazainColors.navy,
-    textAlign: 'center',
+    ...textStyle('label', { color: KhazainColors.navy, textAlign: 'center' }),
     marginTop: 8,
     paddingHorizontal: 4,
-    writingDirection: 'rtl',
   },
   navyStripe: {
     position: 'absolute',

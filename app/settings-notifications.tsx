@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { SettingsToggleRow, SettingsValueRow } from '@/components/khazain/settings';
 import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
@@ -76,8 +77,9 @@ export default function SettingsNotificationsScreen() {
 
   // Reconcile the OS schedule with the persisted wird preference on mount
   // (final-review Risk #1). Handles fresh installs where settings says
-  // "wird-daily=true" but no OS schedule yet exists (idempotent in the
-  // scheduler — it cancels any prior wird before scheduling the next).
+  // "wird-daily=true" but no OS schedule yet exists. Idempotent: it goes
+  // through the serialised horizon reconcile, which only applies the delta
+  // between the intended and the pending wird entries.
   useEffect(() => {
     if (notifications['wird-daily'] && permission === 'granted') {
       void useWirdStore.getState().setWirdEnabledFromSettings(true);
@@ -103,7 +105,7 @@ export default function SettingsNotificationsScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
         <View style={styles.handle} />
       </View>
@@ -177,7 +179,7 @@ export default function SettingsNotificationsScreen() {
         </View>
 
         {/* Reminder-time picker entry (T045). Displayed whenever the wird
-            reminder is enabled — editing the time re-arms the DAILY trigger. */}
+            reminder is enabled — editing the time re-arms the wird reminder horizon. */}
         {notifications['wird-daily'] ? (
           <SettingsValueRow
             title="وقت تذكير الورد"
@@ -256,14 +258,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,30,19,0.18)',
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   body: { paddingHorizontal: 16, gap: 16 },
   list: { gap: 8 },
@@ -275,14 +272,7 @@ const styles = StyleSheet.create({
     padding: 14,
     gap: 8,
   },
-  noteText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12.5,
-    lineHeight: 20,
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  noteText: textStyle('caption', { color: KhazainColors.ink700 }),
   banner: {
     backgroundColor: '#FCE9D6',
     borderWidth: 1,
@@ -293,19 +283,6 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 4,
   },
-  bannerTitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  bannerBody: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  bannerTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+  bannerBody: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
 });

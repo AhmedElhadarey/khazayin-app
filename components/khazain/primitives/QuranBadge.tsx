@@ -1,41 +1,15 @@
-import { KhazainColors } from '@/constants/theme';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { FigmaIcon } from '../icons/FigmaIcon';
 
-// Gold-stroked Quran-cover monogram inside a cream-tinted circular tile.
-// Used as the leading icon-disc on reciter rows (page 13/14) and qiraat sheet rows (page 16).
-// The mark is a stylised inverted V / open-book outline made of two strokes,
-// matching the Figma exports.
-export function QuranBadge({ size = 48 }: { size?: number }) {
-  return (
-    <View style={[styles.disc, { width: size, height: size, borderRadius: size / 2 }]}>
-      <Svg width={size * 0.55} height={size * 0.45} viewBox="0 0 26 22" fill="none">
-        {/* outer chevron lines */}
-        <Path
-          d="M2 4 L13 16 L24 4"
-          stroke={KhazainColors.gold500}
-          strokeWidth={1.6}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <Path
-          d="M2 11 L13 21 L24 11"
-          stroke={KhazainColors.gold500}
-          strokeWidth={1.6}
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          opacity={0.55}
-        />
-      </Svg>
-    </View>
-  );
+/**
+ * The Quran badge on a reciter or qiraa row — node `DIV-58` on 2031:6193,
+ * 2102:3187 and 2457:954, whose mark is `quran-01`.
+ *
+ * Disc and mark are one node in the file, so they are one icon here: a
+ * `#D7B995` disc at 16% carrying an open Quran stroked `#A88051`. The app used
+ * to draw a pair of downward chevrons inside a hand-made circle, which read as
+ * a scroll-down affordance rather than a book.
+ */
+export function QuranBadge({ size = 40 }: { size?: number }) {
+  return <FigmaIcon name="BadgeQuran" size={size} />;
 }
-
-const styles = StyleSheet.create({
-  disc: {
-    backgroundColor: KhazainColors.iconChipBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

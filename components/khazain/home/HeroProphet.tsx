@@ -1,42 +1,102 @@
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
-import { KhazainRadius, KhazainShadows } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import { KhazainColors } from '@/constants/theme';
+import { HeroShell } from './HeroShell';
+import { SmallMoreButton } from './SmallMoreButton';
 
-const CARD = require('@/assets/khazain/home/hero-prophet-card.webp');
+const BG = require('@/assets/khazain/home/hero-prophet-bg.webp');
+const SCROLL = require('@/assets/khazain/home/hero-prophet-scroll.webp');
+const EMBLEM = require('@/assets/khazain/home/hero-prophet-emblem.webp');
+const TITLE = require('@/assets/khazain/home/hero-prophet-title.webp');
 
-// "محمد رسول الله ﷺ" hero — flattened single image cropped from the Figma
-// page-05 render. The whole layer (scroll + calligraphy emblem + body text +
-// المزيد pill) is baked in, so the card is just an Image with a Pressable.
-// `onPress` and `onMore` both trigger the card-level tap (the pill is part
-// of the image and cannot be tapped independently).
+// Figma node 2001:940, frame "محمد رسول الله" — card 361 x 149.
+//
+// The artwork is composited from the .fig's own layers (patterned ground,
+// scroll and books, the ﷺ emblem at the right edge, and the title
+// calligraphy, which is a picture in the design too). The body copy and the
+// المزيد pill are not baked in: the copy is set live so it can be corrected
+// and so it renders at a readable size, and the pill is its own target.
+const DESIGN = { width: 361, height: 149 };
+
+// The column holds the title calligraphy, the copy and the pill. It starts at
+// the title's top edge, and its trailing edge is where the design aligns all
+// three.
+const COLUMN = { left: 120.5, width: 161, top: 11, bottom: 11.9 };
+
+// The scroll and books are grounded at the card's bottom; the emblem hangs
+// from the top. Anchoring each to the edge the design anchors it to is what
+// keeps the composition right when live copy makes the card taller.
+const LAYERS = [
+  { source: SCROLL, left: -12, bottom: 18.3, width: 155, height: 95.73 },
+  { source: EMBLEM, left: 290, top: 35, width: 64.62, height: 79.37 },
+];
+
+/** Sampled from the artwork's flat ground. */
+const GROUND = '#EBE1D0';
+
+/** The title is calligraphy in the design, so it stays a picture. */
+const TITLE_SIZE = { width: 95, height: 26, trailingInset: 5.8 };
+
+const BODY =
+  'وِجهتُك المُثلى لِتَعرفَ وتَغرفَ مِن سِيرة: النبيِّ ﷺ وأصحابِه العِظام، وأزواجِه الكِرام عَبْرَ محتوًى موثوقٍ شاملٍ يعزِّز الفَهم العميق لشخصيَّاتهم ويبيِّن الأثر العظيم لتضحيَاتهم.';
+
 export function HeroProphet({ onPress, onMore }: { onPress?: () => void; onMore?: () => void }) {
-  const handle = onPress ?? onMore;
   return (
-    <Pressable
-      onPress={handle}
-      accessibilityRole="button"
-      accessibilityLabel="محمد رسول الله، اضغط للمزيد"
-      style={({ pressed }) => [
-        styles.card,
-        KhazainShadows.hero,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
+    <HeroShell
+      background={BG}
+      backgroundColor={GROUND}
+      layers={LAYERS}
+      designWidth={DESIGN.width}
+      designHeight={DESIGN.height}
+      column={COLUMN}
+      accessibilityLabel="محمد رسول الله"
+      onPress={onPress ?? onMore}
     >
-      <Image source={CARD} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={0} />
-    </Pressable>
+      {(scale) => (
+        <>
+          <Image
+            source={TITLE}
+            style={{
+              alignSelf: 'flex-end',
+              marginRight: TITLE_SIZE.trailingInset * scale,
+              width: TITLE_SIZE.width * scale,
+              height: TITLE_SIZE.height * scale,
+            }}
+            contentFit="fill"
+            cachePolicy="memory-disk"
+            transition={0}
+          />
+          {/* The hero copy sits inside an artwork frame whose height is a fixed
+            proportion of its width (HeroShell scales every layer by
+            measuredWidth / designWidth). Letting the type grow with the system
+            font scale re-wraps the prose and pushes the card past that
+            proportion — on a Galaxy A30 at 384dp the prophet card went from
+            ~18% of the screen to ~46%, which read as "the hero is too big".
+            Pinned at 1 so the composition holds; the surrounding UI still
+            scales to the app-wide 1.2 ceiling. */}
+          <Text
+            style={[styles.body, { marginTop: 5.8 * scale }]}
+            maxFontSizeMultiplier={1}
+          >
+            {BODY}
+          </Text>
+          <View style={[styles.pillRow, { marginTop: 8.6 * scale }]}>
+            <SmallMoreButton onPress={onMore ?? onPress} />
+          </View>
+        </>
+      )}
+    </HeroShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    // Card aspect ratio is 1460:660 ≈ 2.212:1 (cropped from page-05 hi-res render).
-    aspectRatio: 1460 / 660,
-    borderRadius: KhazainRadius.lg,
-    overflow: 'hidden',
+  body: {
+    ...textStyle('caption', { color: KhazainColors.navy }),
   },
-  image: {
-    width: '100%',
-    height: '100%',
+  pillRow: {
+    // The design aligns the pill's trailing edge with the copy's.
+    alignItems: 'flex-end',
   },
 });

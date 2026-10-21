@@ -1,9 +1,23 @@
-import { AsyncContent, InlineHeader, RibbonCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
+import {
+  AsyncContent,
+  InlineHeader,
+  LinkedNotesSection,
+  RibbonCard,
+  SearchPill,
+  SkeletonRibbonList,
+  seriesIdsOf,
+} from '@/components/khazain';
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { startLecturePlayback } from '@/services/lecturePlayback';
+import { noteSourceTarget, runNoteSource } from '@/services/noteNavigation';
+import { lectureSaveTarget } from '@/services/savedToggle';
 import { useScholarLecturesStore, useScholarsStore } from '@/store';
+import { notesForLectureSeries, useNotesStore } from '@/store/notesStore';
+import { openSearch } from '@/services/searchNavigation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -31,18 +45,26 @@ export default function ScholarDetailScreen() {
     fetch();
   }, [fetchScholars, fetch, id]);
 
+  // Notes taken on this scholar's lectures. Subscribe to the list and filter in
+  // a memo; a fresh array from the selector would loop under zustand 5.
+  const allNotes = useNotesStore((s) => s.notes);
+  const linkedNotes = useMemo(
+    () => notesForLectureSeries(allNotes, seriesIdsOf(lectures)),
+    [allNotes, lectures],
+  );
+
   const name =
     scholars.find((s) => s.id === id)?.name ?? 'عبد المحسن العباد';
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title="كل الشرح" onBack={() => router.back()} />
       <View style={styles.headBlock}>
         <Text style={styles.preName}>فضيلة الشيخ</Text>
         <Text style={styles.name}>{name}</Text>
       </View>
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       {/* Virtualized on success — a scholar's lecture list is unbounded (T3.1).
           AsyncContent owns the loading/empty/error states. */}
@@ -55,9 +77,29 @@ export default function ScholarDetailScreen() {
               title={l.title}
               meta={l.scholar}
               duration={l.duration}
+              save={lectureSaveTarget(l)}
               onPress={() => startLecturePlayback(l)}
             />
           )}
+          ListFooterComponent={
+            linkedNotes.length > 0 ? (
+              <LinkedNotesSection
+                title="ملاحظاتي على هذه الدروس"
+                notes={linkedNotes}
+                onOpenNote={(noteId) =>
+                  router.push({ pathname: '/note-editor' as any, params: { id: noteId } })
+                }
+                onOpenSource={(n) => {
+                  // Nothing to dismiss here: the screen stays underneath.
+                  if (!n.ref) return;
+                  runNoteSource(noteSourceTarget(n.ref), {
+                    navigate: (href) => router.navigate(href as any),
+                    play: startLecturePlayback,
+                  });
+                }}
+              />
+            ) : null
+          }
           style={styles.flex}
           contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
           showsVerticalScrollIndicator={false}
@@ -65,6 +107,7 @@ export default function ScholarDetailScreen() {
       ) : (
         <View style={styles.list}>
           <AsyncContent
+            style={styles.rows}
             status={status}
             error={error}
             onRetry={refresh}
@@ -87,21 +130,13 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
     alignItems: 'center',
   },
-  preName: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
+  // Node 2510:1990 has no name block — its rows carry the scholar's name on
+  // every subtitle instead. This one is the app's own, kept because it is the
+  // only place the screen says whose lectures these are, but set on the scale
+  // so it reads as page furniture rather than a second title.
+  preName: textStyle('caption', { color: KhazainColors.ink500, textAlign: 'center' }),
   name: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    lineHeight: 32,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     marginTop: 2,
   },
   searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
@@ -109,6 +144,7 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 16,
     paddingTop: 4,
-    gap: 10,
+    gap: CARD_DENSITY.lectureListGap,
   },
+  rows: { gap: CARD_DENSITY.lectureListGap },
 });

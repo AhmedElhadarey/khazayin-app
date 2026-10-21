@@ -51,6 +51,7 @@ import type {
   Paged,
 } from './api/types';
 
+import { makeApiError } from './api/errors';
 import { httpAdapter } from './api/httpAdapter';
 import { SURAHS, AYAT_BY_SURAH, QIRAAT, RECITERS } from '../data/content/quran';
 import { SCHOLARS, LECTURES_BY_SCHOLAR } from '../data/content/scholars';
@@ -135,10 +136,16 @@ async function delay(): Promise<void> {
   await new Promise<void>((r) => setTimeout(r, mockAdapter.mockDelay ?? 300));
 }
 
-/** Throws if simulateError is set. */
+/**
+ * Arabic copy for the dev-only simulated failure. "(خطأ تجريبي)" tells a
+ * developer the failure came from the knob, not the network.
+ */
+export const SIMULATED_ERROR_MESSAGE = 'تعذر تحميل المحتوى (خطأ تجريبي). حاول مجدداً.';
+
+/** Throws an Arabic ApiError if simulateError is set. */
 function maybeError(): void {
   if (mockAdapter.simulateError) {
-    throw new Error('Simulated content error');
+    throw makeApiError('unknown', { message: SIMULATED_ERROR_MESSAGE, retriable: true });
   }
 }
 

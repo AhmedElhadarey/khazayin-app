@@ -164,7 +164,7 @@ export const KhazainColors = {
   // Surfaces
   pageBg: '#F8F2ED',
   cardBg: '#FCFAF8',
-  cardBorder: '#D9D6D3',
+  cardBorder: 'rgba(141, 107, 52, 0.10)',
   iconChipBg: 'rgba(215, 185, 149, 0.16)',
 
   // Cream scale
@@ -196,7 +196,24 @@ export const KhazainColors = {
   navPillBg: 'rgba(215, 185, 149, 0.16)',
   navLabel: '#F1E7DD',
 
+  // Hairlines. Every card in the Library frame (node 2031:4659) is a flat fill
+  // with a 1pt stroke and no shadow; these are the three widths of stroke it
+  // uses, stated by the file.
+  hairline: '#E5E7EB',
+  hairlineWarm: '#D9D6D3',
+  hairlineFaint: '#F3F4F6',
+  /**
+   * The More frame's stroke. Node 2102:2711 `websiteLink-13` outlines its card
+   * in `#F1E7DD` — a warm cream rather than the grey `hairlineWarm` the
+   * Sections rows use. It shares a hex with `navLabel`, but a border and a nav
+   * label are not the same token: renaming either must not move the other.
+   */
+  hairlineCream: '#F1E7DD',
+
   // Ink (text)
+  /** Headings inside cards. Distinct from `inkTitle`, which the design keeps
+   *  for the page title and for prose set in the body face. */
+  inkHeading: '#111827',
   inkTitle: '#281E13',
   ink900: '#281E13',
   ink700: '#3D2E1D',
@@ -243,14 +260,28 @@ export const KhazainShadows = {
     shadowOpacity: 0.04,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 2,
+    // Android renders elevation as a hard grey outline at 2+; 1 keeps the lift
+    // without the separator the 2026-09-09 audit found around every card.
+    elevation: 1,
   },
   input: {
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 16,
     shadowOffset: { width: 0, height: 4 },
-    elevation: 3,
+    elevation: 1,
+  },
+  /**
+   * The More list's card — node 2102:2711 `websiteLink-13` is the one card in
+   * either the Sections or the More frames that casts a shadow at all, and it
+   * is a much tighter one than `card`.
+   */
+  listRow: {
+    shadowColor: '#000',
+    shadowOpacity: 0.06,
+    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
   },
   press: {
     shadowColor: '#34240C',

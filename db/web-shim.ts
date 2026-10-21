@@ -17,7 +17,7 @@ import {
 } from '@/constants/progress';
 import { hasPerfectWirdWeek, shiftDay } from './helpers/calendar';
 import { completedJuzList, countCompletedJuz } from './helpers/juz';
-import { isCompleted } from './helpers/lectureCompletion';
+import { isCompleted, isListened } from './helpers/lectureCompletion';
 import { median } from './helpers/median';
 import { computeCurrentStreak, computeLongestStreak } from './helpers/streak';
 import { decideSuggestion } from './helpers/suggestion';
@@ -158,7 +158,12 @@ export function createWebRepos(): Repos {
       const exists = s.pageReads.some(
         (r) => r.localDay === localDay && r.pageNumber === pageNumber,
       );
-      if (exists) return false;
+      if (exists) {
+        // A re-read today still moves the resume point (design §4.3).
+        s.settings.last_read_page = pageNumber;
+        scheduleFlush();
+        return false;
+      }
       s.pageReads.push({ localDay, pageNumber, recordedAt: Date.now() });
       const target = s.settings.wird_target;
       const existing = s.days[localDay];
@@ -190,6 +195,11 @@ export function createWebRepos(): Repos {
         if (day.startsWith(`${ym}-`)) total += info.pagesRead;
       }
       return total;
+    },
+
+    async totalPagesRead() {
+      await load();
+      return Object.values(ensure().days).reduce((acc, d) => acc + d.pagesRead, 0);
     },
 
     async currentStreak() {
@@ -331,6 +341,11 @@ export function createWebRepos(): Repos {
     async completedCount() {
       await load();
       return Object.values(ensure().lectures).filter((l) => l.completed).length;
+    },
+
+    async listenedCount() {
+      await load();
+      return Object.values(ensure().lectures).filter(isListened).length;
     },
 
     async totalListenedSec() {

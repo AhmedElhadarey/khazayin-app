@@ -1,19 +1,33 @@
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { LECTURE_CARD_ORDER, type LectureCardSlot } from '@/constants/rtlContracts';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import { lectureSaveTarget } from '@/services/savedToggle';
 import type { Lecture } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { BookmarkButton } from './BookmarkButton';
+import { useSaveGesture } from './useSaveGesture';
 
 // Cream rounded card used across pages 25 / 33 / 34 / 35.
-// Visual layout (RTL):
-//   [icon disc — flush RIGHT]  [title (bold) + scholar (muted)]   ...   [duration chip + bookmark — flush LEFT]
 //
-// All inner pieces use absolute positioning to survive `forceRTL` quirks
-// across native + web (per CLAUDE.md).
+// Physical order (left → right) is duration/actions, text, section badge —
+// Figma nodes 2465:1911, 2589:1772, 2597:2552, 2606:3830. LECTURE_CARD_ORDER
+// drives it inside a PHYSICAL_ROW container, so forceRTL cannot reverse it.
 //
-// `compact` shrinks the card height + icon for the denser radio variant (page 35).
+// `DIV-139` is the same node in 2465:1911, 2589:1772, 2597:2552 and 2606:3830:
+// 64 tall at radius 16, `#FCFAF8` behind a 1pt `#D9D6D3` hairline, inset 8, and
+// — like every card in these frames — casting no shadow at all.
+//
+// `compact` is the shape the two rail lists use (2869:2088, 2869:2306): 56
+// tall at radius 20 with no stroke, because the rail supplies the edge.
 // `pretitleSmall` renders an optional pretitle line above the title (e.g. "فضيلة الشيخ").
 // `iconNode` lets each section slot a different glyph badge.
+//
+// Saving: the frames draw no bookmark on a lecture row, so the unsaved row
+// renders exactly as they do. A long-press (or the screen-reader custom action)
+// saves the lecture through useSaveGesture; once saved, a BookmarkButton
+// appears in the meta slot beside the duration, and tapping it unsaves.
 export function LectureCard({
   id,
   category,
@@ -35,156 +49,115 @@ export function LectureCard({
   compact?: boolean;
   onPress?: () => void;
 }) {
+  // `compact` changes the card's shape and clamps the title to one line — the
+  // rail lists are single-line in the file. It no longer forks the text
+  // styles: both frames set the same faces and sizes.
   const heightStyle = compact ? styles.cardCompact : styles.card;
-  const iconWrapStyle = compact ? styles.iconWrapCompact : styles.iconWrap;
-  const titleStyle = compact ? styles.titleCompact : styles.title;
-  const scholarStyle = compact ? styles.scholarCompact : styles.scholar;
 
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.cardBase,
-        heightStyle,
-        KhazainShadows.card,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      {/* Right-edge: icon disc. */}
-      <View style={iconWrapStyle}>{iconNode}</View>
+  const saveTarget = lectureSaveTarget({ id, title, scholar, duration, category });
+  const { saved, gestureProps } = useSaveGesture(saveTarget);
 
-      {/* Center text block, anchored to the right (visually leading edge in RTL). */}
-      <View style={[styles.textBlock, compact && styles.textBlockCompact]}>
+  const slots: Record<LectureCardSlot, React.ReactNode> = {
+    // Physical left: duration, plus a bookmark once the lecture is saved. The
+    // frames draw no bookmark, so the unsaved row stays exactly as they do;
+    // saving is a long-press (useSaveGesture).
+    meta:
+      duration || saved ? (
+        <View style={styles.endCluster}>
+          {duration ? <Text style={styles.duration}>{duration}</Text> : null}
+          {saved ? (
+            <BookmarkButton
+              type={saveTarget.type}
+              entityId={saveTarget.entityId}
+              snapshot={saveTarget.snapshot}
+              variant="light"
+            />
+          ) : null}
+        </View>
+      ) : null,
+    text: (
+      <View style={styles.textBlock}>
         {pretitleSmall ? (
           <Text style={styles.pretitle} numberOfLines={1}>
             {pretitleSmall}
           </Text>
         ) : null}
-        <Text style={titleStyle} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={compact ? 1 : 2}>
           {title}
         </Text>
         {scholar ? (
-          <Text style={scholarStyle} numberOfLines={1}>
+          <Text style={styles.scholar} numberOfLines={1}>
             {scholar}
           </Text>
         ) : null}
       </View>
+    ),
+    // Physical right: the section badge disc.
+    badge: <View style={styles.iconWrap}>{iconNode}</View>,
+  };
 
-      {/* Left-edge: duration chip + bookmark cluster. */}
-      <View style={styles.endCluster}>
-        {duration ? <Text style={styles.duration}>{duration}</Text> : null}
-        <BookmarkButton
-          type="lecture"
-          entityId={id}
-          snapshot={{ type: 'lecture', title, scholar: scholar ?? '', duration: duration ?? '', category }}
-          variant="light"
-        />
-      </View>
+  return (
+    <Pressable
+      onPress={onPress}
+      {...gestureProps}
+      style={({ pressed }) => [
+        styles.cardBase,
+        heightStyle,
+        { transform: [{ scale: pressed ? 0.98 : 1 }] },
+      ]}
+    >
+      {LECTURE_CARD_ORDER.map((slot) => (
+        <React.Fragment key={slot}>{slots[slot]}</React.Fragment>
+      ))}
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   cardBase: {
-    borderRadius: 16,
+    ...PHYSICAL_ROW,
+    alignItems: 'center',
+    gap: 8,
     backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.08)',
-    position: 'relative',
     justifyContent: 'center',
-    paddingHorizontal: 14,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
+    paddingVertical: 8,
   },
   card: {
-    minHeight: 84,
-    paddingVertical: 14,
+    minHeight: CARD_DENSITY.lectureCardMinHeight,
+    borderRadius: CARD_DENSITY.lectureCardRadius,
+    borderWidth: 1,
+    borderColor: KhazainColors.hairlineWarm,
   },
   cardCompact: {
-    minHeight: 64,
-    paddingVertical: 10,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
+    borderRadius: CARD_DENSITY.railRowRadius,
   },
   iconWrap: {
-    position: 'absolute',
-    right: 12,
-    top: 0,
-    bottom: 0,
-    width: 48,
+    width: CARD_DENSITY.lectureBadgeDisc,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  iconWrapCompact: {
-    position: 'absolute',
-    right: 10,
-    top: 0,
-    bottom: 0,
-    width: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flexShrink: 0,
   },
   textBlock: {
-    paddingRight: 70, // leave room for icon disc on the right
-    paddingLeft: 120, // leave room for duration chip + bookmark on the left
+    flex: 1,
+    minWidth: 0,
     alignItems: 'flex-end',
-    gap: 4,
-  },
-  textBlockCompact: {
-    paddingRight: 56,
-    paddingLeft: 110,
     gap: 2,
   },
-  pretitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '500',
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 17,
-    lineHeight: 24,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  titleCompact: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 14,
-    lineHeight: 20,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  scholar: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  scholarCompact: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  // `H3-145` is TheMixArab Regular 14 and `P-148` TheMixArab Regular 12 in
+  // every one of these frames — the body face, not the calligraphic one the
+  // app had been reaching for.
+  pretitle: textStyle('caption', { color: KhazainColors.ink500 }),
+  title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  scholar: textStyle('caption', { color: KhazainColors.ink500 }),
   endCluster: {
-    position: 'absolute',
-    left: 10,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
   },
-  duration: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-  },
+  // `45 دقيقة-143` is TheSansArabic Bold 12 in `#5F5345` — the same warm ink
+  // as the subtitle, not the navy the app had been using.
+  duration: textStyle('label', { color: KhazainColors.ink500 }),
 });

@@ -1,4 +1,6 @@
 import { AsyncContent, ReciterRow, SkeletonRibbonList } from '@/components/khazain';
+import { CARD_DENSITY } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
 import { useQiratStore, useSettingsStore } from '@/store';
@@ -32,12 +34,12 @@ export default function QiraatScreen() {
   }, [data, defaultQiraaId, setDefaultQiraa]);
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       {/* sheet-like handle + centered title */}
       <View style={styles.handleWrap}>
         <View style={styles.handle} />
       </View>
-      <Text style={styles.title}>آختر القراءة</Text>
+      <Text style={styles.title}>اختر القراءة</Text>
       <ScrollView
         contentContainerStyle={[styles.list, { paddingBottom: 32 }]}
         showsVerticalScrollIndicator={false}
@@ -49,14 +51,20 @@ export default function QiraatScreen() {
           skeleton={<SkeletonRibbonList count={10} />}
           emptyMessage="لا توجد قراءات متاحة"
         >
-          {data.map((q) => (
-            <ReciterRow
-              key={q.id}
-              title={q.name}
-              isDefault={q.id === defaultQiraaId}
-              onPress={() => router.back()}
-            />
-          ))}
+          {/* The gap has to sit on a view of our own: AsyncContent renders its
+              children inside a wrapper, so a `gap` on the scroll container
+              never reaches the rows and they stacked flush against each
+              other, strokes touching. */}
+          <View style={styles.rows}>
+            {data.map((q) => (
+              <ReciterRow
+                key={q.id}
+                title={q.name}
+                isDefault={q.id === defaultQiraaId}
+                onPress={() => router.back()}
+              />
+            ))}
+          </View>
         </AsyncContent>
       </ScrollView>
     </SafeAreaView>
@@ -70,24 +78,23 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     paddingBottom: 4,
   },
+  // Node 2457:954 draws this screen as a sheet: a 36 x 4 `#D9D6D3` grabber
+  // under the top edge, then a centred title in the body face at 16.
   handle: {
-    width: 44,
+    width: 36,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(40,30,19,0.18)',
+    backgroundColor: KhazainColors.hairlineWarm,
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('body', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   list: {
     paddingHorizontal: 16,
-    gap: 8,
+  },
+  rows: {
+    gap: CARD_DENSITY.lectureListGap,
   },
 });

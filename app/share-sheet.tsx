@@ -1,4 +1,6 @@
 import { SheetShell } from '@/components/khazain/sheets';
+import { PHYSICAL_BOX } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -205,6 +207,10 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   row: {
+    // PHYSICAL_BOX so the absolute `right: 12` on the disc and the label's
+    // `paddingRight: 56` are the physical right. Unpinned, forceRTL swapped
+    // both to the left and took `textAlign: 'right'` with them.
+    ...PHYSICAL_BOX,
     height: 56,
     backgroundColor: KhazainColors.cream50,
     borderRadius: 14,
@@ -218,9 +224,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 1,
   },
-  // Anchored to the visual right via `right` (works regardless of how RN flips
-  // flexDirection in RTL on the current platform). Vertical centering uses
-  // `top: '50%'` + a half-height translate.
+  // Anchored to the physical right via `right`, which the PHYSICAL_BOX on the
+  // row makes unambiguous. Vertical centering uses `top: '50%'` + a
+  // half-height translate.
   disc: {
     position: 'absolute',
     right: 12,
@@ -234,13 +240,8 @@ const styles = StyleSheet.create({
     transform: [{ translateY: -16 }],
   },
   label: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '600',
-    color: KhazainColors.ink900,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-    // Leave room on the right for the 32-wide disc + its 12 inset + 12 gap.
+    ...textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+    // Leave room on the right for the 32-wide disc + its 12 inset + 12 gap.,
     paddingRight: 56,
   },
 });

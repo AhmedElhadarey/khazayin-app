@@ -11,6 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import {
   JUZ_PRESET_PAGES,
@@ -63,7 +65,7 @@ export default function SettingsWirdGoalScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top']}>
+    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
         <View style={styles.handle} />
       </View>
@@ -90,6 +92,7 @@ export default function SettingsWirdGoalScreen() {
         <View style={styles.customBlock}>
           <Text style={styles.customLabel}>عدد مخصّص من الصفحات</Text>
           <View style={[styles.customField, KhazainShadows.card]}>
+            <Text style={styles.customUnit}>صفحة</Text>
             <TextInput
               style={styles.customInput}
               value={toArNum(draft)}
@@ -100,7 +103,6 @@ export default function SettingsWirdGoalScreen() {
               placeholder={toArNum(JUZ_PRESET_PAGES.half)}
               placeholderTextColor={KhazainColors.ink400}
             />
-            <Text style={styles.customUnit}>صفحة</Text>
           </View>
         </View>
       </ScrollView>
@@ -141,10 +143,6 @@ function PresetRow({
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      <Text style={styles.rowLabel} numberOfLines={1}>
-        {label}
-      </Text>
-      <Text style={styles.rowPages}>{`${toArNum(pages)} صفحة`}</Text>
       {selected ? (
         <Svg width={18} height={18} viewBox="0 0 18 18">
           <Path
@@ -157,6 +155,10 @@ function PresetRow({
           />
         </Svg>
       ) : null}
+      <Text style={styles.rowPages}>{`${toArNum(pages)} صفحة`}</Text>
+      <Text style={styles.rowLabel} numberOfLines={1}>
+        {label}
+      </Text>
     </Pressable>
   );
 }
@@ -171,19 +173,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(40,30,19,0.18)',
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
-    writingDirection: 'rtl',
   },
   body: { paddingHorizontal: 16, gap: 16 },
   list: { gap: 8 },
   row: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: tick, page count, label.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     minHeight: 56,
@@ -207,24 +205,12 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
-  rowPages: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  customBlock: { gap: 8 },
-  customLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '600',
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  rowPages: textStyle('bodyCompact', { color: KhazainColors.ink500 }),
+  customBlock: { ...PHYSICAL_BOX, gap: 8 },
+  customLabel: textStyle('cardTitle', { color: KhazainColors.ink700 }),
   customField: {
-    flexDirection: 'row-reverse',
+    // Physical left -> right: unit word, input.
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     paddingVertical: 10,
@@ -243,13 +229,7 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     paddingVertical: 4,
   },
-  customUnit: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  customUnit: textStyle('bodyCompact', { color: KhazainColors.ink500 }),
   footer: {
     paddingHorizontal: 16,
     paddingBottom: 24,
@@ -265,11 +245,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  applyBtnLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#fff',
-    writingDirection: 'rtl',
-  },
+  applyBtnLabel: textStyle('sectionTitle', { color: '#fff' }),
 });

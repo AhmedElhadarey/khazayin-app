@@ -1,14 +1,20 @@
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
-import { I18nManager, Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
-import { ChevronIcon } from '../icons';
+import { Pressable, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
+import { FigmaIcon } from '../icons/FigmaIcon';
 
-// Home-specific section header.
-// Visual in RTL (the only mode this app runs in, but we defend against LTR):
-//   right edge: [title][goldBar]                left edge: [chevron][عرض الكل]
+// Home-specific section header (Figma node 2001:940).
 //
-// We bypass RTL auto-flip by using absolute positioning for the two groups —
-// expo-router-web or a stale forceRTL cache shouldn't be able to flip us.
+// Physical left → right: [arrow][عرض الكل] ......... [title][goldBar]
+//
+// The arrow is `vuesax/outline/arrow-left-stick`, the mark node 2001:940
+// instances beside every عرض الكل — a stemmed arrow, not a bare chevron.
+//
+// Authored in that order inside PHYSICAL_ROW containers, so neither group can
+// swap sides under forceRTL. Height is content-driven so a larger font scale
+// grows the row rather than clipping it.
 export function HomeSectionHeader({
   title,
   onViewAll,
@@ -19,55 +25,50 @@ export function HomeSectionHeader({
   style?: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={[styles.row, style]}>
-      <View style={styles.titleGroup}>
-        <View style={styles.goldBar} />
-
-        <Text style={styles.title}>{title}</Text>
-      </View>
+    <View style={[styles.row, !onViewAll && styles.rowTitleOnly, style]}>
       {onViewAll ? (
         <Pressable
           onPress={onViewAll}
           hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel={`عرض الكل، ${title}`}
           style={({ pressed }) => [styles.linkAnchor, { opacity: pressed ? 0.6 : 1 }]}
         >
+          <FigmaIcon name="ArrowLeftStick" size={20} color={KhazainColors.goldAccent} />
           <Text style={styles.linkLabel}>عرض الكل</Text>
-          <ChevronIcon size={14} color={KhazainColors.goldAccent} direction="start" />
-
         </Pressable>
       ) : null}
+      <View style={styles.titleGroup}>
+        <Text style={styles.title}>{title}</Text>
+        <View style={styles.goldBar} />
+      </View>
     </View>
   );
 }
 
-// Inside each group we want the "first item" (title / chevron) to be on the right.
-// Using flexDirection: 'row-reverse' in LTR achieves that; in native RTL it's
-// internally flipped back to 'row' which also achieves it. So this expression is
-// deterministic across both modes.
-const innerFlex = I18nManager.isRTL ? 'row' : ('row-reverse' as const);
-
 const styles = StyleSheet.create({
   row: {
-    height: 21,
+    ...PHYSICAL_ROW,
+    minHeight: 21,
     paddingHorizontal: 16,
-    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  // Without a link there is no left-hand group, so the title anchors right.
+  rowTitleOnly: {
+    justifyContent: 'flex-end',
   },
   titleGroup: {
-    position: 'absolute',
-    right: 16,
-    top: 0,
-    bottom: 0,
-    flexDirection: innerFlex,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 8,
+    minWidth: 0,
+    flexShrink: 1,
   },
   title: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 16,
-    fontWeight: '700',
+    ...textStyle('sectionTitle', { color: KhazainColors.navy }),
     letterSpacing: 0,
-    color: KhazainColors.navy,
-    writingDirection: 'rtl',
   },
   goldBar: {
     width: 5,
@@ -76,20 +77,13 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.goldBar,
   },
   linkAnchor: {
-    position: 'absolute',
-    left: 16,
-    top: 0,
-    bottom: 0,
-    flexDirection: innerFlex,
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 4,
+    flexShrink: 0,
   },
   linkLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '700',
+    ...textStyle('label', { color: KhazainColors.goldAccent }),
     letterSpacing: 0,
-    color: KhazainColors.goldAccent,
-    writingDirection: 'rtl',
   },
 });

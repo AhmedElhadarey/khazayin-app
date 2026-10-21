@@ -1,0 +1,90 @@
+{
+  "$comment": [
+    "Every icon the app draws, keyed to the node in `docs/KHAZAYIN.fig` it is",
+    "drawn from. `node` is a Figma guid — a SYMBOL master where the design uses",
+    "a shared component (so the geometry comes from one place rather than from",
+    "whichever instance happened to be picked), and the glyph's own container",
+    "where it is drawn in place.",
+    "",
+    "Regenerate with: node scripts/figma/extract-icons.js",
+    "`__tests__/figmaIcons.test.ts` fails if the generated file drifts from it."
+  ],
+  "icons": [
+    { "name": "NavHome",        "node": "2001:5672",  "from": "vuesax/home-2 — tab bar, every screen" },
+    { "name": "NavLibrary",     "node": "2001:3826",  "from": "vuesax/book — tab bar" },
+    { "name": "NavSections",    "node": "2001:4583",  "from": "vuesax/category-2 — tab bar" },
+    { "name": "NavMore",        "node": "2001:4612",  "from": "vuesax/more-2 — tab bar" },
+
+    { "name": "NavHomeActive",    "node": "2001:9723",  "from": "vuesax/bulk/home-2 — tab bar, the selected tab" },
+    { "name": "NavLibraryActive", "node": "2001:12208", "from": "vuesax/bulk/book — tab bar, the selected tab" },
+    { "name": "NavSectionsActive","node": "2001:10763", "from": "vuesax/bulk/category-2 — tab bar, the selected tab" },
+    { "name": "NavMoreActive",    "node": "2001:10690", "from": "vuesax/bulk/more-2 — tab bar, the selected tab" },
+
+    { "name": "Back",           "node": "2001:15037", "from": "vuesax/bulk/arrow-right — the header back control, instanced 65 times" },
+    { "name": "Search",         "node": "2001:8415",  "from": "vuesax/bulk/search-normal — the search pill, instanced 24 times" },
+    { "name": "DisclosureCircle","node": "2001:15085","from": "vuesax/bulk/arrow-circle-left — the More row disclosure" },
+    { "name": "Play",           "node": "2001:15652", "from": "vuesax/bulk/play — surah and reciter rows" },
+    { "name": "Pause",         "node": "2001:15578", "from": "vuesax/bulk/pause — the MiniPlayer transport, paired with Play" },
+    { "name": "ArrowLeftStick", "node": "49:131",     "from": "vuesax/outline/arrow-left-stick — Home's عرض الكل" },
+
+    { "name": "SectionQuran",      "node": "2355:1399", "from": "2031:5675 card 1 — القرآن حــياة" },
+    { "name": "SectionProphet",    "node": "2465:2151", "from": "2031:5675 card 2 — رسول الله ﷺ" },
+    { "name": "SectionScholars",   "node": "2465:1896", "from": "2031:5675 card 3 — العلماء والمشايخ" },
+    { "name": "SectionBooks",      "node": "2355:1458", "from": "2031:5675 card 4 — الكتب العلمية" },
+    { "name": "SectionQueen",      "node": "2589:2458", "from": "2031:5675 card 5 — أنتِ ملكة" },
+    { "name": "SectionAudiobooks", "node": "2365:1606", "from": "2031:5675 card 6 — كتب صوتية" },
+    { "name": "SectionRadio",      "node": "2355:1483", "from": "2031:5675 card 8 — برامج إذاعية" },
+    { "name": "SectionDawah",      "node": "2599:2864", "from": "2031:5675 card 9 — تصميمات دعوية" },
+    { "name": "SectionExclusive",  "node": "2355:1478", "from": "2031:5675 card 7 — حصريات خزائن الرحمن. The gold disc and its sparkles; the word حصرى over them is a raster paint the walk skips, overlaid from assets/figma/seal-khazain.png." },
+
+    { "name": "MoreWeb",        "node": "2106:2219", "from": "2102:2711 row 1 — الموقع الإلكتروني" },
+    { "name": "MoreYoutube",    "node": "2106:2237", "from": "2102:2711 row 2 — قنوات اليوتيوب" },
+    { "name": "MoreTelegram",   "node": "2106:2255", "from": "2102:2711 row 3 — قنوات التليجرام" },
+    { "name": "MoreWhatsapp",   "node": "2548:1405", "from": "2102:2711 row 4 — قنوات الواتساب. The glyph inside the `Yu` instance; the instance also draws a thin ring of its own, which the app's squircle chip replaces." },
+    { "name": "MoreSoundcloud", "node": "2548:1451", "from": "2102:2711 row 5 — ساوند كلاود" },
+    { "name": "MoreArchive",    "node": "2558:1325", "from": "2102:2711 row 6 — الارشيف" },
+    { "name": "MoreContact",    "node": "2106:2273", "from": "2102:2711 row 7 — تواصل معنا" },
+    { "name": "MoreAbout",      "node": "2106:2291", "from": "2102:2711 row 8 — نبذة عن المؤسسة" },
+    { "name": "ContactMail",    "node": "2548:1645", "from": "2106:2598 `DIV-66` — the إرسال بريد اليكتروني row" },
+
+    { "name": "BadgeQuran",     "node": "2430:1017", "from": "`DIV-58` on 2031:6193 / 2457:954 — the reciter and qiraa rows" },
+    { "name": "BadgeProphet",   "node": "2473:2595", "from": "`DIV-58` on 2465:1911 — رسول الله ﷺ" },
+    { "name": "BadgeTulip",     "node": "2589:1784", "from": "`DIV-58` on 2589:1772 — أنتِ ملكة" },
+    { "name": "BadgeOpenBook",  "node": "2597:2743", "from": "`DIV-58` on 2597:2552 — الكتب العلمية" },
+    { "name": "BadgeMic",       "node": "2606:3842", "from": "`DIV-58` on 2606:3830 — برامج إذاعية" },
+    { "name": "BadgeQuill",     "node": "2869:2011", "from": "`DIV-58` on 2102:2975 — العلماء والمشايخ" },
+    { "name": "BadgeAudioWave", "node": "2869:2156", "from": "`DIV-58` on 2869:2088 — كتب صوتية" },
+    { "name": "BadgeMoonMountain", "node": "2606:3777", "from": "`DIV-58` on 2120:942 — تصميمات دعوية" },
+    { "name": "BadgeExclusive", "node": "2869:2374", "from": "`DIV-58` on 2869:2306 — حصريات. Disc and letterforms; the word حصرى over them is a raster paint, overlaid from assets/figma/seal-khazain.png." },
+    { "name": "SurahStar",      "node": "2207:5706", "from": "`DIV-79` on 2207:5270 / 2207:17898 — the 36pt surah row badge, without its index numeral" },
+
+    { "name": "LibraryReminders",   "node": "2095:1608", "from": "2031:4659 `DIV-46` — the تذكيراتي stat card" },
+    { "name": "LibraryWird",        "node": "2095:1620", "from": "2031:4659 `DIV-56` — the ورد القرآن stat card" },
+    { "name": "LibraryNotes",       "node": "2095:1632", "from": "2031:4659 `DIV-66` — the ملاحظاتي stat card" },
+    { "name": "LibraryProgressRing","node": "2095:1646", "from": "2031:4659 `svg-78` — the ٪٧٠ wird ring" },
+    { "name": "NoteListFormat",     "node": "2095:1683", "from": "2031:4659 `BUTTON-113` — the ملاحظة سريعة toolbar" },
+    { "name": "NoteItalic",         "node": "2095:1688", "from": "2031:4659 `BUTTON-116` — the ملاحظة سريعة toolbar" },
+    { "name": "NoteBold",           "node": "2095:1693", "from": "2031:4659 `BUTTON-119` — the ملاحظة سريعة toolbar" },
+    { "name": "LibraryWirdReminder","node": "2102:2663", "from": "2031:4659 `DIV-274` — the تذكير ورد القرآن card" },
+
+    { "name": "MushafBookmark", "node": "2349:1239", "from": "2349:982 `DIV-130`, the reader footer" },
+    { "name": "MushafIndex",    "node": "2349:1231", "from": "2349:982 `DIV-116`, the reader footer" },
+
+    { "name": "DawahShare",     "node": "2548:1111", "from": "`Share` — 2120:1857 `DIV-144`, the poster's left action" },
+    { "name": "DawahDownload",  "node": "2001:11252", "from": "vuesax/bulk/document-download — 2120:1857 `DIV-144`, the right action" },
+
+    { "name": "HomeAudio",      "node": "2093:1775", "from": "2001:940 `audio` — the حصريات carousel mark" }
+  ],
+  "notDrawn": [
+    {
+      "name": "HomeAudioBook",
+      "node": "2093:1760",
+      "why": "Same raster حصرى wordmark as SectionExclusive, over a gold disc. Extracted as an image asset rather than as vector."
+    },
+    {
+      "name": "SectionExclusiveSeal",
+      "node": "2355:1480",
+      "why": "The word خزائن الرحمن on the حصريات card is a raster IMAGE paint, not vector, so the geometry walk cannot reach it — `SectionExclusive` carries the gold disc and the vector letterforms around it. The word itself comes out of the archive at its source 139x164 with alpha intact as assets/figma/seal-khazain.png; see scripts/figma/extract-images.js."
+    }
+  ]
+}

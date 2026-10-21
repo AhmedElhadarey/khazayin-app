@@ -1,5 +1,10 @@
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
-import { formatRelativeAr, Note, useNotesStore } from '@/store/notesStore';
+import { linkedNoteRow, NoteRefLink, noteRowA11y } from '@/components/khazain/notes';
+import { startLecturePlayback } from '@/services/lecturePlayback';
+import { viewerSourceAction } from '@/services/noteNavigation';
+import { Note, useNotesStore } from '@/store/notesStore';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -20,6 +25,15 @@ export default function NotesViewer() {
     router.push({ pathname: '/note-editor' as any, params: { id } });
 
   const close = () => router.back();
+
+  // Close the sheet, then navigate. The viewer owns its own dismissal; the
+  // target runner never dismisses anything.
+  const openSource = (note: Note) =>
+    viewerSourceAction(note.ref, {
+      back: () => router.back(),
+      navigate: (href) => router.navigate(href as any),
+      play: startLecturePlayback,
+    });
 
   return (
     <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
@@ -42,7 +56,11 @@ export default function NotesViewer() {
               data={notes}
               keyExtractor={(n) => n.id}
               renderItem={({ item }) => (
-                <NoteRow note={item} onPress={() => openExisting(item.id)} />
+                <NoteRow
+                  note={item}
+                  onPress={() => openExisting(item.id)}
+                  onOpenSource={() => openSource(item)}
+                />
               )}
               contentContainerStyle={styles.listContent}
               ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
@@ -56,26 +74,39 @@ export default function NotesViewer() {
   );
 }
 
-function NoteRow({ note, onPress }: { note: Note; onPress: () => void }) {
+function NoteRow({
+  note,
+  onPress,
+  onOpenSource,
+}: {
+  note: Note;
+  onPress: () => void;
+  onOpenSource: () => void;
+}) {
+  const row = linkedNoteRow(note);
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      {...noteRowA11y(row, onOpenSource)}
       style={({ pressed }) => [
         styles.row,
         KhazainShadows.card,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      {/*
-        JSX-first → visual RIGHT under forceRTL+row. Figma shows title on the RIGHT,
-        relative time on the LEFT — so title goes first.
-      */}
-      <Text style={styles.rowTitle} numberOfLines={1}>
-        {note.title || 'ملاحظة بلا عنوان'}
-      </Text>
+      {/* Physical left -> right: relative time, then title + source link. */}
       <Text style={styles.rowTime} numberOfLines={1}>
-        {formatRelativeAr(note.updatedAt)}
+        {row.time}
       </Text>
+      <View style={styles.rowColumn}>
+        <Text style={styles.rowTitle} numberOfLines={1}>
+          {row.title}
+        </Text>
+        {row.label ? (
+          <NoteRefLink label={row.label} onPress={row.linkable ? onOpenSource : undefined} />
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -106,21 +137,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(120,100,80,0.25)',
   },
   sheetTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 20,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'center',
-    writingDirection: 'rtl',
+    ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 4,
     paddingBottom: 16,
   },
   listContent: {
+    ...PHYSICAL_BOX,
     paddingHorizontal: 18,
     paddingBottom: 12,
   },
   row: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 10,
     paddingHorizontal: 16,
@@ -130,40 +157,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: KhazainColors.cardBorder,
   },
-  rowTitle: {
-    flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  rowTime: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    color: KhazainColors.ink400,
-    writingDirection: 'rtl',
-  },
+  rowColumn: { flex: 1, gap: 2 },
+  rowTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+  rowTime: textStyle('caption', { color: KhazainColors.ink400 }),
   empty: {
     alignItems: 'center',
     paddingHorizontal: 24,
     paddingVertical: 32,
     gap: 8,
   },
-  emptyTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-  },
-  emptyBody: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.ink500,
-    lineHeight: 20,
-    textAlign: 'center',
-    writingDirection: 'rtl',
-  },
+  emptyTitle: textStyle('bodyLarge', { color: KhazainColors.navy800 }),
+  emptyBody: textStyle('bodyCompact', { color: KhazainColors.ink500, textAlign: 'center' }),
 });

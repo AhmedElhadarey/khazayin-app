@@ -11,16 +11,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import {
   ChannelsStep,
-  FEATURE_STEPS,
-  FeatureStep,
   OnboardingFooter,
   OnboardingProgress,
   QiraaStep,
   ReciterStep,
   WelcomeStep,
 } from '@/components/khazain/onboarding';
-import { ONBOARDING_STEP_COUNT } from '@/constants/settings';
+import { ONBOARDING_STEP_COUNT, ONBOARDING_STEPS } from '@/constants/settings';
 import { KhazainColors } from '@/constants/theme';
+import { stopPreview } from '@/services/reciterPreview';
 import { useSettingsStore } from '@/store';
 
 const SLIDE_OFFSET = 40;
@@ -49,8 +48,24 @@ export default function OnboardingScreen(): React.ReactElement {
   }, []);
 
   // Animate a slide+fade whenever the step changes (instant when reduce-motion).
+  //
+  // `anim` rests at 0, which IS the visible state, and the mount does not
+  // animate at all. That ordering is load-bearing: this screen is the first
+  // thing a fresh install shows, and `forceRTL` flips the layout direction on
+  // that first launch, which recreates the activity. A transition running at
+  // that moment does not get stopped — it silently stops progressing, so
+  // neither the completion callback nor the effect cleanup ever runs, and
+  // whatever value it had reached is where it stays. Revealing content with a
+  // mount animation therefore stranded the whole step area at partial opacity
+  // (measured 0.57-0.61 across rebuilds, against a footer that was outside the
+  // animated view and rendered at a clean navy800). Only a real step change
+  // animates, and a watchdog settles the value if that run dies too.
+  const lastStep = useRef<number | null>(null);
   useEffect(() => {
-    if (reduceMotion) {
+    const stepChanged = lastStep.current !== null && lastStep.current !== step;
+    lastStep.current = step;
+
+    if (!stepChanged || reduceMotion) {
       anim.setValue(0);
       return;
     }
@@ -58,13 +73,40 @@ export default function OnboardingScreen(): React.ReactElement {
     const animation = Animated.timing(anim, {
       toValue: 0,
       duration: SLIDE_DURATION,
-      useNativeDriver: true,
+      // NOT the native driver, deliberately. `forceRTL` flips the layout
+      // direction on the very first launch after install, which recreates the
+      // activity. A native-driven value lives outside the shadow tree, so the
+      // remounted view came back with the last style JS had rendered —
+      // `setValue(1)`, i.e. opacity 0 — and the animation had already finished,
+      // so no later frame ever corrected it. Step 0 rendered blank on every
+      // fresh install (content mounted, `uiautomator dump` found the text;
+      // it was simply invisible). A JS-driven value goes through the shadow
+      // tree, so a remount picks up the settled value. 280ms on four steps.
+      useNativeDriver: false,
     });
-    animation.start();
-    return () => animation.stop();
+    // Settle to fully-visible whenever the run does not finish. The step area
+    // is revealed BY this animation, so an interrupted run leaves real content
+    // parked at partial opacity with nothing scheduled to correct it — the
+    // first launch after install stopped it at 0.39 (measured: the emblem came
+    // back 111,140,165 against a navy800 of 24,75,118) because `forceRTL`
+    // recreates the activity mid-flight. Failing open costs a dropped fade;
+    // failing closed costs the whole screen.
+    animation.start(({ finished }) => {
+      if (!finished) anim.setValue(0);
+    });
+    // The driver can stop producing frames without ever reporting completion,
+    // in which case the callback above never fires. This is the only thing
+    // that guarantees the content ends up visible.
+    const watchdog = setTimeout(() => anim.setValue(0), SLIDE_DURATION + 200);
+    return () => {
+      clearTimeout(watchdog);
+      animation.stop();
+      anim.setValue(0);
+    };
   }, [step, reduceMotion, anim]);
 
   const goTo = (next: number): void => {
+    void stopPreview();
     const clamped = Math.max(0, Math.min(ONBOARDING_STEP_COUNT - 1, next));
     directionRef.current = clamped > step ? 1 : -1;
     setStep(clamped);
@@ -72,6 +114,7 @@ export default function OnboardingScreen(): React.ReactElement {
   };
 
   const finish = (): void => {
+    void stopPreview();
     setOnboardingComplete(true);
     router.replace('/(tabs)');
   };
@@ -122,33 +165,17 @@ export default function OnboardingScreen(): React.ReactElement {
   );
 }
 
-/**
- * Step content (track 003): 0 welcome → 1 qira'a → 2 reciter →
- * 3–6 feature showcase (FEATURE_STEPS) → 7 channels.
- */
+/** Step content: welcome → qira'a → reciter → channels (ONBOARDING_STEPS). `step` is always clamped. */
 function renderStep(step: number): React.ReactElement {
-  switch (step) {
-    case 0:
+  switch (ONBOARDING_STEPS[step]) {
+    case 'welcome':
       return <WelcomeStep />;
-    case 1:
+    case 'qiraa':
       return <QiraaStep />;
-    case 2:
+    case 'reciter':
       return <ReciterStep />;
-    case 7:
+    case 'channels':
       return <ChannelsStep />;
-    default: {
-      // Steps 3–6 are the feature-showcase screens.
-      const feature = FEATURE_STEPS[step - 3];
-      return feature ? (
-        <FeatureStep
-          illustration={feature.illustration}
-          title={feature.title}
-          description={feature.description}
-        />
-      ) : (
-        <WelcomeStep />
-      );
-    }
   }
 }
 

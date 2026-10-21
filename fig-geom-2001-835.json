@@ -1,0 +1,1378 @@
+[
+ {
+  "id": "2001:835",
+  "depth": 0,
+  "type": "FRAME",
+  "name": "Splash",
+  "x": 1403,
+  "y": 270,
+  "w": 393,
+  "h": 852,
+  "opacity": 1,
+  "fill": [],
+  "images": []
+ },
+ {
+  "id": "2869:1743",
+  "depth": 1,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "Vector Smart Object",
+  "x": 1254,
+  "y": 269,
+  "w": 690,
+  "h": 853,
+  "opacity": 1,
+  "blendMode": "OVERLAY",
+  "fill": [],
+  "images": [
+   {
+    "hash": "e2364e38291c133886f77e15ddb43b487b8c2f27",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2001:837",
+  "depth": 1,
+  "type": "FRAME",
+  "name": "Artboard 1 2",
+  "x": 1499,
+  "y": 556,
+  "w": 201.44,
+  "h": 279,
+  "opacity": 1,
+  "fill": [
+   "#ffffff"
+  ],
+  "images": []
+ },
+ {
+  "id": "2001:838",
+  "depth": 2,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "Vector Smart Object",
+  "x": 1607.26,
+  "y": 550.85,
+  "w": 125.33,
+  "h": 125.45,
+  "opacity": 1,
+  "blendMode": "SCREEN",
+  "fill": [],
+  "images": [
+   {
+    "hash": "d3330de73459e44477ab69a1983707c09091c163",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2001:842",
+  "depth": 2,
+  "type": "FRAME",
+  "name": "Group",
+  "x": 1499.19,
+  "y": 556.24,
+  "w": 201.15,
+  "h": 278.71,
+  "opacity": 1,
+  "fill": [],
+  "images": []
+ },
+ {
+  "id": "2001:843",
+  "depth": 3,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "Rectangle",
+  "x": 1499.19,
+  "y": 556.24,
+  "w": 201.15,
+  "h": 278.71,
+  "opacity": 1,
+  "fill": [],
+  "images": [
+   {
+    "hash": "32d3d48591a40976d63ae8dbacad5fd081707530",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2001:845",
+  "depth": 3,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "c435326e2747282c14cdbca7c3037506e3808d286639c-p0SHM8_fw1200",
+  "x": 1513.9,
+  "y": 572.98,
+  "w": 173.99,
+  "h": 240.97,
+  "opacity": 1,
+  "fill": [],
+  "images": [
+   {
+    "hash": "47f5ecd9dbf38e3bda1584a0badc1dab82a4577f",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2001:844",
+  "depth": 3,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "Vector Smart Object",
+  "x": 1504.56,
+  "y": 559.36,
+  "w": 192.67,
+  "h": 268.21,
+  "opacity": 1,
+  "fill": [],
+  "images": [
+   {
+    "hash": "1ddc58b37c38f2440333135b39ca9960b3d6fdbc",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2001:846",
+  "depth": 2,
+  "type": "FRAME",
+  "name": "Group",
+  "x": 1539.08,
+  "y": 587.46,
+  "w": 127.03,
+  "h": 168.02,
+  "opacity": 1,
+  "fill": [],
+  "images": []
+ },
+ {
+  "id": "2001:847",
+  "depth": 3,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "تأخـذ بيـــدك إلى الجنـة",
+  "x": 1539.08,
+  "y": 739.02,
+  "w": 122.5,
+  "h": 16.46,
+  "opacity": 1,
+  "fill": [],
+  "images": [
+   {
+    "hash": "d8d88636ee75fd8f965ea67a0830303454631ec8",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2001:848",
+  "depth": 3,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "Layer 2 copy 2",
+  "x": 1540.21,
+  "y": 588.31,
+  "w": 125.9,
+  "h": 149.01,
+  "opacity": 1,
+  "fill": [],
+  "images": [
+   {
+    "hash": "120a16bb70875cfd5612728e32d0f2a578c63796",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2001:852",
+  "depth": 3,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "Vector Smart Object",
+  "x": 1593.4,
+  "y": 590.58,
+  "w": 39.61,
+  "h": 44.84,
+  "opacity": 1,
+  "blendMode": "SCREEN",
+  "fill": [],
+  "images": [
+   {
+    "hash": "e3eb13e0389ad2f6b478b033b473d3312a609450",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2001:849",
+  "depth": 3,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "Layer 2 copy 3",
+  "x": 1540.21,
+  "y": 587.46,
+  "w": 125.9,
+  "h": 149.57,
+  "opacity": 1,
+  "fill": [],
+  "images": [
+   {
+    "hash": "201c4e6427aa57267bbe79f6d2ec7482459b8677",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2001:851",
+  "depth": 3,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "Vector Smart Object",
+  "x": 1542.76,
+  "y": 640.25,
+  "w": 44.7,
+  "h": 68.4,
+  "opacity": 1,
+  "blendMode": "SCREEN",
+  "fill": [],
+  "images": [
+   {
+    "hash": "0219698f81b13bd38d1b18bb833ed29bd11ec07b",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2001:850",
+  "depth": 3,
+  "type": "ROUNDED_RECTANGLE",
+  "name": "Vector Smart Object copy 3",
+  "x": 1614.05,
+  "y": 698.72,
+  "w": 26.88,
+  "h": 38.6,
+  "opacity": 1,
+  "blendMode": "SCREEN",
+  "fill": [],
+  "images": [
+   {
+    "hash": "7e6af6fd56c16233f6cd6ce48a4bd9e4775c0b96",
+    "opacity": 1,
+    "visible": true
+   }
+  ]
+ },
+ {
+  "id": "2120:1443",
+  "depth": 1,
+  "type": "FRAME",
+  "name": "png_1 1",
+  "x": 1489.5,
+  "y": 1063,
+  "w": 220,
+  "h": 35.06,
+  "opacity": 1,
+  "fill": [
+   "#ffffff"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1444",
+  "depth": 2,
+  "type": "FRAME",
+  "name": "Group",
+  "x": 1489.52,
+  "y": 1098.07,
+  "w": 219.69,
+  "h": 34.74,
+  "opacity": 1,
+  "fill": [],
+  "images": []
+ },
+ {
+  "id": "2120:1507",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1532.51,
+  "y": 1097.18,
+  "w": 6.21,
+  "h": 5.4,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1457",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1595.19,
+  "y": 1091.22,
+  "w": 4.83,
+  "h": 27.72,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1456",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1588.62,
+  "y": 1073.96,
+  "w": 2.74,
+  "h": 10.63,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1471",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1583.07,
+  "y": 1071.51,
+  "w": 3.94,
+  "h": 3.75,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1470",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1643.54,
+  "y": 1072.95,
+  "w": 3.94,
+  "h": 7.32,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1445",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1670.26,
+  "y": 1083.47,
+  "w": 34.4,
+  "h": 20.08,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1475",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1622.73,
+  "y": 1074.61,
+  "w": 3.81,
+  "h": 3.94,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1458",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1600.19,
+  "y": 1084.74,
+  "w": 5.44,
+  "h": 21.29,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1451",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1489.54,
+  "y": 1094.42,
+  "w": 58.43,
+  "h": 31.09,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1446",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1491.14,
+  "y": 1068.59,
+  "w": 5.15,
+  "h": 5.16,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1452",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1550.25,
+  "y": 1091.43,
+  "w": 4.9,
+  "h": 27.84,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1453",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1555.24,
+  "y": 1084.81,
+  "w": 5.47,
+  "h": 21.37,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1503",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1496.3,
+  "y": 1096.96,
+  "w": 2.25,
+  "h": 7.01,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1505",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1628.64,
+  "y": 1097.18,
+  "w": 8.03,
+  "h": 6.99,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1476",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1492.65,
+  "y": 1076.53,
+  "w": 2.07,
+  "h": 5.42,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1454",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1563.06,
+  "y": 1068.47,
+  "w": 1.39,
+  "h": 4.95,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1459",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1608.29,
+  "y": 1072.17,
+  "w": 2.45,
+  "h": 8.73,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1504",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1569.7,
+  "y": 1097.18,
+  "w": 1.97,
+  "h": 7.15,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1450",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1534.69,
+  "y": 1070.81,
+  "w": 2.8,
+  "h": 7.37,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1447",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1499.07,
+  "y": 1071.69,
+  "w": 2.25,
+  "h": 8.25,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1449",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1528.38,
+  "y": 1081.31,
+  "w": 4.51,
+  "h": 17.87,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1508",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1665.3,
+  "y": 1097.11,
+  "w": 14.84,
+  "h": 5.3,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1506",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1527.44,
+  "y": 1097.16,
+  "w": 1.71,
+  "h": 6.34,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1455",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1560.74,
+  "y": 1074.63,
+  "w": 18.34,
+  "h": 11.16,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1472",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1519.67,
+  "y": 1076.11,
+  "w": 2.16,
+  "h": 7.58,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1473",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1699.12,
+  "y": 1075.68,
+  "w": 1.9,
+  "h": 6.94,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1474",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1634.89,
+  "y": 1072.86,
+  "w": 3.82,
+  "h": 3.94,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1448",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1503.5,
+  "y": 1068.56,
+  "w": 5.18,
+  "h": 5,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1460",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1595.46,
+  "y": 1098.07,
+  "w": 113.74,
+  "h": 34.51,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1461",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1622,
+  "y": 1068.84,
+  "w": 7.97,
+  "h": 5.3,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1462",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1628.24,
+  "y": 1072.15,
+  "w": 11.94,
+  "h": 8.69,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1463",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1648.4,
+  "y": 1079.17,
+  "w": 28.01,
+  "h": 15.69,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1464",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1656.54,
+  "y": 1081.18,
+  "w": 32.49,
+  "h": 17.74,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1465",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1613.21,
+  "y": 1070.23,
+  "w": 2.28,
+  "h": 5.79,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1466",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1572.37,
+  "y": 1072.3,
+  "w": 13.1,
+  "h": 7.51,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1467",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1650.18,
+  "y": 1071.22,
+  "w": 6.74,
+  "h": 6.66,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1468",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1539.67,
+  "y": 1070,
+  "w": 1.55,
+  "h": 5.26,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1469",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1498.71,
+  "y": 1080.86,
+  "w": 20.79,
+  "h": 15.84,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1509",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1625.02,
+  "y": 1097.18,
+  "w": 1.38,
+  "h": 5.02,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1477",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1698.56,
+  "y": 1080.16,
+  "w": 8.09,
+  "h": 8.96,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1510",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1542.12,
+  "y": 1097.18,
+  "w": 4.79,
+  "h": 4.82,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1478",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1550.21,
+  "y": 1097.18,
+  "w": 46.05,
+  "h": 24.86,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1511",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1650.9,
+  "y": 1097.18,
+  "w": 13.24,
+  "h": 4.82,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1479",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1510.98,
+  "y": 1077.24,
+  "w": 4.74,
+  "h": 4.82,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1512",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1589.01,
+  "y": 1097.1,
+  "w": 4.7,
+  "h": 4.5,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1480",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1611.7,
+  "y": 1077.87,
+  "w": 4.01,
+  "h": 5.21,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1513",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1510.97,
+  "y": 1097.01,
+  "w": 4.34,
+  "h": 4.06,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1481",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1541.19,
+  "y": 1078.62,
+  "w": 1.55,
+  "h": 5.77,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1514",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1522.9,
+  "y": 1097.1,
+  "w": 1.53,
+  "h": 4.27,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1482",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1568.27,
+  "y": 1081.7,
+  "w": 2.79,
+  "h": 8.84,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1515",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1584.63,
+  "y": 1097.15,
+  "w": 1.18,
+  "h": 4.31,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1483",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1533.43,
+  "y": 1078.36,
+  "w": 5.37,
+  "h": 5.29,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1516",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1501.27,
+  "y": 1097.29,
+  "w": 7.28,
+  "h": 4.01,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1484",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1692.2,
+  "y": 1079.99,
+  "w": 4.59,
+  "h": 5.67,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1485",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1683.29,
+  "y": 1080.88,
+  "w": 4.7,
+  "h": 5.03,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1486",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1562.33,
+  "y": 1084.36,
+  "w": 2.32,
+  "h": 8.43,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1487",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1606.99,
+  "y": 1083.75,
+  "w": 1.85,
+  "h": 7.07,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1488",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1504.56,
+  "y": 1082.49,
+  "w": 4.75,
+  "h": 5.03,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1489",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1490.84,
+  "y": 1085.68,
+  "w": 3.99,
+  "h": 7.32,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1490",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1518.17,
+  "y": 1083.97,
+  "w": 5.29,
+  "h": 5.19,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1491",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1665.17,
+  "y": 1083.56,
+  "w": 1.29,
+  "h": 4.35,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1492",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1513.29,
+  "y": 1085.32,
+  "w": 2.22,
+  "h": 5.66,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1493",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1651.69,
+  "y": 1085.58,
+  "w": 1.61,
+  "h": 5.93,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1494",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1676.5,
+  "y": 1085.3,
+  "w": 1.65,
+  "h": 5.41,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1495",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1584.89,
+  "y": 1085.57,
+  "w": 3.82,
+  "h": 3.94,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1496",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1489.52,
+  "y": 1087.03,
+  "w": 0.18,
+  "h": 0.54,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1497",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1603.99,
+  "y": 1090.83,
+  "w": 3.82,
+  "h": 3.94,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1498",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1558.96,
+  "y": 1090.83,
+  "w": 3.8,
+  "h": 3.73,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1499",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1617.09,
+  "y": 1091.71,
+  "w": 1.27,
+  "h": 4.28,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1500",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1576.78,
+  "y": 1092.37,
+  "w": 1.26,
+  "h": 4.39,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1501",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1644.45,
+  "y": 1097.18,
+  "w": 1.92,
+  "h": 7.59,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ },
+ {
+  "id": "2120:1502",
+  "depth": 3,
+  "type": "VECTOR",
+  "name": "Vector",
+  "x": 1695.46,
+  "y": 1097.18,
+  "w": 9.66,
+  "h": 7.64,
+  "opacity": 1,
+  "fill": [
+   "#7f613d"
+  ],
+  "images": []
+ }
+]

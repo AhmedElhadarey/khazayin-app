@@ -17,7 +17,8 @@ type Props = {
   disabled?: boolean;
 };
 
-const HEIGHTS: Record<Size, number> = { sm: 36, lg: 44 };
+/** Exported so a placeholder can hold the button's exact footprint. */
+export const PILL_BUTTON_HEIGHTS: Readonly<Record<Size, number>> = Object.freeze({ sm: 36, lg: 44 });
 
 const PALETTES: Record<Variant, { bg: string; label: string; border?: string }> = {
   navy: { bg: KhazainColors.navy800, label: KhazainColors.cream100 },
@@ -37,7 +38,7 @@ export function PillButton({
   disabled,
 }: Props) {
   const pal = PALETTES[variant];
-  const height = HEIGHTS[size];
+  const height = PILL_BUTTON_HEIGHTS[size];
   const fontSize = size === 'sm' ? 13 : 14;
 
   return (

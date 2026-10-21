@@ -1,13 +1,24 @@
+import { PHYSICAL_ROW, SEGMENT_TABS, physicalTabOrder } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
-import { I18nManager, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
-// Pill-segmented tabs with an active underline + bold title.
-// Used on the reciter / mushaf tabs strip (page 13).
+// The reciter tab strip — node "\u0661" on 2031:6193. Four 84 x 45 tabs 8
+// apart on `#EDE0D1`, each labelled in the display face at 10 in navy, with a
+// 70 x 4 navy bar pinned to the bottom edge of the selected one.
 //
-// `tabs` are listed in RTL visual order (right-most first). The component
-// picks the correct flex direction based on `I18nManager.isRTL` so the
-// first tab always appears on the right regardless of platform.
+// The file draws the bar on every tab, because it only ever models the strip
+// in one state; keeping it on the active tab alone is what makes the control
+// legible, and the label colour stays navy either way, as stated.
+//
+// `tabs` are authored in RTL reading order (right-most first, so the default
+// tab is index 0). `physicalTabOrder` reverses that into left → right and
+// PHYSICAL_ROW pins it, so the strip cannot flip between iOS and Android.
+//
+// The strip never grows vertically: a horizontal ScrollView defaults to
+// flexGrow 1 and used to swallow the whole gap between the search field and
+// the list.
 export function SegmentTabs<T extends string>({
   tabs,
   active,
@@ -21,10 +32,11 @@ export function SegmentTabs<T extends string>({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.strip}
       contentContainerStyle={styles.scroll}
     >
-      <View style={[styles.row, { flexDirection: ROW_DIR }]}>
-        {tabs.map((t) => {
+      <View style={styles.row}>
+        {physicalTabOrder(tabs).map((t) => {
           const isActive = t.key === active;
           return (
             <Pressable
@@ -39,9 +51,9 @@ export function SegmentTabs<T extends string>({
                 { opacity: pressed ? 0.8 : 1 },
               ]}
             >
-              <Text style={[styles.label, isActive ? styles.labelActive : styles.labelIdle]}>
-                {t.label}
-              </Text>
+              {/* The file sets every label navy, selected or not — the bar is
+                  the whole of the selected state. */}
+              <Text style={styles.label}>{t.label}</Text>
               {isActive ? <View style={styles.underline} /> : null}
             </Pressable>
           );
@@ -51,54 +63,42 @@ export function SegmentTabs<T extends string>({
   );
 }
 
-// In RTL native, plain 'row' visually flows right-to-left already, so the
-// first JSX child sits on the right. On web (or LTR), 'row-reverse' achieves
-// the same visual ordering.
-const ROW_DIR: 'row' | 'row-reverse' = I18nManager.isRTL ? 'row' : 'row-reverse';
-
 const styles = StyleSheet.create({
+  strip: {
+    ...SEGMENT_TABS.strip,
+  },
   scroll: {
     paddingHorizontal: 16,
-    paddingVertical: 6,
+    paddingVertical: SEGMENT_TABS.stripPaddingVertical,
   },
   row: {
+    ...PHYSICAL_ROW,
     alignItems: 'flex-end',
-    gap: 8,
+    gap: SEGMENT_TABS.gap,
   },
   tab: {
-    paddingHorizontal: 14,
-    paddingTop: 10,
-    paddingBottom: 8,
-    minWidth: 88,
+    minHeight: SEGMENT_TABS.tabHeight,
+    paddingHorizontal: 7,
+    paddingTop: SEGMENT_TABS.tabLabelPaddingTop,
+    minWidth: SEGMENT_TABS.minTabWidth,
     alignItems: 'center',
-    borderRadius: 12,
-    backgroundColor: KhazainColors.cream200,
+    borderRadius: SEGMENT_TABS.tabRadius,
+    backgroundColor: KhazainColors.heroCream,
     overflow: 'hidden',
   },
   tabActive: {
-    backgroundColor: KhazainColors.cream200,
+    backgroundColor: KhazainColors.heroCream,
   },
   label: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
-  labelIdle: {
-    color: KhazainColors.ink700,
-    fontWeight: '500',
-  },
-  labelActive: {
-    color: KhazainColors.ink900,
-    fontWeight: '700',
+    ...textStyle('labelSmall', { textAlign: 'center' }),
+    color: KhazainColors.navy800,
   },
   underline: {
     position: 'absolute',
-    left: 8,
-    right: 8,
     bottom: 0,
-    height: 3,
+    alignSelf: 'center',
+    width: SEGMENT_TABS.underlineWidth,
+    height: SEGMENT_TABS.underlineHeight,
     backgroundColor: KhazainColors.navy800,
-    borderRadius: 2,
   },
 });

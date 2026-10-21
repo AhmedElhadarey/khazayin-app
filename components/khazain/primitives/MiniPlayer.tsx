@@ -1,9 +1,13 @@
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { skipNext, skipPrev, togglePlayback } from '@/services/audioEngine';
+import { takeLectureNoteParams } from '@/services/noteActions';
 import { usePlayerStore } from '@/store/playerStore';
+import { FigmaIcon } from '../icons/FigmaIcon';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path, Polygon, Rect } from 'react-native-svg';
+import Svg, { Polygon, Rect } from 'react-native-svg';
 import { LogoBadge } from './LogoBadge';
 
 // Compact MiniPlayer — Figma page-09.
@@ -18,31 +22,29 @@ export function MiniPlayer() {
   const track = usePlayerStore((s) => s.track);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const isVisible = usePlayerStore((s) => s.isVisible);
+  const router = useRouter();
+
+  // Reads the position at press time with getState(): subscribing to
+  // `progress` here would bring back the ~1Hz re-render the atomic selectors
+  // above exist to avoid.
+  const takeLectureNote = () => {
+    const { track: current, progress } = usePlayerStore.getState();
+    router.push({
+      pathname: '/note-editor' as any,
+      params: takeLectureNoteParams(current, progress) ?? {},
+    });
+  };
 
   if (!isVisible || !track) return null;
 
   return (
     <View style={[styles.shell, KhazainShadows.card]}>
       <View style={styles.row}>
-        {/* JSX-first lands on the right under forceRTL+row.
-            Visual RTL right → left: [cover][text][transport]. */}
-        <View style={styles.cover}>
-          <LogoBadge size={56} />
-        </View>
-
-        <View style={styles.info}>
-          <Text style={styles.title} numberOfLines={1}>
-            {track.title}
-          </Text>
-          <Text style={styles.reciter} numberOfLines={1}>
-            {track.reciter}
-          </Text>
-        </View>
-
+        {/* Physical left → right: transport cluster, note button, title block, cover. */}
         <View style={styles.transport}>
-          {/* JSX-first → right of the transport cluster under forceRTL.
-              Visual RTL right → left: [skipBack][playPause][skipFwd]. */}
-          <SkipButton dir="back" onPress={skipPrev} label="السابق" />
+          {/* Within the cluster, physical left → right:
+              skip forward, play/pause, skip back. */}
+          <SkipButton dir="fwd" onPress={skipNext} label="التالي" />
           <Pressable
             onPress={() => togglePlayback()}
             accessibilityRole="button"
@@ -52,8 +54,44 @@ export function MiniPlayer() {
           >
             {isPlaying ? <PauseGlyph /> : <PlayGlyph />}
           </Pressable>
-          <SkipButton dir="fwd" onPress={skipNext} label="التالي" />
+          <SkipButton dir="back" onPress={skipPrev} label="السابق" />
         </View>
+
+        <Pressable
+          onPress={takeLectureNote}
+          accessibilityRole="button"
+          accessibilityLabel="إضافة ملاحظة عند هذه اللحظة"
+          hitSlop={6}
+          style={({ pressed }) => [styles.noteBtn, { opacity: pressed ? 0.7 : 1 }]}
+        >
+          <FigmaIcon name="LibraryNotes" size={18} color={KhazainColors.navy800} />
+        </Pressable>
+
+        {/* Long-press on the title and cover does the same as the button. It
+            has no onPress, so a plain tap falls through to nothing. */}
+        <Pressable
+          onLongPress={takeLectureNote}
+          delayLongPress={350}
+          accessibilityHint="اضغط مطولًا لإضافة ملاحظة"
+          accessibilityActions={[{ name: 'longpress', label: 'إضافة ملاحظة' }]}
+          onAccessibilityAction={(e) => {
+            if (e.nativeEvent.actionName === 'longpress') takeLectureNote();
+          }}
+          style={styles.titleGroup}
+        >
+          <View style={styles.info}>
+            <Text style={styles.title} numberOfLines={1}>
+              {track.title}
+            </Text>
+            <Text style={styles.reciter} numberOfLines={1}>
+              {track.reciter}
+            </Text>
+          </View>
+
+          <View style={styles.cover}>
+            <LogoBadge size={56} />
+          </View>
+        </Pressable>
       </View>
 
       {/* Progress bar pinned to the bottom of the card */}
@@ -88,49 +126,56 @@ function SkipButton({ dir, onPress, label }: { dir: 'back' | 'fwd'; onPress: () 
 }
 
 // Triangle + bar skip-back / skip-forward glyphs (small, gold/copper outline-ish per Figma).
+//
+// The glyphs are drawn in physical space and mirror the transport's physical
+// order, which is Arabic reading order: السابق sits on the physical right and
+// points right, التالي sits on the physical left and points left. Drawing them
+// the other way round — the Latin convention — left each button pointing at
+// its neighbour instead of at the track it moves to.
 function SkipGlyph({ dir }: { dir: 'back' | 'fwd' }) {
-  // back = play triangle pointing left, with a vertical bar to its left
-  // fwd  = play triangle pointing right, with a vertical bar to its right
+  // back (السابق) = triangle pointing right, with a vertical bar to its right
+  // fwd  (التالي) = triangle pointing left,  with a vertical bar to its left
   const stroke = KhazainColors.ink400;
   return (
     <Svg width={20} height={16} viewBox="0 0 20 16" fill="none">
       {dir === 'back' ? (
         <>
-          <Rect x={2} y={3} width={1.5} height={10} fill={stroke} rx={0.5} />
-          <Polygon points="17,2 17,14 5,8" fill="none" stroke={stroke} strokeWidth={1.4} strokeLinejoin="round" />
+          <Polygon points="3,2 3,14 15,8" fill="none" stroke={stroke} strokeWidth={1.4} strokeLinejoin="round" />
+          <Rect x={16.5} y={3} width={1.5} height={10} fill={stroke} rx={0.5} />
         </>
       ) : (
         <>
-          <Polygon points="3,2 3,14 15,8" fill="none" stroke={stroke} strokeWidth={1.4} strokeLinejoin="round" />
-          <Rect x={16.5} y={3} width={1.5} height={10} fill={stroke} rx={0.5} />
+          <Rect x={2} y={3} width={1.5} height={10} fill={stroke} rx={0.5} />
+          <Polygon points="17,2 17,14 5,8" fill="none" stroke={stroke} strokeWidth={1.4} strokeLinejoin="round" />
         </>
       )}
     </Svg>
   );
 }
 
+// `vuesax/bulk/play` and `vuesax/bulk/pause` straight out of the file, rather
+// than the two hand-drawn polygons that used to sit here.
+//
+// No frame among the 28 draws a MiniPlayer — this bar predates them — so the
+// file cannot state its orientation directly. It does state the mark's, and
+// unanimously: all 16 `play` instances in the file carry `transform.m00: -1`.
+// Playback runs right to left, so the triangle does too, and the hand-drawn
+// one pointed the other way. `pause` is symmetric, so the flip is moot there
+// and is not applied.
 function PlayGlyph() {
-  return (
-    <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
-      <Polygon points="3,2 3,10 10,6" fill="#FFFFFF" />
-    </Svg>
-  );
+  return <FigmaIcon name="Play" size={14} color="#FFFFFF" mirrored />;
 }
 
 function PauseGlyph() {
-  return (
-    <Svg width={12} height={12} viewBox="0 0 12 12" fill="none">
-      <Path d="M3 2v8M9 2v8" stroke="#FFFFFF" strokeWidth={2} strokeLinecap="round" />
-    </Svg>
-  );
+  return <FigmaIcon name="Pause" size={14} color="#FFFFFF" />;
 }
 
-const BAR_HEIGHT = 80;
+const MIN_BAR_HEIGHT = 80;
 const COVER = 56;
 
 const styles = StyleSheet.create({
   shell: {
-    height: BAR_HEIGHT,
+    minHeight: MIN_BAR_HEIGHT,
     borderRadius: KhazainRadius.lg,
     overflow: 'hidden',
     backgroundColor: KhazainColors.cream50,
@@ -141,8 +186,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   row: {
-    flex: 1,
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
+    minHeight: COVER,
     alignItems: 'center',
     gap: 10,
   },
@@ -156,9 +201,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
+    flexShrink: 0,
   },
   info: {
     flex: 1,
+    minWidth: 0,
     justifyContent: 'center',
     gap: 4,
   },
@@ -178,10 +225,25 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
     textAlign: 'right',
   },
+  noteBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  titleGroup: {
+    ...PHYSICAL_ROW,
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    gap: 10,
+  },
   transport: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 6,
+    flexShrink: 0,
   },
   playBtn: {
     width: 36,

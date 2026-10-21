@@ -9,8 +9,8 @@
  * when the user *flips* the switch. A switch that starts on is never flipped on.
  *
  * Consequence on a fresh install, in a real standalone build:
- *   boot → assembleAndReconcile → wird enabled → scheduleWirdReminderAsync
- *        → getPermissionsAsync() === 'undetermined' → return null
+ *   boot → assembleAndReconcile → wird enabled → the scheduler's permission
+ *        gate: getPermissionsAsync() === 'undetermined' → nothing armed
  *
  * iOS is never asked. The reminder can never fire. Setting a reminder time went
  * through `setWirdEnabledFromSettings(true)` → the same silent permission gate,

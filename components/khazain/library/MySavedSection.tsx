@@ -1,10 +1,12 @@
 import { BookmarkIcon } from '@/components/khazain/icons';
 import { BookmarkButton } from '@/components/khazain/primitives';
 import { SearchGroupHeader, SearchResultRow } from '@/components/khazain/search';
+import { groupSavedItems, SAVED_EMPTY_COPY } from '@/constants/savedPresentation';
+import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { rowPropsForSavedItem } from '@/services/search';
 import { useSavedStore } from '@/store';
-import type { SavedItem, SavedType } from '@/types/content';
+import type { SavedItem } from '@/types/content';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -12,19 +14,11 @@ import { StyleSheet, Text, View } from 'react-native';
 /**
  * MySavedSection — the new 'محفوظاتي' block in the Library tab.
  * Groups saved items by type; per-group count; empty state with revised
- * copy per Board condition #8.
+ * copy per Board condition #8. Grouping, order and copy live in
+ * constants/savedPresentation.ts (groups ordered by most recent save).
  *
  * Track: khazain-saved_20260511  T14
  */
-
-const GROUP_ORDER: SavedType[] = ['surah', 'scholar', 'book', 'lecture', 'dawah'];
-const GROUP_TITLES: Record<SavedType, string> = {
-  surah: 'سور',
-  scholar: 'علماء',
-  book: 'كتب',
-  lecture: 'محاضرات',
-  dawah: 'تصاميم',
-};
 
 export function MySavedSection() {
   const items = useSavedStore((s) => s.items);
@@ -33,9 +27,7 @@ export function MySavedSection() {
     return <EmptySaved />;
   }
 
-  const groups = GROUP_ORDER
-    .map((type) => ({ type, entries: items.filter((it) => it.type === type) }))
-    .filter((g) => g.entries.length > 0);
+  const groups = groupSavedItems(items);
 
   return (
     <View style={styles.wrap}>
@@ -47,7 +39,7 @@ export function MySavedSection() {
       </View>
       {groups.map((g) => (
         <View key={g.type}>
-          <SearchGroupHeader title={GROUP_TITLES[g.type]} count={g.entries.length} />
+          <SearchGroupHeader title={g.title} count={g.count} />
           {g.entries.map((it) => (
             <SavedRow key={it.id} item={it} />
           ))}
@@ -88,10 +80,8 @@ function EmptySaved() {
       <View style={styles.emptyIconBubble}>
         <BookmarkIcon size={28} color={KhazainColors.gold500} />
       </View>
-      <Text style={styles.emptyTitle}>ابدأ مكتبتك الشخصية</Text>
-      <Text style={styles.emptyBody}>
-        احفظ ما تحب الرجوع إليه — سوراً، علماء، كتباً ومحاضرات — لتجده هنا في أي وقت.
-      </Text>
+      <Text style={styles.emptyTitle}>{SAVED_EMPTY_COPY.title}</Text>
+      <Text style={styles.emptyBody}>{SAVED_EMPTY_COPY.body}</Text>
     </View>
   );
 }
@@ -108,13 +98,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingBottom: 8,
   },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-  },
+  title: textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
   totalCountChip: {
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -123,12 +107,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: KhazainColors.gold200,
   },
-  totalCountText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '700',
-    color: KhazainColors.gold200,
-  },
+  totalCountText: textStyle('label', { color: KhazainColors.gold200 }),
   rowContainer: {
     position: 'relative',
   },
@@ -154,20 +133,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  emptyTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
+  emptyTitle: textStyle('sectionTitle', {
+    color: KhazainColors.inkHeading,
     textAlign: 'center',
-    writingDirection: 'rtl',
-  },
-  emptyBody: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
+  }),
+  emptyBody: textStyle('bodyCompact', {
     color: KhazainColors.ink500,
     textAlign: 'center',
-    writingDirection: 'rtl',
-    lineHeight: 22,
-  },
+  }),
 });

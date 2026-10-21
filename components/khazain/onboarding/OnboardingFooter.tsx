@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PillButton } from '@/components/khazain/primitives';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 
 type Props = {
@@ -17,7 +18,13 @@ type Props = {
 /**
  * Persistent onboarding footer (track 003): primary continue/finish button,
  * a back control (hidden on the first step), and a skip control that is
- * reachable on EVERY step. RTL-pinned via `row-reverse` — no bare row flip.
+ * reachable on EVERY step.
+ *
+ * Physical left -> right: skip, back. Onboarding has no Figma frame, so the
+ * order comes from `constants/layout.ts` and Arabic reading order rather than
+ * from the file: back is the leading control and leads at the RIGHT edge, skip
+ * trails at the LEFT. `row-reverse` used to produce the mirror of that — under
+ * `forceRTL` the row is already RTL, so reversing it renders left-to-right.
  */
 export function OnboardingFooter({
   step,
@@ -38,6 +45,14 @@ export function OnboardingFooter({
         style={styles.primary}
       />
       <View style={styles.secondaryRow}>
+        <Pressable
+          onPress={onSkip}
+          accessibilityRole="button"
+          accessibilityLabel="تخطّي الإعداد والانتقال إلى التطبيق"
+          hitSlop={8}
+        >
+          <Text style={styles.linkText}>تخطّي</Text>
+        </Pressable>
         {showBack ? (
           <Pressable
             onPress={onBack}
@@ -50,14 +65,6 @@ export function OnboardingFooter({
         ) : (
           <View />
         )}
-        <Pressable
-          onPress={onSkip}
-          accessibilityRole="button"
-          accessibilityLabel="تخطّي الإعداد والانتقال إلى التطبيق"
-          hitSlop={8}
-        >
-          <Text style={styles.linkText}>تخطّي</Text>
-        </Pressable>
       </View>
     </View>
   );
@@ -71,7 +78,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   secondaryRow: {
-    flexDirection: 'row-reverse',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     justifyContent: 'space-between',
     minHeight: 28,

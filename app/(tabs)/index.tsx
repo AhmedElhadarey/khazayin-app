@@ -12,19 +12,23 @@ import {
   SkeletonCardList,
   SkeletonPosterList,
 } from '@/components/khazain';
-import {
-  SCHOLAR_SVG_1,
-  SCHOLAR_SVG_2,
-  SCHOLAR_SVG_3,
-} from '@/components/khazain/home/scholarSvgs';
 import { RtlCarousel } from '@/components/khazain/primitives';
-import { SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
-import { KhazainColors, KhazainSpacing } from '@/constants/theme';
+import {
+  HOME_HERO_TOP_GAP,
+  HOME_QUICK_CHIPS,
+  type HomeQuickChip,
+  HOME_SECTION_GAP,
+  HOME_SECTION_ORDER,
+  type HomeSectionKey,
+} from '@/constants/homePresentation';
+import { PHYSICAL_ROW, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
+import { KhazainColors } from '@/constants/theme';
 import {
   useBookLecturesStore,
   useFeaturedDawahStore,
   useScholarsStore,
 } from '@/store';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
@@ -32,13 +36,26 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 
-// Bundled calligraphic SVGs keyed by scholar id.
-// The SVGs bake in the name glyph + gold stripe; ids must match data/content/scholars.ts.
-const SVG_BY_ID: Record<string, string> = {
-  's4': SCHOLAR_SVG_1, // عبد العزيز بن عبد الله بن باز
-  's5': SCHOLAR_SVG_2, // محمد بن صالح العثيمين
-  's1': SCHOLAR_SVG_3, // عبد المحسن العباد البدر
+// The scholar's name as calligraphy, keyed by scholar id; ids must match
+// data/content/scholars.ts, and only scholars with art are featured here.
+//
+// The .fig carries exactly one lockup — عبد العزيز بن عبد الله بن باز — and
+// draws all three cards with it. So does the app: the other two cards read
+// that name until the client supplies calligraphy for محمد بن صالح العثيمين
+// and عبد المحسن العباد البدر. Setting them in a typeface was tried and did
+// not read as the same art (see the QA record).
+const IBN_BAZ = require('@/assets/khazain/home/scholar-name-ibn-baz.webp');
+
+const NAME_ART_BY_ID: Record<string, number> = {
+  's4': IBN_BAZ, // عبد العزيز بن عبد الله بن باز
+  's5': IBN_BAZ, // awaiting art: محمد بن صالح العثيمين
+  's1': IBN_BAZ, // awaiting art: عبد المحسن العباد البدر
 };
+
+// The design's own book lockup. Figma draws every card in the "الكتب العلمية"
+// row with this one image — `إضاءات على زاد المعاد` — so the app does too, and
+// every card reads that title until the client supplies per-title art.
+const BOOK_TITLE_ART = require('@/assets/khazain/home/book-title.webp');
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -57,8 +74,108 @@ export default function HomeScreen() {
     fetchDawah();
   }, [fetchScholars, fetchBooks, fetchDawah]);
 
-  // Derive featured scholars — only those with a bundled SVG
-  const featuredScholars = scholarsData.filter((s) => !!SVG_BY_ID[s.id]);
+  // Derive featured scholars — only those whose name art is bundled
+  const featuredScholars = scholarsData.filter((s) => !!NAME_ART_BY_ID[s.id]);
+
+  // Rendered from HOME_SECTION_ORDER so the running order lives in one place
+  // and is asserted by __tests__/homePresentation.test.ts.
+  const sections: Record<HomeSectionKey, React.ReactNode> = {
+    header: <HomeHeader onSearchOpen={openSearch} />,
+
+    quranHero: (
+      <View style={styles.heroPad}>
+        <HeroQuran onMore={goToSections} />
+      </View>
+    ),
+
+    prophetHero: (
+      <View style={styles.heroPad}>
+        <HeroProphet onMore={goToSections} />
+      </View>
+    ),
+
+    scholars: (
+      <View>
+        <HomeSectionHeader title="العلماء والمشايخ" onViewAll={goToSections} />
+        <AsyncContent
+          status={scholarsStatus}
+          error={scholarsError}
+          onRetry={refreshScholars}
+          skeleton={<SkeletonCardList count={3} />}
+          emptyMessage="لا يوجد علماء"
+        >
+          <RtlCarousel contentContainerStyle={styles.scrollerPad}>
+            {featuredScholars.map((s) => (
+              <ScholarCard key={s.id} id={s.id} nameArt={NAME_ART_BY_ID[s.id]} name={s.name} />
+            ))}
+          </RtlCarousel>
+        </AsyncContent>
+      </View>
+    ),
+
+    books: (
+      <View>
+        <HomeSectionHeader title="الكتب العلمية" onViewAll={goToSections} />
+        <AsyncContent
+          status={booksStatus}
+          error={booksError}
+          onRetry={refreshBooks}
+          skeleton={<SkeletonCardList count={3} />}
+          emptyMessage="لا توجد كتب"
+        >
+          <RtlCarousel contentContainerStyle={styles.scrollerPad}>
+            {bookLectures.slice(0, 3).map((b) => (
+              <BookCard key={b.id} id={b.id} name={b.title} titleArt={BOOK_TITLE_ART} />
+            ))}
+          </RtlCarousel>
+        </AsyncContent>
+      </View>
+    ),
+
+    queen: (
+      <View style={styles.heroPad}>
+        <QueenCard onMore={goToSections} />
+      </View>
+    ),
+
+    // Physical left → right, authored in HOME_QUICK_CHIPS.
+    quickChips: (
+      <View style={styles.quickChipsRow}>
+        {HOME_QUICK_CHIPS.map((chip) => (
+          <QuickChip
+            key={chip.id}
+            label={chip.label}
+            onPress={() => router.push(chip.route as any)}
+          >
+            {QUICK_CHIP_GLYPH[chip.id]}
+          </QuickChip>
+        ))}
+      </View>
+    ),
+
+    dawah: (
+      <View>
+        <HomeSectionHeader title="تصميمات دعوية" onViewAll={goToSections} />
+        <AsyncContent
+          status={dawahStatus}
+          error={dawahError}
+          onRetry={refreshDawah}
+          skeleton={<SkeletonPosterList count={3} />}
+          emptyMessage="لا يوجد ملصقات دعوية"
+        >
+          <DawahCarousel
+            items={dawahData}
+            onItemPress={(p) =>
+              router.push({
+                pathname: '/share-sheet' as any,
+                params: { tone: p.tone, title: p.title, body: p.body },
+              })
+            }
+          />
+        </AsyncContent>
+      </View>
+    ),
+  };
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
@@ -67,105 +184,23 @@ export default function HomeScreen() {
         contentContainerStyle={[styles.container, { paddingBottom: SCREEN_BOTTOM_BREATHING }]}
         showsVerticalScrollIndicator={false}
       >
-        <HomeHeader onSearchOpen={() => router.push('/search' as any)} />
-
-        {/* Hero 1 — القرآن حياة */}
-        <View style={styles.heroPad}>
-          <HeroQuran onMore={goToSections} />
-        </View>
-
-        {/* Hero 2 — محمد رسول الله ﷺ */}
-        <View style={[styles.heroPad, { marginTop: 24 }]}>
-          <HeroProphet onMore={goToSections} />
-        </View>
-
-        {/* Scholars */}
-        <View style={{ marginTop: 24 }}>
-          <HomeSectionHeader title="العلماء والمشايخ" onViewAll={goToSections} />
-          <AsyncContent
-            status={scholarsStatus}
-            error={scholarsError}
-            onRetry={refreshScholars}
-            skeleton={<SkeletonCardList count={3} />}
-            emptyMessage="لا يوجد علماء"
-          >
-            <RtlCarousel contentContainerStyle={styles.scrollerPad}>
-              {featuredScholars.map((s) => (
-                <View key={s.id} style={styles.scrollerItem}>
-                  <ScholarCard id={s.id} svg={SVG_BY_ID[s.id]} name={s.name} />
-                </View>
-              ))}
-            </RtlCarousel>
-          </AsyncContent>
-        </View>
-
-        {/* Books */}
-        <View style={{ marginTop: 24 }}>
-          <HomeSectionHeader title="الكتب العلمية" onViewAll={goToSections} />
-          <AsyncContent
-            status={booksStatus}
-            error={booksError}
-            onRetry={refreshBooks}
-            skeleton={<SkeletonCardList count={3} />}
-            emptyMessage="لا توجد كتب"
-          >
-            <RtlCarousel contentContainerStyle={styles.scrollerPad}>
-              {bookLectures.slice(0, 3).map((b) => (
-                <View key={b.id} style={styles.scrollerItem}>
-                  <BookCard id={b.id} name={b.title} />
-                </View>
-              ))}
-            </RtlCarousel>
-          </AsyncContent>
-        </View>
-
-        {/* أنتِ ملكة */}
-        <View style={[styles.heroPad, { marginTop: 24 }]}>
-          <QueenCard onMore={goToSections} />
-        </View>
-
-        {/* Quick chips — JSX order is hardcoded to the visual RTL order
-            (left → right on screen): كتب صوتية → برامج إذاعية → حصريات خزائن الرحمن.
-            Hardcoding wins over flexDirection auto-flip per CLAUDE.md (G17). */}
-        <View style={{ marginTop: KhazainSpacing.x6 }}>
-          <View style={styles.quickChipsRow}>
-            <QuickChip label="كتب صوتية">
-              <HeadphonesGlyph />
-            </QuickChip>
-            <QuickChip label="برامج إذاعية">
-              <MicGlyph />
-            </QuickChip>
-            <QuickChip label="حصريات خزائن الرحمن">
-              <StarGlyph />
-            </QuickChip>
+        {HOME_SECTION_ORDER.map((key, index) => (
+          <View key={key} style={index === 0 ? undefined : styles.sectionGap}>
+            {sections[key]}
           </View>
-        </View>
-
-        {/* Dawah posters — Twitch-style focused carousel */}
-        <View style={{ marginTop: 24 }}>
-          <HomeSectionHeader title="تصميمات دعوية" onViewAll={goToSections} />
-          <AsyncContent
-            status={dawahStatus}
-            error={dawahError}
-            onRetry={refreshDawah}
-            skeleton={<SkeletonPosterList count={3} />}
-            emptyMessage="لا يوجد ملصقات دعوية"
-          >
-            <DawahCarousel
-              items={dawahData}
-              onItemPress={(p) =>
-                router.push({
-                  pathname: '/share-sheet' as any,
-                  params: { tone: p.tone, title: p.title, body: p.body },
-                })
-              }
-            />
-          </AsyncContent>
-        </View>
+        ))}
       </ScrollView>
     </SafeAreaView>
   );
 }
+
+// Keyed by the chip id, not its Arabic label: renaming a label in
+// HOME_QUICK_CHIPS must not silently drop the glyph.
+const QUICK_CHIP_GLYPH: Record<HomeQuickChip['id'], React.ReactNode> = {
+  audiobooks: <HeadphonesGlyph />,
+  radio: <MicGlyph />,
+  exclusive: <StarGlyph />,
+};
 
 // ── Quick-chip badge glyphs (small inline SVGs, ported verbatim from home.jsx) ────
 
@@ -215,21 +250,20 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 0,
   },
+  sectionGap: {
+    marginTop: HOME_SECTION_GAP,
+  },
   heroPad: {
     paddingHorizontal: 16,
-    marginTop: 8,
+    marginTop: HOME_HERO_TOP_GAP,
   },
   scrollerPad: {
     paddingHorizontal: 16,
     paddingTop: 12,
     gap: 12,
-    flexDirection: 'row',
-  },
-  scrollerItem: {
-    // Margin-based gap not yet supported on old RN; add manual spacing with paddingRight on all but last.
   },
   quickChipsRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     gap: 12,
     paddingHorizontal: 16,
     // Owns the breathing room for QuickChip's floating badge (top:-11)

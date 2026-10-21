@@ -1,3 +1,4 @@
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -14,11 +15,7 @@ type Props = {
 export function RecentSearchRow({ query, onPress, onRemove }: Props) {
   return (
     <View style={styles.row}>
-      <Pressable onPress={onPress} style={styles.tap}>
-        <Text style={styles.text} numberOfLines={1}>
-          {query}
-        </Text>
-      </Pressable>
+      {/* Physical left → right: remove button, then the query text. */}
       <Pressable
         onPress={onRemove}
         hitSlop={10}
@@ -31,14 +28,19 @@ export function RecentSearchRow({ query, onPress, onRemove }: Props) {
           <View style={[styles.xLine, { transform: [{ rotate: '-45deg' }] }]} />
         </View>
       </Pressable>
+      <Pressable onPress={onPress} style={styles.tap}>
+        <Text style={styles.text} numberOfLines={1}>
+          {query}
+        </Text>
+      </Pressable>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   row: {
+    ...PHYSICAL_ROW,
     height: 44,
-    flexDirection: 'row',
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(141,107,52,0.08)',

@@ -1,4 +1,6 @@
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { todayHijriArabic } from '@/lib/hijriDate';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -6,8 +8,11 @@ import Svg, { Path } from 'react-native-svg';
 import { SearchPill } from '../primitives';
 import { FoundationMark } from './FoundationMark';
 
-// Home header row: bell chip (leading end), greeting + Hijri date + FoundationMark (trailing end),
-// then SearchPill below. Matches design_source/app/home.jsx HomeHeader.
+// Home header row (Figma node 2001:940).
+//
+// Physical left → right: [bell chip] ......... [greeting + Hijri date][mark]
+// Authored in that order inside PHYSICAL_ROW containers so the bell cannot
+// swap to the right under forceRTL.
 export function HomeHeader({
   greeting = 'سبحان الله',
   hijriDate = todayHijriArabic(),
@@ -20,21 +25,9 @@ export function HomeHeader({
   onBellPress?: () => void;
   onSearchOpen?: () => void;
 }) {
-  // RTL visual layout (right → left): [FoundationMark][greeting block]   [bell]
-  // We use absolute positioning so we don't depend on flex auto-flip
-  // (which is unreliable on web / stale dev reloads — see CLAUDE.md).
   return (
     <View style={styles.wrap}>
       <View style={styles.row}>
-        <View style={styles.greetBlock}>
-          <FoundationMark />
-          <View style={styles.greetText}>
-            <Text style={styles.greeting}>{greeting}</Text>
-            {/* Omit the line entirely when the date is unavailable. Showing a
-                placeholder would mean displaying a Hijri date that is wrong. */}
-            {hijriDate ? <Text style={styles.hijri}>{hijriDate}</Text> : null}
-          </View>
-        </View>
         <Pressable
           onPress={onBellPress}
           hitSlop={10}
@@ -44,6 +37,15 @@ export function HomeHeader({
         >
           <BellGlyph />
         </Pressable>
+        <View style={styles.greetBlock}>
+          <View style={styles.greetText}>
+            <Text style={styles.greeting}>{greeting}</Text>
+            {/* Omit the line entirely when the date is unavailable. Showing a
+                placeholder would mean displaying a Hijri date that is wrong. */}
+            {hijriDate ? <Text style={styles.hijri}>{hijriDate}</Text> : null}
+          </View>
+          <FoundationMark />
+        </View>
       </View>
       <View style={{ marginTop: 8 }}>
         <SearchPill placeholder="بحث.." onPress={onSearchOpen} />
@@ -82,15 +84,13 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   row: {
-    height: 54,
-    position: 'relative',
-    justifyContent: 'center',
+    ...PHYSICAL_ROW,
+    minHeight: 54,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
   },
   bell: {
-    position: 'absolute',
-    left: 0,
-    top: '50%',
-    marginTop: -16,
     width: 32,
     height: 32,
     borderRadius: 16,
@@ -98,33 +98,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     padding: 4,
+    flexShrink: 0,
   },
-  // RTL visual order: [FoundationMark][greetText] anchored to the right edge.
-  // JSX order matches: FoundationMark first → renders on the right under forceRTL.
+  // Physical order inside the right-hand group: [greetText][FoundationMark].
   greetBlock: {
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    bottom: 0,
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
+    flex: 1,
+    minWidth: 0,
     alignItems: 'center',
+    justifyContent: 'flex-end',
     gap: 8,
   },
   greetText: {
+    flexShrink: 1,
+    minWidth: 0,
     alignItems: 'flex-end',
   },
   greeting: {
-    fontFamily: 'TheMixArab',
-    fontSize: 16,
-    color: KhazainColors.ink900,
-    fontWeight: '600',
-    writingDirection: 'rtl',
+    ...textStyle('body', { color: KhazainColors.ink900 }),
   },
   hijri: {
-    fontFamily: 'TheMixArab',
-    fontSize: 14,
-    color: KhazainColors.inkSubtle,
-    marginTop: 4,
-    writingDirection: 'rtl',
+    ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
+    marginTop: 2,
   },
 });
