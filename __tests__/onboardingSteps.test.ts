@@ -79,7 +79,9 @@ describe('selectable row with a preview control', () => {
       new RegExp(`\\b${key}:\\s*\\{([^}]*)\\}`).exec(src)?.[1] ?? '';
 
     it('one BORDER constant carries both widths', () => {
-      expect(row()).toMatch(/const BORDER = \{ idle: 1, selected: 1\.5 \} as const;/);
+      const border = /const BORDER = \{([^}]*)\}/.exec(row())?.[1] ?? '';
+      expect(border).toMatch(/idle:\s*1\b/);
+      expect(border).toMatch(/selected:\s*1\.5\b/);
     });
     it('the card carries background, radius and minHeight 64 but no border', () => {
       // Yoga applies minHeight to the border-box; with no border on the card
@@ -100,11 +102,17 @@ describe('selectable row with a preview control', () => {
       expect(frame).toMatch(/borderWidth:\s*BORDER\.idle\b/);
       expect(frameSelected).toMatch(/borderWidth:\s*BORDER\.selected\b/);
       expect(frameSelected).toMatch(/borderColor:\s*KhazainColors\.goldAccent/);
-      const overlay = /<View\s+pointerEvents="none"[^>]*styles\.frame[^>]*\/>/.exec(src)?.[0] ?? '';
-      expect(overlay).not.toBe('');
+      // The self-closing <View ... /> whose style starts with styles.frame.
+      const at = src.indexOf('style={[styles.frame');
+      expect(at).toBeGreaterThan(-1);
+      const overlay = src.slice(src.lastIndexOf('<View', at), src.indexOf('/>', at) + 2);
+      expect(overlay).toMatch(/^<View\b/);
+      expect(overlay).toMatch(/\spointerEvents="none"/);
       expect(overlay).toMatch(/accessible=\{false\}/);
       expect(overlay).toMatch(/importantForAccessibility="no-hide-descendants"/);
       expect(src.indexOf('SELECTABLE_ROW_ORDER.map')).toBeLessThan(src.indexOf(overlay));
+      // The gold 1.5pt frame applies only when the row is selected.
+      expect(overlay).toMatch(/style=\{\[styles\.frame, selected \? styles\.frameSelected : null\]\}/);
     });
     it('the radio pads by 12 / 16 plus the border, so its origin stays on the pixel grid', () => {
       const src = row();
@@ -116,11 +124,26 @@ describe('selectable row with a preview control', () => {
         expect(inset).toMatch(new RegExp(`paddingVertical:\\s*12 \\+ BORDER\\.${w}\\b`));
         expect(inset).toMatch(new RegExp(`paddingHorizontal:\\s*16 \\+ BORDER\\.${w}\\b`));
       }
+      // Each inset applies in the state whose border it adds.
+      expect(src).toMatch(/selected \? styles\.selectSelected : styles\.selectIdle/);
     });
     it('the preview keeps its 12pt inset inside the border', () => {
       const src = row();
       expect(style(src, 'previewSlot')).toMatch(/marginLeft:\s*12 \+ BORDER\.idle\b/);
       expect(style(src, 'previewSlotSelected')).toMatch(/marginLeft:\s*12 \+ BORDER\.selected\b/);
+      expect(src).toMatch(/selected \? styles\.previewSlotSelected : styles\.previewSlot\b/);
+    });
+    it('the whole card scales on press, as the bordered row did at 0635ea1', () => {
+      const src = row();
+      // The card's opening tag: border frame, shadow and content shrink together.
+      const card = /<View\s+style=\{\[\s*styles\.card,[\s\S]*?\]\}\s*>/.exec(src)?.[0] ?? '';
+      expect(card).toMatch(/transform:\s*\[\{\s*scale:\s*pressed \? 0\.98 : 1\s*\}\]/);
+      // The radio reports the press but no longer scales itself.
+      const pressable = src.slice(src.indexOf('<Pressable'), src.indexOf('</Pressable>'));
+      expect(pressable).toMatch(/onPressIn=\{\(\) => setPressed\(true\)\}/);
+      expect(pressable).toMatch(/onPressOut=\{\(\) => setPressed\(false\)\}/);
+      expect(pressable).not.toMatch(/scale/);
+      expect(src).toMatch(/const \[pressed, setPressed\] = useState\(false\)/);
     });
   });
   it('PreviewButton is a labelled 44pt button with busy state', () => {

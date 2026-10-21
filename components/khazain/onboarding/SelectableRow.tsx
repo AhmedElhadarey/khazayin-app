@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
@@ -37,9 +37,13 @@ const BORDER = { idle: 1, selected: 1.5 } as const;
  * card. At 0635ea1 the bordered view WAS the radio, so its origin sat on the
  * pixel grid and the border acted as padding. A 1.5pt border on the card puts
  * the radio's origin on a half pixel at 3x, and the tick rasterised one device
- * pixel lower. With the overlay the radio starts at the card's origin and pads
- * by `12/16 + border`, so the row without a preview (the qira'a step) is
- * pixel-identical to the base row.
+ * pixel lower. With the overlay, and without a preview, the radio starts at
+ * the card's origin and pads by `12/16 + border`, so the row without a preview
+ * (the qira'a step) is pixel-identical to the base row.
+ *
+ * Press feedback also matches the base row: the radio reports its press state
+ * (`onPressIn`/`onPressOut`) and the whole card — frame, shadow and content —
+ * scales to 0.98, as the bordered Pressable did at 0635ea1.
  */
 export function SelectableRow({
   title,
@@ -48,6 +52,7 @@ export function SelectableRow({
   onPress,
   preview,
 }: Props): React.ReactElement {
+  const [pressed, setPressed] = useState(false);
   const slots: Record<SelectableRowSlot, React.ReactNode> = {
     preview: preview ? (
       <View style={selected ? styles.previewSlotSelected : styles.previewSlot}>{preview}</View>
@@ -55,14 +60,12 @@ export function SelectableRow({
     select: (
       <Pressable
         onPress={onPress}
+        onPressIn={() => setPressed(true)}
+        onPressOut={() => setPressed(false)}
         accessibilityRole="radio"
         accessibilityState={{ selected }}
         accessibilityLabel={subtitle ? `${title}، ${subtitle}` : title}
-        style={({ pressed }) => [
-          styles.select,
-          selected ? styles.selectSelected : styles.selectIdle,
-          { transform: [{ scale: pressed ? 0.98 : 1 }] },
-        ]}
+        style={[styles.select, selected ? styles.selectSelected : styles.selectIdle]}
       >
         {selected ? (
           <Svg width={18} height={18} viewBox="0 0 18 18">
@@ -91,7 +94,7 @@ export function SelectableRow({
   };
 
   return (
-    <View style={[styles.card, KhazainShadows.card]}>
+    <View style={[styles.card, KhazainShadows.card, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
       {SELECTABLE_ROW_ORDER.map((slot) => (
         <React.Fragment key={slot}>{slots[slot]}</React.Fragment>
       ))}
@@ -118,7 +121,9 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
   },
   frame: {
-    // Drawn over the slots, so the radio's origin stays on the pixel grid.
+    // Absolutely positioned, so the border takes no layout space and the
+    // radio's origin stays on the pixel grid; rendered last so it paints over
+    // the slots.
     ...StyleSheet.absoluteFillObject,
     borderRadius: 16,
     borderWidth: BORDER.idle,
@@ -135,12 +140,14 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     flex: 1,
     // Fill the card's full height (the card centres its children), so the
-    // radio's touch target is the whole row.
+    // radio's touch target is the full row height.
     alignSelf: 'stretch',
     alignItems: 'center',
     gap: 12,
   },
-  // The base row's 12 / 16 padding, plus the frame border it sat inside.
+  // The base row's 12 / 16 padding, plus the frame border it sat inside. The
+  // border term matters on edges that touch the frame; with a preview, the
+  // radio's left edge sits beside the preview, not the border.
   selectIdle: {
     paddingVertical: 12 + BORDER.idle,
     paddingHorizontal: 16 + BORDER.idle,
