@@ -165,7 +165,9 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
     () =>
       new MushafPageTrackingController({
         onRead: (page) => {
-          useProgressStore.getState().notePageRead(page).catch(() => undefined);
+          useProgressStore.getState().notePageRead(page).catch((err) => {
+            if (__DEV__) console.warn('[mushaf] page-read record failed', page, err);
+          });
         },
       }),
   );

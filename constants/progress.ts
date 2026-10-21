@@ -105,9 +105,10 @@ export const PAGE_DWELL_MAX_STEP_MS = 2000;
 
 /**
  * Starting page (1-based) for each surah in the standard 604-page Madinah
- * Mushaf. Index = surah number (1..114). Used by the Mushaf screen to record
- * a page-read event when the user opens a surah, until a real swipable page
- * model lands.
+ * Mushaf. Index = surah number (1..114). Drives the Mushaf reader's meta line
+ * (frame 2349:982) and is the `groupAyatByPage` fallback for an ayah the page
+ * table cannot place. Pages are recorded per page as they are read
+ * (services/mushafPageTracking.ts), not when a surah opens.
  */
 export const SURAH_START_PAGES: ReadonlyArray<number> = [
   0, // index 0 unused
