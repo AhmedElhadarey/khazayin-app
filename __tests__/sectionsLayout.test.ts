@@ -82,6 +82,20 @@ describe('the page chrome every section frame repeats', () => {
     expect(PAGE_CHROME.searchRadius).toBe(12);
   });
 
+  it('tints the search glyph navy, as all 24 instances do', () => {
+    // Every `vuesax/bulk/search-normal` instance overrides both vectors to
+    // `#184B76`; the circle's 40% is the master's layer opacity, which the
+    // generated path already carries. The app had tinted it placeholder beige.
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', 'components/khazain/primitives/SearchPill.tsx'),
+      'utf8',
+    );
+    expect(src).toMatch(/const searchGlyphColor = dark \? [^:]+ : KhazainColors\.navy;/);
+    const glyphs = src.match(/<FigmaIcon name="Search"[^>]*>/g) ?? [];
+    expect(glyphs.length).toBeGreaterThan(0);
+    for (const glyph of glyphs) expect(glyph).toContain('color={searchGlyphColor}');
+  });
+
   it('leaves the search field under the touch minimum, deliberately', () => {
     // It is 40 because the file says 40; the target is made up with hitSlop.
     // If this ever stops being true the hitSlop in SearchPill is dead weight.
