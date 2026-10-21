@@ -1,25 +1,35 @@
-# Onboarding flow gaps — Design
+# Onboarding flow gaps — Design (v2)
 
 **Date:** 2026-10-21
 **Branch:** `feat/onboarding-audio-previews`
 **Ticket:** "First-Time Onboarding Flow" — https://trello.com/c/QTQYqLBB (marked Done, failed the acceptance audit)
-**Status:** Draft for review. The defaults below let work proceed; the open questions at the end are for the user.
+**Status:** v2. Incorporates the CTO review ("APPROVE WITH CHANGES") and the user's decisions of 2026-10-21 (§8).
+
+### v2 changes from v1
+
+| Change | Was (v1) | Now (v2) |
+|---|---|---|
+| Preview source | archive *series* id; metadata fetch + `pickPreviewEpisode` at play time | one **verified direct file** per reciter `{ archiveId, file }` → URL via `buildDownloadUrl` (no metadata round trip, no `NoAudioError` path) |
+| Popular list | hand-picked 6 ids | **the reciters with a verified file** (user decision Q1) |
+| Source verification | gated task near the end | **early task**, before the engine work |
+| Queue isolation | 750 ms drain window | synchronous module-level `_queueOwner: 'none' \| 'lecture' \| 'preview'` |
+| Live lecture during preview | pause, save position, restore | **removed**. Previews are hidden while a lecture owns the queue. |
+| Superseded starts | one currency check | a check after **every** await; `'playing'` is set when `play()` resolves |
+| Row chrome | padding moved to the outer View | padding and `minHeight` **stay on the select Pressable**; the outer View carries only border, background and shadow |
 
 ---
 
 ## 1. Problem
 
-The ticket shipped as track 003 (`app/onboarding.tsx` plus `components/khazain/onboarding/*`). An audit against the card's acceptance criteria found two PARTIAL criteria and one deviation that needs recording:
+The ticket shipped as track 003 (`app/onboarding.tsx` plus `components/khazain/onboarding/*`). The audit against the card found:
 
 | # | Audit finding | Evidence |
 |---|---|---|
-| G1 | **PARTIAL: no audio previews.** The reciter step only lets the user select. | `components/khazain/onboarding/ReciterStep.tsx:14-15`: "Visual-only — audio previews are deferred (FR-006)". |
-| G2 | **PARTIAL: 8 screens, but the card asks for 3-4.** | `constants/settings.ts:60` `ONBOARDING_STEP_COUNT = 8`; `app/onboarding.tsx:171-196` renders welcome, qira'a, reciter, 4 × `FEATURE_STEPS`, channels. |
-| G3 | **Deviation: Welcome draws `FoundationMark`, not `LogoBadge`.** | `components/khazain/onboarding/WelcomeStep.tsx:13-18`; pinned by `__tests__/fontScaleChrome.test.ts:84-91`. |
+| G1 | **PARTIAL: no audio previews.** | `components/khazain/onboarding/ReciterStep.tsx:14-15`: "Visual-only — audio previews are deferred (FR-006)". |
+| G2 | **PARTIAL: 8 screens, but the card asks for 3-4.** | `constants/settings.ts:60` `ONBOARDING_STEP_COUNT = 8`; `app/onboarding.tsx:171-196`. |
+| G3 | **Deviation: Welcome draws `FoundationMark`, not `LogoBadge`.** | `WelcomeStep.tsx:13-18`; pinned by `__tests__/fontScaleChrome.test.ts:84-91`. |
 
-A gap the audit did not list turned up while designing G1:
-
-- **G1a: no reciter has an audio source.** All 16 entries in `data/content/quran.ts:114-131` lack `archiveId` (the comment at `:110-112` says so on purpose). `docs/plans/2026-07-23-audio-playback-design.md` §Decisions 4 records that the foundation's Internet Archive account "has no per-reciter surah recitations". With the "hide the button when there is no source" rule, the preview would ship invisible unless a source is supplied. See §8 Q1.
+- **G1a: no reciter has an audio source.** No entry in `data/content/quran.ts:114-131` has an `archiveId`. The foundation's archive has no per-reciter recitations (`docs/plans/2026-07-23-audio-playback-design.md` §Decisions 4). The user has therefore approved public Internet Archive files, **each verified**, with sign-off before merge (§8 Q1).
 
 ## 2. Acceptance criteria (verbatim from the card)
 
@@ -32,191 +42,216 @@ A gap the audit did not list turned up while designing G1:
 - Returning users skip onboarding entirely
 - Users can skip onboarding at any point
 
-Status after this design:
-
 | Criterion | Today | After |
 |---|---|---|
-| 3-4 screens, smooth transitions | 8 screens; 280 ms slide+fade | **4 screens**; the transition code at `app/onboarding.tsx:53-108` is unchanged |
-| Welcome identity | FoundationMark + Wordmark + mission | unchanged; recorded as an accepted deviation (§4.4) |
+| 3-4 screens, smooth transitions | 8 screens | **4 screens**; transition code `app/onboarding.tsx:53-108` unchanged |
+| Welcome identity | FoundationMark + Wordmark + mission | unchanged; **user-approved deviation** (§4.4) |
 | Qira'a selection | met | unchanged |
-| Popular reciters + audio previews | full list, no audio | **6 curated reciters** + a play/stop preview per row |
-| Telegram/YouTube CTAs | met (`ChannelsStep.tsx`) | unchanged |
-| Completion flag persists | met (`settingsStore`, T-SS-12) | unchanged |
-| Returning users skip | met (`services/onboardingGate.ts`, `app/_layout.tsx:131-195`) | unchanged |
-| Skip at any point | met (`OnboardingFooter.tsx:20-21`) | unchanged; skipping also stops any preview |
+| Popular reciters + previews | full list, no audio | the reciters with a verified Al-Fatiha file, each with a play/stop preview |
+| Telegram/YouTube CTAs | met | unchanged |
+| Completion flag persists | met (T-SS-12) | unchanged |
+| Returning users skip | met (`services/onboardingGate.ts`) | unchanged |
+| Skip at any point | met (`OnboardingFooter.tsx:20-21`) | unchanged; skip also stops a preview |
 
 ## 3. Governing authority (no Figma frame)
 
-`docs/visual-regression/figma-mobile-screen-map.json` has no onboarding node, and none of the 28 frames covers this flow. **No Figma frame is affected and nothing here claims to "match Figma".** The authorities are:
+No onboarding node exists in `docs/visual-regression/figma-mobile-screen-map.json`, so **no Figma frame is affected and nothing here claims to "match Figma"**. The governing contracts are:
 
 - `constants/layout.ts`: `RTL_TEXT` (:112), `PHYSICAL_BOX` (:122), `PHYSICAL_ROW` (:125), `MIN_TOUCH_TARGET` (:153).
-- `constants/rtlContracts.ts`: physical slot orders. This design adds `SELECTABLE_ROW_ORDER`.
-- `constants/typography.ts` and the `Khazain*` tokens in `constants/theme.ts`. Sizes and colours stay the ones the step components already use.
+- `constants/rtlContracts.ts`: this design adds `SELECTABLE_ROW_ORDER`.
+- `constants/typography.ts` and the `Khazain*` tokens in `constants/theme.ts`.
 
 ## 4. Approach
 
 ### 4.1 G2: four screens (welcome → qira'a → reciter → channels)
 
-**Chosen.** Fold the four feature highlights into the Welcome screen as a short list (one line each, gold bullet), and remove the four `FeatureStep` screens.
+- `constants/settings.ts`: `ONBOARDING_STEPS = ['welcome', 'qiraa', 'reciter', 'channels'] as const`, with `ONBOARDING_STEP_COUNT = ONBOARDING_STEPS.length`. This removes the LOCKSTEP hazard noted at `:57-58`.
+- `renderStep` (`app/onboarding.tsx:174-196`) switches on `ONBOARDING_STEPS[step]`. The switch is exhaustive over the id union, so `tsc` catches a missing case. There is **no index fallback**, because the step is always clamped (by the `goTo` clamp at `:111` and by the store).
+- Welcome gains `WELCOME_HIGHLIGHTS`: four one-line highlights taken from the old `FEATURE_STEPS`, shown as a gold-bulleted list. The step already scrolls (`WelcomeStep.tsx:51-64`).
+- `FeatureStep.tsx` is **deleted** (user decision Q3) and removed from the barrel. The illustrations it used (`RehlArt`, `ScrollArt`, `CrownBookArt` in `components/khazain/art/`) **stay**. Per CLAUDE.md they are the component API that future client art will replace.
+- Rejected alternatives: keeping 8 screens (the card is the authority, and the user confirmed it, Q2); a single carousel step (still more than 4 screens, and it adds RTL scroll-origin risk).
 
-- Replace the magic count with an ordered id list in `constants/settings.ts`:
-  `ONBOARDING_STEPS = ['welcome', 'qiraa', 'reciter', 'channels'] as const` and `ONBOARDING_STEP_COUNT = ONBOARDING_STEPS.length`. This removes the "LOCKSTEP" hazard noted at `constants/settings.ts:57-58`, where a step missing from `renderStep` silently showed Welcome.
-- `renderStep` in `app/onboarding.tsx:174-196` switches on `ONBOARDING_STEPS[step]` rather than on raw indices. The `default → WelcomeStep` fallback goes away, and the `switch` is exhaustive over the id union, so `tsc` catches a missing case.
-- `WelcomeStep.tsx` gains `WELCOME_HIGHLIGHTS`, four short Arabic lines taken from the old `FEATURE_STEPS` titles and descriptions. It renders them under the mission. The step is already a `ScrollView` with `flexGrow: 1` (`WelcomeStep.tsx:51-64`), so the longer content scrolls at font scale 1.7 / 320 pt instead of spilling, the same protection the file already has.
-- `FeatureStep.tsx` loses its last caller. It is removed and dropped from the barrel (`index.ts:14`). It is track-003 code, not a file on CLAUDE.md's legacy list. See Q3.
+### 4.2 G2 migration: persisted resume when the count shrinks
 
-**Rejected:**
-- *Keep 8 and argue for it.* The card is the acceptance authority. Commit `d74bfc1` ("feat(onboarding): feature-education screens…", 2026-06-17) gives the intent, "4 'how the app works' steps", but cites no ticket or product decision. Recorded as Q2.
-- *Collapse the features into one swipeable carousel step (5 screens).* That is still above 4, and it adds a horizontal scroller with RTL scroll-origin risk (see the `RtlCarousel` exception in CLAUDE.md).
-
-### 4.2 G2 migration: persisted step resume when the count shrinks
-
-`onboardingStep` is persisted (`store/settingsStore.ts:268-274`). Today, a stored value `>= ONBOARDING_STEP_COUNT` is **reset to 0**. With a count of 4, a user who stopped at old step 3-7 would restart at Welcome. That does not crash (the screen reads the step once at `app/onboarding.tsx:35`, and `renderStep` has a fallback), but it throws away their progress.
-
-**Chosen:** an explicit legacy mapping inside `coerceSettings`, with no schema bump:
+The `onboardingStep` coercion (`store/settingsStore.ts:266-274`) gains a legacy mapping with **no schema bump**:
 
 | Stored step | Meaning in the 8-step flow | New step |
 |---|---|---|
-| 0, 1, 2 | welcome / qira'a / reciter | same index (same meaning) |
-| 3-6 | feature screens (setup already done) | **3** (channels, the next unseen screen) |
-| 7 | channels | **3** (channels) |
-| ≥ 8, negative, non-integer, non-number | not a step either layout ever wrote | **0** (existing reset; T-SS-11 keeps passing) |
+| 0, 1, 2 | welcome / qira'a / reciter | same |
+| 3-7 | features / channels (setup done) | **3** (channels) |
+| ≥ 8, negative, non-integer, non-number | never written | **0** (existing reset; T-SS-11 still holds) |
 
-This is the rule "an integer in `[COUNT, LEGACY_ONBOARDING_STEP_COUNT)` clamps to `COUNT - 1`", with `LEGACY_ONBOARDING_STEP_COUNT = 8` held as a named constant. The mapping is unambiguous without a version bump because indices 0-2 mean the same thing in both layouts, and every old index ≥ 3 should land on channels. **Rejected:** bumping `SETTINGS_SCHEMA_VERSION` to 4 just to tag the layout. That changes the version gate (`settingsStore.ts:184-197`), touches every migration test, and buys nothing the table above does not already give. As `settingsStore.ts:377-387` documents, coercion is not persisted at hydration; the mapping is idempotent, so re-deriving it on each cold start is harmless.
+Rule: an integer in `[COUNT, LEGACY_ONBOARDING_STEP_COUNT = 8)` clamps to `COUNT - 1`.
 
-`scripts/visual-audit/skip-onboarding-ios.sh:19` writes `onboardingStep: 0`. It still works and needs no change.
+This works because indices 0-2 mean the same thing in both layouts. The Task 1 assertion `ONBOARDING_STEP_COUNT ≤ 4` protects the mapping: if the count grew back past 4, old indices would change meaning and the mapping would have to be revisited.
+
+Bumping `SETTINGS_SCHEMA_VERSION` was rejected: it would touch the version gate (`:184-197`) and every migration test, for no gain.
 
 ### 4.3 G1: per-row reciter audio preview
 
 #### Behaviour
 
-- Each reciter row with a preview source shows a 44 × 44 play/stop button. Rows without a source show no button (no disabled control).
-- One preview at a time. Starting B while A is loading or playing stops A, and A's late network result is discarded.
-- The sample is **Al-Fatiha** from that reciter's source, capped at **30 s** (`PREVIEW_MAX_SEC`), then it stops by itself.
-- The preview stops on: tapping stop, starting another row, a step change (back or next), skip, finish, the step unmounting, the app going to the background, a remote stop or pause, the end of the queue, or a playback error.
-- Failures show an Arabic toast through the root `ToastOverlay` (`app/_layout.tsx:476`, so it is visible over onboarding):
-  - network or archive error → `تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.`
-  - source has no mp3 → `لا تتوفر عيّنة صوتية لهذا القارئ`
-- Selecting a reciter and previewing are separate controls. Previewing never changes `preferredReciterId`.
+- A row shows a 44 × 44 play/stop button **only if** that reciter has a verified preview source **and** the engine can preview. The engine cannot preview on web, or while a lecture owns the queue. Otherwise the row shows no button.
+- One preview at a time. Starting B stops A, and A's in-flight work is abandoned.
+- The sample is that reciter's verified **Al-Fatiha file**, capped at **30 s** (`PREVIEW_MAX_SEC`).
+- The preview stops on any of:
+  - tapping stop, or starting another row;
+  - a step change, skip or finish;
+  - the reciter step unmounting, or the app leaving the foreground;
+  - a remote pause or stop, the end of the track, or a playback error.
+- Failures show the Arabic toast `تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.` through the root `ToastOverlay` (`app/_layout.tsx:476`). This covers a rejected start and an RNTP `PlaybackError` during streaming.
+- Previewing never changes `preferredReciterId`. Select and preview are separate controls.
 
-#### Architecture (keeps the single audio boundary)
+#### Sources: verified direct files (user decision Q1)
+
+- `constants/settings.ts`:
+
+  ```ts
+  type PreviewSource = { archiveId: string; file: string };
+  ONBOARDING_RECITER_PREVIEW_SOURCES: Readonly<Record<string, PreviewSource>>
+  ```
+
+  It is keyed by reciter id and records the verification evidence in a comment. The URL is `buildDownloadUrl(archiveId, file)` (`services/archive/episodeResolver.ts`). Playback goes straight to the file, with no metadata fetch at play time.
+- **Popular list = verified list.** `ONBOARDING_POPULAR_RECITER_IDS` is the keys of the source map, in display order.
+- Candidates supplied by the user, to verify during implementation (Task 4):
+
+  | Reciter (id) | Candidate archive items |
+  |---|---|
+  | al-Minshawi (`r3`) | `Minshawi_Morattal_FullQuran`, `mos7af_Siddeeq_al_Minshawi` |
+  | al-Afasy (`r12`) | `mishari-rashid-al-afasy-quran-mp3`, `afasyrecitation` |
+  | al-Husary (`r2`) | `QuranRecitation-Husary` (flagged unverified) |
+
+  A candidate is accepted only if:
+  1. the item metadata names that reciter;
+  2. the file is surah 1, by name, track or title;
+  3. its duration and size are plausible for Al-Fatiha;
+  4. the download URL resolves to audio.
+
+  If **no** candidate verifies, implementation stops and escalates. The criterion cannot be met without a source, and the list would be empty.
+- `Reciter.archiveId` in `data/content/quran.ts` **is not set**. That would expose the surah-list bug where playback always starts at episode 0 (§9).
+- `selectOnboardingReciters(all, popularIds, selectedId)` returns the popular (verified) reciters in order. It **appends the user's current selection if it is not in the list**: the default `r7` is not a candidate and has no preview button. If none of the popular ids exist in the data, it falls back to the first 6.
+
+#### Architecture: one audio boundary, one queue owner
 
 ```
-ReciterStep ──▶ services/reciterPreview.ts  (UI-facing, never throws, Arabic toast)
-     │                    │
-     │ reads              ▼
-     │        services/audioEngine.ts  startReciterPreview / stopReciterPreview / canPreviewAudio
-     │                    │  (ONLY module importing react-native-track-player — unchanged rule)
-     ▼                    ▼ drives
-store/previewStore.ts  { reciterId, status: 'idle'|'loading'|'playing' }
-                          ▲
-services/audioEngine/syncBridge.ts — while a preview is active: suppress playerStore writes,
-                                     route Playing → status 'playing', end/err → stop preview
+ReciterStep ──▶ services/reciterPreview.ts   (UI facade: never throws, Arabic toast)
+     │                     │
+     │ reads               ▼
+     │        services/audioEngine.ts — _queueOwner: 'none' | 'lecture' | 'preview'
+     │            canPreviewAudio / startReciterPreview / stopReciterPreview
+     │            playLecture   → owner = 'lecture' (synchronously, first line)
+     │            togglePlayback→ owner 'preview' counts as "no queue"
+     ▼                     │ drives
+store/previewStore.ts { reciterId, status: 'idle'|'loading'|'playing' }
+                           ▲
+syncBridge.ts — owner 'preview': drop ALL playerStore writes; end/err → stopReciterPreview
+                QueueEnded clears the MiniPlayer only when owner === 'lecture'
 ```
 
-- **`store/previewStore.ts` (new, small Zustand store).** Holds UI state only. Like `playerStore`, it is driven one way by the engine and never imports it. This follows CLAUDE.md's "prefer a new small Zustand store".
-- **Engine (`services/audioEngine.ts`), new exports:**
-  - `canPreviewAudio()`: `false` on web. Once the Expo Go guard lands it becomes `!isInert()` (see Expo Go below).
-  - `startReciterPreview(reciter, archiveId)`:
-    1. Bump a generation token and set `{ reciterId, status: 'loading' }`.
-    2. If a **real** queue is playing, `TrackPlayer.pause()` and call `usePlayerStore.getState().setIsPlaying(false)` directly. That persists the lecture position through the existing `noteLectureTick` path (`playerStore.ts:117-137`), so it no longer depends on an async event that the preview flag would suppress.
-    3. `setupPlayer()`, then `fetchItemMetadata(archiveId)` and `resolveEpisodes` (`services/archive/*`), then `pickPreviewEpisode(episodes)`.
-    4. If the token changed meanwhile, return without touching the player.
-    5. `TrackPlayer.reset()`, `add({ id: 'preview:<reciterId>', … })`, `play()`, then start the 30 s cap timer.
-    6. Throws `NoAudioError` when there are no episodes, and lets `ArchiveError` propagate. On either, the store is cleared before the throw.
-  - `stopReciterPreview()`: a **no-op when no preview is active**. It must never `reset()` a real lecture queue. Otherwise it clears the cap timer, clears the store, opens a 750 ms drain window (`PREVIEW_DRAIN_MS`), and calls `TrackPlayer.reset()`.
-  - `playLecture` clears any active preview first, so a real play is never suppressed.
-- **`pickPreviewEpisode` (pure, `services/archive/episodeResolver.ts`)** returns the episode with `trackNumber === 1`. Failing that, the first whose file name starts with `001` or `1` followed by a non-digit. Failing that, `episodes[0]`.
-- **Bridge (`syncBridge.ts:30-67`)**, while `previewStore.reciterId !== null` **or** inside the drain window:
-  - `ActiveTrackChanged` and `ProgressUpdated` are ignored. No MiniPlayer track change, and **no lecture tick into SQLite**.
-  - `PlaybackState`:
-    - `Playing` sets the preview status to `'playing'`.
-    - `Paused`, `Stopped`, `Ended` or `None` call `stopReciterPreview()`, but **only while the status is `'playing'`**. The `None` that the preview's own `reset()` emits during `'loading'` is ignored.
-  - `QueueEnded` calls `stopReciterPreview()` and never `playerStore.setTrack(null)`. That call would flush a `completed = 1` tick for the user's real lecture (`playerStore.ts:102-108`).
-  - `PlaybackError` calls `stopReciterPreview()` and shows the preview toast once (not the generic one as well).
-- **Restoring the user's MiniPlayer.** The preview never writes `playerStore.track`, so the restored or paused track stays in the MiniPlayer. After the preview resets the queue, the MiniPlayer's play button takes the existing "no queue" path in `togglePlayback` (`audioEngine.ts:188-207`): it rebuilds the series and resumes from the position saved in step 2. In normal first-run use no real queue exists. The only route back into onboarding with a live queue is the dev "reset onboarding" action (`app/(tabs)/more/settings.tsx:125-130`).
-- **UI wiring.**
-  - `SelectableRow` becomes a `PHYSICAL_ROW` `View` holding two siblings: an optional `PreviewButton`, and the existing select `Pressable` (tick + text). Siblings rather than nested because a `Pressable` is `accessible` by default and would hide a nested button from VoiceOver. The physical order comes from a new `SELECTABLE_ROW_ORDER = ['preview', 'select']` in `rtlContracts.ts` (`select` is the existing Pressable, whose inner order stays tick → text), so the preview control sits on the physical left (trailing in RTL) and the Arabic title keeps leading at the right edge. The card chrome (background, border, shadow, gold selected border) moves from the Pressable to the outer `View`.
-  - `PreviewButton` (new): `PlayIcon` when idle, `ActivityIndicator` while loading, `PauseIcon` while playing. It is `accessibilityRole="button"`, labelled `استماع إلى عيّنة من تلاوة {name}` or `إيقاف العيّنة`, with `accessibilityState={{ busy }}`, at least `MIN_TOUCH_TARGET`.
-  - `QiraaStep` passes no preview, so its rows are unchanged.
-  - `ReciterStep` stops the preview in an unmount cleanup and on an `AppState` change away from `active`. `app/onboarding.tsx` also calls `stopPreview()` in `goTo` and `finish` as a second line of defence, since `router.replace` can keep the screen mounted through the transition.
-- **Preview source resolution (G1a).** `previewArchiveIdFor(reciter) = reciter.archiveId ?? ONBOARDING_RECITER_PREVIEW_SOURCES[reciter.id] ?? null`, where the map lives in `constants/settings.ts`. **`Reciter.archiveId` is deliberately left unset in `data/content/quran.ts`.** Setting it would make the reciter surah list (`services/surahPlayback.ts` → `playLecture`) play the series from episode 0 whichever surah was tapped, which is a separate bug (§7). The map starts **empty**. Filling it is gated on Q1.
+- **`_queueOwner`** is a module-level value in `services/audioEngine.ts`, read and written **synchronously**, so there is no timing window.
+  - `startReciterPreview` sets `'preview'` before its first await.
+  - `stopReciterPreview` sets `'none'` before its first await.
+  - `playLecture` sets `'lecture'` on its first line.
+  - The engine's `stop()` sets `'none'`.
+  - `setupPlayer` adopts an owner from a queue that survived a JS restart (Android "ContinuePlayback"): a `preview:`-prefixed active track gives `'preview'`, any other track gives `'lecture'`.
+- **`canPreviewAudio()` = `!isWeb() && _queueOwner !== 'lecture'`.** Previews are never offered over a live lecture queue, so the engine never pauses, saves or restores a lecture (v1's restore path is cut). In a first run the owner is `'none'`: `restoreLastLecture` only seeds the store and builds no queue. Previews are hidden only if the user played a lecture this session and then re-entered onboarding through the dev reset (`app/(tabs)/more/settings.tsx:125-130`).
+- **`startReciterPreview(reciter, source)`:**
+  1. Bump the token, set the owner to `'preview'`, call `begin(reciter.id)`, and clear the cap timer.
+  2. Run the following, checking **currency after every await**:
+     - `setupPlayer()`, check;
+     - `reset()`, check;
+     - `add({ id: 'preview:<id>', url, title: 'سورة الفاتحة — عيّنة', artist: name })`, check;
+     - `play()`, check;
+     - `markPlaying(id)` and start the 30 s cap timer.
+  3. On error, if still current: clear the timer and the store, set the owner to `'none'`, and rethrow.
 
-#### "Popular reciters"
+  Currency means the token is unchanged **and** the owner is still `'preview'`. A superseded start never *issues* another command. JS is single-threaded, so the check and the next call happen in the same tick. Any command it already issued reaches RNTP before the newer start's `reset()`. That is why no extra serialization is needed.
+- **`stopReciterPreview()`** is a no-op unless the owner is `'preview'`, so it can never reset a lecture queue. It works in two parts:
+  - Synchronously: bump the token, clear the timer, clear the store, and set the owner to `'none'`.
+  - Then: `reset()`.
+- **`togglePlayback`** (`audioEngine.ts:188-207`) treats owner `'preview'` as "no queue". The MiniPlayer's play button then rebuilds the user's lecture through `playLecture` (which takes ownership) instead of toggling the preview track.
+- **Bridge (`syncBridge.ts:30-67`):**
+  - **Owner `'preview'`:**
+    - Ignore `ActiveTrackChanged`, `ProgressUpdated` and `isPlaying` updates. There is no MiniPlayer change and **no lecture tick into SQLite**.
+    - `PlaybackState` `Paused`, `Stopped` or `Ended` while the status is `'playing'` calls `stopReciterPreview()`. The preview's own `reset()` happens while the status is still `'loading'`, so it is ignored.
+    - `QueueEnded` calls `stopReciterPreview()`.
+    - `PlaybackError` calls `stopReciterPreview()` and shows the preview toast once.
+  - **Any owner:** `QueueEnded` calls `playerStore.setTrack(null)` **only when the owner is `'lecture'`**. A `QueueEnded` that arrives after a preview has stopped (owner `'none'`) therefore cannot flush a `completed = 1` tick for the restored lecture (`playerStore.ts:102-108`). This rule replaces v1's drain window.
+- **UI.**
+  - `SelectableRow` becomes an outer `View`. It holds the border, background, shadow and the gold selected border, and **nothing else**. Inside it, in `SELECTABLE_ROW_ORDER = ['preview', 'select']`:
+    - an optional `PreviewButton`, with a physical left margin;
+    - the existing radio `Pressable`. It **keeps** its `paddingVertical: 12`, `paddingHorizontal: 16`, `minHeight: 64` and tick → text order.
+  - `QiraaStep` passes no preview, so its rows render exactly as today.
+  - The preview button is a sibling of the radio, not nested inside it, so VoiceOver reaches it.
+  - `PreviewButton` shows `PlayIcon`, an `ActivityIndicator` while loading, or `PauseIcon` while playing. It has `accessibilityRole="button"`, an Arabic label, `busy` state, and a size of at least `MIN_TOUCH_TARGET`.
+  - `ReciterStep` calls `stopPreview()` in an unmount cleanup and whenever `AppState` leaves `active`. `app/onboarding.tsx` calls `stopPreview()` first thing in `goTo` and `finish`.
 
-**Chosen:** a curated, ordered constant `ONBOARDING_POPULAR_RECITER_IDS = ['r1', 'r2', 'r3', 'r12', 'r4', 'r7']` (Abdul-Basit, al-Husary, al-Minshawi, al-Afasy, al-Sudais, al-Muaiqly). It includes `r7`, the default `preferredReciterId` (`constants/settings.ts:102`). It is applied by the pure `selectOnboardingReciters(all, popularIds, selectedId)`:
+#### Expo Go
 
-- Popular ids are returned in curated order, skipping ids the data source lacks.
-- If the user's current selection is not in the list, it is appended, so a resumed or replayed onboarding always shows the selected row.
-- If none of the curated ids exist (for example, a future API with different ids), it falls back to the first 6 of `all`.
+The Expo Go guard (`6e9d60d`, `services/audioEngine/rntp.ts`, `isInert()`) is only on `origin/fix/rntp-expo-go-guard`. It is not an ancestor of this branch.
 
-The full list stays available in Settings → القارئ (`app/settings-reciter.tsx`), which the step's subtitle already points to (`ReciterStep.tsx:29`).
+- The preview adds no new import of RNTP.
+- The button is hidden whenever `canPreviewAudio()` is false.
+- Task 12 is conditional: once the guard is in the base, `canPreviewAudio = () => !isInert() && _queueOwner !== 'lecture'`.
 
-**Rejected:** a `popular?: boolean` field on `Reciter` (`types/content.ts:53-64`). That is a content-contract change for a backend that does not exist yet (`services/api/httpAdapter.quran.ts:47`), and it would need mock and API coordination for an editorial choice the client may still change (Q4).
+### 4.4 G3: `FoundationMark`. **User-approved deviation** (Q6, 2026-10-21)
 
-#### Expo Go / inert engine
-
-On this base, `services/audioEngine.ts:13-17` imports `react-native-track-player` directly. The Expo Go guard (`6e9d60d`, adding `services/audioEngine/rntp.ts` and `isInert()`) is only on `origin/fix/rntp-expo-go-guard` and **is not an ancestor of this branch**. The design therefore:
-
-- adds **no new import site** of RNTP (preview lives in `audioEngine.ts` and the bridge, which the guard already rewrites);
-- hides the preview button when `canPreviewAudio()` is false, rather than showing a dead button or a toast;
-- includes a conditional reconciliation task: if the guard is merged first, `canPreviewAudio = () => !isInert()`, the start and stop functions short-circuit on `isInert()`, and a case is added to `inert.test.ts`.
-
-### 4.4 G3: `FoundationMark` instead of `LogoBadge`. Accepted deviation, recorded.
-
-The card says "LogoBadge + Wordmark + mission". `LogoBadge` is a generic octagon with an Amiri "خر" monogram and is not the foundation's mark. `FoundationMark` is the real asset, and the Home header renders it too. The criterion's intent ("foundation identity") is met more faithfully with the real mark, and `__tests__/fontScaleChrome.test.ts:84-91` pins the choice. **No change.** The deviation is recorded here and in the PR description.
+The card names "LogoBadge". `LogoBadge` is a generic octagon with an Amiri "خر" monogram. `FoundationMark` is the foundation's real mark, the same one the Home header uses. The user has decided to **keep FoundationMark**. There is no code change; the decision is recorded here and in the PR. `__tests__/fontScaleChrome.test.ts:84-91` keeps pinning it.
 
 ## 5. Data, route and store changes
 
 | Area | Change |
 |---|---|
-| Routes | None. `app/onboarding.tsx` stays the single root-stack route (`app/_layout.tsx:333`). |
-| `constants/settings.ts` | `ONBOARDING_STEPS`, derived `ONBOARDING_STEP_COUNT` (4), `LEGACY_ONBOARDING_STEP_COUNT` (8), `ONBOARDING_POPULAR_RECITER_IDS`, `ONBOARDING_RECITER_PREVIEW_SOURCES` (starts `{}`), `PREVIEW_MAX_SEC` (30). |
-| `store/settingsStore.ts` | The `onboardingStep` coercion (:266-274) gains the legacy mapping. No schema bump. Storage key unchanged. |
+| Routes | None. |
+| `constants/settings.ts` | `ONBOARDING_STEPS`, derived `ONBOARDING_STEP_COUNT` (4), `LEGACY_ONBOARDING_STEP_COUNT` (8), `PreviewSource`, `ONBOARDING_RECITER_PREVIEW_SOURCES` (verified), `ONBOARDING_POPULAR_RECITER_IDS` (its keys), `PREVIEW_MAX_SEC` (30). |
+| `store/settingsStore.ts` | Legacy step mapping in coercion. No schema bump. Same storage key. |
 | `store/previewStore.ts` | New, not persisted. |
-| `services/audioEngine.ts` | `canPreviewAudio`, `startReciterPreview`, `stopReciterPreview`, `isPreviewSuppressing` (store-active or drain window). `playLecture` clears the preview. |
-| `services/audioEngine/syncBridge.ts` | Preview suppression and routing. |
-| `services/archive/episodeResolver.ts` | `pickPreviewEpisode`. |
-| `services/reciterPreview.ts` | New UI facade: `toggleReciterPreview`, `stopPreview`, `previewArchiveIdFor`. |
+| `services/audioEngine.ts` | `_queueOwner` + `getQueueOwner`, `canPreviewAudio`, `startReciterPreview`, `stopReciterPreview`, `PREVIEW_ERROR_MESSAGE`. Owner set in `playLecture`, `stop`, `setupPlayer`. `togglePlayback` treats `'preview'` as no queue. |
+| `services/audioEngine/syncBridge.ts` | Owner-based suppression; QueueEnded clears the MiniPlayer only for `'lecture'`. |
+| `services/reciterPreview.ts` | New facade: `previewSourceFor`, `canPreview`, `toggleReciterPreview`, `stopPreview`. |
 | `services/onboardingReciters.ts` | New, pure: `selectOnboardingReciters`. |
 | `constants/rtlContracts.ts` | `SELECTABLE_ROW_ORDER`. |
-| Components | `SelectableRow`, `ReciterStep`, `WelcomeStep`, new `PreviewButton`; `FeatureStep` removed; `index.ts` barrel. |
-| Dependencies | **None added.** RNTP, AppState and ActivityIndicator are already in use. |
+| Components | `SelectableRow`, `ReciterStep`, `WelcomeStep`, new `PreviewButton`; `FeatureStep` deleted; barrel updated. |
+| Dependencies | None. |
 
 ## 6. RTL considerations
 
-- The selectable row keeps physical left → right order: `[preview?] [select: check? → text]`, so the title stays flush to the physical right. It uses `PHYSICAL_ROW`, never `row-reverse`. `SelectableRow.tsx`, `ReciterStep.tsx`, the new `PreviewButton.tsx` and `WelcomeStep.tsx` are all in `__tests__/rtlPhysicalContract.test.ts` `PINNED_SCREENS`. WelcomeStep is added because its highlight rows place a bullet at a physical edge.
-- Welcome highlight rows use `PHYSICAL_ROW`, authored `[text, bullet]`, so the bullet sits at the physical right, before the Arabic line. The text spreads `RTL_TEXT`.
-- The play glyph is not mirrored. A media "play" triangle points right in Arabic UIs too, so `PlayIcon` gets no `mirrored` treatment.
+- Selectable row, physical left → right: `[preview?] [select: tick? → text]`. It uses `PHYSICAL_ROW` and never `row-reverse`. `SelectableRow`, `ReciterStep`, `PreviewButton` and `WelcomeStep` are all in `PINNED_SCREENS` (`__tests__/rtlPhysicalContract.test.ts`).
+- Welcome highlight rows use `PHYSICAL_ROW`, authored `[text, bullet]`, so the bullet leads at the physical right. The text spreads `RTL_TEXT`.
+- The play glyph is not mirrored.
 - The slide direction (`app/onboarding.tsx:132-136`) is untouched.
 
 ## 7. Risks
 
 | Risk | Mitigation |
 |---|---|
-| Preview events leak into the MiniPlayer or SQLite progress (fake lecture session, or a real lecture marked complete). | Bridge suppression, the drain window, and `setIsPlaying(false)` before the preview starts. Unit-tested, and checked on device in QA §B. |
-| Preview `reset()` kills a real lecture queue. | Stop is a no-op when idle. Start pauses and persists the real position first, and the MiniPlayer resumes through the existing cold-restart path. QA §B covers it. |
-| No reciter has a source, so the button never appears (G1a). | Q1. Until it is answered the criterion stays **PARTIAL** on device, and the PR must say so. The mechanism ships tested. |
-| Third-party recordings and attribution. | Q1 requires the user to approve each source id before it is added. |
-| RNTP shows a lock-screen or notification entry for the 30 s preview. | Accepted. The title is `سورة الفاتحة — عيّنة` and the artist is the reciter. Remote stop and pause end the preview. |
-| Exposing `archiveId` later triggers the reciter-screen "always episode 0" bug. | Out of scope here. Recorded so the reciter-screen ticket fixes `surahAsLecture` and `playLecture` start-index before `Reciter.archiveId` is populated. |
-| The Welcome screen is taller with highlights. | It already scrolls. QA at 320 pt × font scale 1.7 (`scripts/visual-audit/screen-matrix.mjs`). |
+| Preview events leak into the MiniPlayer or SQLite. | Synchronous `_queueOwner`; the bridge drops every playerStore write while the owner is `'preview'`; QueueEnded clears the MiniPlayer only for `'lecture'`. Unit-tested (B1-B8). |
+| A preview resets a real lecture queue. | `canPreviewAudio()` is false while the owner is `'lecture'`, and stop is a no-op unless the owner is `'preview'`. |
+| A stale start lands after a newer one. | A currency check after every await, so a stale start issues no further command (tests P5, P6). |
+| A third-party recording is wrong or unattributed. | Verify each file against four criteria. Exact `item id + file` are listed in the PR, and the user signs off before merge. |
+| An item is removed from archive.org later. | Streaming fails and the Arabic toast is shown; nothing crashes. Re-verify sources at each release (noted in the QA doc). |
+| Android: swiping the app away mid-preview lets RNTP's `ContinuePlayback` play the whole Al-Fatiha. | Accepted. It is one short file. On relaunch `setupPlayer` adopts the owner `'preview'`, so nothing leaks into the MiniPlayer. Checked in QA. |
+| The lock screen shows the preview. | Accepted: titled `سورة الفاتحة — عيّنة`. Remote pause and stop end the preview. |
+| Welcome is taller. | It already scrolls. QA at 320 pt × font scale 1.7. |
 
-## 8. Open questions (each has a default so work proceeds)
+## 8. Decisions and remaining questions
 
-1. **Q1: preview audio source.** The foundation's archive has no per-reciter recitations. Which source should previews use?
-   **Default:** public Internet Archive items. archive.org is the only audio host the app already talks to, and it reuses `archiveClient` and `episodeResolver`. The implementer proposes one verified id per curated reciter in the PR. Verified means `curl https://archive.org/metadata/<id>` lists an mp3 with `track` 1 that is Al-Fatiha by that reciter. The ids go into `ONBOARDING_RECITER_PREVIEW_SOURCES` **only after user approval**. Without approval the map ships empty, the buttons stay hidden, and the ticket is reported PARTIAL for "audio previews".
-2. **Q2: was there a product reason for the 4 feature screens?** Commit `d74bfc1` gives only the intent. **Default:** follow the card (4 screens) and fold the highlights into Welcome.
-3. **Q3: delete `FeatureStep.tsx`?** It becomes unused. **Default:** delete it (git keeps it). It is not on the CLAUDE.md legacy list.
-4. **Q4: who are the "popular" reciters?** **Default:** r1, r2, r3, r12, r4, r7, in that order. Changing the list is a one-line constant edit.
-5. **Q5: merge order with `fix/rntp-expo-go-guard`.** **Default:** build on the current base. Implementation Task 11 is the conditional reconciliation.
+| # | Question | Decision (user, 2026-10-21) |
+|---|---|---|
+| Q1 | Preview source | Use archive.org files. **Verify each candidate's Al-Fatiha file** (metadata, name, size, duration, download). Use only verified ones; the preview list is the reciters with a verified file. List the exact sources (item id + file) in the PR for sign-off before merge. |
+| Q2 | Screen count | **4 screens**, per the card. |
+| Q3 | `FeatureStep.tsx` | **Delete.** |
+| Q4 | "Popular reciters" | Superseded by Q1: the verified set. |
+| Q5 | Merge order with the Expo Go guard | Build on the current base; Task 12 stays conditional. |
+| Q6 | FoundationMark vs LogoBadge | **Keep FoundationMark**, as a user-approved deviation. |
+
+Remaining: **none blocking.** If no candidate verifies (Q1), stop and escalate rather than ship an empty list.
 
 ## 9. Out of scope
 
-- Fixing the reciter surah list playing episode 0 for any surah (`services/reciterNavigation.ts:33-43` → `playLecture` start index).
-- Populating `Reciter.archiveId` in `data/content/quran.ts`, or any reciter catalogue or API work.
-- Audio previews in Settings → القارئ (`app/settings-reciter.tsx`).
-- Swapping `FoundationMark` for `LogoBadge` (G3 is accepted).
-- Any change to the transition animation, the redirect gate, the legacy-flag reconciliation, `ChannelsStep`, or `QiraaStep` content.
-- Merging or rebasing the Expo Go guard branch itself.
-- New dependencies of any kind.
+- The reciter surah list starting at episode 0 for any surah (`services/reciterNavigation.ts:33-43` → `playLecture`). It must be fixed before `Reciter.archiveId` is ever populated.
+- Populating `Reciter.archiveId`; reciter catalogue or API work.
+- Previews in Settings → القارئ (`app/settings-reciter.tsx`).
+- Pausing or restoring a live lecture around a preview (cut in v2).
+- Changes to the transition animation, the redirect gate, the legacy-flag reconciliation, `ChannelsStep`, or `QiraaStep` content.
+- Merging the Expo Go guard branch. New dependencies.

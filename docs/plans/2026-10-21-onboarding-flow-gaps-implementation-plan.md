@@ -1,21 +1,33 @@
-# Onboarding Flow Gaps — Implementation Plan
+# Onboarding Flow Gaps — Implementation Plan (v2)
 
-> **For Claude:** REQUIRED SUB-SKILL: execute task-by-task per CLAUDE.md §"Development Workflow" step 4 (fresh implementer → spec review → quality review per task).
+> **For Claude:** REQUIRED SUB-SKILL: run this task by task, following CLAUDE.md §"Development Workflow" step 4: a fresh implementer, then spec review, then quality review, for each task.
 
-**Goal:** Close the audit gaps on the "First-Time Onboarding Flow" ticket (https://trello.com/c/QTQYqLBB): bring the flow to 4 screens with a safe resume migration, and add per-row reciter audio previews through the existing audio engine without disturbing the MiniPlayer or progress data.
+**Goal:** Close the audit gaps on the "First-Time Onboarding Flow" ticket (https://trello.com/c/QTQYqLBB):
+- bring the flow to 4 screens, with a safe resume migration;
+- add per-row Al-Fatiha previews for reciters that have a verified archive.org file. Previews must never disturb the MiniPlayer or progress data.
 
-**Architecture:** An ordered `ONBOARDING_STEPS` id list replaces the magic count. A legacy step mapping in `coerceSettings` handles the shrink. Previews are a new engine capability in `services/audioEngine.ts` (still the only RNTP-importing module, plus its in-boundary `syncBridge`). UI state lives in a tiny `previewStore`. A UI facade `services/reciterPreview.ts` adds Arabic toasts. The selectable row gains a sibling preview button in a contract-defined physical slot order.
+**Architecture:**
+- An ordered `ONBOARDING_STEPS` id list replaces the magic step count, and a legacy mapping in `coerceSettings` handles the shrink from 8 to 4.
+- Previews play a verified direct file through `services/audioEngine.ts`. That module still has a single RNTP boundary, now with a synchronous module-level `_queueOwner` (`'none' | 'lecture' | 'preview'`). The sync bridge reads it to drop MiniPlayer writes while a preview owns the queue.
+- UI state lives in a tiny `previewStore`, and a facade shows the Arabic toasts.
+- The selectable row gains a sibling preview button in a contract-defined physical slot order.
 
-**Tech Stack:** Expo SDK 54, React Native 0.81.5, TypeScript 5.9, Zustand 5, react-native-track-player 4.1.2 (already installed), jest-expo (no @testing-library — tests are pure-logic, service-with-mock, or source-contract regex, matching `__tests__/rtlPhysicalContract.test.ts`).
+**Tech Stack:** Expo SDK 54, React Native 0.81.5, TypeScript 5.9, Zustand 5, react-native-track-player 4.1.2 (already installed), and jest-expo. There is no @testing-library, so tests are pure-logic tests, service tests against the RNTP mock, or source-contract regex tests (the same style as `__tests__/rtlPhysicalContract.test.ts`).
 
-**Design:** `docs/plans/2026-10-21-onboarding-flow-gaps-design.md` (read §4 before Task 1).
+**Design:** `docs/plans/2026-10-21-onboarding-flow-gaps-design.md` v2. Read §4 and §8 first.
+
+**User decisions (2026-10-21):**
+- Q1: verify each archive.org candidate. Only verified files ship. The PR lists the exact item id and file for each, for sign-off before merge.
+- Q2: 4 screens.
+- Q3: delete `FeatureStep.tsx`.
+- Q6: keep `FoundationMark`, recorded as a user-approved deviation.
 
 **Base facts the implementer must not rediscover:**
-- RNTP is mocked in jest via `jest.config.js` → `__mocks__/react-native-track-player.ts`.
-- Engine tests mock `@/store/playerStore`, `@/store/progressStore`, `../../archive/archiveClient`, `@/store/toastStore`, `@sentry/react-native` (see `services/audioEngine/__tests__/audioEngine.test.ts:1-24`). Copy that header into new engine/bridge test files.
-- No reciter in `data/content/quran.ts` has `archiveId`. Do NOT add one there (design §4.3 "Preview source resolution").
-- The Expo Go guard (`services/audioEngine/rntp.ts`, `isInert()`) is NOT on this branch — Task 12 is conditional.
-- No new dependencies. Never `--no-verify`. No `Co-Authored-By` or any AI attribution in commits.
+- RNTP is mocked through `jest.config.js` → `__mocks__/react-native-track-player.ts`. It has `add`, `reset`, `play`, `getActiveTrack` and `getActiveTrackIndex`, but no `load`.
+- Engine tests mock `@/store/playerStore`, `@/store/progressStore`, `../../archive/archiveClient`, `@/store/toastStore` and `@sentry/react-native`. Copy the header at `services/audioEngine/__tests__/audioEngine.test.ts:1-24`.
+- **Do not** set `Reciter.archiveId` in `data/content/quran.ts`. See design §9.
+- The Expo Go guard (`rntp.ts`, `isInert()`) is NOT on this branch, which is why Task 12 is conditional.
+- No new dependencies. Never use `--no-verify`. No `Co-Authored-By` or any other AI attribution in commits.
 
 ---
 
@@ -39,9 +51,12 @@ describe('onboarding step list (ticket QTQYqLBB: 3-4 screens)', () => {
   it('is exactly welcome → qiraa → reciter → channels', () => {
     expect(ONBOARDING_STEPS).toEqual(['welcome', 'qiraa', 'reciter', 'channels']);
   });
-  it('derives the count from the list (no lockstep constant)', () => {
+  it('derives the count from the list and stays within the card', () => {
     expect(ONBOARDING_STEP_COUNT).toBe(ONBOARDING_STEPS.length);
     expect(ONBOARDING_STEP_COUNT).toBeGreaterThanOrEqual(3);
+    // ALSO protects the legacy resume remap in settingsStore: it relies on old
+    // indices 0-2 keeping their meaning and every old index ≥ COUNT landing on
+    // the last step. Growing past 4 means revisiting coerceSettings.
     expect(ONBOARDING_STEP_COUNT).toBeLessThanOrEqual(4);
   });
   it('remembers the 8-step layout older installs persisted against', () => {
@@ -53,9 +68,9 @@ describe('onboarding step list (ticket QTQYqLBB: 3-4 screens)', () => {
 });
 ```
 
-**Step 2: Run, expect FAIL**: `npx jest __tests__/onboardingSteps.test.ts` → FAIL (`ONBOARDING_STEPS` is undefined).
+**Step 2: Run it and expect FAIL.** `npx jest __tests__/onboardingSteps.test.ts` should fail because `ONBOARDING_STEPS` is undefined.
 
-**Step 3: Implement** (replace `constants/settings.ts:54-60`)
+**Step 3: Implement.** Replace `constants/settings.ts:54-60` with:
 
 ```ts
 /**
@@ -75,19 +90,21 @@ export const ONBOARDING_STEP_COUNT = ONBOARDING_STEPS.length;
 export const LEGACY_ONBOARDING_STEP_COUNT = 8;
 ```
 
-**Step 4: Run, expect PASS**: `npx jest __tests__/onboardingSteps.test.ts __tests__/settingsStore.test.ts` (T-SS-13 still passes — it is written against the constant). Then `npx tsc --noEmit --pretty false`. Expect tsc errors only in `app/onboarding.tsx` if any. There should be none, because it still indexes by number. Task 3 rewrites it.
+**Step 4: Run and expect PASS.**
+- `npx jest __tests__/onboardingSteps.test.ts __tests__/settingsStore.test.ts`. T-SS-13 still passes because it is written against the constant.
+- `npx tsc --noEmit --pretty false`
 
-**Step 5: Commit**: `git add constants/settings.ts __tests__/onboardingSteps.test.ts && git commit -m "feat(onboarding): define the flow as four ordered step ids"`
+**Step 5: Commit.** `git add constants/settings.ts __tests__/onboardingSteps.test.ts && git commit -m "feat(onboarding): define the flow as four ordered step ids"`
 
 ---
 
 ### Task 2: Migrate a persisted mid-onboarding step onto the 4-step flow
 
 **Files:**
-- Modify: `store/settingsStore.ts:9-15` (import), `:266-274` (onboardingStep coercion)
-- Test: `__tests__/settingsStore.test.ts` (append a `describe`)
+- Modify: `store/settingsStore.ts:9-15` (import), `:266-274` (the onboardingStep coercion)
+- Test: `__tests__/settingsStore.test.ts` (append a `describe`; reuse `seedStorage` at `:18` and `rehydrateStore` at `:39`)
 
-**Step 1: Write the failing tests** (reuse the file's existing `seedStorage` / `rehydrateStore` helpers and the v3 record shape used at `:60-75`)
+**Step 1: Write the failing tests**
 
 ```ts
 describe('onboardingStep resume across the 8 → 4 step change', () => {
@@ -96,23 +113,23 @@ describe('onboardingStep resume across the 8 → 4 step change', () => {
     notifications: {}, onboardingComplete: false, onboardingStep,
   });
   it.each([
-    [0, 0], [1, 1], [2, 2],      // welcome/qiraa/reciter mean the same in both layouts
-    [3, 3], [4, 3], [5, 3], [6, 3], // old feature screens → channels (next unseen)
-    [7, 3],                      // old channels → channels
+    [0, 0], [1, 1], [2, 2],          // same meaning in both layouts
+    [3, 3], [4, 3], [5, 3], [6, 3],  // old feature screens → channels (next unseen)
+    [7, 3],                          // old channels → channels
   ])('T-SS-OB-1: stored step %i resumes at %i', async (stored, expected) => {
     await seedStorage({ state: v3(stored), version: 0 });
     await rehydrateStore();
     const s = useSettingsStore.getState();
     expect(s.onboardingStep).toBe(expected);
     expect(s.onboardingComplete).toBe(false);
-    expect(s.preferredReciterId).toBe('r3'); // nothing else disturbed
+    expect(s.preferredReciterId).toBe('r3');
   });
   it.each([8, 99, -1, 2.5, '3', null])('T-SS-OB-2: %p was never a step → resets to 0', async (stored) => {
     await seedStorage({ state: v3(stored), version: 0 });
     await rehydrateStore();
     expect(useSettingsStore.getState().onboardingStep).toBe(0);
   });
-  it('T-SS-OB-3: a migrated step is always renderable', async () => {
+  it('T-SS-OB-3: every legacy step migrates to a renderable step', async () => {
     for (let i = 0; i < 8; i++) {
       await seedStorage({ state: v3(i), version: 0 });
       await rehydrateStore();
@@ -124,9 +141,9 @@ describe('onboardingStep resume across the 8 → 4 step change', () => {
 });
 ```
 
-**Step 2: Run, expect FAIL**: `npx jest __tests__/settingsStore.test.ts -t "T-SS-OB"` → T-SS-OB-1 fails for stored 4..7 (they reset to 0 today).
+**Step 2: Run and expect FAIL.** `npx jest __tests__/settingsStore.test.ts -t "T-SS-OB"`. Stored steps 4 to 7 reset to 0 today.
 
-**Step 3: Implement** (replace the `onboardingStep` block at `store/settingsStore.ts:266-274`; import `LEGACY_ONBOARDING_STEP_COUNT`)
+**Step 3: Implement.** Import `LEGACY_ONBOARDING_STEP_COUNT`, then replace `:266-274` with:
 
 ```ts
   // A stored step must be an integer from a layout we have shipped. In-range
@@ -145,23 +162,26 @@ describe('onboardingStep resume across the 8 → 4 step change', () => {
       : ((coerced = isCurrent || coerced), DEFAULT_SETTINGS.onboardingStep);
 ```
 
-**Step 4: Run, expect PASS**: `npx jest __tests__/settingsStore.test.ts` (all, including T-SS-10/11 which still expect 99 → 0). Then `npx tsc --noEmit --pretty false`.
+**Step 4: Run and expect PASS.** `npx jest __tests__/settingsStore.test.ts`. That includes T-SS-10 and T-SS-11, which still expect 99 → 0. Then run tsc.
 
-**Step 5: Commit**: `git commit -am "fix(settings): resume a mid-onboarding step on the shorter flow instead of restarting"` (stage only the two files).
+**Step 5: Commit** both files. `git commit -m "fix(settings): resume a mid-onboarding step on the shorter flow instead of restarting"`
 
 ---
 
-### Task 3: Four-screen flow: highlights on Welcome, FeatureStep removed, render by id
+### Task 3: Four-screen flow: highlights on Welcome, FeatureStep deleted, render by id
 
 **Files:**
-- Modify: `components/khazain/onboarding/WelcomeStep.tsx` (add `WELCOME_HIGHLIGHTS` + list under the mission, `:38-43`)
-- Modify: `app/onboarding.tsx:12-21` (imports), `:170-196` (`renderStep`), and the comment at `:85` ("280ms on eight steps" → "four steps")
-- Modify: `components/khazain/onboarding/index.ts:14` (drop the FeatureStep export; add `WELCOME_HIGHLIGHTS` export)
-- Delete: `components/khazain/onboarding/FeatureStep.tsx` (design Q3 default; revert this one line if the user vetoes)
-- Modify: `__tests__/rtlPhysicalContract.test.ts:57-63` (add `'components/khazain/onboarding/WelcomeStep.tsx'`)
+- Modify: `components/khazain/onboarding/WelcomeStep.tsx`. Add `WELCOME_HIGHLIGHTS` and the list under the mission (`:38-43`).
+- Modify: `app/onboarding.tsx`:
+  - `:12-21` (imports);
+  - `:170-196` (`renderStep`);
+  - the `:85` comment, changing "eight steps" to "four steps".
+- Modify: `components/khazain/onboarding/index.ts:14`. Drop the FeatureStep export and export `WELCOME_HIGHLIGHTS`.
+- **Delete:** `components/khazain/onboarding/FeatureStep.tsx` (user decision Q3). `RehlArt`, `ScrollArt`, `CrownBookArt` and `components/khazain/art/` **stay**. They are the API that future client art will replace (CLAUDE.md), even though nothing renders them after this task.
+- Modify: `__tests__/rtlPhysicalContract.test.ts:57-63`. Add `'components/khazain/onboarding/WelcomeStep.tsx'`.
 - Test: `__tests__/onboardingSteps.test.ts` (append)
 
-**Step 1: Write the failing tests** (append; use the same `code()` comment-stripping helper as `rtlPhysicalContract.test.ts:66-71`, copied locally)
+**Step 1: Write the failing tests** (append, with a local copy of the comment-stripping helper from `rtlPhysicalContract.test.ts:66-71`):
 
 ```ts
 import fs from 'fs';
@@ -171,7 +191,7 @@ const code = (f: string) => fs.readFileSync(path.join(ROOT, f), 'utf8')
   .replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
 
 describe('four-screen flow', () => {
-  it('renders by step id, with a case for every id and no index fallback', () => {
+  it('renders by step id with one case per id and no feature screens', () => {
     const src = code('app/onboarding.tsx');
     expect(src).toMatch(/ONBOARDING_STEPS\[step\]/);
     for (const id of ['welcome', 'qiraa', 'reciter', 'channels']) {
@@ -184,29 +204,26 @@ describe('four-screen flow', () => {
     expect(src).toMatch(/SLIDE_DURATION = 280/);
     expect(src).toMatch(/isReduceMotionEnabled/);
   });
-  it('the feature screens are gone from the barrel', () => {
+  it('FeatureStep is deleted and gone from the barrel', () => {
     expect(fs.existsSync(path.join(ROOT, 'components/khazain/onboarding/FeatureStep.tsx'))).toBe(false);
     expect(code('components/khazain/onboarding/index.ts')).not.toMatch(/FeatureStep/);
   });
-  it('Welcome carries the four highlights as RTL physical rows', () => {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { WELCOME_HIGHLIGHTS } = require('@/components/khazain/onboarding/WelcomeStep');
-    expect(WELCOME_HIGHLIGHTS).toHaveLength(4);
+  it('Welcome carries four highlights as RTL physical rows and keeps FoundationMark', () => {
     const src = code('components/khazain/onboarding/WelcomeStep.tsx');
+    expect(src.match(/key: '/g)).toHaveLength(4);
+    expect(src).toMatch(/WELCOME_HIGHLIGHTS\.map/);
     expect(src).toMatch(/\.\.\.PHYSICAL_ROW/);
     expect(src).toMatch(/\.\.\.RTL_TEXT/);
-    expect(src).toMatch(/FoundationMark/); // G3 accepted deviation stays
+    expect(src).toMatch(/FoundationMark/); // Q6: user-approved deviation from "LogoBadge"
   });
 });
 ```
 
-Note: if `require` of the TSX component fails under jest-expo (it pulls in `expo-linear-gradient` and svg), replace that assertion with `expect(src.match(/key: '/g)).toHaveLength(4)` on the source.
-
-**Step 2: Run, expect FAIL**: `npx jest __tests__/onboardingSteps.test.ts` → the "four-screen flow" tests fail.
+**Step 2: Run and expect FAIL.** `npx jest __tests__/onboardingSteps.test.ts`
 
 **Step 3: Implement**
 
-`WelcomeStep.tsx`: add the constant and the list. The copy is taken from the old `FEATURE_STEPS` titles.
+`WelcomeStep.tsx`:
 
 ```tsx
 import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
@@ -219,7 +236,7 @@ export const WELCOME_HIGHLIGHTS: readonly { key: string; text: string }[] = Obje
   { key: 'scholars', text: 'العلماء والكتب وتصاميم الدعوة الجاهزة للمشاركة' },
 ]);
 
-// …inside the ScrollView, between <Text style={styles.mission}> and the hint:
+// …between <Text style={styles.mission}> and the hint:
 <View style={styles.highlights} accessibilityRole="list">
   {WELCOME_HIGHLIGHTS.map((h) => (
     <View key={h.key} style={styles.highlightRow}>
@@ -242,13 +259,12 @@ bullet: {
 },
 ```
 
-`app/onboarding.tsx`: drop `FEATURE_STEPS` and `FeatureStep` from the imports, import `ONBOARDING_STEPS`, and replace `renderStep`:
+`app/onboarding.tsx`: drop the `FEATURE_STEPS` and `FeatureStep` imports, import `ONBOARDING_STEPS`, and replace `renderStep` with:
 
 ```tsx
-/** Step content: welcome → qira'a → reciter → channels (ONBOARDING_STEPS). */
+/** Step content: welcome → qira'a → reciter → channels (ONBOARDING_STEPS). `step` is always clamped. */
 function renderStep(step: number): React.ReactElement {
-  const id = ONBOARDING_STEPS[step] ?? ONBOARDING_STEPS[0];
-  switch (id) {
+  switch (ONBOARDING_STEPS[step]) {
     case 'welcome':
       return <WelcomeStep />;
     case 'qiraa':
@@ -261,27 +277,144 @@ function renderStep(step: number): React.ReactElement {
 }
 ```
 
-(The `switch` is exhaustive over `OnboardingStepId`, so tsc flags a missing case. Keep the function's return type annotation.)
+The `switch` is exhaustive over `OnboardingStepId`. If tsc reports "not all code paths return a value", the repo has `noUncheckedIndexedAccess` turned on. In that case, type the lookup as `const id: OnboardingStepId = ONBOARDING_STEPS[step] as OnboardingStepId;` and comment that `step` is clamped by `goTo` (`:111`) and by the store. **Do not** add a Welcome fallback.
 
-Delete `FeatureStep.tsx`. Update the barrel. Add WelcomeStep to `PINNED_SCREENS`.
+Then delete `FeatureStep.tsx`, update the barrel, and add WelcomeStep to `PINNED_SCREENS`.
 
-**Step 4: Run, expect PASS**: `npx jest __tests__/onboardingSteps.test.ts __tests__/rtlPhysicalContract.test.ts __tests__/fontScaleChrome.test.ts`, then `npx tsc --noEmit --pretty false`. Then `grep -rn "FeatureStep\|FEATURE_STEPS" app components services __tests__ constants`, which should return nothing.
+**Step 4: Run and expect PASS.**
+- `npx jest __tests__/onboardingSteps.test.ts __tests__/rtlPhysicalContract.test.ts __tests__/fontScaleChrome.test.ts`
+- tsc
+- `grep -rn "FeatureStep\|FEATURE_STEPS" app components services __tests__ constants` should print nothing.
 
-**Step 5: Commit**: `git commit -m "feat(onboarding): four screens, with the feature highlights folded into Welcome"` (stage the files listed above, including the deletion).
+**Step 5: Commit** the listed files, including the deletion. `git commit -m "feat(onboarding): four screens, with the feature highlights folded into Welcome"`
 
 ---
 
-### Task 4: Curated "popular reciters" selection
+### Task 4: Verify the Al-Fatiha preview sources (EARLY, before any engine work)
+
+User decision Q1: verify every candidate and ship only the verified ones. **The preview list is exactly the reciters with a verified file.**
 
 **Files:**
-- Modify: `constants/settings.ts` (append `ONBOARDING_POPULAR_RECITER_IDS`)
+- Modify: `constants/settings.ts`. Append `PreviewSource`, `ONBOARDING_RECITER_PREVIEW_SOURCES` and `ONBOARDING_POPULAR_RECITER_IDS`.
+- Test: `__tests__/onboardingPreviewSources.test.ts` (create)
+
+**Candidates (from the user):**
+
+| Reciter | id in `data/content/quran.ts` | Candidate items (try in order) |
+|---|---|---|
+| الشيخ محمد صديق المنشاوي | `r3` | `Minshawi_Morattal_FullQuran`, `mos7af_Siddeeq_al_Minshawi` |
+| الشيخ مشاري راشد العفاسي | `r12` | `mishari-rashid-al-afasy-quran-mp3`, `afasyrecitation` |
+| الشيخ محمود خليل الحصري | `r2` | `QuranRecitation-Husary` (flagged unverified) |
+
+**Step 1: Write the failing test (F8)**
+
+```ts
+import {
+  ONBOARDING_POPULAR_RECITER_IDS,
+  ONBOARDING_RECITER_PREVIEW_SOURCES,
+} from '@/constants/settings';
+import { RECITERS } from '@/data/content/quran';
+import { buildDownloadUrl } from '@/services/archive/episodeResolver';
+
+describe('onboarding preview sources (user decision Q1: verified files only)', () => {
+  it('F8: at least one verified source ships', () => {
+    expect(Object.keys(ONBOARDING_RECITER_PREVIEW_SOURCES).length).toBeGreaterThan(0);
+  });
+  it('F8: every curated reciter has a verified source, and the curated list IS the verified list', () => {
+    expect([...ONBOARDING_POPULAR_RECITER_IDS]).toEqual(Object.keys(ONBOARDING_RECITER_PREVIEW_SOURCES));
+    for (const id of ONBOARDING_POPULAR_RECITER_IDS) {
+      expect(ONBOARDING_RECITER_PREVIEW_SOURCES[id]).toBeDefined();
+    }
+  });
+  it('F8: every source belongs to a reciter in the catalogue', () => {
+    const ids = RECITERS.map((r) => r.id);
+    for (const id of Object.keys(ONBOARDING_RECITER_PREVIEW_SOURCES)) expect(ids).toContain(id);
+  });
+  it('F8: every source is a direct archive.org mp3', () => {
+    for (const { archiveId, file } of Object.values(ONBOARDING_RECITER_PREVIEW_SOURCES)) {
+      expect(archiveId).toMatch(/^[A-Za-z0-9._-]+$/);
+      expect(file).toMatch(/\.mp3$/i);
+      expect(buildDownloadUrl(archiveId, file)).toMatch(/^https:\/\/archive\.org\/download\//);
+    }
+  });
+  it('does not touch Reciter.archiveId (design §9: surah list would play episode 0)', () => {
+    expect(RECITERS.every((r) => r.archiveId === undefined)).toBe(true);
+  });
+});
+```
+
+**Step 2: Run and expect FAIL.** `npx jest __tests__/onboardingPreviewSources.test.ts`. The exports are missing.
+
+**Step 3: Verify each candidate, then implement.**
+
+The sandbox may block the network. If `curl` times out, rerun with network access, or ask the coordinator. **Never guess an id or a file name.**
+
+For each candidate `ID`, write the outputs to the scratchpad, not the repo:
+
+```bash
+ID=Minshawi_Morattal_FullQuran
+curl -sL "https://archive.org/metadata/$ID" -o "$SCRATCH/$ID.json"
+# 1. Item names the reciter
+jq '.metadata | {identifier, title, creator}' "$SCRATCH/$ID.json"
+# 2. Find surah 1 among the mp3s (name / track / title)
+jq -r '.files[] | select(.name|test("\\.mp3$";"i")) | [.name, (.track//"-"), (.title//"-"), (.length//"-"), (.size//"-"), (.source//"-")] | @tsv' "$SCRATCH/$ID.json" | sort | head -5
+# 3. Download resolves to audio (URL-encode the file name exactly as buildDownloadUrl does)
+FILE='001.mp3'
+curl -sIL "https://archive.org/download/$ID/$FILE" | grep -iE "^HTTP/|^content-type|^content-length"
+```
+
+**Accept a file only if all of these hold.**
+- (a) The item's `title` or `creator` names that reciter, in Arabic or Latin script.
+- (b) The file is surah 1: a file name of `001…`, `1…` or one containing Fatiha/الفاتحة, **or** `track` 1, **or** a title of Al-Fatiha.
+- (c) `length` is between 25 and 240 s. Murattal Al-Fatiha is typically 40 to 80 s; mujawwad recordings run longer.
+- (d) `size` is above 150 KB and consistent with the length (at least about 8 KB/s).
+- (e) The final HTTP status is `200` and the `content-type` is `audio/mpeg` (or another `audio/*` type).
+
+Prefer the `source: original` file over a derivative. Take the first candidate per reciter that passes. If none of a reciter's candidates pass, leave that reciter out. If **no reciter** passes, STOP and escalate to the coordinator. The criterion cannot be met, and shipping an empty list is not acceptable.
+
+Then implement in `constants/settings.ts`:
+
+```ts
+/** A directly playable, verified archive.org file. URL = buildDownloadUrl(archiveId, file). */
+export type PreviewSource = Readonly<{ archiveId: string; file: string }>;
+
+/**
+ * Al-Fatiha preview files for the onboarding reciter step (design 2026-10-21 §4.3,
+ * user decision Q1). ONLY files verified against: reciter named in item metadata,
+ * surah 1 by name/track/title, plausible length+size, download → 200 audio/*.
+ * Key order is display order. Re-verify at each release.
+ *
+ *   r3  <ID> / <file> — creator "<…>", track <n>, length <s>s, size <bytes> B, HTTP 200 audio/mpeg, verified 2026-10-<dd>
+ *   …
+ */
+export const ONBOARDING_RECITER_PREVIEW_SOURCES: Readonly<Record<string, PreviewSource>> = Object.freeze({
+  // r3: { archiveId: '<verified id>', file: '<verified file>' },
+});
+
+/** The onboarding reciter step lists exactly the reciters with a verified preview file. */
+export const ONBOARDING_POPULAR_RECITER_IDS: readonly string[] = Object.freeze(
+  Object.keys(ONBOARDING_RECITER_PREVIEW_SOURCES),
+);
+```
+
+Also write a verification table for the PR body in `$SCRATCH/preview-sources.md`. Its columns are reciter, item id, file, creator/title, track, length, size, HTTP/content-type, and download URL. Include the rejected candidates and the reason each failed.
+
+**Step 4: Run and expect PASS** (plus tsc).
+
+**Step 5: Commit.** `git commit -m "feat(onboarding): verified Al-Fatiha preview sources for the onboarding reciters"`
+
+---
+
+### Task 5: Onboarding reciter selection (verified list + current pick)
+
+**Files:**
 - Create: `services/onboardingReciters.ts`
 - Test: `services/__tests__/onboardingReciters.test.ts` (create)
 
 **Step 1: Write the failing test**
 
 ```ts
-import { ONBOARDING_POPULAR_RECITER_IDS, DEFAULT_SETTINGS } from '@/constants/settings';
+import { ONBOARDING_POPULAR_RECITER_IDS } from '@/constants/settings';
 import { RECITERS } from '@/data/content/quran';
 import { selectOnboardingReciters } from '@/services/onboardingReciters';
 import type { Reciter } from '@/types/content';
@@ -290,13 +423,12 @@ const r = (id: string): Reciter => ({ id, name: id, style: 'murattal', styleLabe
 
 describe('selectOnboardingReciters', () => {
   it('returns the curated ids in curated order', () => {
-    const out = selectOnboardingReciters([r('a'), r('b'), r('c')], ['c', 'a'], 'c');
-    expect(out.map((x) => x.id)).toEqual(['c', 'a']);
+    expect(selectOnboardingReciters([r('a'), r('b'), r('c')], ['c', 'a'], 'c').map((x) => x.id)).toEqual(['c', 'a']);
   });
   it('skips curated ids the data source lacks', () => {
     expect(selectOnboardingReciters([r('a')], ['z', 'a'], 'a').map((x) => x.id)).toEqual(['a']);
   });
-  it('appends the current selection when it is not curated', () => {
+  it('appends the current selection when it is not curated (e.g. default r7, no preview)', () => {
     expect(selectOnboardingReciters([r('a'), r('b')], ['a'], 'b').map((x) => x.id)).toEqual(['a', 'b']);
   });
   it('falls back to the first 6 when no curated id exists', () => {
@@ -306,32 +438,20 @@ describe('selectOnboardingReciters', () => {
   it('returns [] for no data (AsyncContent shows its empty state)', () => {
     expect(selectOnboardingReciters([], ['a'], 'a')).toEqual([]);
   });
-  it('the shipped curated list resolves fully against the mock catalogue and includes the default', () => {
-    const ids = RECITERS.map((x) => x.id);
-    for (const id of ONBOARDING_POPULAR_RECITER_IDS) expect(ids).toContain(id);
-    expect(ONBOARDING_POPULAR_RECITER_IDS).toContain(DEFAULT_SETTINGS.preferredReciterId);
-    expect(ONBOARDING_POPULAR_RECITER_IDS.length).toBeLessThanOrEqual(6);
+  it('the shipped curated list resolves fully against the mock catalogue', () => {
+    const out = selectOnboardingReciters(RECITERS, ONBOARDING_POPULAR_RECITER_IDS, 'r7');
+    expect(out.slice(0, ONBOARDING_POPULAR_RECITER_IDS.length).map((x) => x.id)).toEqual([...ONBOARDING_POPULAR_RECITER_IDS]);
   });
 });
 ```
 
-**Step 2: Run, expect FAIL**: `npx jest services/__tests__/onboardingReciters.test.ts` (module not found).
-
-**Step 3: Implement**
+**Step 2: FAIL. Step 3: Implement**
 
 ```ts
-// constants/settings.ts
-/** Reciters shown on the onboarding reciter step, in display order (design §4.3, Q4). */
-export const ONBOARDING_POPULAR_RECITER_IDS: readonly string[] = Object.freeze([
-  'r1', 'r2', 'r3', 'r12', 'r4', 'r7',
-]);
-```
-
-```ts
-// services/onboardingReciters.ts
 /**
- * The onboarding reciter step lists "popular reciters" (ticket QTQYqLBB), not
- * the whole catalogue — Settings → القارئ keeps the full list. Pure.
+ * The onboarding reciter step lists the reciters with a verified preview file
+ * (ONBOARDING_POPULAR_RECITER_IDS) plus the user's current pick — Settings →
+ * القارئ keeps the full catalogue. Pure.
  */
 import type { Reciter } from '@/types/content';
 
@@ -350,70 +470,18 @@ export function selectOnboardingReciters(
 }
 ```
 
-**Step 4: Run, expect PASS**, then tsc.
-
-**Step 5: Commit**: `git commit -m "feat(onboarding): curate the popular reciters shown during onboarding"`
-
----
-
-### Task 5: `pickPreviewEpisode`: choose Al-Fatiha from a reciter series
-
-**Files:**
-- Modify: `services/archive/episodeResolver.ts` (append an export)
-- Test: `services/archive/__tests__/episodeResolver.test.ts` (append)
-
-**Step 1: Write the failing test**
-
-```ts
-import { pickPreviewEpisode, type ArchiveEpisode } from '../episodeResolver';
-const ep = (name: string, trackNumber: number): ArchiveEpisode => ({
-  id: `x/${name}`, archiveId: 'x', name, title: name, trackNumber, url: `u/${name}`, durationSec: 60,
-});
-describe('pickPreviewEpisode', () => {
-  it('prefers track 1', () => {
-    expect(pickPreviewEpisode([ep('002.mp3', 2), ep('001.mp3', 1)])?.name).toBe('001.mp3');
-  });
-  it('falls back to a 001-prefixed file name when track numbers are synthetic', () => {
-    expect(pickPreviewEpisode([ep('114.mp3', 5), ep('001.mp3', 9)])?.name).toBe('001.mp3');
-  });
-  it('does not mistake 010/100 for 1', () => {
-    expect(pickPreviewEpisode([ep('010.mp3', 3), ep('1-fatiha.mp3', 4)])?.name).toBe('1-fatiha.mp3');
-  });
-  it('falls back to the first episode', () => {
-    expect(pickPreviewEpisode([ep('a.mp3', 7)])?.name).toBe('a.mp3');
-  });
-  it('returns undefined for an empty series', () => {
-    expect(pickPreviewEpisode([])).toBeUndefined();
-  });
-});
-```
-
-**Step 2: Run, expect FAIL**: `npx jest services/archive/__tests__/episodeResolver.test.ts -t pickPreviewEpisode`
-
-**Step 3: Implement**
-
-```ts
-/** Al-Fatiha for a reciter preview: track 1, else a "001"/"1"-prefixed file, else the first. */
-export function pickPreviewEpisode(episodes: readonly ArchiveEpisode[]): ArchiveEpisode | undefined {
-  return (
-    episodes.find((e) => e.trackNumber === 1) ??
-    episodes.find((e) => /^0*1(?!\d)/.test(e.name)) ??
-    episodes[0]
-  );
-}
-```
-
-**Step 4: PASS**, then tsc. **Step 5: Commit**: `git commit -m "feat(archive): pick the Al-Fatiha episode for a reciter preview"`
+**Step 4: PASS** plus tsc. **Step 5: Commit.** `git commit -m "feat(onboarding): list the verified reciters plus the current pick"`
 
 ---
 
 ### Task 6: `previewStore`: preview UI state
 
 **Files:**
-- Create: `store/previewStore.ts`; Modify: `store/index.ts` (re-export)
+- Create: `store/previewStore.ts`
+- Modify: `store/index.ts` (re-export)
 - Test: `store/__tests__/previewStore.test.ts` (create)
 
-**Step 1: Failing test**
+**Step 1: Write the failing test**
 
 ```ts
 import { usePreviewStore } from '@/store/previewStore';
@@ -421,10 +489,10 @@ beforeEach(() => usePreviewStore.getState().clear());
 it('starts idle', () => {
   expect(usePreviewStore.getState()).toMatchObject({ reciterId: null, status: 'idle' });
 });
-it('begin → loading for one reciter; markPlaying only for that reciter', () => {
+it('begin → loading; markPlaying only for the active reciter', () => {
   usePreviewStore.getState().begin('r1');
   expect(usePreviewStore.getState()).toMatchObject({ reciterId: 'r1', status: 'loading' });
-  usePreviewStore.getState().markPlaying('r2'); // stale
+  usePreviewStore.getState().markPlaying('r2');
   expect(usePreviewStore.getState().status).toBe('loading');
   usePreviewStore.getState().markPlaying('r1');
   expect(usePreviewStore.getState().status).toBe('playing');
@@ -436,13 +504,13 @@ it('clear returns to idle', () => {
 });
 ```
 
-**Step 2: FAIL** → **Step 3: Implement**
+**Step 2: FAIL. Step 3: Implement**
 
 ```ts
 /**
- * Reciter-preview UI state (onboarding). Driven ONLY by the audio engine
- * (services/audioEngine.ts), one-directionally, like playerStore. Not persisted.
- * A preview NEVER writes playerStore — see the engine's preview section.
+ * Reciter-preview UI state (onboarding). Driven ONLY by services/audioEngine.ts,
+ * one-directionally, like playerStore. Not persisted. A preview never writes
+ * playerStore — queue ownership lives in the engine (`_queueOwner`).
  */
 import { create } from 'zustand';
 
@@ -466,233 +534,307 @@ export const usePreviewStore = create<PreviewState>((set, get) => ({
 }));
 ```
 
-**Step 4: PASS** (+ tsc). **Step 5: Commit**: `git commit -m "feat(audio): add preview UI state store"`
+**Step 4: PASS** plus tsc. **Step 5: Commit.** `git commit -m "feat(audio): add preview UI state store"`
 
 ---
 
-### Task 7: Engine: `startReciterPreview` / `stopReciterPreview` / `canPreviewAudio`
+### Task 7: Engine: queue owner + reciter preview
 
 **Files:**
-- Modify: `services/audioEngine.ts`. Add imports (`usePreviewStore`, `pickPreviewEpisode`, `PREVIEW_MAX_SEC`), a "RECITER PREVIEW" section after `stop()` (`:114-117`), and a preview clear at the top of `playLecture` (`:132-134`)
-- Modify: `constants/settings.ts` (append `PREVIEW_MAX_SEC = 30`)
-- Test: `services/audioEngine/__tests__/preview.test.ts` (create; copy the mock header of `audioEngine.test.ts:1-24`, do NOT mock previewStore — use the real one)
+- Modify: `services/audioEngine.ts`:
+  - imports;
+  - `setupPlayer` (`:45-79`), to adopt an owner from a surviving native queue;
+  - `stop` (`:114-117`);
+  - a new "QUEUE OWNER + RECITER PREVIEW" section after `stop`;
+  - `playLecture` (`:132-134`, first line);
+  - `togglePlayback` (`:192-193`);
+  - `__resetForTests` (`:31-33`).
+- Modify: `constants/settings.ts`. Append `export const PREVIEW_MAX_SEC = 30;`
+- Test: `services/audioEngine/__tests__/preview.test.ts` (create). Copy the mock header from `audioEngine.test.ts:1-24`, and use the **real** `previewStore`.
 
-**Step 1: Failing tests**. Use `jest.useFakeTimers()` where noted.
+**Step 1: Write the failing tests**
 
 ```ts
 const reciter = { id: 'r3', name: 'المنشاوي', style: 'murattal', styleLabel: 'x' } as any;
-const META = { files: [{ name: '001.mp3', track: '1', length: '50' }, { name: '002.mp3', track: '2', length: '9000' }] };
+const SRC = { archiveId: 'Item_1', file: '001 Fatiha.mp3' };
+const flush = () => new Promise<void>((r) => setTimeout(r, 0)); // let in-flight awaits advance
+const deferred = () => { let resolve!: () => void; const p = new Promise<void>((r) => { resolve = r; }); return { p, resolve }; };
 
 beforeEach(() => {
   (Platform as any).OS = 'ios';
   jest.clearAllMocks();
   engine.__resetForTests();
   usePreviewStore.getState().clear();
-  (fetchItemMetadata as jest.Mock).mockResolvedValue(META);
 });
 
-it('P1: canPreviewAudio is false on web, true on native', () => {
+it('P1: canPreviewAudio — native & no lecture → true; web → false; lecture owns queue → false', async () => {
   expect(engine.canPreviewAudio()).toBe(true);
+  (fetchItemMetadata as jest.Mock).mockResolvedValueOnce({ files: [{ name: 'a.mp3', track: '1', length: '60' }] });
+  await engine.playLecture({ id: 'l', title: 't', scholar: 's', duration: '', category: 'scholar', archiveId: 'L' } as any);
+  expect(engine.getQueueOwner()).toBe('lecture');
+  expect(engine.canPreviewAudio()).toBe(false);
+  engine.__resetForTests();
   (Platform as any).OS = 'web';
   expect(engine.canPreviewAudio()).toBe(false);
 });
-it('P2: plays only Al-Fatiha as a single preview track and never touches playerStore', async () => {
-  await engine.startReciterPreview(reciter, 'arch-id');
-  expect(TrackPlayer.reset).toHaveBeenCalled();
+it('P2: plays the verified file as a single preview track; owner preview; never touches playerStore', async () => {
+  await engine.startReciterPreview(reciter, SRC);
+  expect(engine.getQueueOwner()).toBe('preview');
   const added = (TrackPlayer.add as jest.Mock).mock.calls[0][0];
-  expect(added).toMatchObject({ id: 'preview:r3', url: expect.stringContaining('001.mp3') });
+  expect(added).toMatchObject({ id: 'preview:r3', url: 'https://archive.org/download/Item_1/001%20Fatiha.mp3' });
   expect(TrackPlayer.play).toHaveBeenCalled();
+  expect(fetchItemMetadata).not.toHaveBeenCalled(); // no metadata round trip
   expect(mockSetTrack).not.toHaveBeenCalled();
+  expect(mockSetIsPlaying).not.toHaveBeenCalled();
   expect(mockSetVisible).not.toHaveBeenCalled();
-  expect(usePreviewStore.getState()).toMatchObject({ reciterId: 'r3', status: 'loading' });
 });
-it('P3: pauses a playing real queue and persists its position via setIsPlaying(false) first', async () => {
-  (TrackPlayer.getPlaybackState as jest.Mock).mockResolvedValueOnce({ state: State.Playing });
-  await engine.startReciterPreview(reciter, 'arch-id');
-  expect(TrackPlayer.pause).toHaveBeenCalled();
-  expect(mockSetIsPlaying).toHaveBeenCalledWith(false);
-  const pauseOrder = (TrackPlayer.pause as jest.Mock).mock.invocationCallOrder[0];
-  const resetOrder = (TrackPlayer.reset as jest.Mock).mock.invocationCallOrder[0];
-  expect(pauseOrder).toBeLessThan(resetOrder);
+it('P3: status becomes playing only once play() resolves', async () => {
+  const d = deferred();
+  (TrackPlayer.play as jest.Mock).mockImplementationOnce(() => d.p);
+  const run = engine.startReciterPreview(reciter, SRC);
+  await flush();
+  expect(usePreviewStore.getState().status).toBe('loading');
+  d.resolve(); await run;
+  expect(usePreviewStore.getState()).toMatchObject({ reciterId: 'r3', status: 'playing' });
 });
-it('P4: stop is a no-op when no preview is active (never resets a real queue)', async () => {
+it('P4: owner is set synchronously, before any await', () => {
+  void engine.startReciterPreview(reciter, SRC);
+  expect(engine.getQueueOwner()).toBe('preview');
+  expect(usePreviewStore.getState().reciterId).toBe('r3');
+});
+it.each(['setupPlayer', 'reset', 'add', 'play'] as const)(
+  'P5: a start superseded while awaiting %s issues no further command and never plays',
+  async (stage) => {
+    const d = deferred();
+    (TrackPlayer[stage] as jest.Mock).mockImplementationOnce(() => d.p);
+    const a = engine.startReciterPreview({ ...reciter, id: 'rA' }, SRC);
+    const b = engine.startReciterPreview({ ...reciter, id: 'rB' }, SRC);
+    d.resolve(); await a; await b;
+    const addIds = (TrackPlayer.add as jest.Mock).mock.calls.map((c) => c[0].id);
+    expect(addIds[addIds.length - 1]).toBe('preview:rB');
+    expect(addIds.filter((id) => id === 'preview:rA').length).toBeLessThanOrEqual(stage === 'add' || stage === 'play' ? 1 : 0); // a mock records an add the moment it is issued
+    expect(usePreviewStore.getState()).toMatchObject({ reciterId: 'rB', status: 'playing' });
+  },
+);
+it('P6: stop during an in-flight start — the stale start never plays; owner none; state idle', async () => {
+  const d = deferred();
+  (TrackPlayer.add as jest.Mock).mockImplementationOnce(() => d.p);
+  const a = engine.startReciterPreview(reciter, SRC);
+  await flush();
+  await engine.stopReciterPreview();
+  d.resolve(); await a;
+  expect(TrackPlayer.play).not.toHaveBeenCalled();
+  expect(engine.getQueueOwner()).toBe('none');
+  expect(usePreviewStore.getState()).toMatchObject({ reciterId: null, status: 'idle' });
+});
+it('P7: stop is a no-op unless a preview owns the queue (never resets a lecture)', async () => {
   await engine.stopReciterPreview();
   expect(TrackPlayer.reset).not.toHaveBeenCalled();
 });
-it('P5: stop resets the queue and clears state', async () => {
-  await engine.startReciterPreview(reciter, 'arch-id');
+it('P8: stop resets the queue, owner none, state idle', async () => {
+  await engine.startReciterPreview(reciter, SRC);
   (TrackPlayer.reset as jest.Mock).mockClear();
   await engine.stopReciterPreview();
   expect(TrackPlayer.reset).toHaveBeenCalledTimes(1);
+  expect(engine.getQueueOwner()).toBe('none');
   expect(usePreviewStore.getState().reciterId).toBeNull();
-  expect(engine.isPreviewSuppressing()).toBe(true); // drain window
 });
-it('P6: a stale start (superseded while fetching) never touches the player', async () => {
-  let resolveA!: (m: any) => void;
-  (fetchItemMetadata as jest.Mock)
-    .mockImplementationOnce(() => new Promise((r) => { resolveA = r; }))
-    .mockResolvedValueOnce(META);
-  const a = engine.startReciterPreview({ ...reciter, id: 'rA' }, 'A');
-  await engine.startReciterPreview({ ...reciter, id: 'rB' }, 'B');
-  resolveA(META);
-  await a;
-  const ids = (TrackPlayer.add as jest.Mock).mock.calls.map((c) => c[0].id);
-  expect(ids).toEqual(['preview:rB']);
-  expect(usePreviewStore.getState().reciterId).toBe('rB');
+it('P9: a current start that fails clears state, releases the owner, and rethrows', async () => {
+  (TrackPlayer.add as jest.Mock).mockRejectedValueOnce(new Error('net'));
+  await expect(engine.startReciterPreview(reciter, SRC)).rejects.toThrow('net');
+  expect(usePreviewStore.getState().reciterId).toBeNull();
+  expect(engine.getQueueOwner()).toBe('none');
 });
-it('P7: a stale start that fails does not throw', async () => {
-  (fetchItemMetadata as jest.Mock)
-    .mockRejectedValueOnce(new Error('net'))
-    .mockResolvedValueOnce(META);
-  const a = engine.startReciterPreview({ ...reciter, id: 'rA' }, 'A');
-  await engine.startReciterPreview({ ...reciter, id: 'rB' }, 'B');
+it('P10: a superseded start that fails does not throw', async () => {
+  const d = deferred();
+  (TrackPlayer.add as jest.Mock).mockImplementationOnce(() => d.p.then(() => { throw new Error('net'); }));
+  const a = engine.startReciterPreview({ ...reciter, id: 'rA' }, SRC);
+  await flush();
+  const b = engine.startReciterPreview({ ...reciter, id: 'rB' }, SRC);
+  d.resolve();
   await expect(a).resolves.toBeUndefined();
+  await b;
 });
-it('P8: a current start that fails clears state and rethrows', async () => {
-  (fetchItemMetadata as jest.Mock).mockRejectedValueOnce(new Error('net'));
-  await expect(engine.startReciterPreview(reciter, 'arch-id')).rejects.toThrow('net');
-  expect(usePreviewStore.getState().reciterId).toBeNull();
-});
-it('P9: a series with no mp3 throws NoAudioError and clears state', async () => {
-  (fetchItemMetadata as jest.Mock).mockResolvedValueOnce({ files: [] });
-  await expect(engine.startReciterPreview(reciter, 'arch-id')).rejects.toBeInstanceOf(engine.NoAudioError);
-  expect(usePreviewStore.getState().reciterId).toBeNull();
-});
-it('P10: auto-stops after PREVIEW_MAX_SEC', async () => {
+it('P11: auto-stops after PREVIEW_MAX_SEC', async () => {
   jest.useFakeTimers();
-  await engine.startReciterPreview(reciter, 'arch-id');
-  (TrackPlayer.reset as jest.Mock).mockClear();
-  jest.advanceTimersByTime(PREVIEW_MAX_SEC * 1000);
-  await Promise.resolve();
-  expect(TrackPlayer.reset).toHaveBeenCalled();
-  expect(usePreviewStore.getState().reciterId).toBeNull();
-  jest.useRealTimers();
+  try {
+    await engine.startReciterPreview(reciter, SRC);
+    (TrackPlayer.reset as jest.Mock).mockClear();
+    jest.advanceTimersByTime(PREVIEW_MAX_SEC * 1000);
+    await Promise.resolve();
+    expect(TrackPlayer.reset).toHaveBeenCalled();
+    expect(engine.getQueueOwner()).toBe('none');
+  } finally {
+    jest.useRealTimers();
+  }
 });
-it('P11: playLecture clears an active preview so real playback is not suppressed', async () => {
-  await engine.startReciterPreview(reciter, 'arch-id');
-  (fetchItemMetadata as jest.Mock).mockResolvedValueOnce(META);
-  await engine.playLecture({ id: 'l1', title: 't', scholar: 's', duration: '', category: 'scholar', archiveId: 'L' } as any);
+it('P12: playLecture takes the queue synchronously and clears an active preview', async () => {
+  await engine.startReciterPreview(reciter, SRC);
+  (fetchItemMetadata as jest.Mock).mockResolvedValueOnce({ files: [{ name: 'a.mp3', track: '1', length: '60' }] });
+  const p = engine.playLecture({ id: 'l', title: 't', scholar: 's', duration: '', category: 'scholar', archiveId: 'L' } as any);
+  expect(engine.getQueueOwner()).toBe('lecture');
   expect(usePreviewStore.getState().reciterId).toBeNull();
+  await p;
 });
-it('P12: web is a silent no-op', async () => {
+it('P13: togglePlayback treats a preview-owned queue as "no queue" and rebuilds the lecture', async () => {
+  await engine.startReciterPreview(reciter, SRC);
+  mockTrack = { id: 'L/a.mp3', title: 't', reciter: 's' };
+  (fetchItemMetadata as jest.Mock).mockResolvedValueOnce({ files: [{ name: 'a.mp3', track: '1', length: '60' }] });
+  await engine.togglePlayback();
+  expect(TrackPlayer.setQueue).toHaveBeenCalled(); // rebuilt via playLecture
+  expect(engine.getQueueOwner()).toBe('lecture');
+  mockTrack = null;
+});
+it('P14: setupPlayer adopts the owner of a queue that survived a JS restart', async () => {
+  (TrackPlayer.getActiveTrack as jest.Mock).mockResolvedValueOnce({ id: 'preview:r3', url: 'u' });
+  await engine.setupPlayer();
+  expect(engine.getQueueOwner()).toBe('preview');
+  engine.__resetForTests();
+  (TrackPlayer.getActiveTrack as jest.Mock).mockResolvedValueOnce({ id: 'L/a.mp3', url: 'u' });
+  await engine.setupPlayer();
+  expect(engine.getQueueOwner()).toBe('lecture');
+});
+it('P15: web is a silent no-op', async () => {
   (Platform as any).OS = 'web';
-  await engine.startReciterPreview(reciter, 'arch-id');
+  await engine.startReciterPreview(reciter, SRC);
   expect(TrackPlayer.add).not.toHaveBeenCalled();
 });
 ```
 
-**Step 2: FAIL**: `npx jest services/audioEngine/__tests__/preview.test.ts`
+Notes:
+- The header's `mockTrack` is a `let` at `audioEngine.test.ts:5`. Keep it assignable.
+- `flush()` uses a real `setTimeout(0)`. Do not call it while fake timers are on; only P11 uses them.
 
-**Step 3: Implement** (in `services/audioEngine.ts`; `__resetForTests` also resets the preview module state)
+**Step 2: Run and expect FAIL.** `npx jest services/audioEngine/__tests__/preview.test.ts`
+
+**Step 3: Implement** (in `services/audioEngine.ts`)
 
 ```ts
 // ---------------------------------------------------------------------------
-// RECITER PREVIEW (onboarding). A short Al-Fatiha sample through the same RNTP
-// instance. Invariants:
-//   - never writes playerStore.track / visibility (MiniPlayer keeps the user's track)
-//   - a playing real queue is paused AND its position persisted before reset
-//   - stop is a no-op when idle (must never reset a real lecture queue)
-//   - while active (or draining), syncBridge suppresses playerStore writes
+// QUEUE OWNER — synchronous, module-level. Who the RNTP queue currently belongs
+// to. Written before the first await of every operation that takes or releases
+// the queue, so the sync bridge can never observe a stale owner.
+//   'lecture' — playLecture took it (the MiniPlayer's queue)
+//   'preview' — a reciter preview took it (bridge drops all playerStore writes)
+//   'none'    — nothing queued by this JS session
 // ---------------------------------------------------------------------------
+export type QueueOwner = 'none' | 'lecture' | 'preview';
+let _queueOwner: QueueOwner = 'none';
+export function getQueueOwner(): QueueOwner {
+  return _queueOwner;
+}
+
+// RECITER PREVIEW (onboarding). A verified Al-Fatiha file, ≤ PREVIEW_MAX_SEC.
+// Never offered while a lecture owns the queue; never writes playerStore;
+// stop is a no-op unless a preview owns the queue.
 const PREVIEW_ID_PREFIX = 'preview:';
-const PREVIEW_DRAIN_MS = 750;
+export const PREVIEW_ERROR_MESSAGE = 'تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.';
 let _previewToken = 0;
 let _previewTimer: ReturnType<typeof setTimeout> | null = null;
-let _drainUntil = 0;
-
-export function canPreviewAudio(): boolean {
-  return !isWeb();
-}
-
-/** True while a preview owns the player, or just after one stopped (drain). */
-export function isPreviewSuppressing(): boolean {
-  return usePreviewStore.getState().reciterId !== null || Date.now() < _drainUntil;
-}
 
 function clearPreviewTimer(): void {
   if (_previewTimer) clearTimeout(_previewTimer);
   _previewTimer = null;
 }
 
-export async function stopReciterPreview(): Promise<void> {
-  if (isWeb()) return;
-  if (usePreviewStore.getState().reciterId === null) return;
+/** Drop any preview bookkeeping (token, timer, UI state). Does not touch RNTP. */
+function abandonPreview(): void {
   _previewToken += 1;
   clearPreviewTimer();
   usePreviewStore.getState().clear();
-  _drainUntil = Date.now() + PREVIEW_DRAIN_MS;
+}
+
+export function canPreviewAudio(): boolean {
+  return !isWeb() && _queueOwner !== 'lecture';
+}
+
+export async function stopReciterPreview(): Promise<void> {
+  if (isWeb() || _queueOwner !== 'preview') return;
+  abandonPreview();
+  _queueOwner = 'none';
   await TrackPlayer.reset();
 }
 
-export async function startReciterPreview(reciter: Reciter, archiveId: string): Promise<void> {
-  if (isWeb()) return;
-  await stopReciterPreview();
-  const token = ++_previewToken;
-  const isCurrent = () => token === _previewToken;
+export async function startReciterPreview(reciter: Reciter, source: PreviewSource): Promise<void> {
+  if (!canPreviewAudio()) return;
+  abandonPreview();
+  const token = _previewToken;
+  _queueOwner = 'preview';
   usePreviewStore.getState().begin(reciter.id);
+  const isCurrent = () => token === _previewToken && _queueOwner === 'preview';
   try {
-    const { state } = await TrackPlayer.getPlaybackState();
-    if (state === State.Playing) {
-      await TrackPlayer.pause();
-      usePlayerStore.getState().setIsPlaying(false); // persists the lecture position now
-    }
     await setupPlayer();
-    const meta = await fetchItemMetadata(archiveId);
     if (!isCurrent()) return;
-    const episode = pickPreviewEpisode(resolveEpisodes(archiveId, meta));
-    if (!episode) throw new NoAudioError('لا تتوفر عيّنة صوتية لهذا القارئ');
     await TrackPlayer.reset();
     if (!isCurrent()) return;
     await TrackPlayer.add({
       id: `${PREVIEW_ID_PREFIX}${reciter.id}`,
-      url: episode.url,
+      url: buildDownloadUrl(source.archiveId, source.file),
       title: 'سورة الفاتحة — عيّنة',
       artist: reciter.name,
     });
+    if (!isCurrent()) return;
     await TrackPlayer.play();
+    if (!isCurrent()) return;
+    usePreviewStore.getState().markPlaying(reciter.id);
     _previewTimer = setTimeout(() => {
       if (isCurrent()) void stopReciterPreview().catch(() => undefined);
     }, PREVIEW_MAX_SEC * 1000);
   } catch (err) {
-    if (!isCurrent()) return; // superseded — the newer preview owns the UI
-    clearPreviewTimer();
-    usePreviewStore.getState().clear();
+    if (!isCurrent()) return; // superseded — the newer owner handles the UI
+    abandonPreview();
+    _queueOwner = 'none';
     throw err;
   }
 }
 ```
 
-In `playLecture`, after the web guard: `clearPreviewTimer(); _previewToken += 1; usePreviewStore.getState().clear();` (no reset needed, because `playLecture` resets the queue itself).
+Elsewhere in the same file:
+- **`playLecture`**: the first line after the web guard is `abandonPreview(); _queueOwner = 'lecture';`. This is synchronous, before the `archiveId` check and any await.
+- **`togglePlayback`** (`:192-193`): `const hasQueue = _queueOwner !== 'preview' && idx !== undefined && idx !== null;`
+- **`stop()`**: `abandonPreview(); _queueOwner = 'none';` before `TrackPlayer.reset()`.
+- **`setupPlayer`**: at the end of the one-time block, after `updateOptions`, add:
 
-Import `Reciter` from `@/types/content`, `pickPreviewEpisode` from `./archive/episodeResolver`, `usePreviewStore` from `@/store/previewStore`, `PREVIEW_MAX_SEC` from `@/constants/settings`. Extend `__resetForTests` to set `_previewToken = 0; _drainUntil = 0; clearPreviewTimer();`.
+  ```ts
+  if (_queueOwner === 'none') {
+    const active = await TrackPlayer.getActiveTrack();
+    if (active) _queueOwner = String((active as { id?: unknown }).id ?? '').startsWith(PREVIEW_ID_PREFIX) ? 'preview' : 'lecture';
+  }
+  ```
 
-**Step 4: PASS**: `npx jest services/audioEngine` (all three existing suites plus the new one) and tsc.
+- **`__resetForTests`**: also set `_queueOwner = 'none'; _previewToken = 0; clearPreviewTimer();`
+- **Imports**: `Reciter` from `@/types/content`; `buildDownloadUrl` from `./archive/episodeResolver`; `usePreviewStore` from `@/store/previewStore`; `PREVIEW_MAX_SEC` and `type PreviewSource` from `@/constants/settings`.
 
-**Step 5: Commit**: `git commit -m "feat(audio): reciter preview through the engine without touching the MiniPlayer"`
+**Step 4: Run and expect PASS.** `npx jest services/audioEngine` (the existing suites plus the new one) and tsc. The existing `audioEngine.test.ts` suites must pass unchanged. Its `getActiveTrack` default is `undefined`, so no owner gets adopted.
+
+**Step 5: Commit.** `git commit -m "feat(audio): queue ownership and reciter previews that never touch the MiniPlayer"`
 
 ---
 
-### Task 8: Sync bridge: suppress and route events while a preview is active
+### Task 8: Sync bridge: drop MiniPlayer writes while a preview owns the queue
 
 **Files:**
-- Modify: `services/audioEngine/syncBridge.ts:30-67`
-- Test: `services/audioEngine/__tests__/syncBridge.test.ts`. Add mocks for `@/store/progressStore` and `../../archive/archiveClient` (the bridge now imports the engine), and append cases.
+- Modify: `services/audioEngine/syncBridge.ts:30-67` (and update its header comment)
+- Test: `services/audioEngine/__tests__/syncBridge.test.ts`. Mock the engine module and append cases. Do **not** add `progressStore` or `archiveClient` mocks: the engine module is mocked, so they would be dead.
 
-**Step 1: Failing tests** (`handlerFor` exists at `:20-24`; drive state through the real `usePreviewStore`; `jest.mock('../../audioEngine', …)` partially so `stopReciterPreview` is a spy and `isPreviewSuppressing` reads the store):
+**Step 1: Write the failing tests**
 
 ```ts
 const mockStopPreview = jest.fn().mockResolvedValue(undefined);
-let mockDraining = false;
+let mockOwner: 'none' | 'lecture' | 'preview' = 'lecture';
 jest.mock('../../audioEngine', () => ({
+  getQueueOwner: () => mockOwner,
   stopReciterPreview: () => mockStopPreview(),
-  isPreviewSuppressing: () =>
-    require('@/store/previewStore').usePreviewStore.getState().reciterId !== null || mockDraining,
   PREVIEW_ERROR_MESSAGE: 'تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.',
 }));
 import { usePreviewStore } from '@/store/previewStore';
+```
 
-describe('while a reciter preview is active', () => {
-  beforeEach(() => { usePreviewStore.getState().begin('r3'); mockDraining = false; });
+In the existing top-level `beforeEach`, set `mockOwner = 'lecture'`. The existing tests then keep their meaning, because a lecture queue behaves exactly as before.
+
+```ts
+describe('while a reciter preview owns the queue', () => {
+  beforeEach(() => { mockOwner = 'preview'; usePreviewStore.getState().begin('r3'); });
   afterEach(() => usePreviewStore.getState().clear());
 
   it('B1: ignores active-track changes (MiniPlayer keeps the user track)', () => {
@@ -703,75 +845,79 @@ describe('while a reciter preview is active', () => {
     handlerFor(Event.PlaybackProgressUpdated)({ position: 5, duration: 50 });
     expect(mockSetProgress).not.toHaveBeenCalled();
   });
-  it('B3: Playing marks the preview playing and leaves isPlaying alone', () => {
+  it('B3: never writes isPlaying', () => {
     handlerFor(Event.PlaybackState)({ state: State.Playing });
-    expect(usePreviewStore.getState().status).toBe('playing');
+    handlerFor(Event.PlaybackState)({ state: State.Paused });
     expect(mockSetIsPlaying).not.toHaveBeenCalled();
   });
-  it('B4: None while loading (our own reset) does not end the preview', () => {
+  it('B4: Stopped/None while loading (the preview\'s own reset) does not end it', () => {
+    handlerFor(Event.PlaybackState)({ state: State.Stopped });
     handlerFor(Event.PlaybackState)({ state: State.None });
     expect(mockStopPreview).not.toHaveBeenCalled();
   });
-  it.each([State.Paused, State.Stopped, State.Ended, State.None])('B5: %s while playing ends the preview', (s) => {
+  it.each([State.Paused, State.Stopped, State.Ended])('B5: %s while playing ends the preview', (s) => {
     usePreviewStore.getState().markPlaying('r3');
     handlerFor(Event.PlaybackState)({ state: s });
     expect(mockStopPreview).toHaveBeenCalled();
-    expect(mockSetIsPlaying).not.toHaveBeenCalled();
   });
   it('B6: queue end stops the preview and NEVER clears the MiniPlayer track', () => {
     handlerFor(Event.PlaybackQueueEnded)({ track: 0, position: 50 });
     expect(mockStopPreview).toHaveBeenCalled();
     expect(mockSetTrack).not.toHaveBeenCalled();
   });
-  it('B7: an error stops the preview and shows the preview toast once', () => {
+  it('B7: an error stops the preview and shows the preview toast exactly once', () => {
     handlerFor(Event.PlaybackError)({ code: 'x', message: 'net' });
     expect(mockStopPreview).toHaveBeenCalled();
     expect(mockToastShow).toHaveBeenCalledTimes(1);
     expect(mockToastShow).toHaveBeenCalledWith({ message: 'تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.' });
   });
-  it('B8: during the drain window after stop, a late queue-end is ignored entirely', () => {
-    usePreviewStore.getState().clear();
-    mockDraining = true;
+});
+
+describe('queue-end only clears the MiniPlayer for a lecture queue', () => {
+  it('B8: owner none (e.g. a late event after a preview stopped) → ignored', () => {
+    mockOwner = 'none';
     handlerFor(Event.PlaybackQueueEnded)({ track: 0, position: 50 });
     expect(mockSetTrack).not.toHaveBeenCalled();
     expect(mockStopPreview).not.toHaveBeenCalled();
   });
+  it('B9: owner lecture → clears as before', () => {
+    mockOwner = 'lecture';
+    handlerFor(Event.PlaybackQueueEnded)({ track: 0, position: 50 });
+    expect(mockSetTrack).toHaveBeenCalledWith(null);
+  });
 });
 ```
 
-The existing (non-preview) bridge tests must still pass unchanged. They run with the preview store idle and `mockDraining = false`.
+**Step 2: Run and expect FAIL.** `npx jest services/audioEngine/__tests__/syncBridge.test.ts`
 
-**Step 2: FAIL**: `npx jest services/audioEngine/__tests__/syncBridge.test.ts`
-
-**Step 3: Implement**. Export `PREVIEW_ERROR_MESSAGE` from `services/audioEngine.ts`. In `syncBridge.ts` import `{ isPreviewSuppressing, stopReciterPreview, PREVIEW_ERROR_MESSAGE } from '../audioEngine'` and `usePreviewStore`, then add a preview guard at the top of each handler:
+**Step 3: Implement.** Import `{ getQueueOwner, stopReciterPreview, PREVIEW_ERROR_MESSAGE } from '../audioEngine'` and `usePreviewStore`. There is no import cycle: the engine does not import the bridge.
 
 ```ts
-const preview = () => usePreviewStore.getState();
+const previewOwns = () => getQueueOwner() === 'preview';
 const endPreview = () => { stopReciterPreview().catch(() => undefined); };
 
-// PlaybackState:
-if (isPreviewSuppressing()) {
-  const p = preview();
-  if (p.reciterId === null) return; // draining
-  if (e.state === State.Playing) p.markPlaying(p.reciterId);
-  else if (p.status === 'playing' && (e.state === State.Paused || e.state === State.Stopped || e.state === State.Ended || e.state === State.None)) endPreview();
+// PlaybackState
+if (previewOwns()) {
+  const { status } = usePreviewStore.getState();
+  if (status === 'playing' && (e.state === State.Paused || e.state === State.Stopped || e.state === State.Ended)) endPreview();
   return;
 }
-// ProgressUpdated / ActiveTrackChanged:
-if (isPreviewSuppressing()) return;
-// QueueEnded:
-if (isPreviewSuppressing()) { if (preview().reciterId !== null) endPreview(); return; }
-// PlaybackError:
-if (isPreviewSuppressing()) {
+// ProgressUpdated, ActiveTrackChanged
+if (previewOwns()) return;
+// QueueEnded
+if (previewOwns()) { endPreview(); return; }
+if (getQueueOwner() !== 'lecture') return;   // spurious end — nothing of the user's to clear
+store().setTrack(null); store().setIsPlaying(false);
+// PlaybackError
+if (previewOwns()) {
   Sentry.captureException(e instanceof Error ? e : new Error(`Preview error: ${JSON.stringify(e)}`));
-  if (preview().reciterId !== null) { endPreview(); useToastStore.getState().show({ message: PREVIEW_ERROR_MESSAGE }); }
+  endPreview();
+  useToastStore.getState().show({ message: PREVIEW_ERROR_MESSAGE });
   return;
 }
 ```
 
-Update the file header to state that preview events are suppressed.
-
-**Step 4: PASS**: `npx jest services/audioEngine` and tsc. **Step 5: Commit**: `git commit -m "fix(audio): keep reciter previews out of the MiniPlayer and progress log"`
+**Step 4: Run and expect PASS.** `npx jest services/audioEngine` and tsc. **Step 5: Commit.** `git commit -m "fix(audio): keep reciter previews out of the MiniPlayer and progress log"`
 
 ---
 
@@ -779,19 +925,15 @@ Update the file header to state that preview events are suppressed.
 
 **Files:**
 - Create: `services/reciterPreview.ts`
-- Modify: `constants/settings.ts` (append `ONBOARDING_RECITER_PREVIEW_SOURCES: Readonly<Record<string, string>> = Object.freeze({})`, with a comment pointing at design Q1)
-- Test: `services/__tests__/reciterPreview.test.ts` (create; `jest.mock('@/services/audioEngine', …)` with spies, real previewStore, mock toastStore and Sentry)
+- Test: `services/__tests__/reciterPreview.test.ts` (create)
 
-**Step 1: Failing tests**
+**Step 1: Write the failing tests**
 
 ```ts
-// Header. jest only lets a mock factory close over names prefixed `mock`.
-class MockNoAudioError extends Error {}
 const mockStart = jest.fn().mockResolvedValue(undefined);
 const mockStop = jest.fn().mockResolvedValue(undefined);
 const mockCanPreviewAudio = jest.fn().mockReturnValue(true);
 jest.mock('@/services/audioEngine', () => ({
-  NoAudioError: MockNoAudioError,
   PREVIEW_ERROR_MESSAGE: 'تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.',
   canPreviewAudio: () => mockCanPreviewAudio(),
   startReciterPreview: (...a: unknown[]) => mockStart(...a),
@@ -801,41 +943,40 @@ const mockToastShow = jest.fn();
 jest.mock('@/store/toastStore', () => ({ useToastStore: { getState: () => ({ show: mockToastShow }) } }));
 jest.mock('@sentry/react-native', () => ({ captureException: jest.fn() }));
 import { usePreviewStore } from '@/store/previewStore';
-import { canPreview, previewArchiveIdFor, stopPreview, toggleReciterPreview } from '@/services/reciterPreview';
-const r = { id: 'r3', name: 'المنشاوي', style: 'murattal', styleLabel: 'x' } as const;
-beforeEach(() => { jest.clearAllMocks(); usePreviewStore.getState().clear(); });
+import { canPreview, previewSourceFor, stopPreview, toggleReciterPreview } from '@/services/reciterPreview';
 
-it('F1: previewArchiveIdFor prefers reciter.archiveId, then the onboarding map, else null', () => {
-  expect(previewArchiveIdFor({ ...r, archiveId: 'own' }, { r3: 'map' })).toBe('own');
-  expect(previewArchiveIdFor(r, { r3: 'map' })).toBe('map');
-  expect(previewArchiveIdFor(r, {})).toBeNull();
+const r = { id: 'r3', name: 'المنشاوي', style: 'murattal', styleLabel: 'x' } as const;
+const S = { r3: { archiveId: 'Item_1', file: '001.mp3' } };
+beforeEach(() => { jest.clearAllMocks(); mockCanPreviewAudio.mockReturnValue(true); usePreviewStore.getState().clear(); });
+
+it('F1: previewSourceFor reads the verified map only', () => {
+  expect(previewSourceFor(r, S)).toEqual(S.r3);
+  expect(previewSourceFor({ ...r, archiveId: 'series' }, {})).toBeNull(); // a series id is not a file
 });
-it('F2: canPreview is false without a source or when the engine cannot preview', () => {
-  mockCanPreviewAudio.mockReturnValue(true);
+it('F2: canPreview needs a source AND an engine that can preview', () => {
   expect(canPreview(r, {})).toBe(false);
-  expect(canPreview(r, { r3: 'x' })).toBe(true);
-  mockCanPreviewAudio.mockReturnValue(false);
-  expect(canPreview(r, { r3: 'x' })).toBe(false);
+  expect(canPreview(r, S)).toBe(true);
+  mockCanPreviewAudio.mockReturnValue(false); // web, or a lecture owns the queue
+  expect(canPreview(r, S)).toBe(false);
 });
 it('F3: toggling the active reciter stops it', async () => {
   usePreviewStore.getState().begin('r3');
-  await toggleReciterPreview(r, { r3: 'x' });
+  await toggleReciterPreview(r, S);
   expect(mockStop).toHaveBeenCalled();
   expect(mockStart).not.toHaveBeenCalled();
 });
-it('F4: toggling another reciter starts it with the resolved source', async () => {
-  await toggleReciterPreview(r, { r3: 'x' });
-  expect(mockStart).toHaveBeenCalledWith(r, 'x');
+it('F4: toggling another reciter starts it with its verified source', async () => {
+  await toggleReciterPreview(r, S);
+  expect(mockStart).toHaveBeenCalledWith(r, S.r3);
 });
-it('F5: network failure → Arabic toast, never throws', async () => {
+it('F5: failure → Arabic network toast, never throws', async () => {
   mockStart.mockRejectedValueOnce(new Error('net'));
-  await expect(toggleReciterPreview(r, { r3: 'x' })).resolves.toBeUndefined();
+  await expect(toggleReciterPreview(r, S)).resolves.toBeUndefined();
   expect(mockToastShow).toHaveBeenCalledWith({ message: 'تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.' });
 });
-it('F6: no-audio → its own Arabic toast', async () => {
-  mockStart.mockRejectedValueOnce(new MockNoAudioError());
-  await toggleReciterPreview(r, { r3: 'x' });
-  expect(mockToastShow).toHaveBeenCalledWith({ message: 'لا تتوفر عيّنة صوتية لهذا القارئ' });
+it('F6: no source → nothing happens', async () => {
+  await toggleReciterPreview(r, {});
+  expect(mockStart).not.toHaveBeenCalled();
 });
 it('F7: stopPreview swallows engine errors', async () => {
   mockStop.mockRejectedValueOnce(new Error('bridge down'));
@@ -843,32 +984,31 @@ it('F7: stopPreview swallows engine errors', async () => {
 });
 ```
 
-**Step 2: FAIL** → **Step 3: Implement**
+**Step 2: FAIL. Step 3: Implement**
 
 ```ts
 /**
  * services/reciterPreview.ts — UI-facing entry for reciter audio previews
- * (onboarding). Mirrors services/lecturePlayback.ts: screens call it straight
- * from onPress; it never throws and reports failures as Arabic toasts.
+ * (onboarding). Mirrors services/lecturePlayback.ts: call straight from onPress;
+ * never throws; failures surface as an Arabic toast (root ToastOverlay).
  */
 import * as Sentry from '@sentry/react-native';
-import { ONBOARDING_RECITER_PREVIEW_SOURCES } from '@/constants/settings';
+import { ONBOARDING_RECITER_PREVIEW_SOURCES, type PreviewSource } from '@/constants/settings';
 import {
-  NoAudioError, PREVIEW_ERROR_MESSAGE, canPreviewAudio, startReciterPreview, stopReciterPreview,
+  PREVIEW_ERROR_MESSAGE, canPreviewAudio, startReciterPreview, stopReciterPreview,
 } from '@/services/audioEngine';
 import { usePreviewStore } from '@/store/previewStore';
 import { useToastStore } from '@/store/toastStore';
 import type { Reciter } from '@/types/content';
 
-const NO_SAMPLE_MESSAGE = 'لا تتوفر عيّنة صوتية لهذا القارئ';
-type Sources = Readonly<Record<string, string>>;
+type Sources = Readonly<Record<string, PreviewSource>>;
 
-export function previewArchiveIdFor(reciter: Reciter, sources: Sources = ONBOARDING_RECITER_PREVIEW_SOURCES): string | null {
-  return reciter.archiveId ?? sources[reciter.id] ?? null;
+export function previewSourceFor(reciter: Reciter, sources: Sources = ONBOARDING_RECITER_PREVIEW_SOURCES): PreviewSource | null {
+  return sources[reciter.id] ?? null;
 }
 
 export function canPreview(reciter: Reciter, sources: Sources = ONBOARDING_RECITER_PREVIEW_SOURCES): boolean {
-  return canPreviewAudio() && previewArchiveIdFor(reciter, sources) !== null;
+  return canPreviewAudio() && previewSourceFor(reciter, sources) !== null;
 }
 
 export async function stopPreview(): Promise<void> {
@@ -877,35 +1017,31 @@ export async function stopPreview(): Promise<void> {
 
 export async function toggleReciterPreview(reciter: Reciter, sources: Sources = ONBOARDING_RECITER_PREVIEW_SOURCES): Promise<void> {
   if (usePreviewStore.getState().reciterId === reciter.id) return stopPreview();
-  const archiveId = previewArchiveIdFor(reciter, sources);
-  if (!archiveId) return;
+  const source = previewSourceFor(reciter, sources);
+  if (!source) return;
   try {
-    await startReciterPreview(reciter, archiveId);
+    await startReciterPreview(reciter, source);
   } catch (err) {
-    if (err instanceof NoAudioError) {
-      useToastStore.getState().show({ message: NO_SAMPLE_MESSAGE });
-    } else {
-      Sentry.captureException(err);
-      useToastStore.getState().show({ message: PREVIEW_ERROR_MESSAGE });
-    }
+    Sentry.captureException(err);
+    useToastStore.getState().show({ message: PREVIEW_ERROR_MESSAGE });
   }
 }
 ```
 
-**Step 4: PASS** (+ tsc). **Step 5: Commit**: `git commit -m "feat(onboarding): reciter preview facade with Arabic failure messages"`
+**Step 4: PASS** plus tsc. **Step 5: Commit.** `git commit -m "feat(onboarding): reciter preview facade with an Arabic failure message"`
 
 ---
 
 ### Task 10: Selectable row slot contract + `PreviewButton`
 
 **Files:**
-- Modify: `constants/rtlContracts.ts` (add after `RECITER_ROW_ORDER`, `:27-28`)
-- Modify: `components/khazain/onboarding/SelectableRow.tsx` (whole component, `:8-101`)
+- Modify: `constants/rtlContracts.ts`. Add after `RECITER_ROW_ORDER` (`:27-28`).
+- Modify: `components/khazain/onboarding/SelectableRow.tsx` (`:8-101`)
 - Create: `components/khazain/onboarding/PreviewButton.tsx`
-- Modify: `__tests__/rtlPhysicalContract.test.ts:57-63` (add `PreviewButton.tsx`)
-- Test: `__tests__/rtlVisualContracts.test.ts` (append) and `__tests__/onboardingSteps.test.ts` (append source contracts)
+- Modify: `__tests__/rtlPhysicalContract.test.ts:57-63`. Add `PreviewButton.tsx`.
+- Test: `__tests__/rtlVisualContracts.test.ts` (append) and `__tests__/onboardingSteps.test.ts` (append)
 
-**Step 1: Failing tests**
+**Step 1: Write the failing tests**
 
 ```ts
 // rtlVisualContracts.test.ts
@@ -922,10 +1058,20 @@ describe('selectable row with a preview control', () => {
     expect(row()).toMatch(/SELECTABLE_ROW_ORDER\.map/);
     expect(row()).toMatch(/\.\.\.PHYSICAL_ROW/);
   });
-  it('keeps the preview button a SIBLING of the radio Pressable (VoiceOver can reach it)', () => {
-    // exactly one Pressable in the row file — the preview control lives in PreviewButton
+  it('the preview control is a SIBLING of the radio Pressable (VoiceOver can reach it)', () => {
     expect(row().match(/<Pressable/g)).toHaveLength(1);
     expect(row()).toMatch(/accessibilityRole="radio"/);
+  });
+  it('padding and minHeight stay on the select Pressable; the card View carries only chrome', () => {
+    const src = row();
+    const card = /card:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
+    const select = /select:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
+    expect(select).toMatch(/minHeight:\s*64/);
+    expect(select).toMatch(/paddingVertical:\s*12/);
+    expect(select).toMatch(/paddingHorizontal:\s*16/);
+    expect(card).not.toMatch(/padding|minHeight/);
+    expect(card).toMatch(/borderRadius:\s*16/);
+    expect(card).toMatch(/backgroundColor/);
   });
   it('PreviewButton is a labelled 44pt button with busy state', () => {
     const src = code('components/khazain/onboarding/PreviewButton.tsx');
@@ -938,7 +1084,7 @@ describe('selectable row with a preview control', () => {
 });
 ```
 
-**Step 2: FAIL** → **Step 3: Implement**
+**Step 2: FAIL. Step 3: Implement**
 
 ```ts
 // constants/rtlContracts.ts
@@ -986,50 +1132,63 @@ const styles = StyleSheet.create({
 });
 ```
 
-`SelectableRow.tsx`: add `preview?: React.ReactNode` to `Props`. Move the card chrome (`row`, `KhazainShadows.card`, `rowSelected`) to an outer `View` (`...PHYSICAL_ROW`, `alignItems: 'center'`, `gap: 12`, `minHeight: 64`, `paddingVertical: 12`, `paddingHorizontal: 16`). The existing `Pressable` becomes the `select` slot: `{ ...PHYSICAL_ROW, flex: 1, alignItems: 'center', gap: 12 }`, with the pressed-scale transform, the `radio` role, state and label, and children tick → text, unchanged. Render `SELECTABLE_ROW_ORDER.map((slot) => <React.Fragment key={slot}>{slots[slot]}</React.Fragment>)` with `slots = { preview: preview ?? null, select: <Pressable…/> }`. `QiraaStep` passes no `preview`, so its rows render as before. Keep the doc comment and explain the sibling structure.
+`SelectableRow.tsx`:
+- Add `preview?: React.ReactNode` to `Props`.
+- The outer `View` is the card, with `styles.card` plus `KhazainShadows.card` plus `selected ? styles.cardSelected : null`. `card` is `{ ...PHYSICAL_ROW, alignItems: 'center', borderRadius: 16, backgroundColor: KhazainColors.cardBg, borderWidth: 1, borderColor: KhazainColors.cardBorder }`, with **no padding and no minHeight**. `cardSelected` keeps today's `rowSelected` values.
+- The `select` slot is the existing `Pressable`, with **the same props and children as today** (radio role, state, label, pressed scale, tick → text). Its style is `select: { ...PHYSICAL_ROW, flex: 1, alignItems: 'center', gap: 12, minHeight: 64, paddingVertical: 12, paddingHorizontal: 16 }`.
+- The `preview` slot is `preview ? <View style={styles.previewSlot}>{preview}</View> : null`, with `previewSlot: { marginLeft: 12 }`. That is a physical left, legal inside the pinned row.
+- Render `SELECTABLE_ROW_ORDER.map((slot) => <React.Fragment key={slot}>{slots[slot]}</React.Fragment>)`.
 
-**Step 4: PASS**: `npx jest __tests__/rtlVisualContracts.test.ts __tests__/rtlPhysicalContract.test.ts __tests__/onboardingSteps.test.ts` and tsc.
+`QiraaStep` passes no `preview`, so its rows are pixel-identical to today: same padding, minHeight, border and shadow. Keep the doc comment, and add a note explaining the sibling structure.
 
-**Step 5: Commit**: `git commit -m "feat(onboarding): selectable row gains a sibling preview control in a pinned slot order"`
+**Step 4: Run and expect PASS.** `npx jest __tests__/rtlVisualContracts.test.ts __tests__/rtlPhysicalContract.test.ts __tests__/onboardingSteps.test.ts` and tsc.
+
+**Step 5: Commit.** `git commit -m "feat(onboarding): selectable row gains a sibling preview control in a pinned slot order"`
 
 ---
 
 ### Task 11: Wire previews into the reciter step and stop them on every exit
 
 **Files:**
-- Modify: `components/khazain/onboarding/ReciterStep.tsx`. Replace the doc comment at `:11-16`, list `selectOnboardingReciters(...)` instead of `data` (`:42`), pass `preview`, and add the cleanup effects.
-- Modify: `app/onboarding.tsx`. Call `stopPreview()` in `goTo` (`:110-115`) and `finish` (`:117-120`), which `onSkip` reaches.
-- Test: `__tests__/onboardingSteps.test.ts` (append source contracts)
+- Modify: `components/khazain/onboarding/ReciterStep.tsx`:
+  - replace the doc comment at `:11-16`;
+  - list `selectOnboardingReciters(...)` instead of `data` at `:42`;
+  - pass `preview`;
+  - add the cleanup effects.
+- Modify: `app/onboarding.tsx`. Make `void stopPreview();` the **first statement** of `goTo` (`:110-115`) and of `finish` (`:117-120`). `onSkip` reaches `finish`.
+- Test: `__tests__/onboardingSteps.test.ts` (append)
 
-**Step 1: Failing tests**
+**Step 1: Write the failing tests**
 
 ```ts
 describe('reciter step previews (ticket QTQYqLBB: popular reciters with audio previews)', () => {
   const step = () => code('components/khazain/onboarding/ReciterStep.tsx');
-  it('lists the curated popular reciters, not the whole catalogue', () => {
+  it('lists the verified reciters (plus the current pick), not the whole catalogue', () => {
     expect(step()).toMatch(/selectOnboardingReciters\(/);
     expect(step()).toMatch(/ONBOARDING_POPULAR_RECITER_IDS/);
   });
-  it('only renders a preview control when the reciter can be previewed', () => {
+  it('renders a preview control only when the reciter can be previewed', () => {
     expect(step()).toMatch(/canPreview\(/);
     expect(step()).toMatch(/toggleReciterPreview\(/);
   });
-  it('stops the preview on unmount and when the app leaves the foreground', () => {
-    expect(step()).toMatch(/return \(\) => \{[\s\S]*stopPreview\(\)/);
+  it('stops the preview on unmount', () => {
+    expect(step()).toMatch(/useEffect\(\(\) => \(\) => \{\s*void stopPreview\(\);\s*\},\s*\[\]\)/);
+  });
+  it('stops the preview when the app leaves the foreground', () => {
     expect(step()).toMatch(/AppState\.addEventListener\('change'/);
   });
   it('no longer claims previews are deferred', () => {
     expect(fs.readFileSync(path.join(ROOT, 'components/khazain/onboarding/ReciterStep.tsx'), 'utf8')).not.toMatch(/deferred \(FR-006\)/);
   });
-  it('the screen stops any preview on step change, skip and finish', () => {
+  it('the screen stops any preview first thing on step change and on finish (skip → finish)', () => {
     const src = code('app/onboarding.tsx');
-    expect(src).toMatch(/const goTo[\s\S]*?stopPreview\(\)/);
-    expect(src).toMatch(/const finish[\s\S]*?stopPreview\(\)/);
+    expect(src).toMatch(/const goTo = [^{]*\{\s*void stopPreview\(\);/);
+    expect(src).toMatch(/const finish = [^{]*\{\s*void stopPreview\(\);/);
   });
 });
 ```
 
-**Step 2: FAIL** → **Step 3: Implement**
+**Step 2: FAIL. Step 3: Implement**
 
 ```tsx
 // ReciterStep.tsx (additions)
@@ -1040,9 +1199,10 @@ const reciters = useMemo(
   [data, selectedId],
 );
 
-// Stop on unmount (step change, skip, finish all unmount this step).
+// Stop on unmount — step change, skip and finish all unmount this step.
 useEffect(() => () => { void stopPreview(); }, []);
-// Stop when backgrounded — a 30 s sample must not keep playing behind the lock screen.
+
+// Stop when backgrounded: a sample must not keep playing behind the lock screen.
 useEffect(() => {
   const sub = AppState.addEventListener('change', (s) => { if (s !== 'active') void stopPreview(); });
   return () => sub.remove();
@@ -1065,106 +1225,86 @@ useEffect(() => {
 />
 ```
 
-Note: `selectedId` changes when the user taps a row, and that re-runs the memo but not the unmount cleanup. The cleanup effect has `[]` deps, so selecting a reciter never stops its preview. This is intended.
+The unmount effect has `[]` deps, so selecting a reciter (which changes `selectedId`) never stops a preview. That is intended.
 
-Replace the doc comment with: "Onboarding reciter step: the curated popular reciters (`ONBOARDING_POPULAR_RECITER_IDS`), each with an optional Al-Fatiha preview (design 2026-10-21 §4.3). Selecting and previewing are separate controls; previewing never changes `preferredReciterId`."
+Replace the doc comment with: "Onboarding reciter step: the reciters with a verified Al-Fatiha preview (`ONBOARDING_POPULAR_RECITER_IDS`) plus the user's current pick, each previewable row with a play/stop control (design 2026-10-21 §4.3). Selecting and previewing are separate controls; previewing never changes `preferredReciterId`."
 
-In `app/onboarding.tsx`, import `stopPreview` from `@/services/reciterPreview` and add `void stopPreview();` as the first line of both `goTo` and `finish`.
+**Step 4: Run and expect PASS.** `npx jest __tests__/onboardingSteps.test.ts __tests__/rtlPhysicalContract.test.ts` and tsc.
 
-**Step 4: PASS**: `npx jest __tests__/onboardingSteps.test.ts __tests__/rtlPhysicalContract.test.ts` and tsc.
-
-**Step 5: Commit**: `git commit -m "feat(onboarding): audio previews on the reciter step, stopped on every exit"`
+**Step 5: Commit.** `git commit -m "feat(onboarding): audio previews on the reciter step, stopped on every exit"`
 
 ---
 
 ### Task 12 (CONDITIONAL): Reconcile with the Expo Go guard
 
-**Run only if** `git merge-base --is-ancestor 6e9d60d HEAD` succeeds, i.e. `fix/rntp-expo-go-guard` is in the base by the time this executes. Otherwise skip it and record in the PR: "after the Expo Go guard merges, switch `canPreviewAudio`/`startReciterPreview`/`stopReciterPreview` from `isWeb()` to `isInert()`".
+**Run only if** `git merge-base --is-ancestor 6e9d60d HEAD` succeeds when this task comes up. Otherwise skip it, and note in the PR: "once the Expo Go guard merges, `canPreviewAudio` becomes `!isInert() && _queueOwner !== 'lecture'`, and start/stop short-circuit on `isInert()`."
 
-**Files:** `services/audioEngine.ts` (preview section), `services/audioEngine/__tests__/inert.test.ts`
+**Files:** `services/audioEngine.ts` (the preview section), `services/audioEngine/__tests__/inert.test.ts`
 
-**Step 1: Failing test** (in `inert.test.ts`, where `nativeAudioAvailable` is mocked false): `expect(engine.canPreviewAudio()).toBe(false)`, and `await engine.startReciterPreview(r, 'x')` resolves without calling `TrackPlayer.add` and without a toast. The button is hidden instead (design §4.3 Expo Go).
-**Step 2:** FAIL. **Step 3:** In the preview section, replace `isWeb()` with `isInert()`, and make `canPreviewAudio = () => !isInert()`. **Step 4:** `npx jest services/audioEngine` PASS + tsc.
-**Step 5: Commit**: `git commit -m "fix(audio): hide reciter previews when the native audio module is absent"`
-
----
-
-### Task 13 (GATED on design Q1 approval): Preview sources for the curated reciters
-
-**Do not start without the user's written approval of specific ids.**
-
-**Files:** `constants/settings.ts` (`ONBOARDING_RECITER_PREVIEW_SOURCES`), `services/__tests__/reciterPreview.test.ts`
-
-**Step 1: Failing test**
-
-```ts
-it('F8: every configured preview source belongs to a curated reciter', () => {
-  for (const id of Object.keys(ONBOARDING_RECITER_PREVIEW_SOURCES)) {
-    expect(ONBOARDING_POPULAR_RECITER_IDS).toContain(id);
-    expect(ONBOARDING_RECITER_PREVIEW_SOURCES[id]).toMatch(/^[A-Za-z0-9._-]+$/);
-  }
-  expect(Object.keys(ONBOARDING_RECITER_PREVIEW_SOURCES).length).toBeGreaterThan(0);
-});
-```
-
-**Step 2:** FAIL (the map is empty).
-
-**Step 3:** For each approved id, verify it before adding:
-
-```bash
-curl -s "https://archive.org/metadata/<id>" | jq -r '.files[] | select(.name|test("\\.mp3$";"i")) | "\(.track // "-")\t\(.name)\t\(.length // "-")"' | head -5
-```
-
-Track `1` (or a `001…` file) must be Al-Fatiha by that reciter. Listen once to confirm. Record id, reciter and verification date in a comment above the map. **Do not** set `Reciter.archiveId` in `data/content/quran.ts` (design §7, the surah-list episode-0 bug).
-
-**Step 4:** `npx jest services/__tests__/reciterPreview.test.ts` PASS. **Step 5: Commit**: `git commit -m "feat(onboarding): approved Al-Fatiha preview sources for the curated reciters"`
-
-If Q1 is not approved, skip this task. The PR and the Trello card must then state that "audio previews" stays **PARTIAL**: the mechanism ships, but no row shows a button.
+1. **Failing test** (with `nativeAudioAvailable` mocked false):
+   - `expect(engine.canPreviewAudio()).toBe(false)`;
+   - `startReciterPreview` resolves without calling `TrackPlayer.add`;
+   - no toast is shown. The button is simply hidden.
+2. Run it and confirm it FAILS.
+3. Implement: `isWeb()` becomes `isInert()` in `canPreviewAudio`, `startReciterPreview` and `stopReciterPreview`.
+4. `npx jest services/audioEngine` PASSES, and tsc is clean.
+5. Commit: `git commit -m "fix(audio): hide reciter previews when the native audio module is absent"`
 
 ---
 
-### Task 14: Full verification and visual QA
+### Task 13: Full verification, visual QA, and PR source sign-off
 
-**Step 1: Automated**
+**Step 1: Automated checks**
 
 ```bash
 npx jest
 npx tsc --noEmit --pretty false
-npm run lint 2>&1 | grep -E "app/onboarding|components/khazain/onboarding|services/(audioEngine|reciterPreview|onboardingReciters|archive/episodeResolver)|store/(previewStore|settingsStore)|constants/(settings|rtlContracts)" -A 2
-grep -rn "FeatureStep\|FEATURE_STEPS\|deferred (FR-006)" app components services constants __tests__
+npm run lint 2>&1 | grep -E "app/onboarding|components/khazain/onboarding|services/(audioEngine|reciterPreview|onboardingReciters)|store/(previewStore|settingsStore)|constants/(settings|rtlContracts)" -A 2
+grep -rn "FeatureStep\|FEATURE_STEPS\|deferred (FR-006)\|pickPreviewEpisode\|_drainUntil" app components services constants __tests__
 ```
 
-Expected: every jest suite passes, tsc reports 0 errors, the lint grep is empty (the known `app/(tabs)/browse.tsx:603` errors are out of scope), and the last grep prints nothing.
+Expected results:
+- jest: everything passes.
+- tsc: 0 errors.
+- The lint grep prints nothing. The `app/(tabs)/browse.tsx:603` errors are known and out of scope.
+- The last grep prints nothing.
 
-**Step 2: Visual QA on the iOS simulator.** Use argent: `list-devices`, then `argent-ios-simulator-setup`, then `argent-react-native-app-workflow`. Use `describe` / `debugger-component-tree` for tap targets, never screenshot pixels. Fresh state: More → الإعدادات → "إعادة الإعداد الأولي" (`app/(tabs)/more/settings.tsx:261-264`), or a fresh install.
+**Step 2: Visual QA on the iOS simulator**
 
-**No Figma frame covers onboarding.** Each screen is checked against the named contract, not a reference PNG. Do not write "matches Figma".
+Use argent: `list-devices`, then the `argent-ios-simulator-setup` skill, then `argent-react-native-app-workflow`. Take tap targets from `describe` or `debugger-component-tree`, never from screenshot pixels. Start from a fresh state: either a fresh install, or More → الإعدادات → "إعادة الإعداد الأولي" (`app/(tabs)/more/settings.tsx:261-264`, which is `__DEV__` only).
+
+**No Figma frame covers onboarding.** Compare each screen against the contract named in the table, not a reference PNG, and never write "matches Figma".
 
 | # | Route / state | Compare against | Must hold |
 |---|---|---|---|
-| A1 | `/onboarding` step 1/4 Welcome | no frame: `constants/layout.ts` (`PHYSICAL_ROW`, `RTL_TEXT`), Khazain tokens | FoundationMark + Wordmark + mission + 4 highlight rows with the gold bullet at the **physical right**; progress shows **4** dots; skip reachable |
-| A2 | Welcome at 320 pt width × font scale 1.7 (`scripts/visual-audit/screen-matrix.mjs`) | same | content scrolls, nothing clipped behind the footer or over the status bar |
-| A3 | step 2/4 Qira'a | no frame: `SELECTABLE_ROW_ORDER` | rows unchanged from before (tick → text, title at right edge), no preview button |
-| A4 | step 3/4 Reciter | no frame: `SELECTABLE_ROW_ORDER`, `MIN_TOUCH_TARGET` | exactly the curated 6 (plus the selected reciter if it is not curated); preview button at the **physical left** only on rows with a source; title still at the right edge |
-| A5 | step 4/4 Channels | no frame: unchanged `ChannelsStep` | Telegram / YouTube / WhatsApp CTAs open; "ابدأ" finishes |
-| A6 | Transitions | `app/onboarding.tsx:53-108` | 280 ms slide+fade on next/back; instant with Reduce Motion on |
-| A7 | VoiceOver on step 3 | a11y | the radio row and the preview button are separate focus stops with the Arabic labels |
+| A1 | `/onboarding` step 1/4, Welcome | no frame: `constants/layout.ts` (`PHYSICAL_ROW`, `RTL_TEXT`), Khazain tokens | FoundationMark (user-approved deviation), Wordmark, mission, and 4 highlight rows with the gold bullet at the **physical right**; **4** progress dots; skip reachable |
+| A2 | Welcome at 320 pt × font scale 1.7 (`scripts/visual-audit/screen-matrix.mjs`) | same | scrolls; nothing clipped under the footer or the status bar |
+| A3 | step 2/4, Qira'a | no frame: `SELECTABLE_ROW_ORDER` | rows **pixel-identical to before** (padding, minHeight 64, border, shadow); no preview button |
+| A4 | step 3/4, Reciter | no frame: `SELECTABLE_ROW_ORDER`, `MIN_TOUCH_TARGET` | exactly the verified reciters, plus the current pick (default `r7`) **without** a button; the preview button at the **physical left**; title still at the right edge |
+| A5 | step 4/4, Channels | no frame: unchanged `ChannelsStep` | Telegram, YouTube and WhatsApp CTAs open; "ابدأ" finishes onboarding |
+| A6 | Transitions | `app/onboarding.tsx:53-108` | 280 ms slide+fade; instant with Reduce Motion on |
+| A7 | VoiceOver on step 3 | a11y | the radio row and the preview button are separate focus stops, with the Arabic labels |
 
-**Preview behaviour (only if Task 13 shipped at least one source; otherwise record "no source, button hidden as designed"):**
-
-| # | Action | Expect |
+| # | Preview action | Expect |
 |---|---|---|
-| B1 | Tap play on row A | spinner, then audio, then pause glyph; A is **not** selected by the tap |
-| B2 | Tap play on row B while A plays | A stops, B plays; only one sound |
+| B1 | Tap play on row A | spinner, then audio, then the pause glyph; A is **not** selected |
+| B2 | Tap play on B while A plays | A stops and B plays; only one sound at a time |
 | B3 | Wait 30 s | the preview stops by itself and the button returns to play |
-| B4 | Play, then back / next / skip / finish | audio stops immediately in every case |
+| B4 | Play, then back / next / skip / finish | audio stops immediately in each case |
 | B5 | Play, then background the app | audio stops |
-| B6 | Airplane mode, then tap play | Arabic toast `تعذّر تشغيل العيّنة…`; button back to play; no crash |
-| B7 | With a lecture in progress (play one in the tabs, pause), More → الإعدادات → "إعادة الإعداد الأولي", preview a reciter, finish onboarding | MiniPlayer still shows the **same lecture**; play resumes it at the saved position; Library → in-progress lecture is **not** marked complete and no preview session appears |
-| B8 | Kill the app on step 3, relaunch | resumes on step 3/4 |
+| B6 | Airplane mode, then tap play | Arabic toast `تعذّر تشغيل العيّنة…`; the button returns to play; no crash |
+| B7 | Cold start with an in-progress lecture **restored but not played**, then reset onboarding, preview a reciter to the end, then finish | the MiniPlayer still shows **that lecture**; play resumes it at the saved position; Library shows it **not** completed; no preview session appears in progress |
+| B8 | Play a lecture in the tabs, then reset onboarding and open step 3 | **no preview buttons**. This is by design: the lecture owns the queue. |
+| B9 | Kill the app on step 3, then relaunch | resumes on step 3/4 |
+| B10 | **Android:** start a preview, then swipe the app away | accepted: the whole Al-Fatiha may play (`ContinuePlayback`); on relaunch the MiniPlayer shows no preview track |
 
-**Step 3: Migration spot-check on device.** With the simulator app container, write `{"state":{"onboardingComplete":false,"onboardingStep":6,"schemaVersion":3},"version":0}` using the same mechanism as `scripts/visual-audit/skip-onboarding-ios.sh:19`. Launch, and the app should open on step 4/4 (Channels) without crashing.
+**Step 3: Migration spot-check.** Write `{"state":{"onboardingComplete":false,"onboardingStep":6,"schemaVersion":3},"version":0}` into the simulator container, using the same mechanism as `scripts/visual-audit/skip-onboarding-ios.sh:19`. The app should launch on step 4/4 (Channels) without crashing.
 
-**Step 4: Record** the results in `docs/plans/2026-10-21-onboarding-flow-gaps-qa.md`, with screenshots under `docs/audit/2026-10-21/onboarding/` (untracked). Commit the QA doc: `git commit -m "docs(qa): onboarding flow gaps verification"`
+**Step 4: Record the results** in `docs/plans/2026-10-21-onboarding-flow-gaps-qa.md`. Put screenshots under `docs/audit/2026-10-21/onboarding/` (untracked). Commit the QA doc: `git commit -m "docs(qa): onboarding flow gaps verification"`
 
-**Step 5: Session hygiene.** Call `stop-all-simulator-servers` with `devices: [<the udid used>]`.
+**Step 5: PR sign-off (user decision Q1).** The PR description must:
+- include the Task 4 verification table (`$SCRATCH/preview-sources.md`), with item id, file, download URL and evidence for each verified reciter, plus the rejected candidates and their reasons;
+- ask the user to sign off on the sources **before merge**;
+- record the FoundationMark deviation as user-approved (Q6).
+
+**Step 6: Session cleanup.** Call `stop-all-simulator-servers` with `devices: [<the udid used>]`.
