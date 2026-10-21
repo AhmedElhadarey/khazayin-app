@@ -180,7 +180,7 @@ it('P12: playLecture abandons an active preview synchronously and ends up owning
   (fetchItemMetadata as jest.Mock).mockResolvedValueOnce(lectureMeta);
   const p = engine.playLecture(lecture);
   // Released (not yet claimed) while the preview's native queue is reset.
-  expect(engine.getQueueOwner()).not.toBe('preview');
+  expect(engine.getQueueOwner()).toBe('none');
   expect(usePreviewStore.getState().reciterId).toBeNull();
   await p;
   expect(engine.getQueueOwner()).toBe('lecture');
@@ -205,6 +205,22 @@ it('P12c: a lecture with no audio still silences a playing preview', async () =>
   expect(TrackPlayer.reset).toHaveBeenCalledTimes(1);
 });
 
+it('P12e: a preview started during the playLecture reset gap is abandoned, not left loading', async () => {
+  await engine.startReciterPreview(reciter, SRC);
+  const d = deferred();
+  (TrackPlayer.reset as jest.Mock).mockImplementationOnce(() => d.p);
+  (fetchItemMetadata as jest.Mock).mockResolvedValueOnce(lectureMeta);
+  const p = engine.playLecture(lecture);
+  expect(engine.getQueueOwner()).toBe('none');
+  const b = engine.startReciterPreview({ ...reciter, id: 'rB' }, SRC); // owner 'none' → allowed
+  expect(usePreviewStore.getState()).toMatchObject({ reciterId: 'rB', status: 'loading' });
+  d.resolve();
+  await p;
+  await b;
+  expect(engine.getQueueOwner()).toBe('lecture');
+  expect(usePreviewStore.getState()).toMatchObject({ reciterId: null, status: 'idle' });
+});
+
 it('P12d: no preview → playLecture claims the queue synchronously, as before', () => {
   (fetchItemMetadata as jest.Mock).mockResolvedValueOnce(lectureMeta);
   void engine.playLecture(lecture);
@@ -227,6 +243,24 @@ it('P14: setupPlayer adopts the owner of a queue that survived a JS restart', as
   engine.__resetForTests();
   (TrackPlayer.getActiveTrack as jest.Mock).mockResolvedValueOnce({ id: 'L/a.mp3', url: 'u' });
   await engine.setupPlayer();
+  expect(engine.getQueueOwner()).toBe('lecture');
+});
+
+it('P14b: adoption does not overwrite an owner claimed while getActiveTrack was in flight', async () => {
+  let resolveActive!: (t: unknown) => void;
+  (TrackPlayer.getActiveTrack as jest.Mock).mockImplementationOnce(
+    () => new Promise((r) => {
+      resolveActive = r;
+    }),
+  );
+  const setup = engine.setupPlayer();
+  await flush(); // parked on getActiveTrack
+  (fetchItemMetadata as jest.Mock).mockResolvedValueOnce(lectureMeta);
+  const p = engine.playLecture(lecture); // claims 'lecture' synchronously
+  expect(engine.getQueueOwner()).toBe('lecture');
+  resolveActive({ id: 'preview:r3', url: 'u' }); // a stale surviving track
+  await setup;
+  await p;
   expect(engine.getQueueOwner()).toBe('lecture');
 });
 

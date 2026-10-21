@@ -67,8 +67,7 @@ export function registerPlaybackListeners(): void {
       // Without a lecture queue only the "not playing" transitions may land.
       if (e.state === State.Playing) {
         if (lectureOwns()) store().setIsPlaying(true);
-      }
-      else if (
+      } else if (
         e.state === State.Paused ||
         e.state === State.Stopped ||
         e.state === State.Ended ||

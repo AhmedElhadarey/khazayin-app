@@ -112,7 +112,9 @@ export async function setupPlayer(): Promise<void> {
     // as a lecture and write it into the MiniPlayer.
     if (_queueOwner === 'none') {
       const active = await TrackPlayer.getActiveTrack();
-      if (active) {
+      // Re-check after the await: a playLecture/preview may have claimed the
+      // queue meanwhile, and its claim is newer than this surviving track.
+      if (active && _queueOwner === 'none') {
         _queueOwner = String((active as { id?: unknown }).id ?? '').startsWith(PREVIEW_ID_PREFIX)
           ? 'preview'
           : 'lecture';
@@ -215,7 +217,9 @@ export async function startReciterPreview(reciter: Reciter, source: PreviewSourc
     if (!isCurrent()) return;
     usePreviewStore.getState().markPlaying(reciter.id);
     _previewTimer = setTimeout(() => {
-      if (isCurrent()) void stopReciterPreview().catch(() => undefined);
+      if (isCurrent()) {
+        void stopReciterPreview().catch((err: unknown) => Sentry.captureException(err));
+      }
     }, PREVIEW_MAX_SEC * 1000);
   } catch (err) {
     if (!isCurrent()) return; // superseded — the newer owner handles the UI
@@ -249,6 +253,9 @@ export async function playLecture(lecture: Lecture): Promise<void> {
     _queueOwner = 'none';
     await TrackPlayer.reset().catch((err: unknown) => Sentry.captureException(err));
   }
+  // Once more: a preview started during the reset gap (owner 'none' allowed it)
+  // must not be left loading/playing in the UI once the lecture takes over.
+  abandonPreview();
   _queueOwner = 'lecture';
   if (!lecture.archiveId) throw new NoAudioError();
 
