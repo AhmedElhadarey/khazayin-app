@@ -12,7 +12,7 @@ status bar and home indicator excluded).
 | Frames | Result |
 |---|---|
 | 01–05, 07–28 | ✅ 0.000% mismatch |
-| 06 Library `2031:4659` | ✅ 0.324% — rows 743–1298 only: the empty state gains the one-line hint «لحفظ محاضرة، اضغط عليها مطوّلاً.» and the content below shifts by that line (design §8, Q5) |
+| 06 Library `2031:4659` | ✅ 0.000% at 7981351. (At 3f09b1e it read 0.324%: an empty-state hint line shifted the content below it. The user chose to drop the hint at PR review, design Q5.) |
 
 Frame 14 (Mushaf) first showed 20% because the Mushaf auto-resume (FR-009) had
 opened Al-Baqarah after earlier reading on the device. After «إعادة تعيين التقدّم»
@@ -28,9 +28,11 @@ it recaptured at 0.000%. This is a device-state artifact, not a regression from 
 | 4 | Undo tapped after the 3 s save toast ends | ✅ no effect (the toast is gone; by design §7) |
 | 5 | Save two lectures, restart the app | ✅ both persist |
 | 6 | Library after restart | ✅ «محاضرات (2)», newest save first; chips «الكل ٢» / «المحفوظات ٢» |
-| 7 | Remove both from Library | ✅ undo toast each time; empty state with the new hint returns (teardown) |
+| 7 | Remove both from Library | ✅ undo toast each time; the empty state returns (teardown) |
 
 Gates on 3f09b1e: `npx jest` 77 suites, 872 passed / 1 skipped; `npx tsc --noEmit` clean.
 
 Not run in this pass: Android emulator; VoiceOver custom action «حفظ في المكتبة»
 (covered by `saveGestureProps` unit tests only).
+
+**Re-check at 7981351 (hint dropped):** fresh install, empty library, all 23 captured framed routes at **0.000%** against 0635ea1. Gates: `npx jest` 77 suites, 872 passed / 1 skipped; `npx tsc --noEmit` clean.

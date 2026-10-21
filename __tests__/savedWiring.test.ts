@@ -42,6 +42,7 @@ describe('MySavedSection', () => {
   });
   it('adds no visible hint line to the empty state (frame 2031:4659 stays pixel-identical)', () => {
     expect(src).not.toMatch(/lectureHint|emptyHint/);
+    expect(src).not.toMatch(/مطوّلاً|مطولًا/);
   });
 });
 

@@ -10,7 +10,7 @@
 - **Testable gesture props:** the props builder is now the pure `saveGestureProps(saved, onToggle)` in `services/savedToggle.ts`, unit-tested there. The haptic stays in the hook.
 - **Device-state hygiene:** QA uses the existing pre-change baseline, ends with a teardown step, and `scripts/visual-audit/README.md` gains an empty-library precondition.
 - **Corrected icon position:** on the compact rows of frames 23–24, the saved icon sits between the duration and the title.
-- **Recorded Library shift:** the empty-state hint is a one-line shift on frame 06.
+- **No Library shift:** the empty-state hint was dropped at PR review (Q5), so frame 06 stays pixel-identical.
 - **Accepted optional changes:**
   - `RibbonCard` memoises its target on `save?.entityId`
   - telemetry logs `restore` as its own action
@@ -197,9 +197,8 @@ This mirrors the shape of `constants/libraryPresentation.ts`.
 - `SAVED_GROUP_TITLES` moves out of `MySavedSection.tsx:22-28`. The text is unchanged.
 - `groupSavedItems(items)` returns `{ type, title, count, entries }[]`. Entries are
   sorted newest-first. Groups are ordered by their newest entry (§6).
-- `SAVED_EMPTY_COPY`: `{ title, body, lectureHint }`. The title and body are the
-  current strings from `MySavedSection.tsx:92-95`. `lectureHint` is
-  `لحفظ محاضرة، اضغط عليها مطوّلاً.`
+- `SAVED_EMPTY_COPY`: `{ title, body }`, the current strings from
+  `MySavedSection.tsx:92-95`. (A third `lectureHint` line was dropped at PR review; see Q5.)
 
 ### 4.4 Components
 
@@ -210,7 +209,7 @@ This mirrors the shape of `constants/libraryPresentation.ts`.
 | `components/khazain/primitives/LectureCard.tsx:33,44,52-67,90-101` | Remove `showBookmark`. Build `lectureSaveTarget` with `useMemo`, spread the gesture props on the `Pressable`, and render the `BookmarkButton` in `meta` when `saved`. |
 | `components/khazain/primitives/RibbonCard.tsx:21-51` | Add an optional `save` prop, memoised on `save?.entityId`. When saved, the physical left becomes a `PHYSICAL_ROW` cluster `[duration, bookmark]`. When not saved, the existing bare duration `Text` is rendered exactly as today. |
 | `app/(tabs)/sections/scholar/[id].tsx:56-61` | Pass `save={lectureSaveTarget(l)}`. |
-| `components/khazain/library/MySavedSection.tsx:21-28,37-39,86-98` | Use `groupSavedItems`, and render `SAVED_EMPTY_COPY` including `lectureHint`. |
+| `components/khazain/library/MySavedSection.tsx:21-28,37-39,86-98` | Use `groupSavedItems`, and render `SAVED_EMPTY_COPY` (title and body only). |
 | `components/khazain/primitives/index.ts` | Export `useSaveGesture`. |
 | `scripts/visual-audit/README.md` (Safety rules) | Precondition: the saved library must be empty. Saved lectures add a bookmark to frames 18–24 (and fill the Home bookmarks on 05). **Added in this v2 commit.** |
 
@@ -306,7 +305,7 @@ differ.
 | 13 | `2207:5270` | `/sections/reciter/r1` | **fully unchanged** | n/a |
 | 14 | `2207:17898` | `/sections/mushaf` | unchanged (bookmark already present) | n/a |
 | 05 | `2001:940` | `/` | unchanged | n/a |
-| 06 | `2031:4659` | `/library` | everything the frame draws **above the saved block**; the saved list has **no frame** (§6) | Group order follows recency. **Expected shift:** under the `all` filter with an empty library, the new hint line pushes everything below the saved block (audiobook progress, smart reminders, and the rest) down by one caption line. QA compares this route against the **pre-change capture**, not the raw Figma export, and accepts exactly that one-line shift. |
+| 06 | `2031:4659` | `/library` | everything the frame draws **above the saved block**; the saved list has **no frame** (§6) | Group order follows recency. With an empty library the route is **pixel-identical** to the pre-change capture (0.000%); the hint that once shifted it by one line was dropped (Q5). |
 
 The toast overlay has no frame. It is an existing component and is unchanged.
 
@@ -334,7 +333,7 @@ The toast overlay has no frame. It is an existing component and is unchanged.
 
 | Risk | Mitigation |
 |---|---|
-| Long-press is a hidden gesture. | Empty-state hint, a state-dependent a11y hint, `accessibilityValue` `محفوظة`, and a VoiceOver/TalkBack custom action that announces its result. Once one lecture is saved, the visible icon teaches the pattern. Q1 lets the product owner pick a visible icon instead. |
+| Long-press is a hidden gesture. | A state-dependent a11y hint, `accessibilityValue` `محفوظة`, and a VoiceOver/TalkBack custom action that announces its result. Once one lecture is saved, the visible icon teaches the pattern. Q1 lets the product owner pick a visible icon instead. |
 | The visual-audit harness never clears app storage (`scripts/visual-audit/capture-android.mjs:6` "never runs `pm clear`"). A saved lecture on the capture device would show an icon and fail frames 18–24, and saved Home items would fill bookmarks on 05. | Three mitigations: (1) a precondition in `scripts/visual-audit/README.md`; (2) the QA checklist starts with an empty library and **ends with a teardown step** (unsave everything, confirm the Library empty state); (3) the saved state is captured separately from the default-state comparison. |
 | Long-press could fire `onPress` and start playback too. | RN `Pressable` does not call `onPress` after `onLongPress` fires. This is checked in QA on both platforms. |
 | Long-press inside a scrolling FlatList could misfire. | `Pressable` cancels the long-press timer when the responder is taken by the scroll. This is checked in QA on the rail lists (23/24). |
@@ -371,6 +370,6 @@ The toast overlay has no frame. It is an existing component and is unchanged.
 | Q2 | Long-press to save on the reciter surah list (`ReciterSurahRow`)? | **No.** The Mushaf list covers "surah list items" (§5). |
 | Q3 | Add a bookmark to the MiniPlayer for the now-playing lecture? | **No, follow-up.** It needs lecture identity on `PlayerTrack`. |
 | Q4 | Haptic tick on long-press via the already-declared `expo-haptics`? | **Yes**, light impact, skipped on web. |
+| Q5 | Empty-state hint wording: `لحفظ محاضرة، اضغط عليها مطوّلاً.` | **Superseded (user, 2026-10-21, at PR review): drop the visible hint** so frame 06 stays pixel-identical. Long-press is taught by the state-dependent a11y hint, the custom action, and the bookmark that appears once a lecture is saved. `SAVED_EMPTY_COPY` keeps the base title and body only. |
 
 **Resolved by the user (v2):** long-press-to-save is approved, which settles the approach behind Q1.
-| Q5 | Empty-state hint wording: `لحفظ محاضرة، اضغط عليها مطوّلاً.` | **Superseded (user, 2026-10-21, at PR review): drop the visible hint** so frame 06 stays pixel-identical. Long-press is taught by the state-dependent a11y hint, the custom action, and the bookmark that appears once a lecture is saved. `SAVED_EMPTY_COPY` keeps the base title and body only. |
