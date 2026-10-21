@@ -1236,3 +1236,10 @@ Record findings in `docs/plans/2026-10-21-content-search-reachability-qa.md` (sh
 git add docs/plans/2026-10-21-content-search-reachability-qa.md docs/plans/2026-09-11-sections-screen-qa.md
 git commit -m "docs(qa): record content search reachability QA"
 ```
+
+---
+
+## Deviations
+
+- **Task 1** — the test's mock variable is `mockPush`, not `push`: babel-jest rejects a `jest.mock`
+  factory that references an out-of-scope variable unless its name starts with `mock`.
