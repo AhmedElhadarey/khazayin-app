@@ -62,6 +62,7 @@ import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useProgressStore } from '@/store/progressStore';
 import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { getRepos, progressRepo } from '@/db';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -354,7 +355,7 @@ export default function LibraryScreen() {
 
     search: (
       <View style={styles.searchBlock}>
-        <SearchPill onPress={() => router.push('/search' as any)} />
+        <SearchPill onPress={openSearch} />
       </View>
     ),
 

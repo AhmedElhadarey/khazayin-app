@@ -21,6 +21,7 @@ import { usePlayerStore } from '@/store/playerStore';
 import { useProgressStore } from '@/store/progressStore';
 import { getRepos, progressRepo } from '@/db';
 import { LinearGradient } from 'expo-linear-gradient';
+import { openSearch } from '@/services/searchNavigation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -108,7 +109,6 @@ export default function MushafScreen() {
 }
 
 function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string) => void }) {
-  const router = useRouter();
   const { data: surahs, status: surahsStatus, error: surahsError, fetch: fetchSurahs, refresh: refreshSurahs } = useSurahsStore();
 
   useEffect(() => {
@@ -119,7 +119,7 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
     <SafeAreaView style={styles.listScreen} edges={['top', 'bottom']}>
       <InlineHeader title="قراءة القرآن" onBack={onBack} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <AsyncContent
         status={surahsStatus}

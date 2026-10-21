@@ -23,7 +23,7 @@ import {
   useRadioProgramsStore,
 } from './lectureStore';
 
-const DEBOUNCE_MS = 250;
+export const DEBOUNCE_MS = 250;
 
 export type SearchStatus = 'idle' | 'searching' | 'success' | 'empty';
 

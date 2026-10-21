@@ -28,6 +28,7 @@ import {
   useFeaturedDawahStore,
   useScholarsStore,
 } from '@/store';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
@@ -79,7 +80,7 @@ export default function HomeScreen() {
   // Rendered from HOME_SECTION_ORDER so the running order lives in one place
   // and is asserted by __tests__/homePresentation.test.ts.
   const sections: Record<HomeSectionKey, React.ReactNode> = {
-    header: <HomeHeader onSearchOpen={() => router.push('/search' as any)} />,
+    header: <HomeHeader onSearchOpen={openSearch} />,
 
     quranHero: (
       <View style={styles.heroPad}>
