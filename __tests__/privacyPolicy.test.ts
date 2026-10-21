@@ -5,6 +5,7 @@
  * constants/config.ts; only https URLs survive, and an unusable value is null.
  */
 import { normalizePrivacyPolicyUrl } from '@/constants/config';
+import { PRIVACY_POLICY_ALERTS, openPrivacyPolicy } from '@/services/privacyPolicy';
 
 describe('normalizePrivacyPolicyUrl', () => {
   it('T-PP-1: returns null for undefined, null, \'\' and whitespace-only', () => {
@@ -55,5 +56,51 @@ describe('KhazainConfig.privacyPolicyUrl', () => {
   it("T-PP-6: is null (never '') when the env var is unset", () => {
     delete process.env[ENV_KEY];
     expect(loadConfig().KhazainConfig.privacyPolicyUrl).toBeNull();
+  });
+});
+
+describe('openPrivacyPolicy', () => {
+  function deps(url: string | null, openBrowser = jest.fn().mockResolvedValue({ type: 'dismiss' })) {
+    return { url, openBrowser, alert: jest.fn() };
+  }
+
+  it("T-PP-7: url null → alerts PRIVACY_POLICY_ALERTS.pending, never opens a browser, resolves 'pending'", async () => {
+    const d = deps(null);
+    await expect(openPrivacyPolicy(d)).resolves.toBe('pending');
+    expect(d.openBrowser).not.toHaveBeenCalled();
+    expect(d.alert).toHaveBeenCalledTimes(1);
+    expect(d.alert).toHaveBeenCalledWith(
+      PRIVACY_POLICY_ALERTS.pending.title,
+      PRIVACY_POLICY_ALERTS.pending.body,
+    );
+  });
+
+  it("T-PP-8: valid url → calls openBrowser(url) exactly once, no alert, resolves 'opened'", async () => {
+    const d = deps('https://khazayin.com/privacy');
+    await expect(openPrivacyPolicy(d)).resolves.toBe('opened');
+    expect(d.openBrowser).toHaveBeenCalledTimes(1);
+    expect(d.openBrowser).toHaveBeenCalledWith('https://khazayin.com/privacy');
+    expect(d.alert).not.toHaveBeenCalled();
+  });
+
+  it("T-PP-9: openBrowser rejects → alerts PRIVACY_POLICY_ALERTS.failed, resolves 'failed' (does not throw)", async () => {
+    const d = deps('https://khazayin.com/privacy', jest.fn().mockRejectedValue(new Error('boom')));
+    await expect(openPrivacyPolicy(d)).resolves.toBe('failed');
+    expect(d.alert).toHaveBeenCalledTimes(1);
+    expect(d.alert).toHaveBeenCalledWith(
+      PRIVACY_POLICY_ALERTS.failed.title,
+      PRIVACY_POLICY_ALERTS.failed.body,
+    );
+  });
+
+  it('T-PP-10: alert copy is the Arabic text shipped today', () => {
+    expect(PRIVACY_POLICY_ALERTS.pending).toEqual({
+      title: 'سياسة الخصوصية',
+      body: 'سياسة الخصوصية ستُضاف قريبًا.',
+    });
+    expect(PRIVACY_POLICY_ALERTS.failed).toEqual({
+      title: 'سياسة الخصوصية',
+      body: 'تعذّر فتح سياسة الخصوصية. حاول مجددًا.',
+    });
   });
 });
