@@ -46,6 +46,7 @@ import type {
   LibraryFilter,
 } from '../types/content';
 import type {
+  ApiError,
   ContentResult,
   CacheOpts,
   Paged,
@@ -135,10 +136,20 @@ async function delay(): Promise<void> {
   await new Promise<void>((r) => setTimeout(r, mockAdapter.mockDelay ?? 300));
 }
 
-/** Throws if simulateError is set. */
+/**
+ * Arabic copy for the dev-only simulated failure. "(خطأ تجريبي)" tells a
+ * developer the failure came from the knob, not the network.
+ */
+export const SIMULATED_ERROR_MESSAGE = 'تعذر تحميل المحتوى (خطأ تجريبي). حاول مجدداً.';
+
+/** Throws an ApiError-shaped error if simulateError is set. */
 function maybeError(): void {
   if (mockAdapter.simulateError) {
-    throw new Error('Simulated content error');
+    const err = new Error(SIMULATED_ERROR_MESSAGE) as ApiError;
+    err.name = 'ApiError';
+    err.code = 'unknown';
+    err.retriable = true;
+    throw err;
   }
 }
 

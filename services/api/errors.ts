@@ -48,6 +48,19 @@ export function arabicCopyForCode(code: ApiErrorCode): string {
   return ARABIC_COPY[code] ?? ARABIC_COPY.unknown;
 }
 
+/**
+ * True for errors built by `toApiError` (or shaped like them). Their `message`
+ * is always Arabic copy from ARABIC_COPY, so the UI may show it verbatim.
+ * Any other Error may carry English developer text and must not be shown.
+ */
+export function isApiError(e: unknown): e is ApiError {
+  return (
+    e instanceof Error &&
+    e.name === 'ApiError' &&
+    typeof (e as Partial<ApiError>).code === 'string'
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Error factory
 // ---------------------------------------------------------------------------
