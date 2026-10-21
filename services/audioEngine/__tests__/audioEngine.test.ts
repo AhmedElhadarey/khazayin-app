@@ -181,37 +181,122 @@ describe('playLecture', () => {
   });
 
   describe('one-shot seek correction', () => {
-    const arm = async () => {
-      const remove = jest.fn();
-      (TrackPlayer.addEventListener as jest.Mock).mockReturnValueOnce({ remove });
-      await engine.playLecture(LECTURE as any, { episodeId: 'ABC/001.mp3', positionSec: 45 });
-      const call = (TrackPlayer.addEventListener as jest.Mock).mock.calls.find(
-        (c) => c[0] === Event.PlaybackState,
-      );
-      return { cb: call![1] as (e: { state: string }) => Promise<void>, remove };
+    const listeners = () => {
+      const subs: { event: string; cb: (e: any) => any; remove: jest.Mock }[] = [];
+      (TrackPlayer.addEventListener as jest.Mock).mockImplementation((event: string, cb: any) => {
+        const remove = jest.fn();
+        subs.push({ event, cb, remove });
+        return { remove };
+      });
+      return subs;
     };
+    const stateCb = (subs: ReturnType<typeof listeners>, i = 0) =>
+      subs.filter((x) => x.event === Event.PlaybackState)[i];
+    const start45 = () =>
+      engine.playLecture(LECTURE as any, { episodeId: 'ABC/001.mp3', positionSec: 45 });
 
-    it('seeks once when playback starts short, then removes itself', async () => {
-      const { cb, remove } = await arm();
+    beforeEach(() => {
+      jest.useFakeTimers();
+      (TrackPlayer.getActiveTrack as jest.Mock).mockResolvedValue({ id: 'ABC/001.mp3' });
       (TrackPlayer.getProgress as jest.Mock).mockResolvedValue({ position: 0, duration: 600, buffered: 0 });
-      await cb({ state: State.Ready });
+    });
+    afterEach(() => {
+      jest.useRealTimers();
+      (TrackPlayer.addEventListener as jest.Mock).mockReturnValue({ remove: jest.fn() });
+      (TrackPlayer.getActiveTrack as jest.Mock).mockResolvedValue(undefined);
+    });
+
+    it('is armed before skip and play', async () => {
+      const subs = listeners();
+      const order: string[] = [];
+      (TrackPlayer.skip as jest.Mock).mockImplementationOnce(async () => { order.push('skip'); });
+      (TrackPlayer.play as jest.Mock).mockImplementationOnce(async () => { order.push('play'); });
+      (TrackPlayer.addEventListener as jest.Mock).mockImplementation((event: string, cb: any) => {
+        order.push(`listen:${event}`);
+        const remove = jest.fn();
+        subs.push({ event, cb, remove });
+        return { remove };
+      });
+      await start45();
+      expect(order.indexOf(`listen:${Event.PlaybackState}`)).toBeLessThan(order.indexOf('skip'));
+      expect(order.indexOf('skip')).toBeLessThan(order.indexOf('play'));
+    });
+
+    it('seeks once when playback starts short, then removes its listeners', async () => {
+      const subs = listeners();
+      await start45();
+      const st = stateCb(subs);
+      await st.cb({ state: State.Ready });
       expect(TrackPlayer.seekTo).toHaveBeenCalledWith(45);
-      expect(remove).toHaveBeenCalled();
-      await cb({ state: State.Playing });
+      subs.forEach((x) => expect(x.remove).toHaveBeenCalled());
+      await st.cb({ state: State.Playing });
       expect(TrackPlayer.seekTo).toHaveBeenCalledTimes(1);
     });
 
     it('does not seek within 2 s of the target', async () => {
-      const { cb } = await arm();
+      const subs = listeners();
+      await start45();
       (TrackPlayer.getProgress as jest.Mock).mockResolvedValue({ position: 44, duration: 600, buffered: 0 });
-      await cb({ state: State.Playing });
+      await stateCb(subs).cb({ state: State.Playing });
       expect(TrackPlayer.seekTo).not.toHaveBeenCalled();
     });
 
     it('ignores states before the item is ready', async () => {
-      const { cb } = await arm();
-      await cb({ state: State.Buffering });
+      const subs = listeners();
+      await start45();
+      await stateCb(subs).cb({ state: State.Buffering });
       expect(TrackPlayer.getProgress).not.toHaveBeenCalled();
+    });
+
+    it('does not seek when a different track is active', async () => {
+      const subs = listeners();
+      await start45();
+      (TrackPlayer.getActiveTrack as jest.Mock).mockResolvedValue({ id: 'ABC/002.mp3' });
+      await stateCb(subs).cb({ state: State.Ready });
+      expect(TrackPlayer.seekTo).not.toHaveBeenCalled();
+    });
+
+    it('is cancelled when the active track changes to another episode', async () => {
+      const subs = listeners();
+      await start45();
+      const changed = subs.find((x) => x.event === Event.PlaybackActiveTrackChanged)!;
+      changed.cb({ track: { id: 'ABC/002.mp3' } });
+      subs.forEach((x) => expect(x.remove).toHaveBeenCalled());
+    });
+
+    it('survives the active-track change to its own episode', async () => {
+      const subs = listeners();
+      await start45();
+      const changed = subs.find((x) => x.event === Event.PlaybackActiveTrackChanged)!;
+      changed.cb({ track: { id: 'ABC/001.mp3' } });
+      subs.forEach((x) => expect(x.remove).not.toHaveBeenCalled());
+    });
+
+    it('gives up after the timeout', async () => {
+      const subs = listeners();
+      await start45();
+      jest.advanceTimersByTime(10_000);
+      subs.forEach((x) => expect(x.remove).toHaveBeenCalled());
+    });
+
+    it('a second playLecture removes the first listeners', async () => {
+      const subs = listeners();
+      await start45();
+      await engine.playLecture(LECTURE as any, { episodeId: 'ABC/001.mp3', positionSec: 60 });
+      const first = subs.slice(0, 2);
+      first.forEach((x) => expect(x.remove).toHaveBeenCalled());
+    });
+
+    it.each([
+      ['skipNext', () => engine.skipNext()],
+      ['skipPrev', () => engine.skipPrev()],
+      ['seekTo', () => engine.seekTo(5)],
+      ['stop', () => engine.stop()],
+    ])('%s cancels it', async (_n, act) => {
+      const subs = listeners();
+      await start45();
+      await act();
+      subs.forEach((x) => expect(x.remove).toHaveBeenCalled());
     });
 
     it('arms no listener when starting from the top', async () => {

@@ -15,6 +15,8 @@ import TrackPlayer, {
   Capability,
   Event,
   State,
+  type PlaybackActiveTrackChangedEvent,
+  type PlaybackState,
 } from 'react-native-track-player';
 import * as Sentry from '@sentry/react-native';
 import { usePlayerStore } from '@/store/playerStore';
@@ -92,11 +94,13 @@ export async function pause(): Promise<void> {
 
 export async function seekTo(positionSec: number): Promise<void> {
   if (isWeb()) return;
+  cancelSeekCorrection();
   await TrackPlayer.seekTo(positionSec);
 }
 
 export async function skipNext(): Promise<void> {
   if (isWeb()) return;
+  cancelSeekCorrection();
   try {
     await TrackPlayer.skipToNext();
   } catch {
@@ -106,6 +110,7 @@ export async function skipNext(): Promise<void> {
 
 export async function skipPrev(): Promise<void> {
   if (isWeb()) return;
+  cancelSeekCorrection();
   try {
     await TrackPlayer.skipToPrevious();
   } catch {
@@ -115,6 +120,7 @@ export async function skipPrev(): Promise<void> {
 
 export async function stop(): Promise<void> {
   if (isWeb()) return;
+  cancelSeekCorrection();
   await TrackPlayer.reset();
 }
 
@@ -167,31 +173,53 @@ export function resolveStartPoint(
   return { index: 0, positionSec: 0 };
 }
 
+/** A correction that has not fired by now is abandoned (cached file, same-episode jump). */
+const SEEK_CORRECTION_TIMEOUT_MS = 10_000;
+
 let _cancelSeekCorrection: (() => void) | null = null;
+
+/** Drop any pending seek correction. Safe to call when none is armed. */
+function cancelSeekCorrection(): void {
+  _cancelSeekCorrection?.();
+  _cancelSeekCorrection = null;
+}
 
 /**
  * `skip(index, initialPosition)` can be ignored by a stream that is not ready
- * yet. On the first Ready/Playing state, check the real position once and seek
- * if it is well short of the target.
+ * yet. Armed BEFORE skip/play (so a fast Ready is not missed), it checks the
+ * real position once on the first Ready/Playing of `episodeId` and seeks if it
+ * is well short. It never touches another track: it is cancelled when the
+ * active track changes to a different episode, on any user transport action,
+ * on the next playLecture, and after a timeout.
  */
-function armSeekCorrection(targetSec: number): void {
-  _cancelSeekCorrection?.();
+function armSeekCorrection(episodeId: string, targetSec: number): void {
+  cancelSeekCorrection();
   let done = false;
-  const sub = TrackPlayer.addEventListener(Event.PlaybackState, async (e: { state: string }) => {
-    if (done || (e.state !== State.Ready && e.state !== State.Playing)) return;
-    done = true;
-    sub.remove();
-    _cancelSeekCorrection = null;
-    try {
-      const { position } = await TrackPlayer.getProgress();
-      if (needsSeekCorrection(position, targetSec)) await TrackPlayer.seekTo(targetSec);
-    } catch (err) {
-      Sentry.captureException(err);
-    }
-  });
+  const subs = [
+    TrackPlayer.addEventListener(Event.PlaybackState, async (e: PlaybackState) => {
+      if (done || (e.state !== State.Ready && e.state !== State.Playing)) return;
+      try {
+        const active = await TrackPlayer.getActiveTrack();
+        if (done || active?.id !== episodeId) return; // not our track (yet)
+        cancelSeekCorrection();
+        const { position } = await TrackPlayer.getProgress();
+        if (needsSeekCorrection(position, targetSec)) await TrackPlayer.seekTo(targetSec);
+      } catch (err) {
+        Sentry.captureException(err);
+      }
+    }),
+    TrackPlayer.addEventListener(
+      Event.PlaybackActiveTrackChanged,
+      (e: PlaybackActiveTrackChangedEvent) => {
+        if (e.track && e.track.id !== episodeId) cancelSeekCorrection();
+      },
+    ),
+  ];
+  const timer = setTimeout(cancelSeekCorrection, SEEK_CORRECTION_TIMEOUT_MS);
   _cancelSeekCorrection = () => {
     done = true;
-    sub.remove();
+    clearTimeout(timer);
+    subs.forEach((sub) => sub.remove());
   };
 }
 
@@ -214,11 +242,10 @@ async function jumpWithinActiveQueue(start: LectureStart): Promise<boolean> {
   const durationSec = typeof item.duration === 'number' && item.duration > 0 ? item.duration : 0;
   const pos = clampStartPosition(start.positionSec, durationSec);
 
-  _cancelSeekCorrection?.();
-  _cancelSeekCorrection = null;
+  if (pos > 0) armSeekCorrection(start.episodeId, pos);
+  else cancelSeekCorrection();
   await TrackPlayer.skip(idx, pos > 0 ? pos : undefined);
   await TrackPlayer.play();
-  if (pos > 0) armSeekCorrection(pos);
 
   usePlayerStore.getState().setTrack(
     {
@@ -256,8 +283,7 @@ export async function playLecture(lecture: Lecture, start?: LectureStart): Promi
     start,
   );
 
-  _cancelSeekCorrection?.();
-  _cancelSeekCorrection = null;
+  cancelSeekCorrection();
   await TrackPlayer.reset();
   await TrackPlayer.setQueue(
     episodes.map((e) => ({
@@ -269,11 +295,11 @@ export async function playLecture(lecture: Lecture, start?: LectureStart): Promi
     })),
   );
   // One call lands the first audible frame on the right second.
+  if (startPos > 0) armSeekCorrection(episodes[startIndex].id, startPos);
   if (startPos > 0 || startIndex > 0) {
     await TrackPlayer.skip(startIndex, startPos > 0 ? startPos : undefined);
   }
   await TrackPlayer.play();
-  if (startPos > 0) armSeekCorrection(startPos);
 
   const startEp = episodes[startIndex];
   const initialProgress = startEp.durationSec > 0 ? startPos / startEp.durationSec : 0;
