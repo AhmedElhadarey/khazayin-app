@@ -332,9 +332,10 @@ export async function reconcileHorizonAsync(
     // Cancel pass — ungated.
     for (const n of ours) {
       const key = keyOfPending(n.content.data ?? {});
-      if (key !== null && intendedKeys.has(key)) {
+      if (key !== null && intendedKeys.has(key) && !armedKeys.has(key)) {
         armedKeys.add(key); // already armed and still wanted — leave it
       } else {
+        // Not wanted, malformed, or a second request for an already-kept key.
         await cancelByIdAsync(n.identifier);
       }
     }
@@ -346,9 +347,16 @@ export async function reconcileHorizonAsync(
     await ensureAndroidChannelAsync();
     await ensurePrayersChannelAsync();
 
+    // Each entry is scheduled on its own: iOS rejects a DATE trigger whose
+    // instant has just passed, and losing today's entry must not lose the
+    // rest of the horizon.
     for (const entry of intended) {
       if (armedKeys.has(keyOfEntry(entry))) continue;
-      await scheduleHorizonEntryAsync(entry);
+      try {
+        await scheduleHorizonEntryAsync(entry);
+      } catch (err) {
+        logDev(`schedule ${entry.categoryId}|${entry.localDay} failed`, err);
+      }
     }
   } catch (err) {
     logDev('reconcileHorizonAsync failed', err);

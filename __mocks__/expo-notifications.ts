@@ -91,6 +91,7 @@ let handlerSetCount = 0;
 let scheduledNotifications: MockScheduledNotification[] = [];
 let nextIdentifier = 1;
 let currentHandler: MockNotificationHandler | null = null;
+let scheduleRejections = 0;
 
 // ---------------------------------------------------------------------------
 // Mocked public API surface
@@ -114,6 +115,11 @@ export async function requestPermissionsAsync(): Promise<MockPermissionResponse>
 export async function scheduleNotificationAsync(
   request: MockScheduleRequest,
 ): Promise<string> {
+  if (scheduleRejections > 0) {
+    // Models iOS rejecting a DATE trigger whose instant has just passed.
+    scheduleRejections -= 1;
+    throw new Error('mock: scheduleNotificationAsync rejected');
+  }
   const identifier = request.identifier ?? `mock-id-${nextIdentifier}`;
   nextIdentifier += 1;
   scheduleCalls.push({ ...request, identifier });
@@ -180,6 +186,11 @@ export function __getHandler(): MockNotificationHandler | null {
   return currentHandler;
 }
 
+/** Make the next `n` `scheduleNotificationAsync` calls reject. */
+export function __rejectNextSchedules(n: number): void {
+  scheduleRejections = n;
+}
+
 export function __setScheduledNotifications(arr: MockScheduledNotification[]): void {
   scheduledNotifications = arr.slice();
 }
@@ -202,4 +213,5 @@ export function __resetMock(): void {
   scheduledNotifications = [];
   nextIdentifier = 1;
   currentHandler = null;
+  scheduleRejections = 0;
 }

@@ -45,3 +45,75 @@ it('T-DR-5: a never-hydrated store (snapshotDay "") is left to boot hydration', 
   expect(await refreshIfLocalDayChanged(new Date(2026, 9, 22, 8, 0))).toBe(false);
   expect(mockWirdHydrate).not.toHaveBeenCalled();
 });
+
+// ---------------------------------------------------------------------------
+// T-DRW — startDayRolloverWatch (the logic behind hooks/useDayRollover)
+// ---------------------------------------------------------------------------
+import { startDayRolloverWatch, type AppStateLike } from '@/services/dayRollover';
+
+describe('T-DRW startDayRolloverWatch', () => {
+  let listener: ((next: string) => void) | null = null;
+  const removeSpy = jest.fn();
+  // Mutable stand-in for React Native's AppState.
+  const appState: { currentState: string; addEventListener: AppStateLike['addEventListener'] } = {
+    currentState: 'active',
+    addEventListener: (_type, l) => {
+      listener = l;
+      return { remove: removeSpy };
+    },
+  };
+
+  beforeEach(() => {
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date(2026, 9, 21, 23, 59, 0, 0));
+    appState.currentState = 'active';
+    listener = null;
+    removeSpy.mockClear();
+  });
+  afterEach(() => jest.useRealTimers());
+
+  it('T-DRW-1: arms one timer for local midnight + 1 s while active, and refreshes when it fires', async () => {
+    const refresh = jest.fn(async () => true);
+    const dispose = startDayRolloverWatch(appState, refresh);
+    expect(jest.getTimerCount()).toBe(1);
+    jest.advanceTimersByTime(60_000);
+    expect(refresh).not.toHaveBeenCalled();
+    jest.advanceTimersByTime(1_000);
+    expect(refresh).toHaveBeenCalledTimes(1);
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(jest.getTimerCount()).toBe(1); // re-armed for the next midnight
+    dispose();
+    expect(jest.getTimerCount()).toBe(0);
+    expect(removeSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('T-DRW-2: holds no timer while not active; foregrounding refreshes and arms', () => {
+    appState.currentState = 'background';
+    const refresh = jest.fn(async () => true);
+    const dispose = startDayRolloverWatch(appState, refresh);
+    expect(jest.getTimerCount()).toBe(0);
+    appState.currentState = 'active';
+    listener!('active');
+    expect(refresh).toHaveBeenCalledTimes(1);
+    expect(jest.getTimerCount()).toBe(1);
+    appState.currentState = 'background';
+    listener!('background');
+    expect(jest.getTimerCount()).toBe(0);
+    dispose();
+  });
+
+  it('T-DRW-3: disposing while a midnight refresh is in flight leaves NO timer behind', async () => {
+    let finish!: () => void;
+    const refresh = jest.fn(() => new Promise<boolean>((r) => (finish = () => r(true))));
+    const dispose = startDayRolloverWatch(appState, refresh);
+    jest.advanceTimersByTime(61_000); // midnight tick → refresh in flight
+    expect(refresh).toHaveBeenCalledTimes(1);
+    dispose(); // unmount mid-refresh
+    finish();
+    await Promise.resolve();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(jest.getTimerCount()).toBe(0);
+  });
+});

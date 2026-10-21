@@ -53,6 +53,7 @@ type MockSurface = typeof MockNotifications & {
     trigger?: { type: string; date?: unknown; channelId?: string } | null;
   }[];
   __resetMock: () => void;
+  __rejectNextSchedules: (n: number) => void;
 };
 
 const Mock = MockNotifications as unknown as MockSurface;
@@ -297,6 +298,41 @@ describe('T-NHS-8 Expo Go short-circuit', () => {
       await sched.reconcileHorizonAsync([entry('prayer-fajr', '2026-07-09', 5)]);
       expect(Mock.__getScheduleCalls()).toHaveLength(0);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-NHS-13: one rejected schedule call does not abandon the rest of the horizon
+// (iOS throws for a DATE trigger whose instant has just passed — losing today's
+// entry must not lose the other 13 days).
+// ---------------------------------------------------------------------------
+describe('T-NHS-13 a rejected schedule call skips only that entry', () => {
+  it('schedules every remaining entry after the first call rejects', async () => {
+    Mock.__rejectNextSchedules(1);
+    await reconcileHorizonAsync([
+      entry('wird-daily', '2026-07-09'),
+      entry('wird-daily', '2026-07-10'),
+      entry('wird-daily', '2026-07-11'),
+    ]);
+    expect(keysOf()).toEqual(['wird-daily|2026-07-10', 'wird-daily|2026-07-11']);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-NHS-14: a duplicate pending request for an intended key is cancelled
+// ---------------------------------------------------------------------------
+describe('T-NHS-14 duplicate pending keys are cleaned up', () => {
+  it('keeps one request per key and cancels the extra', async () => {
+    const e = entry('wird-daily', '2026-07-10');
+    const data = { category: 'wird-daily', localDay: '2026-07-10', fireAt: e.fireAt.getTime() };
+    Mock.__setScheduledNotifications([
+      { identifier: 'first', content: { data } },
+      { identifier: 'dupe', content: { data } },
+    ]);
+    await reconcileHorizonAsync([e]);
+    expect(Mock.__getCancelCalls()).toEqual(['dupe']);
+    expect(Mock.__getScheduleCalls()).toHaveLength(0);
+    expect(Mock.__getScheduledNotifications().map((n) => n.identifier)).toEqual(['first']);
   });
 });
 
