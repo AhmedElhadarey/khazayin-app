@@ -2029,3 +2029,13 @@ Record the results, with screenshots and diff output, in `docs/plans/2026-10-21-
 13. Render the `progressStats` row
 14. Full CC BY 3.0 notice on About
 15. Full verification and QA
+
+---
+
+## Deviations (recorded during implementation)
+
+1. **Task 1 — data provenance confirmed.** `quran-data.js` was fetched from Tanzil on 2026-10-21 and its sha256 matched the recorded `9e9930c5…4ca4`. The generator printed `ok 604 30 <same hash>` and produced a 103-line file. No deviation; this note records the check.
+2. **Task 14 — `constants/quranPages.ts` header.** The Task 1 header said the notice constants "are added in Task 14". Once they were added, it became stale, so it was reworded in the Task 14 commit. The comment is the only change; no code changed.
+3. **Task 14 — red step.** The fourth notice test ("keeps the licence and source in the generated data header") already passed at the red step, because Task 1 generated that header. The other three failed as the plan expected.
+4. **Task 15 — lint expectation.** The plan predicted some pre-existing warnings would appear in the lint grep: `array-type` warnings in `constants/progress.ts`, the unused `median` in `db/web-shim.ts`, and `import/first` in the new test files. None of these is reported by this checkout's lint config. The grep over every touched production and test file printed nothing. The whole repo shows 0 errors and 15 warnings, all in files this branch does not touch.
+5. **Task 15 — final counts.** `npx jest`: 81 suites, 897 passed, 1 skipped. This matches the planning dry run exactly. tsc exits 0.
