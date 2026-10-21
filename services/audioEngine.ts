@@ -196,6 +196,45 @@ function armSeekCorrection(targetSec: number): void {
 }
 
 /**
+ * Fast path for a note whose episode is already in the running queue (the same
+ * series is playing): skip there without refetching metadata or resetting the
+ * queue. Returns false to fall back to the normal path. Preview tracks have
+ * different ids, so they never match.
+ */
+async function jumpWithinActiveQueue(start: LectureStart): Promise<boolean> {
+  let queue: Awaited<ReturnType<typeof TrackPlayer.getQueue>>;
+  try {
+    queue = await TrackPlayer.getQueue();
+  } catch {
+    return false;
+  }
+  const idx = queue.findIndex((t) => t.id === start.episodeId);
+  if (idx < 0) return false;
+  const item = queue[idx];
+  const durationSec = typeof item.duration === 'number' && item.duration > 0 ? item.duration : 0;
+  const pos = clampStartPosition(start.positionSec, durationSec);
+
+  _cancelSeekCorrection?.();
+  _cancelSeekCorrection = null;
+  await TrackPlayer.skip(idx, pos > 0 ? pos : undefined);
+  await TrackPlayer.play();
+  if (pos > 0) armSeekCorrection(pos);
+
+  usePlayerStore.getState().setTrack(
+    {
+      id: start.episodeId,
+      title: item.title ?? '',
+      reciter: item.artist ?? '',
+      durationSec: durationSec > 0 ? durationSec : undefined,
+    },
+    durationSec > 0 ? pos / durationSec : 0,
+  );
+  usePlayerStore.getState().setVisible(true);
+  usePlayerStore.getState().setIsPlaying(true);
+  return true;
+}
+
+/**
  * Resolve a lecture's archive series into the RNTP queue and start playback.
  * Starts at `start` when given (a note's episode and second), otherwise resumes
  * the saved position when the in-progress session matches an episode. Mirrors
@@ -206,6 +245,7 @@ export async function playLecture(lecture: Lecture, start?: LectureStart): Promi
   if (!lecture.archiveId) throw new NoAudioError();
 
   await setupPlayer();
+  if (start && (await jumpWithinActiveQueue(start))) return;
   const meta = await fetchItemMetadata(lecture.archiveId);
   const episodes = resolveEpisodes(lecture.archiveId, meta);
   if (episodes.length === 0) throw new NoAudioError();

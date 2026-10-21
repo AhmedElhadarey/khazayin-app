@@ -22,6 +22,7 @@ const TrackPlayer = {
   skipToPrevious: jest.fn().mockResolvedValue(undefined),
   skip: jest.fn().mockResolvedValue(undefined),
   getProgress: jest.fn().mockResolvedValue({ position: 0, duration: 0, buffered: 0 }),
+  getQueue: jest.fn().mockResolvedValue([]),
   getActiveTrackIndex: jest.fn().mockResolvedValue(0),
   getPlaybackState: jest.fn().mockResolvedValue({ state: State.Paused }),
   getActiveTrack: jest.fn().mockResolvedValue(undefined),

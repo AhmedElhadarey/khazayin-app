@@ -241,6 +241,56 @@ describe('playLecture', () => {
   });
 });
 
+describe('playLecture active-queue fast path', () => {
+  const QUEUE = ['001', '002', '003'].map((n, i) => ({
+    id: `ABC/${n}.mp3`,
+    url: `u${n}`,
+    title: `ح${i + 1}`,
+    artist: 'الشيخ ابن عثيمين',
+    duration: [600, 900, 800][i],
+  }));
+  beforeEach(() => {
+    (Platform as any).OS = 'ios';
+    jest.clearAllMocks();
+    engine.__resetForTests();
+    mockInProgress = null;
+    (fetchItemMetadata as jest.Mock).mockResolvedValue(META);
+    (TrackPlayer.getQueue as jest.Mock).mockResolvedValue(QUEUE);
+  });
+  afterEach(() => (TrackPlayer.getQueue as jest.Mock).mockResolvedValue([]));
+
+  it('an explicit start already in the active queue skips there without reset or fetch', async () => {
+    await engine.playLecture(LECTURE as any, { episodeId: 'ABC/002.mp3', positionSec: 30 });
+    expect(fetchItemMetadata).not.toHaveBeenCalled();
+    expect(TrackPlayer.reset).not.toHaveBeenCalled();
+    expect(TrackPlayer.setQueue).not.toHaveBeenCalled();
+    expect(TrackPlayer.skip).toHaveBeenCalledWith(1, 30);
+    expect(TrackPlayer.play).toHaveBeenCalled();
+    const [track, progress] = (mockSetTrack as jest.Mock).mock.calls[0];
+    expect(track).toEqual(expect.objectContaining({ id: 'ABC/002.mp3', title: 'ح2', durationSec: 900 }));
+    expect(progress).toBeCloseTo(30 / 900);
+    expect(mockSetVisible).toHaveBeenCalledWith(true);
+    expect(mockSetIsPlaying).toHaveBeenCalledWith(true);
+  });
+
+  it('without an explicit start the fast path is never taken', async () => {
+    await engine.playLecture(LECTURE as any);
+    expect(fetchItemMetadata).toHaveBeenCalled();
+  });
+
+  it('an episode not in the queue takes the normal path', async () => {
+    await engine.playLecture(LECTURE as any, { episodeId: 'ABC/999.mp3', positionSec: 30 });
+    expect(fetchItemMetadata).toHaveBeenCalled();
+    expect(TrackPlayer.reset).toHaveBeenCalled();
+  });
+
+  it('a getQueue failure falls back to the normal path', async () => {
+    (TrackPlayer.getQueue as jest.Mock).mockRejectedValueOnce(new Error('boom'));
+    await engine.playLecture(LECTURE as any, { episodeId: 'ABC/002.mp3', positionSec: 30 });
+    expect(fetchItemMetadata).toHaveBeenCalled();
+  });
+});
+
 describe('togglePlayback', () => {
   beforeEach(() => {
     (Platform as any).OS = 'ios';
