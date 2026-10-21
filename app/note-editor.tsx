@@ -111,105 +111,112 @@ export default function NoteEditor() {
   };
 
   return (
-    // Backdrop — tap outside the sheet to dismiss.
-    <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
-      {/* Stop touches from propagating into the dismiss handler. */}
-      <Pressable onPress={() => {}} style={styles.sheetOuter}>
-        <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
-          <KeyboardAvoidingView
-            style={{ flex: 1 }}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          >
-            <View style={styles.handleWrap}>
-              <View style={styles.handle} />
-            </View>
-
-            <ScrollView
-              contentContainerStyle={styles.scrollContent}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}
-            >
-              <Text style={styles.sheetTitle}>
-                {editingId ? 'تعديل الملاحظة' : 'إضافة ملاحظة'}
-              </Text>
-
-              {shownRef ? <NoteRefLink label={`مرتبطة بـ ${shownRef.label}`} /> : null}
-
-              <View style={styles.bodyCard}>
-                <TextInput
-                  value={body}
-                  onChangeText={setBody}
-                  placeholder="اكتب ملاحظتك هنا..."
-                  placeholderTextColor={KhazainColors.inkPlaceholder}
-                  style={styles.bodyInput}
-                  textAlign="right"
-                  multiline
-                  textAlignVertical="top"
-                  autoFocus={!editingId}
-                />
+    // The KAV wraps the full-screen backdrop, not the sheet. Inside the
+    // content-sized sheet it could only pad the sheet's own content — it cannot
+    // move the sheet — so the auto-focused input and «حفظ» sat behind the
+    // keyboard. Here it shrinks the backdrop above the keyboard, and the sheet,
+    // anchored to the backdrop's bottom, rides up with it.
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
+      {/* Backdrop — tap outside the sheet to dismiss. */}
+      <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
+        {/* Stop touches from propagating into the dismiss handler. */}
+        <Pressable onPress={() => {}} style={styles.sheetOuter}>
+          <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
+            <View style={{ flex: 1 }}>
+              <View style={styles.handleWrap}>
+                <View style={styles.handle} />
               </View>
 
-              {/*
-                Toolbar: format buttons on the RIGHT (RTL leading), حفظ on the LEFT.
-                Authored physical left -> right inside PHYSICAL_ROW, so the order
-                is fixed rather than left to forceRTL's row auto-flip — which
-                CLAUDE.md bans because it differs between a cold start, Fast
-                Refresh and web.
-              */}
-              <View style={styles.toolbar}>
-                <Pressable
-                  onPress={save}
-                  style={({ pressed }) => [styles.saveBtn, { opacity: pressed ? 0.85 : 1 }]}
-                  accessibilityLabel="حفظ الملاحظة"
-                >
-                  <Text style={styles.saveLabel}>حفظ</Text>
-                </Pressable>
-                <View style={{ flex: 1 }} />
-                <FormatBtn>
-                  <ListGlyph />
-                </FormatBtn>
-                <FormatBtn italic>I</FormatBtn>
-                <FormatBtn bold>B</FormatBtn>
-              </View>
+              <ScrollView
+                contentContainerStyle={styles.scrollContent}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+              >
+                <Text style={styles.sheetTitle}>
+                  {editingId ? 'تعديل الملاحظة' : 'إضافة ملاحظة'}
+                </Text>
 
-              {editingId ? (
-                <Pressable
-                  onPress={confirmDelete}
-                  hitSlop={6}
-                  style={({ pressed }) => [styles.deleteRow, { opacity: pressed ? 0.7 : 1 }]}
-                  accessibilityLabel="حذف الملاحظة"
-                >
-                  <Text style={styles.deleteLabel}>حذف الملاحظة</Text>
-                </Pressable>
-              ) : null}
+                {shownRef ? <NoteRefLink label={`مرتبطة بـ ${shownRef.label}`} /> : null}
 
-              {recentNotes.length > 0 ? (
-                <View style={styles.recentBlock}>
-                  <Text style={styles.recentHeader}>آخر الملاحظات</Text>
-                  {recentNotes.map((n) => {
-                    const row = linkedNoteRow(n);
-                    return (
-                      <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
-                        {/* Physical left -> right: relative time, title (+ source label). */}
-                        <Text style={styles.recentTime} numberOfLines={1}>
-                          {row.time}
-                        </Text>
-                        <View style={styles.recentColumn}>
-                          <Text style={styles.recentTitle} numberOfLines={1}>
-                            {row.title}
-                          </Text>
-                          {row.label ? <NoteRefLink label={row.label} /> : null}
-                        </View>
-                      </View>
-                    );
-                  })}
+                <View style={styles.bodyCard}>
+                  <TextInput
+                    value={body}
+                    onChangeText={setBody}
+                    placeholder="اكتب ملاحظتك هنا..."
+                    placeholderTextColor={KhazainColors.inkPlaceholder}
+                    style={styles.bodyInput}
+                    textAlign="right"
+                    multiline
+                    textAlignVertical="top"
+                    autoFocus={!editingId}
+                  />
                 </View>
-              ) : null}
-            </ScrollView>
-          </KeyboardAvoidingView>
-        </SafeAreaView>
+
+                {/*
+                  Toolbar: format buttons on the RIGHT (RTL leading), حفظ on the LEFT.
+                  Authored physical left -> right inside PHYSICAL_ROW, so the order
+                  is fixed rather than left to forceRTL's row auto-flip — which
+                  CLAUDE.md bans because it differs between a cold start, Fast
+                  Refresh and web.
+                */}
+                <View style={styles.toolbar}>
+                  <Pressable
+                    onPress={save}
+                    style={({ pressed }) => [styles.saveBtn, { opacity: pressed ? 0.85 : 1 }]}
+                    accessibilityLabel="حفظ الملاحظة"
+                  >
+                    <Text style={styles.saveLabel}>حفظ</Text>
+                  </Pressable>
+                  <View style={{ flex: 1 }} />
+                  <FormatBtn>
+                    <ListGlyph />
+                  </FormatBtn>
+                  <FormatBtn italic>I</FormatBtn>
+                  <FormatBtn bold>B</FormatBtn>
+                </View>
+
+                {editingId ? (
+                  <Pressable
+                    onPress={confirmDelete}
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.deleteRow, { opacity: pressed ? 0.7 : 1 }]}
+                    accessibilityLabel="حذف الملاحظة"
+                  >
+                    <Text style={styles.deleteLabel}>حذف الملاحظة</Text>
+                  </Pressable>
+                ) : null}
+
+                {recentNotes.length > 0 ? (
+                  <View style={styles.recentBlock}>
+                    <Text style={styles.recentHeader}>آخر الملاحظات</Text>
+                    {recentNotes.map((n) => {
+                      const row = linkedNoteRow(n);
+                      return (
+                        <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
+                          {/* Physical left -> right: relative time, title (+ source label). */}
+                          <Text style={styles.recentTime} numberOfLines={1}>
+                            {row.time}
+                          </Text>
+                          <View style={styles.recentColumn}>
+                            <Text style={styles.recentTitle} numberOfLines={1}>
+                              {row.title}
+                            </Text>
+                            {row.label ? <NoteRefLink label={row.label} /> : null}
+                          </View>
+                        </View>
+                      );
+                    })}
+                  </View>
+                ) : null}
+              </ScrollView>
+            </View>
+          </SafeAreaView>
+        </Pressable>
       </Pressable>
-    </Pressable>
+    </KeyboardAvoidingView>
   );
 }
 
