@@ -55,6 +55,9 @@ let _autoResumeFired = false;
 // under it, were this screen's own invention and read as a different product.
 const MUSHAF_BG = KhazainColors.pageBg;
 
+/** Space kept above a linked ayah when scrolling to it, so it is not flush with the header. */
+const AYAH_SCROLL_HEADROOM = 80;
+
 export default function MushafScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ surah?: string; ayah?: string }>();
@@ -270,7 +273,7 @@ function ReadingView({
       offset: ayahCharOffset(segment.ayat, targetAyah),
       expectedLength: segmentCharLength(segment.ayat),
     });
-    scrollRef.current?.scrollTo({ y: Math.max(0, y - 80), animated: false });
+    scrollRef.current?.scrollTo({ y: Math.max(0, y - AYAH_SCROLL_HEADROOM), animated: false });
     scrolledAyahRef.current = targetAyah;
     scrolledPreciseRef.current = precise;
   }, [targetAyah, segments]);
