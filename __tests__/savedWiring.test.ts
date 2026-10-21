@@ -40,8 +40,8 @@ describe('MySavedSection', () => {
     expect(src).toMatch(/groupSavedItems\(items\)/);
     expect(src).not.toMatch(/GROUP_ORDER/);
   });
-  it('renders the lecture hint in the empty state', () => {
-    expect(src).toMatch(/SAVED_EMPTY_COPY\.lectureHint/);
+  it('adds no visible hint line to the empty state (frame 2031:4659 stays pixel-identical)', () => {
+    expect(src).not.toMatch(/lectureHint|emptyHint/);
   });
 });
 

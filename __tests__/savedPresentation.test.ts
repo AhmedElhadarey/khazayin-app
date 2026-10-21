@@ -49,9 +49,10 @@ describe('saved presentation copy', () => {
     for (const title of Object.values(SAVED_GROUP_TITLES)) expect(title).toMatch(/^[؀-ۿ\s]+$/);
   });
 
-  it('empty state is encouraging and teaches the lecture long-press', () => {
-    expect(SAVED_EMPTY_COPY.title).toBe('ابدأ مكتبتك الشخصية');
-    expect(SAVED_EMPTY_COPY.body).toContain('احفظ ما تحب الرجوع إليه');
-    expect(SAVED_EMPTY_COPY.lectureHint).toBe('لحفظ محاضرة، اضغط عليها مطوّلاً.');
+  it('empty state keeps the base copy and no extra hint line', () => {
+    expect(SAVED_EMPTY_COPY).toEqual({
+      title: 'ابدأ مكتبتك الشخصية',
+      body: 'احفظ ما تحب الرجوع إليه — سوراً، علماء، كتباً ومحاضرات — لتجده هنا في أي وقت.',
+    });
   });
 });

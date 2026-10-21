@@ -21,7 +21,6 @@ export const SAVED_GROUP_TITLES: Readonly<Record<SavedType, string>> = Object.fr
 export const SAVED_EMPTY_COPY = Object.freeze({
   title: 'ابدأ مكتبتك الشخصية',
   body: 'احفظ ما تحب الرجوع إليه — سوراً، علماء، كتباً ومحاضرات — لتجده هنا في أي وقت.',
-  lectureHint: 'لحفظ محاضرة، اضغط عليها مطوّلاً.',
 });
 
 export interface SavedGroup {

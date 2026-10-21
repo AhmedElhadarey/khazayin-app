@@ -82,7 +82,6 @@ function EmptySaved() {
       </View>
       <Text style={styles.emptyTitle}>{SAVED_EMPTY_COPY.title}</Text>
       <Text style={styles.emptyBody}>{SAVED_EMPTY_COPY.body}</Text>
-      <Text style={styles.emptyHint}>{SAVED_EMPTY_COPY.lectureHint}</Text>
     </View>
   );
 }
@@ -142,5 +141,4 @@ const styles = StyleSheet.create({
     color: KhazainColors.ink500,
     textAlign: 'center',
   }),
-  emptyHint: textStyle('caption', { color: KhazainColors.ink500, textAlign: 'center' }),
 });

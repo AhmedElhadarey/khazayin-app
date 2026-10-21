@@ -373,4 +373,4 @@ The toast overlay has no frame. It is an existing component and is unchanged.
 | Q4 | Haptic tick on long-press via the already-declared `expo-haptics`? | **Yes**, light impact, skipped on web. |
 
 **Resolved by the user (v2):** long-press-to-save is approved, which settles the approach behind Q1.
-| Q5 | Empty-state hint wording: `لحفظ محاضرة، اضغط عليها مطوّلاً.` | **Use as written.** The client can revise the copy. |
+| Q5 | Empty-state hint wording: `لحفظ محاضرة، اضغط عليها مطوّلاً.` | **Superseded (user, 2026-10-21, at PR review): drop the visible hint** so frame 06 stays pixel-identical. Long-press is taught by the state-dependent a11y hint, the custom action, and the bookmark that appears once a lecture is saved. `SAVED_EMPTY_COPY` keeps the base title and body only. |
