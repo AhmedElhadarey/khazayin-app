@@ -37,9 +37,12 @@ export const SUGGESTION_THRESHOLD_MULTIPLIER = 1.5;
 export const TREND_DAYS = 28; // sparkline window — research R8
 
 /**
- * Cumulative page ranges for the 30 ajzāʾ of the Mushaf (1-based pages).
- * Values follow the standard 604-page Madinah Mushaf division — each juz
- * spans roughly 20 pages. Used by `completedJuzCount()` (FR-005).
+ * Page ranges (1-based, inclusive) of the 30 ajzāʾ of the 604-page Madani
+ * Mushaf. Juz 4, 7, 11 and 26 begin mid-page, so each shares its first page
+ * with the end of the previous juz — a juz is complete only when that shared
+ * page has been read too. Juz 4 opens at 3:93 as in Tanzil (design decision
+ * D1). Pinned to `constants/quranPages.ts` by `__tests__/juz.test.ts`.
+ * Used by `completedJuzCount()` (FR-005).
  */
 export const JUZ_PAGE_RANGES: ReadonlyArray<{
   juz: number;
@@ -48,15 +51,15 @@ export const JUZ_PAGE_RANGES: ReadonlyArray<{
 }> = [
   { juz: 1, startPage: 1, endPage: 21 },
   { juz: 2, startPage: 22, endPage: 41 },
-  { juz: 3, startPage: 42, endPage: 61 },
+  { juz: 3, startPage: 42, endPage: 62 },
   { juz: 4, startPage: 62, endPage: 81 },
   { juz: 5, startPage: 82, endPage: 101 },
   { juz: 6, startPage: 102, endPage: 121 },
-  { juz: 7, startPage: 122, endPage: 141 },
+  { juz: 7, startPage: 121, endPage: 141 },
   { juz: 8, startPage: 142, endPage: 161 },
   { juz: 9, startPage: 162, endPage: 181 },
   { juz: 10, startPage: 182, endPage: 201 },
-  { juz: 11, startPage: 202, endPage: 221 },
+  { juz: 11, startPage: 201, endPage: 221 },
   { juz: 12, startPage: 222, endPage: 241 },
   { juz: 13, startPage: 242, endPage: 261 },
   { juz: 14, startPage: 262, endPage: 281 },
@@ -70,7 +73,7 @@ export const JUZ_PAGE_RANGES: ReadonlyArray<{
   { juz: 22, startPage: 422, endPage: 441 },
   { juz: 23, startPage: 442, endPage: 461 },
   { juz: 24, startPage: 462, endPage: 481 },
-  { juz: 25, startPage: 482, endPage: 501 },
+  { juz: 25, startPage: 482, endPage: 502 },
   { juz: 26, startPage: 502, endPage: 521 },
   { juz: 27, startPage: 522, endPage: 541 },
   { juz: 28, startPage: 542, endPage: 561 },
