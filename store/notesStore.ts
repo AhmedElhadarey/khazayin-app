@@ -93,7 +93,10 @@ export const useNotesStore = create<NotesState>()(
       // settingsStore.ts: `merge` does not write back at hydrate; the coerced
       // state reaches disk on the next note change (coercion is idempotent).
       // Design §4.1.
-      merge: (persisted, current) => ({ ...current, notes: coerceNotes(persisted) }),
+      // With nothing persisted (a first run), keep whatever is already in memory:
+      // a note added before hydration finished must not be wiped.
+      merge: (persisted, current) =>
+        isRecord(persisted) ? { ...current, notes: coerceNotes(persisted) } : current,
     },
   ),
 );

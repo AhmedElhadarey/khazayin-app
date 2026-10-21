@@ -129,6 +129,16 @@ describe('notesStore ref persistence', () => {
   });
 });
 
+describe('hydration with empty storage', () => {
+  it('keeps notes added before hydration finishes', async () => {
+    const id = useNotesStore.getState().addNote('early', 'b');
+    await flushPersist();
+    await AsyncStorage.clear(); // storage reads back empty while state is in memory
+    await useNotesStore.persist.rehydrate();
+    expect(useNotesStore.getState().notes.map((n) => n.id)).toContain(id);
+  });
+});
+
 describe('linked-note selectors', () => {
   const mk = (id: string, ref?: Note['ref']): Note => ({
     id,
