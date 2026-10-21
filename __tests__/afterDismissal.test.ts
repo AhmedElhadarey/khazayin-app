@@ -47,10 +47,13 @@ describe('runOnceAfterDismissal', () => {
     expect(h.calls.filter((c) => c === 'run')).toHaveLength(1);
   });
 
-  it('keeps the fallback near the iOS modal dismissal, bounded', () => {
+  it('keeps the fallback bounded', () => {
     expect(DISMISS_FALLBACK_MS).toBeGreaterThanOrEqual(300);
-    expect(DISMISS_FALLBACK_MS).toBeLessThanOrEqual(1000);
+    expect(DISMISS_FALLBACK_MS).toBeLessThanOrEqual(1500);
   });
+
+  it('outlasts the ~500ms iOS full-screen dismissal, so the real reveal signal usually wins', () =>
+    expect(DISMISS_FALLBACK_MS).toBeGreaterThan(500));
 
   it('copes with a subscription that fires synchronously', () => {
     const calls: string[] = [];

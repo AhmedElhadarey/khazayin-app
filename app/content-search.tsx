@@ -123,8 +123,9 @@ export default function SearchModalScreen() {
     // withAnchor loads the Sections index under the destination (design §4.3).
     dismissTo: (href) => router.dismissTo(href as Href, { withAnchor: true }),
     dismiss: () => router.back(),
-    // Start playback once the modal has finished closing: an Alert raised
-    // mid-dismissal can be dropped on iOS (R8). Armed before dismiss(). The
+    // Start playback once the modal has finished closing, so a no-audio Alert
+    // does not appear over the closing search screen (R8 — a UX choice; the
+    // Alert has its own window and is not lost). Armed before dismiss(). The
     // close signal is (tabs) reappearing underneath (services/search/rootReveal.ts);
     // this screen's own closing event never arrives because it unmounts first.
     playAfterDismiss: (lecture) => runOnceAfterDismissal({

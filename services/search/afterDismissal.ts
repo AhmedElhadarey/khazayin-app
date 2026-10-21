@@ -2,15 +2,19 @@
  * Run something once the search modal has finished closing. Pure.
  *
  * Why not InteractionManager.runAfterInteractions: on RN 0.81 it is a
- * setImmediate stub, so it fires mid-dismissal — and iOS drops an Alert
- * presented on a view controller that is being dismissed (design R8). The
- * caller subscribes to the (tabs) root reappearing under the closed modal
+ * setImmediate stub, so it fires mid-dismissal and a no-audio Alert would
+ * appear over the still-closing search screen. The Alert itself is safe —
+ * RCTAlertController presents it in its own UIWindow above everything — so
+ * waiting is a UX choice, not a correctness one (design R8). The caller subscribes to the (tabs) root reappearing under the closed modal
  * (services/search/rootReveal.ts); the bounded timer covers a platform that
  * never sends it. Whichever comes first wins; `run` is called exactly once.
  */
 
-/** About the length of the iOS full-screen modal dismissal. */
-export const DISMISS_FALLBACK_MS = 500;
+/**
+ * Bound on the wait. Comfortably longer than the ~500ms iOS full-screen
+ * dismissal, so the real (tabs) reveal signal normally wins the race.
+ */
+export const DISMISS_FALLBACK_MS = 1000;
 
 export function runOnceAfterDismissal(deps: {
   /** Subscribe to the close transition; returns the unsubscribe. */

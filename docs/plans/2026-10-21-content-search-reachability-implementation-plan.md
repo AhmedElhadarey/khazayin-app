@@ -1282,3 +1282,11 @@ git commit -m "docs(qa): record content search reachability QA"
   art, so the art now carries `accessibilityLabel={name}` (and is `accessible`) whenever the card
   is not itself the element — otherwise Home would stop announcing the book name. Home's visuals
   are unchanged; its screen-reader order is now title, then bookmark. The review's tagged-union refactor (minor 6) was not requested.
+- **Code review, round 3** — `DISMISS_FALLBACK_MS` raised 500 → 1000 ms so the (tabs) reveal
+  signal normally beats the fallback (earlier Deviations entries that say 500 ms describe the value
+  at the time). R8 rationale corrected everywhere: RN 0.81 `RCTAlertController.mm:21-44` shows the
+  Alert in its own `UIWindow` at `UIWindowLevelAlert + 1`, so it is not dropped; waiting only keeps
+  it from appearing over the closing search screen (the comment at plan line 1117 is the original
+  v2 text and is left as history). `BookCard`'s `Pressable` carries `accessibilityLabel` only when it
+  has an `onPress`, so TalkBack does not read the name twice on Home. `rootReveal.test.ts` clears
+  the one-slot listener after each test.

@@ -77,6 +77,11 @@ describe('BookCard accessibility', () => {
   it('is not an accessibility element without an action, so its bookmark is reachable', () =>
     expect(src).toMatch(/accessible=\{onPress !== undefined\}/));
 
+  it('labels the card only when it is the element, so the name is not read twice', () => {
+    expect(src).toMatch(/<Pressable[\s\S]*?accessibilityLabel=\{onPress \? name : undefined\}/);
+    expect(src).not.toMatch(/<Pressable[^>]*?accessibilityLabel=\{name\}/);
+  });
+
   it('still names the book when the title is calligraphy art and the card is not one element', () => {
     // Home's rail cards have no onPress and render the title as an image
     // (app/(tabs)/index.tsx): without this the name would not be read at all.

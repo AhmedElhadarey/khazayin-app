@@ -36,7 +36,9 @@ export function BookCard({
       // bookmark button are reached on their own (Home rail, book detail cover).
       accessible={onPress !== undefined}
       accessibilityRole={onPress ? 'button' : undefined}
-      accessibilityLabel={name}
+      // Only the element that is announced carries the name; without an
+      // action the title (text or art) reads it, so TalkBack does not say it twice.
+      accessibilityLabel={onPress ? name : undefined}
       style={({ pressed }) => [
         styles.card,
         {

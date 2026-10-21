@@ -87,12 +87,13 @@ Rejected — `router.replace(route)` (status quo): same divergence; replaces the
 ### 3.3 Lecture result
 
 **Chosen — dismiss, then play through `startLecturePlayback`** (`services/lecturePlayback.ts`),
-started when the modal has finished closing so the no-audio `Alert` is not presented while the
-modal is mid-dismissal (iOS drops an alert presented on a view controller that is being dismissed —
-R8). *(Code review:* `InteractionManager.runAfterInteractions` is a `setImmediate` stub on RN 0.81,
+started when the modal has finished closing so the no-audio `Alert` does not appear over the
+still-closing search screen (R8). *(Code review, round 3: this is a UX choice, not a correctness
+one — RN 0.81's `RCTAlertController.mm:21-44` presents the Alert in its own `UIWindow` at
+`UIWindowLevelAlert + 1`, so it is not dropped during the dismissal.)* *(Code review:* `InteractionManager.runAfterInteractions` is a `setImmediate` stub on RN 0.81,
 so it cannot wait. Playback is armed before `dismiss()` on **(tabs) reappearing underneath**: the
 `(tabs)` screen in `app/_layout.tsx` forwards its native-stack `transitionEnd {closing: false}` to
-`services/search/rootReveal.ts`, with a `DISMISS_FALLBACK_MS` (500 ms) timer as a bound;
+`services/search/rootReveal.ts`, with a `DISMISS_FALLBACK_MS` (1000 ms; round 3 raised it from 500 so the reveal signal normally wins) timer as a bound;
 `services/search/afterDismissal.ts` guarantees it starts exactly once. The search screen's own
 `transitionEnd {closing: true}` is not used: native-stack 7.14.5 renders only `state.routes`
 (`NativeStackView.native.tsx:521`), so the popped route's SceneView unmounts at once and, on the new
@@ -279,7 +280,7 @@ No frame (contracts govern): `/content-search`, `/sections/book/[id]`.
 | R5 | (v1: Books list play became two taps) — removed with the Books/Home wiring cut. | — |
 | R6 | Typed routes for new paths. | `as Href` confined to `searchNavigation.ts` and the single `dismissTo` call in the screen; hrefs stay plain strings in the pure helpers (keeps their tests free of router types). |
 | R7 | **Book identity split.** The same book exists as `Book` `bk2` and book-lecture `b4` ("شرح رياض الصالحين"). Search opens `/sections/book/bk2`; the Home card's bookmark saves `b4` (`BookCard.tsx:66-71` saves whatever `id` it is given). A future entry point with `b*` ids would need its own page or a mapping, and notes keyed by book id would split across the two. | Not solved here. Flagged for the Contextual Notes ticket, which must pick one canonical book id before keying notes to it. **Double bookmark key (code review):** the book detail cover is a `BookCard` given `bk2`, so its bookmark saves `book:bk2` while the Home rail's card saves `book:b4` for the same book — the Library "My saved" list can hold it twice until the canonical id is chosen. |
-| R8 | No-audio `Alert` raised while the modal is dismissing can be dropped on iOS. | Play when (tabs) reappears under the closed modal (its `transitionEnd {closing: false}`, forwarded by `app/_layout.tsx` to `rootReveal.ts`), bounded by a 500 ms fallback, once only (`runOnceAfterDismissal`); device QA row 22. |
+| R8 | No-audio `Alert` raised while the modal is dismissing would appear over the closing search screen (UX; it is not dropped — `RCTAlertController` uses its own window). | Play when (tabs) reappears under the closed modal (its `transitionEnd {closing: false}`, forwarded by `app/_layout.tsx` to `rootReveal.ts`), bounded by a 1000 ms fallback, once only (`runOnceAfterDismissal`); device QA row 22. |
 
 ## 10. Open questions (defaults chosen)
 
