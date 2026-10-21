@@ -93,3 +93,31 @@ describe('selectable row with a preview control', () => {
     expect(src).toMatch(/استماع إلى عيّنة من تلاوة/);
   });
 });
+
+describe('reciter step previews (ticket QTQYqLBB: popular reciters with audio previews)', () => {
+  const step = () => code('components/khazain/onboarding/ReciterStep.tsx');
+  it('lists the verified reciters (plus the current pick), not the whole catalogue', () => {
+    expect(step()).toMatch(/selectOnboardingReciters\(/);
+    expect(step()).toMatch(/ONBOARDING_POPULAR_RECITER_IDS/);
+  });
+  it('renders a preview control only when the reciter can be previewed', () => {
+    expect(step()).toMatch(/canPreview\(/);
+    expect(step()).toMatch(/toggleReciterPreview\(/);
+  });
+  it('stops the preview on unmount', () => {
+    expect(step()).toMatch(/useEffect\(\(\) => \(\) => \{\s*void stopPreview\(\);\s*\},\s*\[\]\)/);
+  });
+  it('stops the preview when the app leaves the foreground', () => {
+    expect(step()).toMatch(/AppState\.addEventListener\('change'/);
+  });
+  it('no longer claims previews are deferred', () => {
+    expect(
+      fs.readFileSync(path.join(ROOT, 'components/khazain/onboarding/ReciterStep.tsx'), 'utf8'),
+    ).not.toMatch(/deferred \(FR-006\)/);
+  });
+  it('the screen stops any preview first thing on step change and on finish (skip → finish)', () => {
+    const src = code('app/onboarding.tsx');
+    expect(src).toMatch(/const goTo = [^{]*\{\s*void stopPreview\(\);/);
+    expect(src).toMatch(/const finish = [^{]*\{\s*void stopPreview\(\);/);
+  });
+});

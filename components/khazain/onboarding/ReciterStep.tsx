@@ -1,27 +1,51 @@
-import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useEffect, useMemo } from 'react';
+import { AppState, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
 import { PHYSICAL_BOX } from '@/constants/layout';
+import { ONBOARDING_POPULAR_RECITER_IDS } from '@/constants/settings';
 import { KhazainColors } from '@/constants/theme';
-import { useRecitersStore, useSettingsStore } from '@/store';
+import { selectOnboardingReciters } from '@/services/onboardingReciters';
+import { canPreview, stopPreview, toggleReciterPreview } from '@/services/reciterPreview';
+import { usePreviewStore, useRecitersStore, useSettingsStore } from '@/store';
 
+import { PreviewButton } from './PreviewButton';
 import { SelectableRow } from './SelectableRow';
 
 /**
- * Onboarding step 2 (track 003, US3): choose the preferred reciter. Reuses the
- * `useRecitersStore` + AsyncContent + SelectableRow pattern from
- * `settings-reciter`. Visual-only — audio previews are deferred (FR-006); the
- * row's trailing slot can host a play/stop affordance later without restructuring.
+ * Onboarding reciter step: the reciters with a verified Al-Fatiha preview
+ * (`ONBOARDING_POPULAR_RECITER_IDS`) plus the user's current pick, each
+ * previewable row with a play/stop control (design 2026-10-21 §4.3). Selecting
+ * and previewing are separate controls; previewing never changes
+ * `preferredReciterId`. Reuses the `useRecitersStore` + AsyncContent +
+ * SelectableRow pattern from `settings-reciter`.
  */
 export function ReciterStep(): React.ReactElement {
   const { data, status, error, fetch, refresh } = useRecitersStore();
   const selectedId = useSettingsStore((s) => s.preferredReciterId);
   const setPreferredReciter = useSettingsStore((s) => s.setPreferredReciter);
+  const previewId = usePreviewStore((s) => s.reciterId);
+  const previewStatus = usePreviewStore((s) => s.status);
+  const reciters = useMemo(
+    () => selectOnboardingReciters(data, ONBOARDING_POPULAR_RECITER_IDS, selectedId),
+    [data, selectedId],
+  );
 
   useEffect(() => {
     fetch();
   }, [fetch]);
+
+  // Stop on unmount — step change, skip and finish all unmount this step.
+  // Empty deps on purpose: selecting a reciter must not stop a preview.
+  useEffect(() => () => { void stopPreview(); }, []);
+
+  // Stop when backgrounded: a sample must not keep playing behind the lock screen.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => {
+      if (next !== 'active') void stopPreview();
+    });
+    return () => sub.remove();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -39,13 +63,24 @@ export function ReciterStep(): React.ReactElement {
           emptyMessage="لا يوجد قراء متاحون"
         >
           <View accessibilityRole="radiogroup" style={styles.group}>
-            {data.map((r) => (
+            {reciters.map((r) => (
               <SelectableRow
                 key={r.id}
                 title={r.name}
                 subtitle={r.styleLabel}
                 selected={r.id === selectedId}
                 onPress={() => setPreferredReciter(r.id)}
+                preview={
+                  canPreview(r) ? (
+                    <PreviewButton
+                      reciterName={r.name}
+                      status={previewId === r.id ? previewStatus : 'idle'}
+                      onPress={() => {
+                        void toggleReciterPreview(r);
+                      }}
+                    />
+                  ) : undefined
+                }
               />
             ))}
           </View>

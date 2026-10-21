@@ -19,6 +19,7 @@ import {
 } from '@/components/khazain/onboarding';
 import { ONBOARDING_STEP_COUNT, ONBOARDING_STEPS } from '@/constants/settings';
 import { KhazainColors } from '@/constants/theme';
+import { stopPreview } from '@/services/reciterPreview';
 import { useSettingsStore } from '@/store';
 
 const SLIDE_OFFSET = 40;
@@ -105,6 +106,7 @@ export default function OnboardingScreen(): React.ReactElement {
   }, [step, reduceMotion, anim]);
 
   const goTo = (next: number): void => {
+    void stopPreview();
     const clamped = Math.max(0, Math.min(ONBOARDING_STEP_COUNT - 1, next));
     directionRef.current = clamped > step ? 1 : -1;
     setStep(clamped);
@@ -112,6 +114,7 @@ export default function OnboardingScreen(): React.ReactElement {
   };
 
   const finish = (): void => {
+    void stopPreview();
     setOnboardingComplete(true);
     router.replace('/(tabs)');
   };
