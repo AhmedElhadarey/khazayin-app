@@ -1,8 +1,10 @@
 import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { skipNext, skipPrev, togglePlayback } from '@/services/audioEngine';
+import { takeLectureNoteParams } from '@/services/noteActions';
 import { usePlayerStore } from '@/store/playerStore';
 import { FigmaIcon } from '../icons/FigmaIcon';
+import { useRouter } from 'expo-router';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Polygon, Rect } from 'react-native-svg';
@@ -20,13 +22,25 @@ export function MiniPlayer() {
   const track = usePlayerStore((s) => s.track);
   const isPlaying = usePlayerStore((s) => s.isPlaying);
   const isVisible = usePlayerStore((s) => s.isVisible);
+  const router = useRouter();
+
+  // Reads the position at press time with getState(): subscribing to
+  // `progress` here would bring back the ~1Hz re-render the atomic selectors
+  // above exist to avoid.
+  const takeLectureNote = () => {
+    const { track: current, progress } = usePlayerStore.getState();
+    router.push({
+      pathname: '/note-editor' as any,
+      params: takeLectureNoteParams(current, progress),
+    });
+  };
 
   if (!isVisible || !track) return null;
 
   return (
     <View style={[styles.shell, KhazainShadows.card]}>
       <View style={styles.row}>
-        {/* Physical left → right: transport cluster, title block, cover. */}
+        {/* Physical left → right: transport cluster, note button, title block, cover. */}
         <View style={styles.transport}>
           {/* Within the cluster, physical left → right:
               skip forward, play/pause, skip back. */}
@@ -43,18 +57,41 @@ export function MiniPlayer() {
           <SkipButton dir="back" onPress={skipPrev} label="السابق" />
         </View>
 
-        <View style={styles.info}>
-          <Text style={styles.title} numberOfLines={1}>
-            {track.title}
-          </Text>
-          <Text style={styles.reciter} numberOfLines={1}>
-            {track.reciter}
-          </Text>
-        </View>
+        <Pressable
+          onPress={takeLectureNote}
+          accessibilityRole="button"
+          accessibilityLabel="إضافة ملاحظة عند هذه اللحظة"
+          hitSlop={6}
+          style={({ pressed }) => [styles.noteBtn, { opacity: pressed ? 0.7 : 1 }]}
+        >
+          <FigmaIcon name="LibraryNotes" size={18} color={KhazainColors.navy800} />
+        </Pressable>
 
-        <View style={styles.cover}>
-          <LogoBadge size={56} />
-        </View>
+        {/* Long-press on the title and cover does the same as the button. It
+            has no onPress, so a plain tap falls through to nothing. */}
+        <Pressable
+          onLongPress={takeLectureNote}
+          delayLongPress={350}
+          accessibilityHint="اضغط مطولًا لإضافة ملاحظة"
+          accessibilityActions={[{ name: 'longpress', label: 'إضافة ملاحظة' }]}
+          onAccessibilityAction={(e) => {
+            if (e.nativeEvent.actionName === 'longpress') takeLectureNote();
+          }}
+          style={styles.titleGroup}
+        >
+          <View style={styles.info}>
+            <Text style={styles.title} numberOfLines={1}>
+              {track.title}
+            </Text>
+            <Text style={styles.reciter} numberOfLines={1}>
+              {track.reciter}
+            </Text>
+          </View>
+
+          <View style={styles.cover}>
+            <LogoBadge size={56} />
+          </View>
+        </Pressable>
       </View>
 
       {/* Progress bar pinned to the bottom of the card */}
@@ -187,6 +224,20 @@ const styles = StyleSheet.create({
     color: KhazainColors.ink500,
     writingDirection: 'rtl',
     textAlign: 'right',
+  },
+  noteBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
+  },
+  titleGroup: {
+    ...PHYSICAL_ROW,
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    gap: 10,
   },
   transport: {
     ...PHYSICAL_ROW,

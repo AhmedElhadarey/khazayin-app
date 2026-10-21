@@ -63,3 +63,25 @@ describe('mushaf reader', () => {
     expect(src).toMatch(/takeAyahNoteParams\(surahId, /);
   });
 });
+
+describe('mini player', () => {
+  const src = read('components/khazain/primitives/MiniPlayer.tsx');
+  const body = src.slice(0, src.indexOf('function ProgressFill'));
+  it('reads the position at press time, without a new subscription', () => {
+    expect(body).toMatch(/usePlayerStore\.getState\(\)/);
+    expect(body.match(/usePlayerStore\(\(s\) =>/g)).toHaveLength(3);
+  });
+  it('uses the pure params', () => {
+    expect(src).toMatch(/takeLectureNoteParams\(/);
+  });
+  it('has no save gesture (long-press on the player means NOTE)', () => {
+    expect(src).not.toMatch(/saveGestureProps|useSaveGesture/);
+  });
+  it('still collapses when idle', () => {
+    expect(src).toMatch(/if \(!isVisible \|\| !track\) return null;/);
+  });
+  it('keeps the transport cluster physically first', () => {
+    expect(src).toContain('...PHYSICAL_ROW');
+    expect(src).not.toContain('row-reverse');
+  });
+});
