@@ -28,8 +28,12 @@ describe('Sections root fixtures', () => {
     ['prophet', 'رسول الله ﷺ', 'محاضرات ودروس كبار العلماء', '٢٤٣ حلقة'],
     ['scholars', 'العلماء والمشايخ', 'محاضرات ودروس كبار العلماء', '٢٤٣ حلقة'],
     ['books', 'الكتب العلمية', 'شروحات الكتب الإسلامية المهمة', '٨٩ حلقة'],
-    ['queen', 'أنتِ ملكة', 'ملكةٌ أنتِ لا سواكِ', '١٢٨ حلقة'],
+    // The vowelling is the file's own, on P-132 of 2031:5675.
+    ['queen', 'أنتِ ملكة', 'مَلِكةٌ أنتِ لا سِواكِ', '١٢٨ حلقة'],
     ['audiobooks', 'كتب صوتية', 'كتب إسلامية مقروءة بصوت عذب', '٦٧ كتاب'],
+    ['exclusive', 'حصريات خزائن الرحمن', 'محتوى حصري ومميز', '٣٤ حلقة'],
+    ['radio', 'برامج إذاعية', 'برامج إذاعية إسلامية متنوعة', '١٢٨ حلقة'],
+    ['dawah', 'تصميمات دعوية', 'محتوى بصري ومرئي للدعوة', '٤٥ تصميم'],
   ])('reproduces the reference copy for %s', (id, title, subtitle, count) => {
     const section = SECTIONS.find((s) => s.id === id);
     expect([section?.title, section?.subtitle, section?.count]).toEqual([

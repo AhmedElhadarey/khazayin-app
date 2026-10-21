@@ -1,5 +1,6 @@
 import { AsyncContent, ListRowCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
 import { SECTION_ICONS, SectionIconKey } from '@/components/khazain/icons/sections';
+import { HeaderArt } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -29,6 +30,7 @@ export default function SectionsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
+      <HeaderArt />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}

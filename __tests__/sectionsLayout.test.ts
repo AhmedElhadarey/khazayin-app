@@ -60,11 +60,40 @@ describe('the row boxes the frames state', () => {
   });
 });
 
+describe('the section card disc', () => {
+  it('draws no ring, because the file hides the one it carries', () => {
+    // `DIV-58` on 2031:5675 and on the archive card 2558:1334 has a 1pt
+    // `#A88051` stroke paint set `visible: false`. The disc is the 16% fill
+    // alone; the 22-10 device audit caught the app drawing the hidden ring.
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', 'components/khazain/primitives/ListRowCard.tsx'),
+      'utf8',
+    );
+    const chip = src.match(/chipSection:\s*\{([^}]*)\}/);
+    expect(chip).not.toBeNull();
+    expect(chip![1]).not.toMatch(/border(Width|Color)/);
+  });
+});
+
 describe('the page chrome every section frame repeats', () => {
   it('sets the search field 40 tall at radius 12', () => {
     // node "Inputs", 361 x 40, in every one of the seventeen frames
     expect(PAGE_CHROME.searchHeight).toBe(40);
     expect(PAGE_CHROME.searchRadius).toBe(12);
+  });
+
+  it('tints the search glyph navy, as all 24 instances do', () => {
+    // Every `vuesax/bulk/search-normal` instance overrides both vectors to
+    // `#184B76`; the circle's 40% is the master's layer opacity, which the
+    // generated path already carries. The app had tinted it placeholder beige.
+    const src = fs.readFileSync(
+      path.join(__dirname, '..', 'components/khazain/primitives/SearchPill.tsx'),
+      'utf8',
+    );
+    expect(src).toMatch(/const searchGlyphColor = dark \? [^:]+ : KhazainColors\.navy;/);
+    const glyphs = src.match(/<FigmaIcon name="Search"[^>]*>/g) ?? [];
+    expect(glyphs.length).toBeGreaterThan(0);
+    for (const glyph of glyphs) expect(glyph).toContain('color={searchGlyphColor}');
   });
 
   it('leaves the search field under the touch minimum, deliberately', () => {

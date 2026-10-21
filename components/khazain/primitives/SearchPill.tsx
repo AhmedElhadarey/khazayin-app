@@ -69,6 +69,9 @@ export function SearchPill({
   const textColor = dark ? KhazainColors.cream100 : KhazainColors.ink900;
   const placeholderColor = dark ? 'rgba(255,255,255,0.5)' : KhazainColors.inkPlaceholder;
   const iconColor = dark ? KhazainColors.cream200 : KhazainColors.inkPlaceholder;
+  // All 24 `search-normal` instances override both vectors to navy; the
+  // circle's 40% rides on the generated path, not on this tint.
+  const searchGlyphColor = dark ? KhazainColors.cream200 : KhazainColors.navy;
 
   // ─── Button mode ─────────────────────────────────────────────────────────
   if (onPress) {
@@ -87,7 +90,7 @@ export function SearchPill({
         ]}
       >
         {renderSlots({
-          icon: <FigmaIcon name="Search" size={SEARCH_GLYPH} color={iconColor} />,
+          icon: <FigmaIcon name="Search" size={SEARCH_GLYPH} color={searchGlyphColor} />,
           field: (
             <Text
               style={[styles.placeholderText, { color: placeholderColor }]}
@@ -115,7 +118,7 @@ export function SearchPill({
       ]}
     >
       {renderSlots({
-        icon: <FigmaIcon name="Search" size={SEARCH_GLYPH} color={iconColor} />,
+        icon: <FigmaIcon name="Search" size={SEARCH_GLYPH} color={searchGlyphColor} />,
         field: (
           <TextInput
             {...rest}

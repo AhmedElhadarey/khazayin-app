@@ -84,6 +84,28 @@ const solidHex = (paints) => {
 };
 
 /**
+ * The part of a root's own transform that belongs to the mark.
+ *
+ * A root's translation only places it in a parent the walk never sees, so it
+ * is dropped. An axis flip is part of how the mark is drawn — 2589:2458 stores
+ * the أنتِ ملكة tulip with `m11: -1`, and without it the tulip rendered upside
+ * down — so it is kept, mirrored inside the node's own box. A rotation is left
+ * alone: no icon in the manifest needs one, and turning a mark inside a box
+ * that does not turn with it would change its size. Only the sign of `m00` and
+ * `m11` is read, because Figma keeps a node's scale in `size`, not here.
+ */
+function ownReflection(node) {
+  const t = node.transform, s = node.size;
+  if (!t || !s || Math.abs(t.m01) > 1e-6 || Math.abs(t.m10) > 1e-6) return IDENTITY;
+  const flipX = t.m00 < 0, flipY = t.m11 < 0;
+  if (!flipX && !flipY) return IDENTITY;
+  return {
+    m00: flipX ? -1 : 1, m01: 0, m02: flipX ? s.x : 0,
+    m10: 0, m11: flipY ? -1 : 1, m12: flipY ? s.y : 0,
+  };
+}
+
+/**
  * Walk a node subtree and collect every painted outline in the root's own
  * coordinate space.
  *
@@ -176,7 +198,7 @@ function collectPaths(root, { byGuid, childrenOf }) {
     for (const c of childrenOf(guidKey(node.guid))) walk(c, compose(abs, c.transform), next);
   };
 
-  walk(root, IDENTITY, {
+  walk(root, ownReflection(root), {
     overrides: new Map(),
     derived: new Map(),
     blobs: byGuid.blobs,
