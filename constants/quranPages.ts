@@ -1,6 +1,6 @@
 /**
- * Ayah → Madani page lookup over the generated `quranPageData.ts`.
- * The CC BY 3.0 notice constants are added in Task 14.
+ * Ayah → Madani page lookup over the generated `quranPageData.ts`, and the
+ * CC BY 3.0 notice constants for that data (rendered on About).
  */
 import { JUZ_START_AYAHS, QURAN_PAGE_STARTS, type AyahRef } from './quranPageData';
 
@@ -33,3 +33,13 @@ export function pageForAyah(surah: number, ayah: number): number | null {
   }
   return found < 0 ? null : found + 1;
 }
+
+/**
+ * CC BY 3.0 notice for the page/juz data, rendered in app/settings-about.tsx.
+ * The licence requires credit, the licence URI and a note of changes.
+ */
+export const QURAN_PAGE_DATA_CREDIT =
+  'تقسيم صفحات المصحف وأجزائه: بيانات Tanzil.net (Quran Metadata 1.0، ٢٠٠٨–٢٠٠٩)';
+export const QURAN_PAGE_DATA_CHANGES = 'التعديلات: تحويل الصيغة فقط دون تغيير القيم.';
+export const QURAN_PAGE_DATA_LICENSE_LABEL = 'الرخصة: CC BY 3.0';
+export const QURAN_PAGE_DATA_LICENSE_URL = 'https://creativecommons.org/licenses/by/3.0/';
