@@ -49,8 +49,8 @@ export function arabicCopyForCode(code: ApiErrorCode): string {
 }
 
 /**
- * True for errors built by `toApiError` (or shaped like them). Their `message`
- * is always Arabic copy from ARABIC_COPY, so the UI may show it verbatim.
+ * True for errors built by `makeApiError` (directly or through `toApiError`).
+ * Their `message` is Arabic user-facing copy, so the UI may show it verbatim.
  * Any other Error may carry English developer text and must not be shown.
  */
 export function isApiError(e: unknown): e is ApiError {
@@ -64,6 +64,30 @@ export function isApiError(e: unknown): e is ApiError {
 // ---------------------------------------------------------------------------
 // Error factory
 // ---------------------------------------------------------------------------
+
+/**
+ * The single constructor for ApiError. Every ApiError in the app is built
+ * here, so `isApiError` can trust its `message` to be Arabic copy.
+ *
+ * We create a plain Error and attach the extra fields rather than
+ * subclassing, which avoids prototype chain issues in RN's Hermes engine when
+ * errors cross the bridge.
+ *
+ * @param code     - Discriminated error code.
+ * @param message  - Arabic user-facing copy. Defaults to the canonical copy
+ *                   for `code`; only pass Arabic text here.
+ * @param retriable - Whether a retry may succeed. Defaults to false.
+ */
+export function makeApiError(
+  code: ApiErrorCode,
+  { message, retriable = false }: { message?: string; retriable?: boolean } = {},
+): ApiError {
+  const err = new Error(message ?? arabicCopyForCode(code)) as ApiError;
+  err.name = 'ApiError';
+  err.code = code;
+  err.retriable = retriable;
+  return err;
+}
 
 /**
  * Constructs a structured ApiError from any thrown value.
@@ -131,16 +155,8 @@ export function toApiError(
     }
   }
 
-  // Build the Arabic message for direct use in <ErrorState />
-  const message = arabicCopyForCode(code);
-
-  // Construct error — we create a plain Error and attach the extra fields
-  // rather than subclassing, which avoids prototype chain issues in RN's
-  // Hermes engine when errors cross the bridge.
-  const err = new Error(message) as ApiError;
-  err.name = 'ApiError';
-  err.code = code;
-  err.retriable = retriable;
+  // Arabic message for direct use in <ErrorState />
+  const err = makeApiError(code, { retriable });
 
   if (status !== undefined) {
     err.status = status;

@@ -43,11 +43,11 @@ export default function ReciterSurahListScreen() {
     fetchSurahs();
   }, [fetchReciters, fetchSurahs]);
 
-  // Header keeps its original expression so the loaded frame is unchanged.
-  const reciter = reciters.find((r) => r.id === id);
   const state = reciterDetailState({
-    id, reciters, recitersStatus, recitersError, surahsStatus, surahsError,
+    id, reciters, recitersStatus, recitersError, surahs, surahsStatus, surahsError,
   });
+  // Outside `ready` the reciter may still be known (no surahs yet, or none).
+  const reciter = reciters.find((r) => r.id === id);
 
   const onRetry = () => {
     for (const target of retryTargets(recitersStatus, surahsStatus)) {
@@ -58,7 +58,10 @@ export default function ReciterSurahListScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <InlineHeader title={reciter?.name ?? 'القرآن حياة'} onBack={() => router.back()} />
+      <InlineHeader
+        title={(state.kind === 'ready' ? state.reciter.name : reciter?.name) ?? 'القرآن حياة'}
+        onBack={() => router.back()}
+      />
       <View style={styles.searchBlock}>
         <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
       </View>

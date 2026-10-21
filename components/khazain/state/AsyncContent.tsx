@@ -100,6 +100,18 @@ export function AsyncContent({
   style,
   children,
 }: AsyncContentProps) {
+  // resolveAsyncView stays pure and the render stays side-effect free; the
+  // dev-only diagnostic lives in an effect. A non-ApiError's text is hidden
+  // from the user, so tell the developer once per status/error change.
+  useEffect(() => {
+    if (__DEV__ && status === 'error' && error && !isApiError(error)) {
+      console.warn(
+        '[AsyncContent] non-ApiError reached the error state; showing the Arabic default instead of:',
+        error,
+      );
+    }
+  }, [status, error]);
+
   const view = resolveAsyncView(status, { error, errorMessage });
 
   switch (view.kind) {
@@ -109,14 +121,6 @@ export function AsyncContent({
     case 'empty':
       return <>{empty ?? <EmptyState message={emptyMessage} />}</>;
     case 'error':
-      // Keep resolveAsyncView pure; the dev-only diagnostic lives here. A
-      // non-ApiError's text is hidden from the user, so tell the developer.
-      if (__DEV__ && error && !isApiError(error)) {
-        console.warn(
-          '[AsyncContent] non-ApiError reached the error state; showing the Arabic default instead of:',
-          error,
-        );
-      }
       return <ErrorState message={view.message} onRetry={onRetry} />;
     case 'content':
       return (

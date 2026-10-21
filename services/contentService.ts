@@ -46,12 +46,12 @@ import type {
   LibraryFilter,
 } from '../types/content';
 import type {
-  ApiError,
   ContentResult,
   CacheOpts,
   Paged,
 } from './api/types';
 
+import { makeApiError } from './api/errors';
 import { httpAdapter } from './api/httpAdapter';
 import { SURAHS, AYAT_BY_SURAH, QIRAAT, RECITERS } from '../data/content/quran';
 import { SCHOLARS, LECTURES_BY_SCHOLAR } from '../data/content/scholars';
@@ -142,14 +142,10 @@ async function delay(): Promise<void> {
  */
 export const SIMULATED_ERROR_MESSAGE = 'تعذر تحميل المحتوى (خطأ تجريبي). حاول مجدداً.';
 
-/** Throws an ApiError-shaped error if simulateError is set. */
+/** Throws an Arabic ApiError if simulateError is set. */
 function maybeError(): void {
   if (mockAdapter.simulateError) {
-    const err = new Error(SIMULATED_ERROR_MESSAGE) as ApiError;
-    err.name = 'ApiError';
-    err.code = 'unknown';
-    err.retriable = true;
-    throw err;
+    throw makeApiError('unknown', { message: SIMULATED_ERROR_MESSAGE, retriable: true });
   }
 }
 

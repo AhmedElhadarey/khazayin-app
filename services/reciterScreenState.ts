@@ -6,7 +6,8 @@
  * node 2207:5270). The loaded states are Figma frames. The states below have
  * no frame: they follow constants/layout.ts and the shared state primitives.
  */
-import type { LoadState, Reciter } from '@/types/content';
+import type { AsyncContentProps } from '@/components/khazain/state/AsyncContent';
+import type { LoadState, Reciter, Surah } from '@/types/content';
 
 export const RECITER_STATE_COPY = Object.freeze({
   /** The store holds no reciters at all. */
@@ -40,6 +41,7 @@ export type ReciterDetailInput = {
   reciters: readonly Reciter[];
   recitersStatus: LoadState;
   recitersError: Error | null;
+  surahs: readonly Surah[];
   surahsStatus: LoadState;
   surahsError: Error | null;
 };
@@ -53,23 +55,32 @@ export type ReciterDetailState =
 
 const pending = (s: LoadState) => s === 'idle' || s === 'loading';
 
-/** First match wins. See design §3.3 for why notFound outranks a surahs error. */
+/**
+ * First match wins. Data a store still holds outranks its in-flight or failed
+ * refresh, so a loaded list never flips back to a skeleton or an error card.
+ *
+ * 1. Reciter not in data: reciters pending → loading; reciters error → error;
+ *    otherwise → notFound (a retry cannot fix a bad id, so it outranks any
+ *    surahs failure — design §3.3).
+ * 2. Surahs in data (and the store not `empty`) → ready.
+ * 3. Surahs pending → loading; error → error; empty → surahsEmpty.
+ * 4. Otherwise → ready.
+ */
 export function reciterDetailState(i: ReciterDetailInput): ReciterDetailState {
-  if (pending(i.recitersStatus)) return { kind: 'loading' };
-  if (i.recitersStatus === 'error') return { kind: 'error', error: i.recitersError };
   const reciter = i.id ? i.reciters.find((r) => r.id === i.id) : undefined;
-  if (!reciter) return { kind: 'notFound' };
+  if (!reciter) {
+    if (pending(i.recitersStatus)) return { kind: 'loading' };
+    if (i.recitersStatus === 'error') return { kind: 'error', error: i.recitersError };
+    return { kind: 'notFound' };
+  }
+  if (i.surahs.length > 0 && i.surahsStatus !== 'empty') return { kind: 'ready', reciter };
   if (pending(i.surahsStatus)) return { kind: 'loading' };
   if (i.surahsStatus === 'error') return { kind: 'error', error: i.surahsError };
   if (i.surahsStatus === 'empty') return { kind: 'surahsEmpty' };
   return { kind: 'ready', reciter };
 }
 
-export type ReciterDetailAsyncProps = {
-  status: LoadState;
-  error?: Error | null;
-  emptyMessage?: string;
-};
+export type ReciterDetailAsyncProps = Pick<AsyncContentProps, 'status' | 'error' | 'emptyMessage'>;
 
 export function reciterDetailAsyncProps(
   state: Exclude<ReciterDetailState, { kind: 'ready' }>,

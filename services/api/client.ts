@@ -25,8 +25,8 @@
  */
 
 import { getAuthToken } from './auth';
-import { toApiError } from './errors';
-import type { ApiError, NotModifiedMarker, RequestOpts, RequestResult } from './types';
+import { makeApiError, toApiError } from './errors';
+import type { NotModifiedMarker, RequestOpts, RequestResult } from './types';
 import { isNotModified } from './types';
 
 // Re-export for ergonomic imports: consumers can import isNotModified from here.
@@ -67,13 +67,7 @@ function buildUrl(
           // Surface as ApiError(code:'validation') so <ErrorState> renders the
           // Arabic validation copy instead of an English Error.message. The
           // request never goes out — this is a pure client-side guard.
-          const err = new Error(
-            'البيانات المرسلة غير صحيحة. يرجى مراجعة الإدخال.',
-          ) as ApiError;
-          err.name = 'ApiError';
-          err.code = 'validation';
-          err.retriable = false;
-          throw err;
+          throw makeApiError('validation');
         }
         url.searchParams.set(key, stringValue);
       }

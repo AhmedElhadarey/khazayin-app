@@ -2,7 +2,10 @@ jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );
 
-/** services/contentService.ts:394-409 — the single swap point. */
+/**
+ * The single swap point: `contentService` in services/contentService.ts picks
+ * `httpAdapter` when EXPO_PUBLIC_API_BASE is non-empty, else `mockAdapter`.
+ */
 describe('contentService swap point', () => {
   const saved = process.env.EXPO_PUBLIC_API_BASE;
   afterEach(() => {

@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { RECITERS } from '@/data/content/quran';
+import { RECITERS, SURAHS } from '@/data/content/quran';
 import {
   RECITER_STATE_COPY,
   reciterDetailAsyncProps,
@@ -44,7 +44,7 @@ describe('reciterListView (audit gap 2)', () => {
 
 const base: ReciterDetailInput = {
   id: 'r1', reciters: RECITERS, recitersStatus: 'success', recitersError: null,
-  surahsStatus: 'success', surahsError: null,
+  surahs: SURAHS, surahsStatus: 'success', surahsError: null,
 };
 
 describe('reciterDetailState (audit gap 1)', () => {
@@ -69,18 +69,41 @@ describe('reciterDetailState (audit gap 1)', () => {
     expect(reciterDetailState({ ...base, id: 'nope', surahsStatus: 'error', surahsError: new Error('s') }))
       .toEqual({ kind: 'notFound' });
   });
-  it.each(['idle', 'loading'] as const)('surahs %s → loading', (s) => {
-    expect(reciterDetailState({ ...base, surahsStatus: s })).toEqual({ kind: 'loading' });
+  it.each(['idle', 'loading'] as const)('surahs %s with no data → loading', (s) => {
+    expect(reciterDetailState({ ...base, surahs: [], surahsStatus: s })).toEqual({ kind: 'loading' });
   });
-  it('surahs error → error carrying the surahs error', () => {
+  it('surahs error with no data → error carrying the surahs error', () => {
     const e = new Error('s');
-    expect(reciterDetailState({ ...base, surahsStatus: 'error', surahsError: e })).toEqual({ kind: 'error', error: e });
+    expect(reciterDetailState({ ...base, surahs: [], surahsStatus: 'error', surahsError: e }))
+      .toEqual({ kind: 'error', error: e });
   });
   it('surahs empty → surahsEmpty', () => {
-    expect(reciterDetailState({ ...base, surahsStatus: 'empty' })).toEqual({ kind: 'surahsEmpty' });
+    expect(reciterDetailState({ ...base, surahs: [], surahsStatus: 'empty' })).toEqual({ kind: 'surahsEmpty' });
   });
   it('all loaded → ready with the reciter', () => {
     expect(reciterDetailState(base)).toEqual({ kind: 'ready', reciter: r1 });
+  });
+});
+
+describe('reciterDetailState keeps usable data on screen during a refresh', () => {
+  const ready = { kind: 'ready', reciter: r1 };
+  it.each(['loading', 'error'] as const)('reciters %s but the reciter is still in data → ready', (s) => {
+    expect(reciterDetailState({ ...base, recitersStatus: s, recitersError: s === 'error' ? new Error('x') : null }))
+      .toEqual(ready);
+  });
+  it.each(['loading', 'error'] as const)('surahs %s but surahs are still in data → ready', (s) => {
+    expect(reciterDetailState({ ...base, surahsStatus: s, surahsError: s === 'error' ? new Error('s') : null }))
+      .toEqual(ready);
+  });
+  it('reciters loading with stale data that lacks the id → loading, not notFound', () => {
+    const others = RECITERS.filter((r) => r.id !== 'r1');
+    expect(reciterDetailState({ ...base, reciters: others, recitersStatus: 'loading' })).toEqual({ kind: 'loading' });
+  });
+  it('reciters error with stale data that lacks the id → error (a retry may find it)', () => {
+    const e = new Error('x');
+    const others = RECITERS.filter((r) => r.id !== 'r1');
+    expect(reciterDetailState({ ...base, reciters: others, recitersStatus: 'error', recitersError: e }))
+      .toEqual({ kind: 'error', error: e });
   });
 });
 
@@ -138,5 +161,9 @@ describe('reciter/[id].tsx wiring (node 2207:5270)', () => {
   });
   it('keeps the loaded FlatList geometry untouched', () => {
     expect(src).toContain('contentContainerStyle={[styles.list, { paddingBottom: 24 }]}');
+  });
+  it('feeds the store data into the state, and titles the header from the ready reciter', () => {
+    expect(src).toMatch(/reciterDetailState\(\{[\s\S]{0,200}\bsurahs,/);
+    expect(src).toContain("state.kind === 'ready' ? state.reciter.name : reciter?.name");
   });
 });

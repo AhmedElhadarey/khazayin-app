@@ -1089,3 +1089,13 @@ Save every state screenshot as `$BASE/states/<letter>-<state>.png`. Afterwards: 
 | Error states with retry | 1, 3, 4, 6; QA 7.3 c/e/f |
 | Clear swap point | 2 |
 | Gap 5 (static chrome tables) | Recorded as acceptable, design §8; no task |
+
+---
+
+## Deviations (code-review follow-ups, applied after Task 6)
+
+- **`makeApiError(code, { message?, retriable? })`** in `services/api/errors.ts` is now the only ApiError constructor. `toApiError`, the mock `maybeError` and the client's oversize-cursor guard (`services/api/client.ts`) all use it, so `isApiError`'s doc no longer says "or shaped like them". `toApiError`'s classification and the cursor guard are pinned by tests in `__tests__/contentServiceErrors.test.ts`, added before the refactor.
+- **`AsyncContent`'s dev warning** moved from the render path into a `useEffect` keyed on `[status, error]`.
+- **`reciterDetailState` precedence changed from design §3.3:** data a store still holds now outranks its in-flight or failed refresh. If the reciter is in `reciters` data it is used whatever the reciters status, and non-empty `surahs` data gives `ready` even while surahs is `loading`/`error`. Loading and error show only when there is no usable data. `notFound` still outranks a surahs failure. `ReciterDetailInput` gains `surahs`.
+- **`[id]` header** reads `state.kind === 'ready' ? state.reciter.name : reciter?.name` (then `?? 'القرآن حياة'`). In `ready`, both sides resolve to the same `Reciter` object, so the loaded frame gets the same string.
+- **`ReciterDetailAsyncProps`** is `Pick<AsyncContentProps, 'status' | 'error' | 'emptyMessage'>`.

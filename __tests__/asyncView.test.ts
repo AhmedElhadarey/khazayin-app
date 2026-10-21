@@ -42,9 +42,15 @@ describe('AsyncContent delegates to resolveAsyncView', () => {
     // Neither `error?.message` nor `error.message` may be read in the component.
     expect(src).not.toMatch(/error\??\.message/);
   });
-  it('warns in dev when a non-ApiError reaches the error state', () => {
-    expect(src).toMatch(/__DEV__[\s\S]{0,200}isApiError\(error\)/);
+  it('warns in dev, from an effect, when a non-ApiError reaches the error state', () => {
+    expect(src).toMatch(
+      /useEffect\(\(\) => \{[\s\S]{0,300}__DEV__[\s\S]{0,200}isApiError\(error\)[\s\S]{0,400}\}, \[status, error\]\);/,
+    );
     expect(src).toContain('console.warn(');
+  });
+  it('keeps the render path free of side effects', () => {
+    const render = src.slice(src.indexOf('switch (view.kind)'));
+    expect(render).not.toContain('console.warn(');
   });
 });
 
