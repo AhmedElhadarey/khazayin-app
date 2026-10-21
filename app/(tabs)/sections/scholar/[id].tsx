@@ -3,6 +3,7 @@ import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { startLecturePlayback } from '@/services/lecturePlayback';
+import { lectureSaveTarget } from '@/services/savedToggle';
 import { useScholarLecturesStore, useScholarsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
@@ -57,6 +58,7 @@ export default function ScholarDetailScreen() {
               title={l.title}
               meta={l.scholar}
               duration={l.duration}
+              save={lectureSaveTarget(l)}
               onPress={() => startLecturePlayback(l)}
             />
           )}

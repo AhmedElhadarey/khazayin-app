@@ -41,3 +41,26 @@ describe('lecture rows', () => {
     expect(read('components/khazain/primitives/LectureCard.tsx')).toMatch(/useSaveGesture\(/);
   });
 });
+
+describe('scholar-detail lectures (RibbonCard, frame 2510:1990)', () => {
+  const ribbon = read('components/khazain/primitives/RibbonCard.tsx');
+  it('RibbonCard takes an optional save target and uses the shared hook', () => {
+    expect(ribbon).toMatch(/save\?: SaveTarget/);
+    expect(ribbon).toMatch(/useSaveGesture\(stableSave\)/);
+  });
+  it('only the scholar DETAIL list opts in; the scholar list (frame 2102:2975) does not', () => {
+    expect(read('app/(tabs)/sections/scholar/[id].tsx')).toMatch(/save=\{lectureSaveTarget\(l\)\}/);
+    expect(read('app/(tabs)/sections/scholar.tsx')).not.toMatch(/save=\{/);
+  });
+});
+
+describe('surah list decision (design §5)', () => {
+  it('the Mushaf list carries the surah bookmark', () => {
+    expect(read('components/khazain/sections/SurahRow.tsx')).toMatch(/<BookmarkButton\s+type="surah"/);
+  });
+  it('the reciter list keeps the play glyph frame 2207:5270 draws, with no save control', () => {
+    const src = read('components/khazain/sections/ReciterSurahRow.tsx');
+    expect(src).not.toMatch(/BookmarkButton|useSaveGesture/);
+    expect(src).toMatch(/FigmaIcon name="Play"/);
+  });
+});
