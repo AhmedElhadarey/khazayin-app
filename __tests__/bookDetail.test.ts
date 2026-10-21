@@ -72,4 +72,8 @@ describe('bookPrimaryAction', () => {
   });
   it('says "no audio" once the sharh list settled without a match', () =>
     expect(bookPrimaryAction({ hasLecture: false, lecturesStatus: 'success' })).toBe('none'));
+  it('offers a retry, not "no audio", when the sharh list failed to load', () =>
+    expect(bookPrimaryAction({ hasLecture: false, lecturesStatus: 'error' })).toBe('error'));
+  it('still plays a linked sharh after a later refresh failed', () =>
+    expect(bookPrimaryAction({ hasLecture: true, lecturesStatus: 'error' })).toBe('play'));
 });

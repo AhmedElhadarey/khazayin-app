@@ -1,4 +1,11 @@
-import { AsyncContent, BookCard, EmptyState, InlineHeader, PillButton } from '@/components/khazain';
+import {
+  BookCard,
+  EmptyState,
+  ErrorState,
+  InlineHeader,
+  PILL_BUTTON_HEIGHTS,
+  PillButton,
+} from '@/components/khazain';
 import { bookCardLayout } from '@/components/khazain/home/bookCardLayout';
 import { BOOK_DETAIL_SECTIONS, type BookDetailSection } from '@/constants/bookDetailPresentation';
 import { PHYSICAL_BOX, responsiveCarouselCardWidth } from '@/constants/layout';
@@ -12,9 +19,6 @@ import React, { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-/** PillButton `lg` height — the placeholder keeps the action row from jumping. */
-const PRIMARY_ACTION_HEIGHT = 44;
-
 // Book detail, reached from search. No Figma frame covers it — governed by
 // constants/layout.ts (PHYSICAL_BOX, RTL text via textStyle) and
 // constants/typography.ts. The cover reuses the Home book card (node 2001:940)
@@ -25,7 +29,6 @@ export default function BookDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const books = useBooksStore((s) => s.data);
   const booksStatus = useBooksStore((s) => s.status);
-  const booksError = useBooksStore((s) => s.error);
   const lectures = useBookLecturesStore((s) => s.items);
   const lecturesStatus = useBookLecturesStore((s) => s.status);
 
@@ -48,6 +51,8 @@ export default function BookDetailScreen() {
         styles.coverSkeleton,
         { width: coverWidth, height: coverLayout.cardHeight, borderRadius: coverLayout.radius },
       ]}
+      accessible
+      accessibilityRole="progressbar"
       accessibilityLabel="جارٍ التحميل"
     />
   );
@@ -59,13 +64,8 @@ export default function BookDetailScreen() {
       break;
     case 'error':
       body = (
-        <AsyncContent
-          status="error"
-          error={booksError}
-          onRetry={() => { void useBooksStore.getState().refresh(); }}
-        >
-          {null}
-        </AsyncContent>
+        // Default Arabic copy: a store error's message is not user-facing text.
+        <ErrorState onRetry={() => { void useBooksStore.getState().refresh(); }} />
       );
       break;
     case 'missing':
@@ -94,6 +94,12 @@ export default function BookDetailScreen() {
           ) : action === 'loading' ? (
             // Not "no audio" yet: the sharh list has not settled.
             <View style={styles.actionPlaceholder} />
+          ) : action === 'error' ? (
+            // Not "no audio" either: the sharh list failed to load.
+            <ErrorState
+              message="تعذّر تحميل الشرح الصوتي."
+              onRetry={() => { void useBookLecturesStore.getState().refresh(); }}
+            />
           ) : (
             <Text style={styles.noAudio}>لا يتوفر شرح صوتي لهذا الكتاب بعد</Text>
           ),
@@ -122,5 +128,5 @@ const styles = StyleSheet.create({
   title: textStyle('screenTitle', { color: KhazainColors.inkTitle, textAlign: 'center' }),
   author: textStyle('bodyCompact', { color: KhazainColors.ink500, textAlign: 'center' }),
   noAudio: textStyle('caption', { color: KhazainColors.ink500, textAlign: 'center' }),
-  actionPlaceholder: { height: PRIMARY_ACTION_HEIGHT },
+  actionPlaceholder: { height: PILL_BUTTON_HEIGHTS.lg },
 });

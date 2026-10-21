@@ -32,6 +32,9 @@ export function BookCard({
   return (
     <Pressable
       onPress={onPress}
+      // Without an action the card is not one element: its title and its
+      // bookmark button are reached on their own (Home rail, book detail cover).
+      accessible={onPress !== undefined}
       accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={name}
       style={({ pressed }) => [
@@ -49,6 +52,10 @@ export function BookCard({
         <Image
           source={titleArt}
           style={[styles.title, l.title]}
+          // When the card is not itself the accessibility element (no action),
+          // the calligraphy is the only thing that carries the book's name.
+          accessible={onPress === undefined}
+          accessibilityLabel={name}
           // The design's fill is STRETCH with an identity transform: the
           // 450 x 108 lockup is squeezed into the 160 x 37 rect.
           contentFit="fill"

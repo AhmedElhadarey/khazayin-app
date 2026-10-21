@@ -1270,3 +1270,15 @@ git commit -m "docs(qa): record content search reachability QA"
   screen arms `onRootRevealedOnce`; `runOnceAfterDismissal` and the 500 ms fallback are unchanged.
   The loading body is `accessible` with `accessibilityRole="progressbar"`. `content-search.tsx`
   imports `isCorpusLoading` from `@/services/loadState`; the search barrel no longer re-exports it.
+- **Code re-review (book detail)** — `bookPrimaryAction` gains `'error'` (sharh list failed, no
+  linked lecture): the screen shows an `ErrorState` retry calling
+  `useBookLecturesStore.getState().refresh()` instead of the no-audio caption. A failed books load
+  renders `ErrorState` directly (default Arabic copy — a store error's `message` is not UI text)
+  rather than `AsyncContent status="error"`. The action placeholder uses the new
+  `PILL_BUTTON_HEIGHTS.lg` exported from `PillButton.tsx`. The cover placeholder is `accessible`
+  with `accessibilityRole="progressbar"`. `BookCard` sets `accessible={onPress !== undefined}` so
+  the detail cover's bookmark button is reachable by a screen reader. The review assumed Home cards
+  have an `onPress`; they do not (`app/(tabs)/index.tsx:128`) and render the title as calligraphy
+  art, so the art now carries `accessibilityLabel={name}` (and is `accessible`) whenever the card
+  is not itself the element — otherwise Home would stop announcing the book name. Home's visuals
+  are unchanged; its screen-reader order is now title, then bookmark. The review's tagged-union refactor (minor 6) was not requested.

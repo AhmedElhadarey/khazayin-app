@@ -42,11 +42,15 @@ export function bookDetailBody(i: { found: boolean; booksStatus: LoadState }): B
   return 'missing';
 }
 
-export type BookPrimaryAction = 'play' | 'loading' | 'none';
+export type BookPrimaryAction = 'play' | 'loading' | 'error' | 'none';
 
-/** The listen button, a placeholder while the sharh list loads, or the no-audio caption. */
+/**
+ * The listen button, a placeholder while the sharh list loads, a retry when
+ * it failed, or — only once it loaded without a match — the no-audio caption.
+ */
 export function bookPrimaryAction(i: { hasLecture: boolean; lecturesStatus: LoadState }): BookPrimaryAction {
   if (i.hasLecture) return 'play';
+  if (i.lecturesStatus === 'error') return 'error';
   if (isCorpusLoading([i.lecturesStatus])) return 'loading';
   return 'none';
 }

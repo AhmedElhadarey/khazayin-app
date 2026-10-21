@@ -187,7 +187,7 @@ Section order `constants/bookDetailPresentation.ts`:
 | header | `InlineHeader title="الكتب العلمية"` — every Sections sub-screen uses it (`sections/books.tsx:37`); `DetailHeader` has no callers. |
 | cover | `BookCard` (`components/khazain/home/BookCard.tsx`) centred, no `onPress`. `BookCard` changes to `accessibilityRole={onPress ? 'button' : undefined}` and suppresses press feedback without an `onPress` (`disabled` was dropped in code review: it makes a screen reader announce "dimmed") so a screen reader does not announce an action-less button (also fixes the Home rail, whose cards have no `onPress` today; no pixel change). |
 | meta | title (`screenTitle`), author (`bodyCompact`, `ink500`) — omitted when unknown. |
-| primaryAction | `PillButton "استمع إلى الشرح"` → `startLecturePlayback(lecture)`; without a lecture, caption "لا يتوفر شرح صوتي لهذا الكتاب بعد". |
+| primaryAction | `PillButton "استمع إلى الشرح"` → `startLecturePlayback(lecture)`; without a lecture, caption "لا يتوفر شرح صوتي لهذا الكتاب بعد". *(Code review: chosen by `bookPrimaryAction` — a `PILL_BUTTON_HEIGHTS.lg` placeholder while the sharh list loads, an `ErrorState` retry ("تعذّر تحميل الشرح الصوتي.") when it failed; the caption only once it loaded without a match.)* |
 
 ### 4.5 Tests for the search engine
 
