@@ -39,7 +39,16 @@ export function createPageReadsRepository(db: SQLite.SQLiteDatabase): PageReadsR
           pageNumber,
           nowMs,
         );
-        if (before.changes === 0) return;
+        if (before.changes === 0) {
+          // Already counted today — but it is still the page being read now,
+          // so the resume point moves (design 2026-10-21 §4.3).
+          await db.runAsync(
+            `INSERT INTO khz_settings (key, value) VALUES ('last_read_page', ?)
+               ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
+            JSON.stringify(pageNumber),
+          );
+          return;
+        }
         inserted = true;
 
         const target = await getWirdTarget();

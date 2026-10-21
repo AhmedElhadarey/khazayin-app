@@ -158,7 +158,12 @@ export function createWebRepos(): Repos {
       const exists = s.pageReads.some(
         (r) => r.localDay === localDay && r.pageNumber === pageNumber,
       );
-      if (exists) return false;
+      if (exists) {
+        // A re-read today still moves the resume point (design §4.3).
+        s.settings.last_read_page = pageNumber;
+        scheduleFlush();
+        return false;
+      }
       s.pageReads.push({ localDay, pageNumber, recordedAt: Date.now() });
       const target = s.settings.wird_target;
       const existing = s.days[localDay];
