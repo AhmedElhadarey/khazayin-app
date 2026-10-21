@@ -85,6 +85,19 @@ export const JUZ_PAGE_RANGES: ReadonlyArray<{
 export const STREAK_MILESTONES: ReadonlyArray<7 | 30 | 100> = [7, 30, 100];
 
 /**
+ * Mushaf page-read detection (design 2026-10-21 §4.3). A page counts as read
+ * once its segment has been in view for PAGE_READ_DWELL_MS in total within one
+ * reader session. "In view" = the visible part is at least
+ * PAGE_IN_VIEW_VIEWPORT_SHARE of the viewport (tall segments) or at least
+ * PAGE_IN_VIEW_SELF_SHARE of the segment itself (short segments).
+ */
+export const PAGE_READ_DWELL_MS = 8000;
+export const PAGE_IN_VIEW_VIEWPORT_SHARE = 0.5;
+export const PAGE_IN_VIEW_SELF_SHARE = 0.9;
+/** Longest gap credited by one tracker update — guards JS stalls/backgrounding. */
+export const PAGE_DWELL_MAX_STEP_MS = 2000;
+
+/**
  * Starting page (1-based) for each surah in the standard 604-page Madinah
  * Mushaf. Index = surah number (1..114). Used by the Mushaf screen to record
  * a page-read event when the user opens a surah, until a real swipable page
