@@ -87,6 +87,64 @@ describe('the generated icon set', () => {
     }
   });
 
+  // A root node's own transform is not inherited from anywhere, so the walk
+  // starts from identity — which silently drops a flip set on the root itself.
+  // 2589:2458 (the أنتِ ملكة mark) is stored with `m11: -1`, and the app drew
+  // the tulip upside down: leaves pointing up, the head hanging at the foot.
+  describe('a reflection set on the root node itself', () => {
+    const { collectPaths } = require('../scripts/figma/vector.js');
+    // MOVE (2, 1)  LINE (18, 1)  LINE (2, 40)  CLOSE — a wedge at the top.
+    const blob = Buffer.alloc(1 + 8 + 1 + 8 + 1 + 8 + 1);
+    let o = 0;
+    for (const [op, x, y] of [[1, 2, 1], [2, 18, 1], [2, 2, 40]] as const) {
+      blob.writeUInt8(op, o); o += 1;
+      blob.writeFloatLE(x, o); o += 4;
+      blob.writeFloatLE(y, o); o += 4;
+    }
+    blob.writeUInt8(0, o);
+
+    const walk = (transform: object) => {
+      const root = {
+        guid: { sessionID: 1, localID: 1 },
+        type: 'VECTOR',
+        size: { x: 20, y: 44 },
+        transform,
+        fillPaints: [{ type: 'SOLID', visible: true, color: { r: 0, g: 0, b: 0, a: 1 } }],
+        fillGeometry: [{ commandsBlob: 0, windingRule: 'NONZERO' }],
+      };
+      const byGuid = Object.assign(new Map(), { blobs: [{ bytes: blob }] });
+      return collectPaths(root, { byGuid, childrenOf: () => [] })[0].d;
+    };
+
+    it('mirrors a vertical flip inside the node\'s own box', () => {
+      expect(walk({ m00: 1, m01: 0, m02: 7, m10: 0, m11: -1, m12: 99 }))
+        .toBe('M2 43L18 43L2 4Z');
+    });
+
+    it('mirrors a horizontal flip inside the node\'s own box', () => {
+      expect(walk({ m00: -1, m01: 0, m02: 7, m10: 0, m11: 1, m12: 99 }))
+        .toBe('M18 1L2 1L18 40Z');
+    });
+
+    it('mirrors both axes when both are flipped', () => {
+      expect(walk({ m00: -1, m01: 0, m02: 7, m10: 0, m11: -1, m12: 99 }))
+        .toBe('M18 43L2 43L18 4Z');
+    });
+
+    it('ignores the root\'s position, which only places it in its parent', () => {
+      expect(walk({ m00: 1, m01: 0, m02: 7, m10: 0, m11: 1, m12: 99 }))
+        .toBe('M2 1L18 1L2 40Z');
+    });
+
+    it('draws the queen mark head-up, as the frame renders it', () => {
+      // The outline starts at the tip of the tulip's head; stored, it sits at
+      // the foot of the 44pt box (y 43.55).
+      const [first] = FIGMA_ICONS.SectionQueen.paths;
+      const y = Number(first.d.match(/^M[-\d.]+ ([-\d.]+)/)![1]);
+      expect(y).toBeLessThan(1);
+    });
+  });
+
   // The generator is the only writer of `figmaIcons.ts`. If someone edits the
   // manifest and forgets to re-run it, or hand-edits the output, the file and
   // the design file disagree — and nothing else would notice.
