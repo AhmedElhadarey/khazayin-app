@@ -159,8 +159,12 @@ async function runOnce(): Promise<void> {
     const intended = computeHorizon({
       now,
       todayLocalDay,
-      enabled,
       prayerTimesFor,
+      // STOPGAP (Task 2 → removed in Task 4): wird stays on its DAILY trigger until
+      // the atomic switch-over, so it must not appear in the horizon yet.
+      enabled: { ...enabled, 'wird-daily': false },
+      wirdReminderTime: settings.wirdReminderTime,
+      wirdGoalMetToday: false,
     });
 
     await reconcileHorizonAsync(intended);
