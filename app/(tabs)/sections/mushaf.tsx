@@ -1,10 +1,12 @@
 import {
   AsyncContent,
   InlineHeader,
+  LinkedNotesSection,
   SearchPill,
   SkeletonRibbonList,
   SkeletonRowList,
   SurahRow,
+  surahNotesBlock,
 } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
@@ -27,7 +29,7 @@ import {
   surahStartPage,
   toArabicDigits,
 } from '@/constants/progress';
-import { useFontScale, useSurahsStore, useAyatStore } from '@/store';
+import { useFontScale, useSurahsStore, useAyatStore, useLinkedNotes } from '@/store';
 import { usePlayerStore } from '@/store/playerStore';
 import { useProgressStore } from '@/store/progressStore';
 import { getRepos, progressRepo } from '@/db';
@@ -277,6 +279,22 @@ function ReadingView({
     tryScroll();
   }, [tryScroll]);
 
+  // A note's label inside this screen re-targets the scroll. The same ayah
+  // is re-armed explicitly because the param would not change.
+  const jumpToAyah = useCallback(
+    (n?: number) => {
+      scrolledAyahRef.current = null;
+      scrolledPreciseRef.current = false;
+      if (n == null) {
+        scrollRef.current?.scrollTo({ y: 0, animated: true });
+        return;
+      }
+      if (n === targetAyah) tryScroll();
+      else router.setParams({ ayah: String(n) } as any);
+    },
+    [router, targetAyah, tryScroll],
+  );
+
   // Long-press an ayah (or the VoiceOver/TalkBack action, which has no ayah)
   // opens the note editor linked to it. Long-press on an ayah means NOTE; it
   // is never a save gesture (see CLAUDE.md "Long-press means").
@@ -392,6 +410,15 @@ function ReadingView({
             ))}
           </AsyncContent>
         </View>
+        {/* Outside the measured body wrapper above, so the page-segment offsets
+            the reading tracker uses are unaffected. */}
+        <SurahNotesFooter
+          surahId={surahId}
+          onOpenNote={(id) =>
+            router.push({ pathname: '/note-editor' as any, params: { id } })
+          }
+          onJump={jumpToAyah}
+        />
       </ScrollView>
       {/* Physical left → right: الفهرس، الانتقال للعلامة، حفظ علامة
           (MUSHAF_FOOTER_ORDER, Figma node 2349:982). */}
@@ -417,6 +444,33 @@ const FOOTER_BUTTONS: Record<MushafFooterSlot, { label: string; icon: () => Reac
   goToBookmark: { label: 'الانتقال للعلامة', icon: () => <FooterGlyph name="MushafBookmark" /> },
   saveBookmark: { label: 'حفظ علامة', icon: () => <FooterGlyph name="MushafBookmark" /> },
 };
+
+/**
+ * End-of-surah block: a hint on how to add a note while there are none, then
+ * "ملاحظاتك على هذه السورة" once there are.
+ */
+function SurahNotesFooter({
+  surahId,
+  onOpenNote,
+  onJump,
+}: {
+  surahId: string;
+  onOpenNote: (id: string) => void;
+  onJump: (ayah?: number) => void;
+}) {
+  const block = surahNotesBlock(useLinkedNotes('ayah', surahId));
+  if (block.kind === 'hint') {
+    return <Text style={styles.noteHint}>اضغط مطولًا على آية لإضافة ملاحظة</Text>;
+  }
+  return (
+    <LinkedNotesSection
+      title="ملاحظاتك على هذه السورة"
+      notes={block.notes}
+      onOpenNote={onOpenNote}
+      onOpenSource={(n) => onJump(n.ref?.position)}
+    />
+  );
+}
 
 function AyahNum({ n }: { n: string }) {
   return (
@@ -511,6 +565,10 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     textAlign: 'justify',
     writingDirection: 'rtl',
+  },
+  noteHint: {
+    ...textStyle('caption', { color: KhazainColors.ink400, textAlign: 'center' }),
+    paddingTop: 16,
   },
   ayahHighlight: { backgroundColor: KhazainColors.cream200 },
   ayahNum: {

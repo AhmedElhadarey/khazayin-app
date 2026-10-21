@@ -52,3 +52,10 @@ export function editorSeed(
   if (ref) return { ref };
   return typeof params.title === 'string' ? { legacyTitle: params.title } : {};
 }
+
+export type SurahNotesBlock = { kind: 'hint' } | { kind: 'notes'; notes: Note[] };
+
+/** The Mushaf reader's end-of-surah block: how to add a note, or the notes themselves. */
+export function surahNotesBlock(notes: readonly Note[]): SurahNotesBlock {
+  return notes.length === 0 ? { kind: 'hint' } : { kind: 'notes', notes: sortByPosition(notes) };
+}

@@ -53,6 +53,12 @@ describe('mushaf reader', () => {
     expect(src).toMatch(/layoutsRef\.current\.get\(/);
     expect(src.match(/layoutsRef\.current\.set\(/g)).toHaveLength(1);
   });
+  it('the hint copy is exact', () => {
+    expect(src).toContain('اضغط مطولًا على آية لإضافة ملاحظة');
+  });
+  it('the notes block sits outside the measured segment wrapper', () => {
+    expect(src.indexOf('surahNotesBlock(')).toBeGreaterThan(src.indexOf('bodyYRef.current = '));
+  });
   it('ayah long-press uses the pure params', () => {
     expect(src).toMatch(/takeAyahNoteParams\(surahId, /);
   });

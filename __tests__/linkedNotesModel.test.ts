@@ -1,4 +1,4 @@
-import { editorSeed, linkedNoteRow, sortByPosition } from '@/components/khazain/notes/linkedNotesModel';
+import { editorSeed, linkedNoteRow, sortByPosition, surahNotesBlock } from '@/components/khazain/notes/linkedNotesModel';
 import { makeAyahRef, noteRefToParams } from '@/services/noteRefs';
 import type { Note } from '@/store/notesStore';
 
@@ -71,5 +71,21 @@ describe('editorSeed', () => {
       linkedNoteRow,
     );
     expect(rows.map((r) => r.label)).toEqual(['البقرة: ٢٥٥', undefined]);
+  });
+});
+
+describe('surahNotesBlock', () => {
+  const at = (id: string, position?: number): Note =>
+    note({
+      id,
+      ref: { type: 'ayah', id: '002', label: 'l', ...(position != null ? { position } : {}) },
+    });
+  it('with no notes is the hint', () => {
+    expect(surahNotesBlock([])).toEqual({ kind: 'hint' });
+  });
+  it('sorts by ayah', () => {
+    const block = surahNotesBlock([at('a', 286), at('b', 255), at('c')]);
+    expect(block.kind).toBe('notes');
+    expect(block.kind === 'notes' && block.notes.map((n) => n.id)).toEqual(['c', 'b', 'a']);
   });
 });
