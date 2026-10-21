@@ -176,13 +176,40 @@ it('P11: auto-stops after PREVIEW_MAX_SEC', async () => {
   }
 });
 
-it('P12: playLecture takes the queue synchronously and clears an active preview', async () => {
+it('P12: playLecture abandons an active preview synchronously and ends up owning the queue', async () => {
   await engine.startReciterPreview(reciter, SRC);
   (fetchItemMetadata as jest.Mock).mockResolvedValueOnce(lectureMeta);
   const p = engine.playLecture(lecture);
-  expect(engine.getQueueOwner()).toBe('lecture');
+  // Released (not yet claimed) while the preview's native queue is reset.
+  expect(engine.getQueueOwner()).not.toBe('preview');
   expect(usePreviewStore.getState().reciterId).toBeNull();
   await p;
+  expect(engine.getQueueOwner()).toBe('lecture');
+});
+
+it('P12b: a playing preview is reset BEFORE the lecture loads', async () => {
+  await engine.startReciterPreview(reciter, SRC);
+  (TrackPlayer.reset as jest.Mock).mockClear();
+  (fetchItemMetadata as jest.Mock).mockResolvedValueOnce(lectureMeta);
+  await engine.playLecture(lecture);
+  const resetOrder = (TrackPlayer.reset as jest.Mock).mock.invocationCallOrder[0];
+  const fetchOrder = (fetchItemMetadata as jest.Mock).mock.invocationCallOrder[0];
+  expect(resetOrder).toBeLessThan(fetchOrder);
+});
+
+it('P12c: a lecture with no audio still silences a playing preview', async () => {
+  await engine.startReciterPreview(reciter, SRC);
+  (TrackPlayer.reset as jest.Mock).mockClear();
+  await expect(engine.playLecture({ ...lecture, archiveId: undefined })).rejects.toBeInstanceOf(
+    engine.NoAudioError,
+  );
+  expect(TrackPlayer.reset).toHaveBeenCalledTimes(1);
+});
+
+it('P12d: no preview → playLecture claims the queue synchronously, as before', () => {
+  (fetchItemMetadata as jest.Mock).mockResolvedValueOnce(lectureMeta);
+  void engine.playLecture(lecture);
+  expect(engine.getQueueOwner()).toBe('lecture');
 });
 
 it('P13: togglePlayback treats a preview-owned queue as "no queue" and rebuilds the lecture', async () => {

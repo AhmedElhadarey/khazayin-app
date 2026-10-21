@@ -240,9 +240,15 @@ export class NoAudioError extends Error {
  */
 export async function playLecture(lecture: Lecture): Promise<void> {
   if (isWeb()) return;
-  // Take the queue synchronously, before any await: from here the sync bridge
-  // treats every event as the lecture's, and any in-flight preview is abandoned.
-  abandonPreview();
+  // A playing preview is silenced first, with the owner released ('none') so
+  // the sync bridge drops its late events, and before any network await — so a
+  // NoAudioError below cannot leave it playing uncapped. Then take the queue:
+  // from here the bridge treats every event as the lecture's.
+  if (_queueOwner === 'preview') {
+    abandonPreview();
+    _queueOwner = 'none';
+    await TrackPlayer.reset().catch((err: unknown) => Sentry.captureException(err));
+  }
   _queueOwner = 'lecture';
   if (!lecture.archiveId) throw new NoAudioError();
 
