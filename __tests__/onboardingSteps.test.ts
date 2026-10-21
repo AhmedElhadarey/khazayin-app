@@ -62,3 +62,34 @@ describe('four-screen flow', () => {
     expect(src).toMatch(/FoundationMark/); // Q6: user-approved deviation from "LogoBadge"
   });
 });
+
+describe('selectable row with a preview control', () => {
+  const row = () => code('components/khazain/onboarding/SelectableRow.tsx');
+  it('renders slots from SELECTABLE_ROW_ORDER inside a PHYSICAL_ROW', () => {
+    expect(row()).toMatch(/SELECTABLE_ROW_ORDER\.map/);
+    expect(row()).toMatch(/\.\.\.PHYSICAL_ROW/);
+  });
+  it('the preview control is a SIBLING of the radio Pressable (VoiceOver can reach it)', () => {
+    expect(row().match(/<Pressable/g)).toHaveLength(1);
+    expect(row()).toMatch(/accessibilityRole="radio"/);
+  });
+  it('padding and minHeight stay on the select Pressable; the card View carries only chrome', () => {
+    const src = row();
+    const card = /card:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
+    const select = /select:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
+    expect(select).toMatch(/minHeight:\s*64/);
+    expect(select).toMatch(/paddingVertical:\s*12/);
+    expect(select).toMatch(/paddingHorizontal:\s*16/);
+    expect(card).not.toMatch(/padding|minHeight/);
+    expect(card).toMatch(/borderRadius:\s*16/);
+    expect(card).toMatch(/backgroundColor/);
+  });
+  it('PreviewButton is a labelled 44pt button with busy state', () => {
+    const src = code('components/khazain/onboarding/PreviewButton.tsx');
+    expect(src).toMatch(/accessibilityRole="button"/);
+    expect(src).toMatch(/MIN_TOUCH_TARGET/);
+    expect(src).toMatch(/busy/);
+    expect(src).toMatch(/إيقاف العيّنة/);
+    expect(src).toMatch(/استماع إلى عيّنة من تلاوة/);
+  });
+});
