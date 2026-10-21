@@ -35,3 +35,9 @@ describe('MySavedSection', () => {
     expect(src).toMatch(/SAVED_EMPTY_COPY\.lectureHint/);
   });
 });
+
+describe('lecture rows', () => {
+  it('LectureCard wires the shared save gesture', () => {
+    expect(read('components/khazain/primitives/LectureCard.tsx')).toMatch(/useSaveGesture\(/);
+  });
+});
