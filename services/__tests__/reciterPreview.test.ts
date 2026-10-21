@@ -11,6 +11,8 @@ const mockToastShow = jest.fn();
 jest.mock('@/store/toastStore', () => ({ useToastStore: { getState: () => ({ show: mockToastShow }) } }));
 jest.mock('@sentry/react-native', () => ({ captureException: jest.fn() }));
 
+import * as Sentry from '@sentry/react-native';
+
 import { canPreview, previewSourceFor, stopPreview, toggleReciterPreview } from '@/services/reciterPreview';
 import { usePreviewStore } from '@/store/previewStore';
 
@@ -54,7 +56,9 @@ it('F6: no source → nothing happens', async () => {
   await toggleReciterPreview(r, {});
   expect(mockStart).not.toHaveBeenCalled();
 });
-it('F7: stopPreview swallows engine errors', async () => {
-  mockStop.mockRejectedValueOnce(new Error('bridge down'));
+it('F7: stopPreview never throws, and reports the engine error to Sentry', async () => {
+  const err = new Error('bridge down');
+  mockStop.mockRejectedValueOnce(err);
   await expect(stopPreview()).resolves.toBeUndefined();
+  expect(Sentry.captureException).toHaveBeenCalledWith(err);
 });

@@ -37,8 +37,9 @@ export function canPreview(
 export async function stopPreview(): Promise<void> {
   try {
     await stopReciterPreview();
-  } catch {
-    // Best effort — the step is going away.
+  } catch (err) {
+    // Best effort — the step is going away — but never silent.
+    Sentry.captureException(err);
   }
 }
 
