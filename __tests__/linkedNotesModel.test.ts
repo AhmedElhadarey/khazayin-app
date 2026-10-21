@@ -1,4 +1,4 @@
-import { editorSeed, linkedNoteRow, sortByPosition, surahNotesBlock } from '@/components/khazain/notes/linkedNotesModel';
+import { editorSeed, linkedNoteRow, seriesIdsOf, sortByPosition, surahNotesBlock } from '@/components/khazain/notes/linkedNotesModel';
 import { makeAyahRef, noteRefToParams } from '@/services/noteRefs';
 import type { Note } from '@/store/notesStore';
 
@@ -87,5 +87,13 @@ describe('surahNotesBlock', () => {
     const block = surahNotesBlock([at('a', 286), at('b', 255), at('c')]);
     expect(block.kind).toBe('notes');
     expect(block.kind === 'notes' && block.notes.map((n) => n.id)).toEqual(['c', 'b', 'a']);
+  });
+});
+
+describe('seriesIdsOf', () => {
+  it('collects archive ids, skipping missing ones', () => {
+    expect(seriesIdsOf([{ archiveId: 'A' }, {}, { archiveId: 'B' }, { archiveId: 'A' }])).toEqual(
+      new Set(['A', 'B']),
+    );
   });
 });

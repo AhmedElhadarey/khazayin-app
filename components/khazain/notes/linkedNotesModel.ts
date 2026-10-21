@@ -59,3 +59,10 @@ export type SurahNotesBlock = { kind: 'hint' } | { kind: 'notes'; notes: Note[] 
 export function surahNotesBlock(notes: readonly Note[]): SurahNotesBlock {
   return notes.length === 0 ? { kind: 'hint' } : { kind: 'notes', notes: sortByPosition(notes) };
 }
+
+/** Archive (series) ids of a list of lectures; lectures without one are skipped. */
+export function seriesIdsOf(lectures: readonly { archiveId?: string }[]): Set<string> {
+  const ids = new Set<string>();
+  for (const l of lectures) if (l.archiveId) ids.add(l.archiveId);
+  return ids;
+}

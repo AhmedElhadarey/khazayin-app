@@ -98,3 +98,14 @@ describe('library', () => {
     expect(src).toMatch(/lectureNoteParamsFromSession\(lecture\)/);
   });
 });
+
+describe('scholar detail', () => {
+  const src = read('app/(tabs)/sections/scholar/[id].tsx');
+  it('puts no note gesture on RibbonCard (long-press there means SAVE)', () => {
+    const card = src.slice(src.indexOf('<RibbonCard'), src.indexOf('/>', src.indexOf('<RibbonCard')));
+    expect(card).not.toContain('onLongPress');
+  });
+  it('footer uses the guarded section', () => {
+    expect(src).toMatch(/ListFooterComponent=\{[\s\S]{0,80}<LinkedNotesSection/);
+  });
+});
