@@ -449,3 +449,10 @@ git diff main -- package-lock.json | grep -E '^[+-] ' | grep -v '"expo-applicati
 **Still open after merge:**
 1. The privacy policy URL from the client, followed by a new build. `RELEASE-READINESS.md:26` stays ☐.
 2. The EAS preview APK build-number check (Task 7 follow-up).
+
+---
+
+## Deviations (recorded during implementation)
+
+1. **Task 4: the lockfile also gained `"hasInstallScript": true` on the root `packages[""]` entry.** `npx expo install expo-application -- --package-lock-only` added it along with `"expo-application": "~7.0.8"`. `package.json` has had `"postinstall": "patch-package"` since 0635ea1, but the committed lockfile had not been regenerated since then. npm writes this flag on every lockfile write, so it is a stale-metadata correction, not a dependency or native change. `node_modules/expo-application` still resolves to 7.0.8. Consequence for Task 8: the lockfile-diff check must also allow this line, i.e. `grep -v -e '"expo-application": "~7.0.8"' -e '"hasInstallScript": true'`.
+2. **Task 4 side effect: npm rewrote the hidden lockfile `node_modules/.package-lock.json` in the shared (symlinked) `node_modules`.** This happened even with `--package-lock-only`. No package directory under `node_modules` changed (checked with `find -newer` to depth 4). The hidden lockfile is npm's regenerable cache, not tracked by git.
