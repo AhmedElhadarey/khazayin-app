@@ -1,5 +1,6 @@
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { useSavedStore, useToastStore } from '@/store';
+import { toggleSaved } from '@/services/savedToggle';
+import { useSavedStore } from '@/store';
 import type { SavedSnapshot, SavedType } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
@@ -18,11 +19,7 @@ import { BookmarkIcon } from '../icons';
  *       dark     — for navy surfaces (ScholarCard)
  *       floating — for image surfaces (DawahPoster); semi-opaque bubble + shadow
  *
- * Behaviour:
- *   - save     → toast 'تمت الإضافة إلى المحفوظات' (3s) with 'تراجع' undo
- *                — Board condition #3 (symmetric undo)
- *   - unsave   → toast 'تم الحذف من المحفوظات'    (5s) with 'تراجع' undo
- *                — Board condition #6 (5s for Arabic readers)
+ * Behaviour: see services/savedToggle.ts (single toggle path).
  *
  * Track: khazain-saved_20260511  T6
  */
@@ -49,36 +46,8 @@ export function BookmarkButton({
   );
 
   const onPress = () => {
-    if (saved) {
-      const removed = useSavedStore.getState().unsave(type, entityId);
-      if (removed !== null) {
-        useToastStore.getState().show({
-          message: 'تم الحذف من المحفوظات',
-          durationMs: 5000, // Board condition #6
-          action: {
-            label: 'تراجع',
-            onPress: () => {
-              useSavedStore.getState().save(removed.type, removed.entityId, removed.snapshot);
-            },
-          },
-        });
-      }
-      onChange?.(false);
-    } else {
-      useSavedStore.getState().save(type, entityId, snapshot);
-      useToastStore.getState().show({
-        message: 'تمت الإضافة إلى المحفوظات',
-        durationMs: 3000,
-        action: {
-          // Board condition #3: symmetric undo on save (mis-tap regret-window).
-          label: 'تراجع',
-          onPress: () => {
-            useSavedStore.getState().unsave(type, entityId);
-          },
-        },
-      });
-      onChange?.(true);
-    }
+    const nowSaved = toggleSaved({ type, entityId, snapshot });
+    onChange?.(nowSaved);
   };
 
   // Colour picks per variant + saved state.

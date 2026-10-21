@@ -1033,3 +1033,25 @@ Save the captures under `docs/audit/2026-10-21/saved-content-bookmarks/` (untrac
 5. `useSaveGesture` and long-press save on `LectureCard` (G1, six screens)
 6. Scholar-detail lectures (`RibbonCard`) and the surah-list decision pin (G1 and G2)
 7. Full verification, visual QA against the pre-change baseline, and teardown
+
+---
+
+## Deviations
+
+Recorded during implementation. Each one is minimal and committed with the task it belongs to.
+
+### D1 (Task 3): `BookmarkButton.onPress` must not pass `toggleSaved(...)` as an optional-call argument
+
+The plan's one-liner `onChange?.(toggleSaved({ type, entityId, snapshot }))` short-circuits:
+when `onChange` is `undefined`, JavaScript never evaluates the argument, so `toggleSaved`
+never runs. No caller passes `onChange` (`DawahPoster`, `BookCard`, `ScholarCard`,
+`SurahRow`, `MySavedSection`, `LectureCard`), so every bookmark tap would have done nothing.
+
+Implemented instead:
+```ts
+const nowSaved = toggleSaved({ type, entityId, snapshot });
+onChange?.(nowSaved);
+```
+The plan's wiring regex `toggleSaved\(\{ type, entityId, snapshot \}\)` still matches. A
+guard case was added to `__tests__/savedWiring.test.ts`
+(`not.toMatch(/\?\.\(\s*toggleSaved/)`); it failed against the plan's line and passes now.
