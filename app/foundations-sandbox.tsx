@@ -39,6 +39,7 @@ import {
     Wordmark,
     YouTubeIcon,
 } from '@/components/khazain';
+import { toApiError } from '@/services/api/errors';
 import type { LoadState } from '@/types/content';
 import { KhazainColors } from '@/constants/theme';
 import React, { useCallback, useState } from 'react';
@@ -208,7 +209,7 @@ export default function FoundationsSandbox() {
         </View>
         <AsyncContent
           status={devState}
-          error={errorFlip ? new Error('خطأ تجريبي') : null}
+          error={errorFlip ? toApiError(undefined, 500) : null}
           onRetry={handleRetry}
           emptyMessage="لا يوجد محتوى (تجريبي)"
         >

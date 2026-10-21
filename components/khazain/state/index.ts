@@ -6,10 +6,12 @@
  *   EmptyState — empty content card (C4)
  *   ErrorState — error card with retry (C4)
  *   AsyncContent — state-branching wrapper (C5)
+ *   resolveAsyncView — pure state selection behind AsyncContent
  *
  * Track: khazain-content-service_20260506  Phase 3 / T3.1–T3.3
  */
 export * from './AsyncContent';
+export * from './asyncView';
 export * from './EmptyState';
 export * from './ErrorState';
 export * from './SkeletonCard';
