@@ -9,6 +9,7 @@ import { KhazainColors } from '@/constants/theme';
 import { clearAppCache } from '@/services/cacheFacade';
 import { shareNotes } from '@/services/notesExporter';
 import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
+import { openPrivacyPolicy } from '@/services/privacyPolicy';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { LEGACY_ONBOARDING_FLAG_KEY } from '@/services/onboardingGate';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -83,18 +84,12 @@ export default function SettingsScreen() {
     fetchReciters();
   }, [fetchQiraat, fetchReciters]);
 
-  const openPrivacyPolicy = async () => {
-    const url = KhazainConfig.privacyPolicyUrl;
-    if (!url) {
-      Alert.alert('سياسة الخصوصية', 'سياسة الخصوصية ستُضاف قريبًا.');
-      return;
-    }
-    try {
-      await WebBrowser.openBrowserAsync(url);
-    } catch {
-      Alert.alert('سياسة الخصوصية', 'تعذّر فتح سياسة الخصوصية. حاول مجددًا.');
-    }
-  };
+  const onOpenPrivacyPolicy = () =>
+    openPrivacyPolicy({
+      url: KhazainConfig.privacyPolicyUrl,
+      openBrowser: (url) => WebBrowser.openBrowserAsync(url),
+      alert: (title, body) => Alert.alert(title, body),
+    });
 
   const onClearCache = () => {
     Alert.alert(
@@ -251,7 +246,7 @@ export default function SettingsScreen() {
             title="سياسة الخصوصية"
             subtitle=""
             icon={<PrivacyIcon />}
-            onPress={openPrivacyPolicy}
+            onPress={onOpenPrivacyPolicy}
           />
         </SettingsSection>
         {__DEV__ ? (
