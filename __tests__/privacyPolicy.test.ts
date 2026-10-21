@@ -43,6 +43,7 @@ describe('KhazainConfig.privacyPolicyUrl', () => {
   function loadConfig(): typeof import('@/constants/config') {
     let mod: typeof import('@/constants/config') | undefined;
     jest.isolateModules(() => {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       mod = require('@/constants/config');
     });
     return mod!;
@@ -102,5 +103,45 @@ describe('openPrivacyPolicy', () => {
       title: 'سياسة الخصوصية',
       body: 'تعذّر فتح سياسة الخصوصية. حاول مجددًا.',
     });
+  });
+});
+
+describe('openPrivacyPolicy in-flight guard', () => {
+  function deferred() {
+    let resolve!: (v: unknown) => void;
+    let reject!: (e: unknown) => void;
+    const promise = new Promise((res, rej) => {
+      resolve = res;
+      reject = rej;
+    });
+    return { promise, resolve, reject };
+  }
+
+  it("T-PP-11: a second tap while the browser is opening resolves 'busy' — no second open, no false failure alert", async () => {
+    const pending = deferred();
+    const openBrowser = jest.fn().mockReturnValue(pending.promise);
+    const alert = jest.fn();
+    const url = 'https://khazayin.com/privacy';
+
+    const first = openPrivacyPolicy({ url, openBrowser, alert });
+    await expect(openPrivacyPolicy({ url, openBrowser, alert })).resolves.toBe('busy');
+    expect(openBrowser).toHaveBeenCalledTimes(1);
+    expect(alert).not.toHaveBeenCalled();
+
+    pending.resolve({ type: 'dismiss' });
+    await expect(first).resolves.toBe('opened');
+  });
+
+  it('T-PP-12: the guard is released after success and after failure', async () => {
+    const url = 'https://khazayin.com/privacy';
+    const alert = jest.fn();
+
+    const failing = jest.fn().mockRejectedValue(new Error('boom'));
+    await expect(openPrivacyPolicy({ url, openBrowser: failing, alert })).resolves.toBe('failed');
+
+    const ok = jest.fn().mockResolvedValue({ type: 'dismiss' });
+    await expect(openPrivacyPolicy({ url, openBrowser: ok, alert })).resolves.toBe('opened');
+    await expect(openPrivacyPolicy({ url, openBrowser: ok, alert })).resolves.toBe('opened');
+    expect(ok).toHaveBeenCalledTimes(2);
   });
 });

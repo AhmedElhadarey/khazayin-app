@@ -21,18 +21,28 @@ export type PrivacyPolicyDeps = {
   openBrowser: (url: string) => Promise<unknown>;
   alert: (title: string, body: string) => void;
 };
-export type PrivacyPolicyOutcome = 'opened' | 'pending' | 'failed';
+/** 'busy': a tap arrived while the browser from an earlier tap was still open. */
+export type PrivacyPolicyOutcome = 'opened' | 'pending' | 'failed' | 'busy';
+
+// expo-web-browser rejects a second openBrowserAsync while one is presented, so
+// without this a double tap would show the "تعذّر فتح" alert over a browser that
+// did open. Module-level because there is one in-app browser per app.
+let browserInFlight = false;
 
 export async function openPrivacyPolicy(deps: PrivacyPolicyDeps): Promise<PrivacyPolicyOutcome> {
   if (!deps.url) {
     deps.alert(PRIVACY_POLICY_ALERTS.pending.title, PRIVACY_POLICY_ALERTS.pending.body);
     return 'pending';
   }
+  if (browserInFlight) return 'busy';
+  browserInFlight = true;
   try {
     await deps.openBrowser(deps.url);
     return 'opened';
   } catch {
     deps.alert(PRIVACY_POLICY_ALERTS.failed.title, PRIVACY_POLICY_ALERTS.failed.body);
     return 'failed';
+  } finally {
+    browserInFlight = false;
   }
 }

@@ -3,18 +3,18 @@
  * ------------------------
  * The build number shown on حول التطبيق (app/settings-about.tsx).
  *
- * Native first: eas.json uses appVersionSource "remote", so EAS writes the build
- * number only into the native project (CFBundleVersion / versionCode). It never
- * reaches Constants.expoConfig, which is why the row used to be hidden.
- * Application.nativeBuildVersion reads it from the installed binary, synchronously.
+ * Native first: EAS writes it only into the native project, never into
+ * Constants.expoConfig.
  *
  * Deliberately free of expo-application / expo-constants imports: the screen
  * passes the values in, so `__tests__/appBuildInfo.test.ts` never loads native
  * modules.
  */
 export type BuildNumberSources = {
-  executionEnvironment?: string | null;
-  nativeBuildVersion?: string | null;
+  /** Constants.executionEnvironment. Required so no caller can skip the Expo Go guard. */
+  executionEnvironment: string | null;
+  /** Application.nativeBuildVersion: null on web. */
+  nativeBuildVersion: string | null;
   expoConfig?: {
     ios?: { buildNumber?: string | null } | null;
     android?: { versionCode?: number | null } | null;

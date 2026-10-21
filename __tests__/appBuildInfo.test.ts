@@ -68,11 +68,21 @@ describe('resolveBuildNumber', () => {
       }),
     ).toBeNull();
     // Web: nativeBuildVersion is null and there is no app-config build field.
-    expect(resolveBuildNumber({ nativeBuildVersion: null, expoConfig: null })).toBeNull();
+    expect(
+      resolveBuildNumber({ executionEnvironment: null, nativeBuildVersion: null, expoConfig: null }),
+    ).toBeNull();
   });
 
   it("T-BN-6: trims the native value", () => {
     expect(resolveBuildNumber({ executionEnvironment: 'standalone', nativeBuildVersion: ' 15 ' })).toBe('15');
+  });
+
+  it('T-BN-8: executionEnvironment and nativeBuildVersion are required, so a caller cannot skip the Expo Go guard', () => {
+    // Type-level: tsc rejects each call below. Runtime: both still resolve safely.
+    // @ts-expect-error executionEnvironment is required
+    expect(resolveBuildNumber({ nativeBuildVersion: '3' })).toBe('3');
+    // @ts-expect-error nativeBuildVersion is required
+    expect(resolveBuildNumber({ executionEnvironment: 'standalone' })).toBeNull();
   });
 });
 
@@ -84,8 +94,9 @@ describe('app/settings-about.tsx build row (source contract)', () => {
     expect(source).toMatch(/resolveBuildNumber\(\{/);
     expect(source).toMatch(/nativeBuildVersion: Application\.nativeBuildVersion/);
     expect(source).toMatch(/executionEnvironment: Constants\.executionEnvironment/);
-    expect(source).toMatch(
-      /<Text style=\{styles\.versionValue\}>\{build \?\? '—'\}<\/Text>\s*<Text style=\{styles\.versionLabel\}>رقم البناء<\/Text>/,
-    );
+    // Always rendered: the value falls back to '—' instead of hiding the row.
+    expect(source).toMatch(/\{build \?\? '—'\}/);
+    expect(source).toMatch(/رقم البناء/);
+    expect(source).not.toMatch(/\{build \?\s*\(/);
   });
 });
