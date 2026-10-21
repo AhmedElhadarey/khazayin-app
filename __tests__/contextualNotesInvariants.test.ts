@@ -109,3 +109,14 @@ describe('scholar detail', () => {
     expect(src).toMatch(/ListFooterComponent=\{[\s\S]{0,80}<LinkedNotesSection/);
   });
 });
+
+describe('book detail', () => {
+  const src = read('app/(tabs)/sections/book/[id].tsx');
+  it('renders every section from the order constant', () => {
+    expect(src).toMatch(/BOOK_DETAIL_SECTIONS\.map\(/);
+  });
+  it('lists notes through the guarded section', () => {
+    expect(src).toContain('<LinkedNotesSection');
+    expect(src).toContain("useLinkedNotes('book', ");
+  });
+});

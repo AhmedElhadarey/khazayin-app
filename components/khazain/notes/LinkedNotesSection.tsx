@@ -15,16 +15,18 @@ type Props = {
   onOpenNote: (id: string) => void;
   /** Tapping the label link; omit for a static label. */
   onOpenSource?: (note: Note) => void;
+  /** Drop the section's own side padding when the parent already pads. */
+  flush?: boolean;
 };
 
 /**
  * Notes linked to the content on screen. Renders nothing when there are none,
  * so a screen without notes keeps its Figma layout.
  */
-export function LinkedNotesSection({ title, notes, onOpenNote, onOpenSource }: Props) {
+export function LinkedNotesSection({ title, notes, onOpenNote, onOpenSource, flush }: Props) {
   if (notes.length === 0) return null;
   return (
-    <View style={styles.box}>
+    <View style={[styles.box, flush && styles.flush]}>
       {title ? <Text style={styles.title}>{title}</Text> : null}
       {notes.map((note) => {
         const row = linkedNoteRow(note);
@@ -59,6 +61,7 @@ export function LinkedNotesSection({ title, notes, onOpenNote, onOpenSource }: P
 
 const styles = StyleSheet.create({
   box: { ...PHYSICAL_BOX, paddingHorizontal: 18, paddingVertical: 12, gap: 10 },
+  flush: { paddingHorizontal: 0, paddingVertical: 0 },
   title: { ...RTL_TEXT, ...textStyle('sectionTitle', { color: KhazainColors.ink900 }) },
   row: {
     ...PHYSICAL_ROW,

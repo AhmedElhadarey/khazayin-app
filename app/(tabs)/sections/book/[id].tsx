@@ -3,6 +3,7 @@ import {
   EmptyState,
   ErrorState,
   InlineHeader,
+  LinkedNotesSection,
   PILL_BUTTON_HEIGHTS,
   PillButton,
 } from '@/components/khazain';
@@ -13,7 +14,9 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { bookDetailBody, bookPrimaryAction, resolveBookDetail } from '@/services/bookDetail';
 import { startLecturePlayback } from '@/services/lecturePlayback';
+import { bookNoteParams } from '@/services/noteActions';
 import { useBookLecturesStore, useBooksStore } from '@/store';
+import { useLinkedNotes } from '@/store/notesStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
@@ -41,6 +44,10 @@ export default function BookDetailScreen() {
     () => resolveBookDetail(id ?? '', books, lectures),
     [id, books, lectures],
   );
+
+  // Notes taken on this book. Keyed by Book.id (bk*); a note taken while its
+  // sharh (b*) plays is a lecture note. A hook, so it stays above every branch.
+  const bookNotes = useLinkedNotes('book', id ?? '');
 
   // Same footprint as the BookCard it stands in for, centred like the cover.
   const coverWidth = responsiveCarouselCardWidth(windowWidth, 'book');
@@ -103,6 +110,25 @@ export default function BookDetailScreen() {
           ) : (
             <Text style={styles.noAudio}>لا يتوفر شرح صوتي لهذا الكتاب بعد</Text>
           ),
+        notes: (
+          <View style={styles.notes}>
+            <Text style={styles.notesTitle}>ملاحظاتي</Text>
+            <PillButton
+              variant="cream"
+              label="إضافة ملاحظة"
+              onPress={() =>
+                router.push({ pathname: '/note-editor' as any, params: bookNoteParams(book) })
+              }
+            />
+            <LinkedNotesSection
+              flush
+              notes={bookNotes}
+              onOpenNote={(noteId) =>
+                router.push({ pathname: '/note-editor' as any, params: { id: noteId } })
+              }
+            />
+          </View>
+        ),
       };
       body = BOOK_DETAIL_SECTIONS.map((k) => <React.Fragment key={k}>{sections[k]}</React.Fragment>);
       break;
@@ -128,5 +154,7 @@ const styles = StyleSheet.create({
   title: textStyle('screenTitle', { color: KhazainColors.inkTitle, textAlign: 'center' }),
   author: textStyle('bodyCompact', { color: KhazainColors.ink500, textAlign: 'center' }),
   noAudio: textStyle('caption', { color: KhazainColors.ink500, textAlign: 'center' }),
+  notes: { gap: 8 },
+  notesTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
   actionPlaceholder: { height: PILL_BUTTON_HEIGHTS.lg },
 });

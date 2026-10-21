@@ -44,8 +44,9 @@ describe('resolveBookDetail', () => {
 });
 
 describe('book detail section order', () => {
-  it('is cover, meta, then the primary action', () =>
-    expect(BOOK_DETAIL_SECTIONS).toEqual(['cover', 'meta', 'primaryAction']));
+  // Changed deliberately (contextual notes): a 'notes' section follows the primary action.
+  it('is cover, meta, the primary action, then notes', () =>
+    expect(BOOK_DETAIL_SECTIONS).toEqual(['cover', 'meta', 'primaryAction', 'notes']));
 });
 
 describe('bookDetailBody', () => {

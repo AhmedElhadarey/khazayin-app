@@ -1,4 +1,6 @@
-import { bookDetailHref } from '@/services/bookDetail';
+import { BOOKS } from '@/data/content/books';
+import { BOOK_LECTURES } from '@/data/content/lectures';
+import { bookDetailHref, resolveBookDetail } from '@/services/bookDetail';
 import {
   noteSourceTarget,
   runNoteSource,
@@ -113,5 +115,14 @@ describe('viewerSourceAction', () => {
     viewerSourceAction({ type: 'video', id: 'v', label: 'l' }, a.deps);
     viewerSourceAction(undefined, a.deps);
     expect(a.order).toEqual([]);
+  });
+});
+
+describe('book notes round-trip', () => {
+  it('a book note opens the book detail screen it was taken on', () => {
+    const detail = resolveBookDetail('bk2', BOOKS, BOOK_LECTURES);
+    expect(detail).not.toBeNull();
+    const ref = makeBookRef({ id: detail!.id, title: detail!.title });
+    expect(noteSourceTarget(ref)).toEqual({ kind: 'route', href: bookDetailHref('bk2') });
   });
 });
