@@ -6,8 +6,10 @@
  * `MushafPageTrackingController` (below), which owns every gate.
  */
 import {
+  PAGE_DWELL_MAX_STEP_MS,
   PAGE_IN_VIEW_SELF_SHARE,
   PAGE_IN_VIEW_VIEWPORT_SHARE,
+  PAGE_READ_DWELL_MS,
   surahStartPage,
 } from '@/constants/progress';
 import { pageForAyah } from '@/constants/quranPages';
@@ -54,4 +56,54 @@ export function pagesInView(
     }
   }
   return out;
+}
+
+/**
+ * Adds up how long each page has been in view and calls `onRead` once per
+ * page per instance (one instance = one reader session) when the total
+ * reaches `dwellMs`. Time between two updates is credited to the pages that
+ * were in view at the earlier one, capped at `maxStepMs`.
+ */
+export class PageDwellTracker {
+  private readonly accrued = new Map<number, number>();
+  private readonly fired = new Set<number>();
+  private current: readonly number[] = [];
+  private lastAt: number | null = null;
+  private readonly dwellMs: number;
+  private readonly maxStepMs: number;
+  private readonly onRead: (page: number) => void;
+
+  constructor(opts: { onRead: (page: number) => void; dwellMs?: number; maxStepMs?: number }) {
+    this.onRead = opts.onRead;
+    this.dwellMs = opts.dwellMs ?? PAGE_READ_DWELL_MS;
+    this.maxStepMs = opts.maxStepMs ?? PAGE_DWELL_MAX_STEP_MS;
+  }
+
+  update(inView: readonly number[], nowMs: number): void {
+    this.accrue(nowMs);
+    this.current = [...inView];
+    this.lastAt = nowMs;
+  }
+
+  /** Credit nothing further until the next update re-arms the clock. */
+  pause(nowMs: number): void {
+    this.accrue(nowMs);
+    this.current = [];
+    this.lastAt = null;
+  }
+
+  private accrue(nowMs: number): void {
+    if (this.lastAt === null) return;
+    const step = Math.min(Math.max(0, nowMs - this.lastAt), this.maxStepMs);
+    if (step === 0) return;
+    for (const page of this.current) {
+      if (this.fired.has(page)) continue;
+      const total = (this.accrued.get(page) ?? 0) + step;
+      this.accrued.set(page, total);
+      if (total >= this.dwellMs) {
+        this.fired.add(page);
+        this.onRead(page);
+      }
+    }
+  }
 }

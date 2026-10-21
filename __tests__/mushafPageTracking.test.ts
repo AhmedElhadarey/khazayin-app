@@ -1,4 +1,4 @@
-import { groupAyatByPage, pagesInView } from '@/services/mushafPageTracking';
+import { PageDwellTracker, groupAyatByPage, pagesInView } from '@/services/mushafPageTracking';
 import type { Ayah } from '@/types/content';
 
 const ayah = (surah: number, n: number): Ayah => ({
@@ -74,5 +74,65 @@ describe('pagesInView', () => {
     expect(pagesInView([{ page: 3, y: 5000, height: 900 }], 0, VIEW)).toEqual([]);
     expect(pagesInView([{ page: 3, y: 0, height: 0 }], 0, VIEW)).toEqual([]);
     expect(pagesInView([{ page: 3, y: 0, height: 900 }], 0, 0)).toEqual([]);
+  });
+});
+
+describe('PageDwellTracker', () => {
+  const make = () => {
+    const read: number[] = [];
+    const t = new PageDwellTracker({ dwellMs: 8000, maxStepMs: 2000, onRead: (p) => read.push(p) });
+    return { t, read };
+  };
+  /** Feed `inView` once a second from `from` to `to` (inclusive). */
+  const run = (t: PageDwellTracker, inView: number[], from: number, to: number) => {
+    for (let ms = from; ms <= to; ms += 1000) t.update(inView, ms);
+  };
+
+  it('records a page once it has been in view for the dwell', () => {
+    const { t, read } = make();
+    run(t, [2], 0, 7000);
+    expect(read).toEqual([]);
+    t.update([2], 8000);
+    expect(read).toEqual([2]);
+  });
+
+  it('records each page at most once per session', () => {
+    const { t, read } = make();
+    run(t, [2], 0, 30000);
+    expect(read).toEqual([2]);
+  });
+
+  it('adds up time that is not continuous', () => {
+    const { t, read } = make();
+    run(t, [2], 0, 4000);
+    run(t, [], 5000, 6000); // the 4000 → 5000 step still credits page 2: 5 s
+    run(t, [2], 7000, 9000); // 6 → 7 credits nothing; 7 → 9 credits 2 s: 7 s
+    expect(read).toEqual([]);
+    t.update([2], 10000);
+    expect(read).toEqual([2]);
+  });
+
+  it('caps one update so a stalled thread cannot credit a page in a jump', () => {
+    const { t, read } = make();
+    t.update([2], 0);
+    t.update([2], 60000);
+    expect(read).toEqual([]);
+  });
+
+  it('stops accruing while paused', () => {
+    const { t, read } = make();
+    run(t, [2], 0, 3000); // 3 s
+    t.pause(3000);
+    t.update([2], 30000); // first update after a pause only re-arms the clock
+    run(t, [2], 31000, 34000); // + 4 s = 7 s
+    expect(read).toEqual([]);
+    t.update([2], 35000); // 8 s
+    expect(read).toEqual([2]);
+  });
+
+  it('credits every page in view and nothing else', () => {
+    const { t, read } = make();
+    run(t, [603, 604], 0, 8000);
+    expect(read.sort()).toEqual([603, 604]);
   });
 });
