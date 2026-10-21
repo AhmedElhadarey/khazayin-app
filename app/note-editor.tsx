@@ -111,13 +111,10 @@ export default function NoteEditor() {
   };
 
   return (
-    // The KAV wraps the full-screen backdrop, not the sheet. Inside the
-    // content-sized sheet it could only pad the sheet's own content — it cannot
-    // move the sheet — so the auto-focused input and «حفظ» sat behind the
-    // keyboard. Here it shrinks the backdrop above the keyboard, and the sheet,
-    // anchored to the backdrop's bottom, rides up with it.
+    // Wraps the full-screen backdrop: inside the content-sized sheet a KAV can
+    // only pad the sheet's content, not move the sheet above the keyboard.
     <KeyboardAvoidingView
-      style={{ flex: 1 }}
+      style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       {/* Backdrop — tap outside the sheet to dismiss. */}
@@ -125,94 +122,92 @@ export default function NoteEditor() {
         {/* Stop touches from propagating into the dismiss handler. */}
         <Pressable onPress={() => {}} style={styles.sheetOuter}>
           <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
-            <View style={{ flex: 1 }}>
-              <View style={styles.handleWrap}>
-                <View style={styles.handle} />
+            <View style={styles.handleWrap}>
+              <View style={styles.handle} />
+            </View>
+
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}
+            >
+              <Text style={styles.sheetTitle}>
+                {editingId ? 'تعديل الملاحظة' : 'إضافة ملاحظة'}
+              </Text>
+
+              {shownRef ? <NoteRefLink label={`مرتبطة بـ ${shownRef.label}`} /> : null}
+
+              <View style={styles.bodyCard}>
+                <TextInput
+                  value={body}
+                  onChangeText={setBody}
+                  placeholder="اكتب ملاحظتك هنا..."
+                  placeholderTextColor={KhazainColors.inkPlaceholder}
+                  style={styles.bodyInput}
+                  textAlign="right"
+                  multiline
+                  textAlignVertical="top"
+                  autoFocus={!editingId}
+                />
               </View>
 
-              <ScrollView
-                contentContainerStyle={styles.scrollContent}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
-              >
-                <Text style={styles.sheetTitle}>
-                  {editingId ? 'تعديل الملاحظة' : 'إضافة ملاحظة'}
-                </Text>
+              {/*
+                Toolbar: format buttons on the RIGHT (RTL leading), حفظ on the LEFT.
+                Authored physical left -> right inside PHYSICAL_ROW, so the order
+                is fixed rather than left to forceRTL's row auto-flip — which
+                CLAUDE.md bans because it differs between a cold start, Fast
+                Refresh and web.
+              */}
+              <View style={styles.toolbar}>
+                <Pressable
+                  onPress={save}
+                  style={({ pressed }) => [styles.saveBtn, { opacity: pressed ? 0.85 : 1 }]}
+                  accessibilityLabel="حفظ الملاحظة"
+                >
+                  <Text style={styles.saveLabel}>حفظ</Text>
+                </Pressable>
+                <View style={{ flex: 1 }} />
+                <FormatBtn>
+                  <ListGlyph />
+                </FormatBtn>
+                <FormatBtn italic>I</FormatBtn>
+                <FormatBtn bold>B</FormatBtn>
+              </View>
 
-                {shownRef ? <NoteRefLink label={`مرتبطة بـ ${shownRef.label}`} /> : null}
+              {editingId ? (
+                <Pressable
+                  onPress={confirmDelete}
+                  hitSlop={6}
+                  style={({ pressed }) => [styles.deleteRow, { opacity: pressed ? 0.7 : 1 }]}
+                  accessibilityLabel="حذف الملاحظة"
+                >
+                  <Text style={styles.deleteLabel}>حذف الملاحظة</Text>
+                </Pressable>
+              ) : null}
 
-                <View style={styles.bodyCard}>
-                  <TextInput
-                    value={body}
-                    onChangeText={setBody}
-                    placeholder="اكتب ملاحظتك هنا..."
-                    placeholderTextColor={KhazainColors.inkPlaceholder}
-                    style={styles.bodyInput}
-                    textAlign="right"
-                    multiline
-                    textAlignVertical="top"
-                    autoFocus={!editingId}
-                  />
-                </View>
-
-                {/*
-                  Toolbar: format buttons on the RIGHT (RTL leading), حفظ on the LEFT.
-                  Authored physical left -> right inside PHYSICAL_ROW, so the order
-                  is fixed rather than left to forceRTL's row auto-flip — which
-                  CLAUDE.md bans because it differs between a cold start, Fast
-                  Refresh and web.
-                */}
-                <View style={styles.toolbar}>
-                  <Pressable
-                    onPress={save}
-                    style={({ pressed }) => [styles.saveBtn, { opacity: pressed ? 0.85 : 1 }]}
-                    accessibilityLabel="حفظ الملاحظة"
-                  >
-                    <Text style={styles.saveLabel}>حفظ</Text>
-                  </Pressable>
-                  <View style={{ flex: 1 }} />
-                  <FormatBtn>
-                    <ListGlyph />
-                  </FormatBtn>
-                  <FormatBtn italic>I</FormatBtn>
-                  <FormatBtn bold>B</FormatBtn>
-                </View>
-
-                {editingId ? (
-                  <Pressable
-                    onPress={confirmDelete}
-                    hitSlop={6}
-                    style={({ pressed }) => [styles.deleteRow, { opacity: pressed ? 0.7 : 1 }]}
-                    accessibilityLabel="حذف الملاحظة"
-                  >
-                    <Text style={styles.deleteLabel}>حذف الملاحظة</Text>
-                  </Pressable>
-                ) : null}
-
-                {recentNotes.length > 0 ? (
-                  <View style={styles.recentBlock}>
-                    <Text style={styles.recentHeader}>آخر الملاحظات</Text>
-                    {recentNotes.map((n) => {
-                      const row = linkedNoteRow(n);
-                      return (
-                        <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
-                          {/* Physical left -> right: relative time, title (+ source label). */}
-                          <Text style={styles.recentTime} numberOfLines={1}>
-                            {row.time}
+              {recentNotes.length > 0 ? (
+                <View style={styles.recentBlock}>
+                  <Text style={styles.recentHeader}>آخر الملاحظات</Text>
+                  {recentNotes.map((n) => {
+                    const row = linkedNoteRow(n);
+                    return (
+                      <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
+                        {/* Physical left -> right: relative time, title (+ source label). */}
+                        <Text style={styles.recentTime} numberOfLines={1}>
+                          {row.time}
+                        </Text>
+                        <View style={styles.recentColumn}>
+                          <Text style={styles.recentTitle} numberOfLines={1}>
+                            {row.title}
                           </Text>
-                          <View style={styles.recentColumn}>
-                            <Text style={styles.recentTitle} numberOfLines={1}>
-                              {row.title}
-                            </Text>
-                            {row.label ? <NoteRefLink label={row.label} /> : null}
-                          </View>
+                          {row.label ? <NoteRefLink label={row.label} /> : null}
                         </View>
-                      );
-                    })}
-                  </View>
-                ) : null}
-              </ScrollView>
-            </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              ) : null}
+            </ScrollView>
           </SafeAreaView>
         </Pressable>
       </Pressable>
@@ -264,9 +259,14 @@ function ListGlyph() {
 }
 
 const styles = StyleSheet.create({
-  backdrop: {
+  // The dim lives on the KAV so its padding strip under the keyboard is dimmed
+  // too (it shows through translucent keyboard corners and while animating).
+  root: {
     flex: 1,
     backgroundColor: 'rgba(20,30,30,0.35)',
+  },
+  backdrop: {
+    flex: 1,
     justifyContent: 'flex-end',
   },
   sheetOuter: {

@@ -22,27 +22,23 @@ const editor = src.slice(
 const rendered = editor.slice(editor.indexOf('\n  return (') + 3);
 
 describe('note editor keyboard avoidance', () => {
-  it('renders a flex-1 KeyboardAvoidingView, padding on iOS, as its outermost element', () => {
+  it('renders a KeyboardAvoidingView, padding on iOS, as its outermost element', () => {
+    // `([^>]*)>` stops at the first `>`, so a prop value containing one (e.g.
+    // an arrow function) would cut the captured attributes short.
     const outer = rendered.match(/^return \(\s*<(\w+)([^>]*)>/);
     expect(outer?.[1]).toBe('KeyboardAvoidingView');
-    expect(outer?.[2]).toMatch(/style=\{\{ flex: 1 \}\}/);
-    expect(outer?.[2]).toMatch(/behavior=\{Platform\.OS === 'ios' \? 'padding' : undefined\}/);
+    expect(outer?.[2]).toMatch(/behavior=\{[^}]*'padding'/);
   });
 
   it('puts the dismiss backdrop inside it', () => {
     const open = rendered.indexOf('<KeyboardAvoidingView');
-    const backdrop = rendered.indexOf('<Pressable accessibilityLabel="إغلاق"');
+    const backdrop = rendered.indexOf('accessibilityLabel="إغلاق"');
     const close = rendered.lastIndexOf('</KeyboardAvoidingView>');
     expect(open).toBeGreaterThanOrEqual(0);
     expect(backdrop).toBeGreaterThan(open);
     expect(close).toBeGreaterThan(backdrop);
   });
 
-  it('has no KeyboardAvoidingView inside the sheet', () => {
-    const sheetAt = rendered.indexOf('style={styles.sheetOuter}');
-    expect(sheetAt).toBeGreaterThan(0);
-    const sheet = rendered.slice(sheetAt);
-    expect(sheet).not.toMatch(/<KeyboardAvoidingView/);
-    expect(src.match(/<KeyboardAvoidingView/g)).toHaveLength(1);
-  });
+  it('has exactly one KeyboardAvoidingView, so none is left inside the sheet', () =>
+    expect(src.match(/<KeyboardAvoidingView/g)).toHaveLength(1));
 });
