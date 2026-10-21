@@ -37,6 +37,7 @@ describe('responsive layout helpers', () => {
       '/more/settings',
       '/search',
       '/content-search',
+      '/sections/book/bk1',
     ])('hides the tab bar on the secondary route %s', (pathname) => {
       expect(shouldShowMainTabBar(pathname)).toBe(false);
     });

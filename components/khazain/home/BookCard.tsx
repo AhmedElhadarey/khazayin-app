@@ -32,7 +32,8 @@ export function BookCard({
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
       accessibilityLabel={name}
       style={({ pressed }) => [
         styles.card,
