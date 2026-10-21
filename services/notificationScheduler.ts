@@ -302,10 +302,10 @@ async function scheduleHorizonEntryAsync(entry: HorizonEntry): Promise<void> {
  * Idempotent, TOTAL reconcile: diff `intended` against the actually-pending
  * requests and apply only the delta. Identity is (category, localDay, fireAt).
  *
- * - Cancels every one of OUR entries (the five `prayer-*` categories) not
- *   present in `intended`. The cancel pass is NOT gated on permission: a user
- *   who disables a category while permission is revoked must not keep stale
- *   pending requests.
+ * - Cancels every one of OUR entries (`wird-daily` and the five `prayer-*`
+ *   categories) not present in `intended`. The cancel pass is NOT gated on
+ *   permission: a user who disables a category while permission is revoked
+ *   must not keep stale pending requests.
  * - Then, only if permission is granted, ensures the Android channels and
  *   schedules every `intended` entry not already armed.
  * - Leaves matching entries untouched (no cancel-and-reschedule churn).

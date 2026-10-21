@@ -141,10 +141,20 @@ describe('T-WS goal state comes from the same DB read as the horizon', () => {
     expect(mockReconcile).not.toHaveBeenCalled();
   });
   it('T-WS-4: no reconcile for pages read after the goal was already met', async () => {
-    useWirdStore.setState({ goalMetToday: true });
+    useWirdStore.setState({ goalMetToday: true, snapshotDay: TODAY() });
     mockCompletedDays.mockResolvedValue([TODAY()]);
     await useWirdStore.getState().recomputeTodayPct();
     expect(mockReconcile).not.toHaveBeenCalled();
+  });
+  it('T-WS-4b: a goal met YESTERDAY does not mask today\'s transition (before the rollover hydrate)', async () => {
+    // Still yesterday's snapshot: the day rolled over but useDayRollover has
+    // not re-hydrated yet. Today's goal completing must still reconcile.
+    useWirdStore.setState({ goalMetToday: true, snapshotDay: '2000-01-01' });
+    mockCompletedDays.mockResolvedValue([TODAY()]);
+    await useWirdStore.getState().recomputeTodayPct();
+    expect(mockReconcile).toHaveBeenCalledTimes(1);
+    // snapshotDay is left for the rollover hydrate (it also promotes the target).
+    expect(useWirdStore.getState().snapshotDay).toBe('2000-01-01');
   });
   it('T-WS-5: setTarget re-reads goalMetToday from the DB (raising the target un-meets it)', async () => {
     useWirdStore.setState({ goalMetToday: true });

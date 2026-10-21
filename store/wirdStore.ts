@@ -120,8 +120,11 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
   },
 
   async recomputeTodayPct() {
-    const { target, goalMetToday: wasMet } = get();
+    const { target, goalMetToday, snapshotDay } = get();
     const today = toLocalDay();
+    // A "met" flag from a snapshot of another day (the day rolled over and the
+    // rollover hydrate has not run yet) says nothing about today.
+    const wasMet = goalMetToday && snapshotDay === today;
     const [pagesToday, met] = await Promise.all([
       progressRepo.pagesReadToday(),
       readGoalMetToday(today),

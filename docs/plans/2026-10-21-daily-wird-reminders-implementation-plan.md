@@ -1189,3 +1189,16 @@ git commit -m "docs(qa): daily wird reminders on-device verification"
   gate variables carry a `mock` prefix because `jest.mock` factories may only
   reference such names. Added T-WS-5b (`acceptSuggestion` re-reads
   `goalMetToday`), which the plan's Step 3 requires but no listed test covered.
+- **Task 3, `keyOfPending`.** Tighter than the plan's
+  `Number.isFinite(Number(data.fireAt))`: it also returns null (cancel) when
+  `fireAt` is neither a number nor a string, or is an empty/blank string. The
+  plan's check would have accepted `''` (and `null`) as `0`. Behaviour-safe:
+  the scheduler only ever writes a finite number, so the tightening can only
+  cancel-and-re-arm a malformed pending entry, never keep one.
+- **Spec-review follow-up, `recomputeTodayPct`.** `wasMet` now trusts the
+  stored `goalMetToday` only when `snapshotDay` is today. Otherwise, if the day
+  rolled over and today's goal completed before the rollover hydrate ran,
+  yesterday's "met" flag would have masked today's false → true transition and
+  skipped the reconcile that cancels today's reminder. `snapshotDay` itself is
+  left for the rollover hydrate, which also promotes the pending target.
+  Pinned by T-WS-4b.
