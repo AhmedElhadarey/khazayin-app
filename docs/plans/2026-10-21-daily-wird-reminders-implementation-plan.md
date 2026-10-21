@@ -1179,3 +1179,13 @@ git commit -m "docs(qa): daily wird reminders on-device verification"
   leaves the missing/non-finite case to the "not intended" cancel. They are
   guards for the new key rather than red tests; T-NHS-6, T-NHS-7b and T-NHS-9
   failed for the stated reasons.
+- **Task 5, T-RACE-1.** As written, the test passed WITHOUT the fix: the
+  in-flight run takes its settings snapshot only after `await getRepos()`, so
+  toggling wird off synchronously after `assembleAndReconcile()` returned meant
+  the "in-flight" run already read wird=OFF. The gated `completedDaysInRange`
+  mock now also resolves a `mockParked` promise, and the test awaits it before
+  toggling, so the toggle really lands after the snapshot. It then failed for
+  the stated reason (14 pending wird requests) and passes with the fix. The
+  gate variables carry a `mock` prefix because `jest.mock` factories may only
+  reference such names. Added T-WS-5b (`acceptSuggestion` re-reads
+  `goalMetToday`), which the plan's Step 3 requires but no listed test covered.

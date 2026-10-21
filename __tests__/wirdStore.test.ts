@@ -23,6 +23,7 @@ const mockRecordSuggestionInteraction = jest.fn<Promise<void>, [number]>(
   async () => undefined,
 );
 const mockPagesReadToday = jest.fn<Promise<number>, []>(async () => 0);
+const mockCompletedDays = jest.fn<Promise<string[]>, [string, string]>(async () => []);
 const mockEvaluateWirdSuggestion = jest.fn<Promise<SuggestionDecision>, [number]>(
   async () => ({
     shouldSuggest: false,
@@ -46,6 +47,7 @@ jest.mock('@/db', () => ({
   progressRepo: {
     pagesReadToday: () => mockPagesReadToday(),
     evaluateWirdSuggestion: (target: number) => mockEvaluateWirdSuggestion(target),
+    completedDaysInRange: (a: string, b: string) => mockCompletedDays(a, b),
   },
 }));
 
@@ -60,6 +62,11 @@ jest.mock('@/services/notificationScheduler', () => ({
 }));
 
 import { useWirdStore } from '@/store/wirdStore';
+import { assembleAndReconcile } from '@/services/horizonOrchestrator';
+import { toLocalDay } from '@/constants/progress';
+
+const mockReconcile = assembleAndReconcile as jest.Mock;
+const TODAY = () => toLocalDay();
 
 const PENDING: SuggestionDecision = {
   shouldSuggest: true,
@@ -77,6 +84,8 @@ beforeEach(() => {
     todayPct: 0,
     pendingSuggestion: null,
     dbFailed: false,
+    goalMetToday: false,
+    snapshotDay: '',
   });
 });
 
@@ -103,5 +112,63 @@ describe('wirdStore.setTarget (US1)', () => {
     // A rejected edit must NOT dismiss the suggestion or start the cooldown.
     expect(useWirdStore.getState().pendingSuggestion).toEqual(PENDING);
     expect(mockRecordSuggestionInteraction).not.toHaveBeenCalled();
+  });
+});
+
+describe('T-WS goal state comes from the same DB read as the horizon', () => {
+  beforeEach(() => {
+    mockReconcile.mockClear();
+    mockCompletedDays.mockReset().mockResolvedValue([]);
+  });
+
+  it('T-WS-1: hydrate sets goalMetToday from completedDaysInRange(today,today) and snapshotDay', async () => {
+    mockCompletedDays.mockResolvedValue([TODAY()]);
+    await useWirdStore.getState().hydrate();
+    expect(mockCompletedDays).toHaveBeenCalledWith(TODAY(), TODAY());
+    expect(useWirdStore.getState().goalMetToday).toBe(true);
+    expect(useWirdStore.getState().snapshotDay).toBe(TODAY());
+  });
+  it('T-WS-2: recomputeTodayPct reconciles exactly once when the goal flips to met', async () => {
+    useWirdStore.setState({ goalMetToday: false });
+    mockCompletedDays.mockResolvedValue([TODAY()]);
+    await useWirdStore.getState().recomputeTodayPct();
+    expect(useWirdStore.getState().goalMetToday).toBe(true);
+    expect(mockReconcile).toHaveBeenCalledTimes(1);
+  });
+  it('T-WS-3: no reconcile while still below the goal', async () => {
+    useWirdStore.setState({ goalMetToday: false });
+    await useWirdStore.getState().recomputeTodayPct();
+    expect(mockReconcile).not.toHaveBeenCalled();
+  });
+  it('T-WS-4: no reconcile for pages read after the goal was already met', async () => {
+    useWirdStore.setState({ goalMetToday: true });
+    mockCompletedDays.mockResolvedValue([TODAY()]);
+    await useWirdStore.getState().recomputeTodayPct();
+    expect(mockReconcile).not.toHaveBeenCalled();
+  });
+  it('T-WS-5: setTarget re-reads goalMetToday from the DB (raising the target un-meets it)', async () => {
+    useWirdStore.setState({ goalMetToday: true });
+    mockCompletedDays.mockResolvedValue([]); // wirdRepo.setTarget cleared wird_completed
+    await useWirdStore.getState().setTarget(20);
+    expect(useWirdStore.getState().goalMetToday).toBe(false);
+  });
+  it('T-WS-5b: acceptSuggestion re-reads goalMetToday from the DB', async () => {
+    useWirdStore.setState({ goalMetToday: false, pendingSuggestion: PENDING });
+    mockCompletedDays.mockResolvedValue([TODAY()]);
+    await useWirdStore.getState().acceptSuggestion();
+    expect(useWirdStore.getState().goalMetToday).toBe(true);
+  });
+  it('T-WS-6: the ring percentage is NOT what decides goal-met (199/200 rounds to 100%)', async () => {
+    useWirdStore.setState({ target: 200, goalMetToday: false });
+    mockPagesReadToday.mockResolvedValueOnce(199);
+    await useWirdStore.getState().recomputeTodayPct();
+    expect(useWirdStore.getState().todayPct).toBe(100);
+    expect(useWirdStore.getState().goalMetToday).toBe(false); // the DB says not complete
+  });
+  it('T-WS-7: disabling cancels directly AND awaits a serialised reconcile', async () => {
+    const { cancelCategoryAsync } = jest.requireMock('@/services/notificationScheduler');
+    await useWirdStore.getState().setWirdEnabledFromSettings(false);
+    expect(cancelCategoryAsync).toHaveBeenCalledWith('wird-daily');
+    expect(mockReconcile).toHaveBeenCalledTimes(1);
   });
 });

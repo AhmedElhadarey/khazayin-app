@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { getRepos, progressRepo, wirdRepo } from '@/db';
 import type { SuggestionDecision } from '@/db/types';
-import { BEGINNER_WIRD } from '@/constants/progress';
+import { BEGINNER_WIRD, toLocalDay } from '@/constants/progress';
 import { wirdPercent } from '@/db/helpers/wirdMath';
 import { cancelCategoryAsync } from '@/services/notificationScheduler';
 import { assembleAndReconcile } from '@/services/horizonOrchestrator';
@@ -22,6 +22,18 @@ async function reconcileWirdSchedule(): Promise<void> {
   await assembleAndReconcile();
 }
 
+// "Is today's goal met?" — from `khz_days.wird_completed`, the SAME read the
+// horizon orchestrator uses, so the ring caption, the foreground suppressor and
+// the scheduled horizon can never disagree. Never `pages >= target` in JS.
+// Fails toward "not met", the same direction as the orchestrator.
+async function readGoalMetToday(today: string): Promise<boolean> {
+  try {
+    return (await progressRepo.completedDaysInRange(today, today)).includes(today);
+  } catch {
+    return false;
+  }
+}
+
 export type WirdSnapshot = {
   target: number;
   todayPct: number;
@@ -29,6 +41,11 @@ export type WirdSnapshot = {
   /** Set when hydration failed (DB open/read error) — drives the Library
    *  retry affordance alongside progressStore.dbFailed (T1.2). */
   dbFailed: boolean;
+  /** Today's goal is met, per `progressRepo.completedDaysInRange(today, today)`. */
+  goalMetToday: boolean;
+  /** The local day ('YYYY-MM-DD') this snapshot describes; '' before the first
+   *  hydrate. `services/dayRollover` re-hydrates when the local day moves on. */
+  snapshotDay: string;
 };
 
 export type WirdStoreActions = {
@@ -46,13 +63,19 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
   todayPct: 0,
   pendingSuggestion: null,
   dbFailed: false,
+  goalMetToday: false,
+  snapshotDay: '',
 
   async hydrate() {
     try {
       await getRepos();
-      const [target, pagesToday] = await Promise.all([
+      // Captured BEFORE the reads, so the snapshot is labelled with the day the
+      // reads were made for.
+      const today = toLocalDay();
+      const [target, pagesToday, goalMetToday] = await Promise.all([
         wirdRepo.getTarget(),
         progressRepo.pagesReadToday(),
+        readGoalMetToday(today),
       ]);
       const suggestion = await progressRepo.evaluateWirdSuggestion(target);
       set({
@@ -60,6 +83,8 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
         todayPct: wirdPercent(pagesToday, target),
         pendingSuggestion: suggestion.shouldSuggest ? suggestion : null,
         dbFailed: false,
+        goalMetToday,
+        snapshotDay: today,
       });
       // Reconcile the OS-scheduled wird reminder with the user's current setting.
       // Idempotent and safe to fail silently — scheduler swallows OS errors.
@@ -81,19 +106,32 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
     // deliberate choice, so we should not re-prompt them for two weeks.
     await wirdRepo.recordSuggestionInteraction(Date.now());
     const pagesToday = await progressRepo.pagesReadToday();
+    // `wirdRepo.setTarget` re-derives today's `wird_completed`, so raising the
+    // target can un-meet the goal (and re-arm today's reminder if still ahead).
+    const goalMetToday = await readGoalMetToday(toLocalDay());
     set({
       target: newTarget,
       todayPct: wirdPercent(pagesToday, newTarget),
       pendingSuggestion: null,
+      goalMetToday,
     });
     // Reschedule on every target change (track 002 spec).
     await reconcileWirdSchedule();
   },
 
   async recomputeTodayPct() {
-    const { target } = get();
-    const pagesToday = await progressRepo.pagesReadToday();
-    set({ todayPct: wirdPercent(pagesToday, target) });
+    const { target, goalMetToday: wasMet } = get();
+    const today = toLocalDay();
+    const [pagesToday, met] = await Promise.all([
+      progressRepo.pagesReadToday(),
+      readGoalMetToday(today),
+    ]);
+    set({ todayPct: wirdPercent(pagesToday, target), goalMetToday: met });
+    // Audit gap 1: the page that completes today's wird cancels today's
+    // reminder, via the serialised orchestrator — never a direct cancel, which
+    // would race a reconcile already in flight (design §3.3). Fire-and-forget
+    // so the notePageRead queue (achievement toasts) is not held.
+    if (met && !wasMet) void assembleAndReconcile().catch(() => undefined);
   },
 
   async reevaluateSuggestion() {
@@ -110,6 +148,7 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
     await wirdRepo.setTarget(pendingSuggestion.suggestedTarget, { applyToday: false });
     await wirdRepo.recordSuggestionInteraction(Date.now());
     const pagesToday = await progressRepo.pagesReadToday();
+    const goalMetToday = await readGoalMetToday(toLocalDay());
     set({
       // `target` (in-store snapshot) stays at the current value until next
       // hydration on the new day — at which point getTarget() promotes the
@@ -117,6 +156,7 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
       target,
       todayPct: wirdPercent(pagesToday, target),
       pendingSuggestion: null,
+      goalMetToday,
     });
   },
 
@@ -127,8 +167,13 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
 
   async setWirdEnabledFromSettings(enabled) {
     if (!enabled) {
-      // Disable: clear the entire armed wird horizon immediately.
+      // Disable: clear the entire armed wird horizon immediately...
       await cancelCategoryAsync('wird-daily');
+      // ...then force a serialised run that reads the new setting. A reconcile
+      // already in flight snapshotted "wird on" and would otherwise schedule
+      // its delta AFTER the cancel above, re-arming the horizon (design §3.1,
+      // trigger 4). Its guaranteed trailing run cancels those entries.
+      await assembleAndReconcile();
       return;
     }
     // Enable: arm the horizon from current settings (honours wirdReminderTime).
