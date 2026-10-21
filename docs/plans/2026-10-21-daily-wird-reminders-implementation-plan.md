@@ -1160,3 +1160,16 @@ git commit -m "docs(qa): daily wird reminders on-device verification"
 
 - Task 5 depends on Task 4: the orchestrator's goal-met read and the real reconcile used by the race test.
 - Tasks 6, 7 and 8 depend on Task 5 (`goalMetToday` and `snapshotDay`).
+
+---
+
+## Deviations (recorded during implementation)
+
+- **Task 1, TZ pin.** The plan's `process.env.TZ = 'America/New_York'` at the
+  top of `__tests__/localMidnightDst.test.ts` has no effect under Jest: each
+  test file runs in a vm sandbox whose `process.env` is a plain copy, so the
+  assignment never reaches Node's TZ setter (the precondition test caught it:
+  both offsets stayed at the host's `-120`). The test now reaches the worker's
+  real `process.env` through `vm.runInThisContext('process.env')`, sets TZ in
+  `beforeAll` and restores it in `afterAll`, because the worker goes on to run
+  other files. No dependency, no global Jest config change.
