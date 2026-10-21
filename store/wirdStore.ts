@@ -6,7 +6,7 @@
 import { create } from 'zustand';
 import { getRepos, progressRepo, wirdRepo } from '@/db';
 import type { SuggestionDecision } from '@/db/types';
-import { BEGINNER_WIRD } from '@/constants/progress';
+import { BEGINNER_WIRD, toLocalDay } from '@/constants/progress';
 import { wirdPercent } from '@/db/helpers/wirdMath';
 import { cancelCategoryAsync } from '@/services/notificationScheduler';
 import { assembleAndReconcile } from '@/services/horizonOrchestrator';
@@ -15,12 +15,26 @@ import { assembleAndReconcile } from '@/services/horizonOrchestrator';
 // orchestrator reads the user's PERSISTED `wirdReminderTime` from settings —
 // rather than the `WIRD_REMINDER_DEFAULT_TIME` constant the previous
 // implementation always used, which meant the setting was stored but honoured by
-// nobody — and (spec amendment "US4 descoped; wird moves to a repeating trigger")
-// arms the wird reminder as a single repeating `DAILY` trigger while separately
-// reconciling the five prayer categories on the rolling horizon. Idempotent;
-// fails silently.
+// nobody — and arms the wird reminder as one-shot DATE entries on the rolling
+// horizon (today's dropped once the goal is met), alongside the five prayer
+// categories. Idempotent; fails silently.
 async function reconcileWirdSchedule(): Promise<void> {
   await assembleAndReconcile();
+}
+
+// "Is today's goal met?" — from `khz_days.wird_completed`, the SAME read the
+// horizon orchestrator uses, so the ring caption, the foreground suppressor and
+// the scheduled horizon can never disagree. Never `pages >= target` in JS.
+// Fails toward "not met", the same direction as the orchestrator.
+async function readGoalMetToday(today: string): Promise<boolean> {
+  try {
+    return (await progressRepo.completedDaysInRange(today, today)).includes(today);
+  } catch (err) {
+    if (typeof __DEV__ !== 'undefined' && __DEV__) {
+      console.warn('[wirdStore] goal-met read failed', err);
+    }
+    return false;
+  }
 }
 
 export type WirdSnapshot = {
@@ -30,7 +44,26 @@ export type WirdSnapshot = {
   /** Set when hydration failed (DB open/read error) — drives the Library
    *  retry affordance alongside progressStore.dbFailed (T1.2). */
   dbFailed: boolean;
+  /** Today's goal is met, per `progressRepo.completedDaysInRange(today, today)`. */
+  goalMetToday: boolean;
+  /** The local day ('YYYY-MM-DD') this snapshot describes; '' before the first
+   *  hydrate. `services/dayRollover` re-hydrates when the local day moves on. */
+  snapshotDay: string;
 };
+
+/**
+ * "Is TODAY's goal met?" as the UI may state it: the stored flag counts only
+ * when the snapshot was taken for `today`. Between local midnight and the
+ * rollover re-hydrate the snapshot still describes yesterday, and yesterday's
+ * "met" says nothing about today. Shared by the Library caption, the
+ * foreground suppressor and `recomputeTodayPct`.
+ */
+export function selectGoalMetToday(
+  s: Readonly<Pick<WirdSnapshot, 'goalMetToday' | 'snapshotDay'>>,
+  today: string,
+): boolean {
+  return s.goalMetToday && s.snapshotDay === today;
+}
 
 export type WirdStoreActions = {
   hydrate(): Promise<void>;
@@ -47,13 +80,19 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
   todayPct: 0,
   pendingSuggestion: null,
   dbFailed: false,
+  goalMetToday: false,
+  snapshotDay: '',
 
   async hydrate() {
     try {
       await getRepos();
-      const [target, pagesToday] = await Promise.all([
+      // Captured BEFORE the reads, so the snapshot is labelled with the day the
+      // reads were made for.
+      const today = toLocalDay();
+      const [target, pagesToday, goalMetToday] = await Promise.all([
         wirdRepo.getTarget(),
         progressRepo.pagesReadToday(),
+        readGoalMetToday(today),
       ]);
       const suggestion = await progressRepo.evaluateWirdSuggestion(target);
       set({
@@ -61,6 +100,8 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
         todayPct: wirdPercent(pagesToday, target),
         pendingSuggestion: suggestion.shouldSuggest ? suggestion : null,
         dbFailed: false,
+        goalMetToday,
+        snapshotDay: today,
       });
       // Reconcile the OS-scheduled wird reminder with the user's current setting.
       // Idempotent and safe to fail silently — scheduler swallows OS errors.
@@ -82,10 +123,14 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
     // deliberate choice, so we should not re-prompt them for two weeks.
     await wirdRepo.recordSuggestionInteraction(Date.now());
     const pagesToday = await progressRepo.pagesReadToday();
+    // `wirdRepo.setTarget` re-derives today's `wird_completed`, so raising the
+    // target can un-meet the goal (and re-arm today's reminder if still ahead).
+    const goalMetToday = await readGoalMetToday(toLocalDay());
     set({
       target: newTarget,
       todayPct: wirdPercent(pagesToday, newTarget),
       pendingSuggestion: null,
+      goalMetToday,
     });
     // Reschedule on every target change (track 002 spec).
     await reconcileWirdSchedule();
@@ -93,8 +138,20 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
 
   async recomputeTodayPct() {
     const { target } = get();
-    const pagesToday = await progressRepo.pagesReadToday();
-    set({ todayPct: wirdPercent(pagesToday, target) });
+    const today = toLocalDay();
+    // A "met" flag from a snapshot of another day (the day rolled over and the
+    // rollover hydrate has not run yet) says nothing about today.
+    const wasMet = selectGoalMetToday(get(), today);
+    const [pagesToday, met] = await Promise.all([
+      progressRepo.pagesReadToday(),
+      readGoalMetToday(today),
+    ]);
+    set({ todayPct: wirdPercent(pagesToday, target), goalMetToday: met });
+    // Audit gap 1: the page that completes today's wird cancels today's
+    // reminder, via the serialised orchestrator — never a direct cancel, which
+    // would race a reconcile already in flight (design §3.3). Fire-and-forget
+    // so the notePageRead queue (achievement toasts) is not held.
+    if (met && !wasMet) void assembleAndReconcile().catch(() => undefined);
   },
 
   async reevaluateSuggestion() {
@@ -111,6 +168,7 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
     await wirdRepo.setTarget(pendingSuggestion.suggestedTarget, { applyToday: false });
     await wirdRepo.recordSuggestionInteraction(Date.now());
     const pagesToday = await progressRepo.pagesReadToday();
+    const goalMetToday = await readGoalMetToday(toLocalDay());
     set({
       // `target` (in-store snapshot) stays at the current value until next
       // hydration on the new day — at which point getTarget() promotes the
@@ -118,6 +176,7 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
       target,
       todayPct: wirdPercent(pagesToday, target),
       pendingSuggestion: null,
+      goalMetToday,
     });
   },
 
@@ -128,8 +187,13 @@ export const useWirdStore = create<WirdSnapshot & WirdStoreActions>((set, get) =
 
   async setWirdEnabledFromSettings(enabled) {
     if (!enabled) {
-      // Disable: clear the entire armed wird horizon immediately.
+      // Disable: clear the entire armed wird horizon immediately...
       await cancelCategoryAsync('wird-daily');
+      // ...then force a serialised run that reads the new setting. A reconcile
+      // already in flight snapshotted "wird on" and would otherwise schedule
+      // its delta AFTER the cancel above, re-arming the horizon (design §3.1,
+      // trigger 4). Its guaranteed trailing run cancels those entries.
+      await assembleAndReconcile();
       return;
     }
     // Enable: arm the horizon from current settings (honours wirdReminderTime).

@@ -125,3 +125,10 @@ export type { Note } from './notesStore';
 
 export { useSettingsStore, useFontScale } from './settingsStore';
 export type { SettingsState } from './settingsStore';
+
+// ---------------------------------------------------------------------------
+// Reciter preview (onboarding, 2026-10-21)
+// ---------------------------------------------------------------------------
+
+export { usePreviewStore } from './previewStore';
+export type { PreviewState, PreviewStatus } from './previewStore';

@@ -5,10 +5,10 @@
  * are injected, so nothing here touches `expo-notifications`, `adhan`, the
  * device clock, or any store.
  *
- * SCOPE (spec amendment "US4 descoped; wird moves to a repeating trigger"): the
- * horizon owns the FIVE PRAYER categories ONLY. The wird reminder is a separate
- * repeating `DAILY` trigger and is NOT part of `computeHorizon`; there is no
- * `wirdReminderTime` or `completedDays` in `HorizonInput` any more.
+ * SCOPE: the horizon owns the five prayer categories AND the wird reminder
+ * (one one-shot entry per local day for WIRD_HORIZON_DAYS days, today's entry
+ * dropped once today's goal is met). Design:
+ * docs/plans/2026-10-21-daily-wird-reminders-design.md §3.1.
  *
  * Contract: specs/004-daily-wird-tracking/contracts/notification-horizon.contract.md
  */
@@ -16,6 +16,7 @@
 import {
   computeHorizon,
   horizonDaysFor,
+  WIRD_HORIZON_DAYS,
   type HorizonEntry,
   type HorizonInput,
 } from '@/services/notificationHorizon';
@@ -97,6 +98,8 @@ function baseInput(over: Partial<HorizonInput> = {}): HorizonInput {
     todayLocalDay: TODAY,
     enabled: allPrayersOn(),
     prayerTimesFor: prayerSet,
+    wirdReminderTime: { hour: 20, minute: 0 },
+    wirdGoalMetToday: false,
     ...over,
   };
 }
@@ -143,11 +146,11 @@ describe('T-NH-3 disabled category emits nothing', () => {
     expect(out.some((e) => e.categoryId === 'announcements-general')).toBe(false);
   });
 
-  it('wird-daily never emits even when enabled (it is not a horizon category)', () => {
-    const out = computeHorizon(
-      baseInput({ enabled: enabled({ 'prayer-fajr': true, 'wird-daily': true }) }),
-    );
-    expect(out.some((e) => e.categoryId === 'wird-daily')).toBe(false);
+  it('T-NH-3b: wird-daily emits only when enabled', () => {
+    const on = computeHorizon(baseInput({ enabled: enabled({ 'wird-daily': true }) }));
+    expect(on.some((e) => e.categoryId === 'wird-daily')).toBe(true);
+    const off = computeHorizon(baseInput({ enabled: ALL_OFF }));
+    expect(off.some((e) => e.categoryId === 'wird-daily')).toBe(false);
   });
 });
 
@@ -201,6 +204,62 @@ describe('T-NH-6 slot budget', () => {
 
   it('five prayers arm 35 slots (horizonDaysFor(5) * 5)', () => {
     expect(horizonDaysFor(5) * 5).toBe(35);
+  });
+
+  it('horizonDaysFor(n, WIRD_HORIZON_DAYS) * n + WIRD_HORIZON_DAYS <= 56 for every n in 1..7', () => {
+    for (let n = 1; n <= 7; n += 1) {
+      expect(horizonDaysFor(n, WIRD_HORIZON_DAYS) * n + WIRD_HORIZON_DAYS).toBeLessThanOrEqual(56);
+    }
+  });
+
+  it('five prayers + wird arm 35 + 14 = 49 slots', () => {
+    const out = computeHorizon(baseInput({ enabled: { ...allPrayersOn(), 'wird-daily': true } }));
+    expect(out).toHaveLength(49);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-NH-W: the wird reminder on the rolling horizon
+// ---------------------------------------------------------------------------
+describe('T-NH-W wird horizon', () => {
+  const wirdOnly = () => enabled({ 'wird-daily': true });
+  const wird = (es: readonly HorizonEntry[]) => es.filter((e) => e.categoryId === 'wird-daily');
+
+  it('T-NH-W1: one entry per day for WIRD_HORIZON_DAYS days at the persisted time', () => {
+    const es = wird(computeHorizon(baseInput({ enabled: wirdOnly(), now: atLocal(TODAY, 6, 0) })));
+    expect(es).toHaveLength(WIRD_HORIZON_DAYS);
+    expect(es[0]).toEqual({ categoryId: 'wird-daily', localDay: TODAY, fireAt: atLocal(TODAY, 20, 0) });
+    expect(es.at(-1)!.localDay).toBe(addDays(TODAY, WIRD_HORIZON_DAYS - 1));
+  });
+  it('T-NH-W2: goal met today drops ONLY today', () => {
+    const es = wird(computeHorizon(baseInput({ enabled: wirdOnly(), now: atLocal(TODAY, 6, 0), wirdGoalMetToday: true })));
+    expect(es.map((e) => e.localDay)).not.toContain(TODAY);
+    expect(es[0].localDay).toBe(addDays(TODAY, 1));
+    expect(es).toHaveLength(WIRD_HORIZON_DAYS - 1);
+  });
+  it('T-NH-W3: today is omitted once its fire time has passed', () => {
+    const es = wird(computeHorizon(baseInput({ enabled: wirdOnly(), now: atLocal(TODAY, 21, 0) })));
+    expect(es[0].localDay).toBe(addDays(TODAY, 1));
+  });
+  it('T-NH-W4: fireAt is built from LOCAL components (no UTC drift)', () => {
+    const es = wird(computeHorizon(baseInput({ enabled: wirdOnly(), wirdReminderTime: { hour: 5, minute: 30 } })));
+    expect(es).toHaveLength(WIRD_HORIZON_DAYS);
+    for (const e of es) {
+      expect(e.fireAt.getHours()).toBe(5);
+      expect(e.fireAt.getMinutes()).toBe(30);
+    }
+  });
+  it('T-NH-W5: ordering is by day, prayers (chronological) then wird', () => {
+    const all = computeHorizon(baseInput({ enabled: { ...allPrayersOn(), 'wird-daily': true } }));
+    expect(all.filter((e) => e.localDay === TODAY).map((e) => e.categoryId).at(-1)).toBe('wird-daily');
+  });
+  it('T-NH-W6: wird disabled reserves no slots (prayer days unchanged)', () => {
+    expect(distinctDays(computeHorizon(baseInput())).length).toBe(horizonDaysFor(5));
+  });
+  it('T-NH-W7: changing the time after today’s reminder fired re-emits today at the later time (design §3.2)', () => {
+    // 08:00 already fired; the user moves the time to 20:00 at 09:00. The goal is unmet, so today is re-emitted.
+    const es = wird(computeHorizon(baseInput({ enabled: wirdOnly(), now: atLocal(TODAY, 9, 0), wirdReminderTime: { hour: 20, minute: 0 } })));
+    expect(es[0]).toEqual({ categoryId: 'wird-daily', localDay: TODAY, fireAt: atLocal(TODAY, 20, 0) });
   });
 });
 

@@ -12,6 +12,7 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { noteSourceTarget, runNoteSource } from '@/services/noteNavigation';
+import { lectureSaveTarget } from '@/services/savedToggle';
 import { useScholarLecturesStore, useScholarsStore } from '@/store';
 import { notesForLectureSeries, useNotesStore } from '@/store/notesStore';
 import { openSearch } from '@/services/searchNavigation';
@@ -76,6 +77,7 @@ export default function ScholarDetailScreen() {
               title={l.title}
               meta={l.scholar}
               duration={l.duration}
+              save={lectureSaveTarget(l)}
               onPress={() => startLecturePlayback(l)}
             />
           )}

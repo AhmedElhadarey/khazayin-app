@@ -1,8 +1,11 @@
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import type { SaveTarget } from '@/services/savedToggle';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { BookmarkButton } from './BookmarkButton';
+import { useSaveGesture } from './useSaveGesture';
 
 // Cream card with a thin gold vertical ribbon on the RIGHT edge (start-side in RTL).
 // Used on العلماء والمشايخ (page 26), كل الشرح (page 28).
@@ -18,12 +21,17 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 // Physical left → right: duration, title block, trailing adornment. The
 // adornment is a badge disc on the scholar list (node 2102:2975) and the gold
 // ribbon on the scholar detail list (node 2510:1990).
+//
+// `save` (scholar detail only) makes the lecture saveable by long-press through
+// useSaveGesture. The frame draws no bookmark, so the unsaved card is unchanged;
+// once saved, the physical left becomes a [duration, bookmark] cluster.
 export function RibbonCard({
   pretitle,
   title,
   meta,
   duration,
   badge,
+  save,
   onPress,
 }: {
   pretitle?: string;
@@ -36,19 +44,37 @@ export function RibbonCard({
    * 2510:1990). Omit for the ribbon.
    */
   badge?: React.ReactNode;
+  /** Opt-in lecture save (long-press + bookmark once saved). Scholar detail only. */
+  save?: SaveTarget;
   onPress?: () => void;
 }) {
+  const { saved, gestureProps } = useSaveGesture(save);
+  const durationNode = duration ? <Text style={styles.duration}>{duration}</Text> : null;
+
   return (
     <Pressable
       onPress={onPress}
+      {...gestureProps}
       style={({ pressed }) => [
         styles.card,
         badge ? styles.cardWithBadge : styles.cardWithRibbon,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      {/* Physical left — duration */}
-      {duration ? <Text style={styles.duration}>{duration}</Text> : null}
+      {/* Physical left — duration; plus a bookmark once saved (frame draws none). */}
+      {saved && save ? (
+        <View style={styles.metaCluster}>
+          {durationNode}
+          <BookmarkButton
+            type={save.type}
+            entityId={save.entityId}
+            snapshot={save.snapshot}
+            variant="light"
+          />
+        </View>
+      ) : (
+        durationNode
+      )}
 
       {/* Centre — title block, right-aligned */}
       <View style={styles.titleBlock}>
@@ -115,4 +141,5 @@ const styles = StyleSheet.create({
     ...textStyle('label', { color: KhazainColors.ink500 }),
     flexShrink: 0,
   },
+  metaCluster: { ...PHYSICAL_ROW, alignItems: 'center', gap: 6, flexShrink: 0 },
 });

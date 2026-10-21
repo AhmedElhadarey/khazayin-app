@@ -64,6 +64,7 @@ export interface MockScheduleRequest {
 export interface MockScheduledNotification {
   identifier: string;
   content: { data?: { category?: string } & Json };
+  trigger?: MockTriggerInput;
 }
 
 export interface MockNotificationHandler {
@@ -89,6 +90,8 @@ let allCancelCount = 0;
 let handlerSetCount = 0;
 let scheduledNotifications: MockScheduledNotification[] = [];
 let nextIdentifier = 1;
+let currentHandler: MockNotificationHandler | null = null;
+let scheduleRejections = 0;
 
 // ---------------------------------------------------------------------------
 // Mocked public API surface
@@ -98,6 +101,7 @@ export function setNotificationHandler(handler: MockNotificationHandler | null):
   if (handler !== null) {
     handlerSetCount += 1;
   }
+  currentHandler = handler;
 }
 
 export async function getPermissionsAsync(): Promise<MockPermissionResponse> {
@@ -111,13 +115,24 @@ export async function requestPermissionsAsync(): Promise<MockPermissionResponse>
 export async function scheduleNotificationAsync(
   request: MockScheduleRequest,
 ): Promise<string> {
+  if (scheduleRejections > 0) {
+    // Models iOS rejecting a DATE trigger whose instant has just passed.
+    scheduleRejections -= 1;
+    throw new Error('mock: scheduleNotificationAsync rejected');
+  }
   const identifier = request.identifier ?? `mock-id-${nextIdentifier}`;
   nextIdentifier += 1;
   scheduleCalls.push({ ...request, identifier });
   // Reflect into the "currently scheduled" list so cancel flow can see it.
+  // `data` is JSON round-tripped, as the native bridge serialises it: whatever
+  // the scheduler reads back from `getAllScheduledNotificationsAsync` is a
+  // copy, never the object it scheduled.
   scheduledNotifications.push({
     identifier,
-    content: { data: (request.content.data ?? {}) as { category?: string } & Json },
+    content: {
+      data: JSON.parse(JSON.stringify(request.content.data ?? {})) as { category?: string } & Json,
+    },
+    trigger: request.trigger,
   });
   return identifier;
 }
@@ -165,6 +180,17 @@ export function __getHandlerSetCount(): number {
   return handlerSetCount;
 }
 
+/** The handler most recently installed via `setNotificationHandler`, so tests
+ *  can invoke `handleNotification` directly. */
+export function __getHandler(): MockNotificationHandler | null {
+  return currentHandler;
+}
+
+/** Make the next `n` `scheduleNotificationAsync` calls reject. */
+export function __rejectNextSchedules(n: number): void {
+  scheduleRejections = n;
+}
+
 export function __setScheduledNotifications(arr: MockScheduledNotification[]): void {
   scheduledNotifications = arr.slice();
 }
@@ -186,4 +212,6 @@ export function __resetMock(): void {
   handlerSetCount = 0;
   scheduledNotifications = [];
   nextIdentifier = 1;
+  currentHandler = null;
+  scheduleRejections = 0;
 }

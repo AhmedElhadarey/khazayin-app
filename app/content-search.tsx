@@ -39,7 +39,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Group title lookups for the 4 result types.
 const GROUP_TITLES: Record<'surah' | 'scholar' | 'book' | 'lecture', string> = {
@@ -50,6 +50,8 @@ const GROUP_TITLES: Record<'surah' | 'scholar' | 'book' | 'lecture', string> = {
 };
 
 export default function SearchModalScreen() {
+  const insets = useSafeAreaInsets();
+
   // ── Search state ──
   const query = useSearchStore((s) => s.query);
   const results = useSearchStore((s) => s.results);
@@ -158,7 +160,11 @@ export default function SearchModalScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+    // Padded by the JS insets, not a native SafeAreaView: inside the
+    // fullScreenModal presentation (app/_layout.tsx) iOS reports a 0 top inset
+    // to the native view, which put the header and its back button under the
+    // status bar — and a fullScreenModal has no swipe-to-dismiss.
+    <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
       <InlineHeader title="بحث" onBack={() => router.back()} />
 
       {/* Active search input */}
@@ -201,7 +207,7 @@ export default function SearchModalScreen() {
           onPickSuggestion={(q) => setQuery(q)}
         />
       ) : null}
-    </SafeAreaView>
+    </View>
   );
 }
 

@@ -23,9 +23,12 @@ tooling run, a device test, or a server action. Do these, then merge.
   ⟳ Then I remove `SENTRY_DISABLE_AUTO_UPLOAD=true` from the **production** profile
   in `eas.json` (kept on dev/preview) in one commit. Don't flip it before the secret
   exists — the build fails without the token.
-- ☐ **Privacy-policy URL** (T0.4): set `KhazainConfig.privacyPolicyUrl` to a live URL
-  (must disclose Sentry diagnostic-data collection). Required for App Store / Play
-  submission. ⟳ I can wire it once you have the URL.
+- ☐ **Privacy-policy URL** (T0.4): the code is complete; this is blocked on the
+  client's URL (must disclose Sentry diagnostic-data collection). Required for
+  App Store / Play submission. Set `EXPO_PUBLIC_PRIVACY_POLICY_URL` (https only) in
+  `.env` or the EAS profile `env`. The value is **inlined into the JS bundle at
+  build time**, so a **new build** is required — `expo-updates` is not installed,
+  so there is no OTA path. Until it is set, the row shows the Arabic "ستُضاف قريبًا" alert.
 - ☐ **Store submit config** (T0.3): `eas.json` `submit.production` is empty (works via
   interactive prompt). For non-interactive submit, add `android` (service-account key
   / track) and `ios` (ascAppId, appleTeamId) — these are your credentials.

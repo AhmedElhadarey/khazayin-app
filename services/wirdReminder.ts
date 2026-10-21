@@ -1,9 +1,10 @@
 /**
  * Pure helpers for the wird reminder's wall-clock time (US2).
  *
- * The wird reminder is a single repeating DAILY trigger at a fixed local time
- * (`settings.wirdReminderTime`), NOT a horizon entry — so the "next reminder"
- * shown on the Library card is not read from the OS schedule. It is derived
+ * The wird reminder is one one-shot DATE entry per local day on the rolling
+ * notification horizon, at a fixed local time (`settings.wirdReminderTime`),
+ * with today's entry dropped once today's goal is met. The "next reminder"
+ * shown on the Library card is not read from the OS schedule: it is derived
  * here from `now` + the persisted time, which keeps it testable without a
  * device and guarantees the UI can never display a time the app does not use.
  *
@@ -22,9 +23,17 @@ const PDI = '⁩'; // Pop Directional Isolate
 /**
  * The next occurrence of the daily wall-clock `time`: today at that time if it
  * is still in the future, otherwise tomorrow. At exactly the target minute the
- * next occurrence is tomorrow (matching a DAILY trigger that already fired).
+ * next occurrence is tomorrow (today's reminder has already fired).
+ *
+ * When `opts.goalMetToday` is true, today's reminder has been cancelled (the
+ * horizon drops today's entry once the goal is met), so the next one is
+ * tomorrow whatever the time.
  */
-export function computeNextWirdReminder(now: Date, time: TimeOfDay): Date {
+export function computeNextWirdReminder(
+  now: Date,
+  time: TimeOfDay,
+  opts?: Readonly<{ goalMetToday?: boolean }>,
+): Date {
   const todayAt = new Date(
     now.getFullYear(),
     now.getMonth(),
@@ -34,7 +43,7 @@ export function computeNextWirdReminder(now: Date, time: TimeOfDay): Date {
     0,
     0,
   );
-  if (todayAt.getTime() > now.getTime()) return todayAt;
+  if (!opts?.goalMetToday && todayAt.getTime() > now.getTime()) return todayAt;
   // `Date` normalises an overflowing day into the next month/year.
   return new Date(
     now.getFullYear(),
@@ -63,10 +72,14 @@ export function formatClockTime(time: TimeOfDay): string {
 
 /**
  * The Library card's next-reminder caption, e.g. `التذكير القادم: اليوم ⁦٨:٠٠⁩ م`.
- * Derived purely from `now` + the persisted time.
+ * Derived purely from `now` + the persisted time + whether today's goal is met.
  */
-export function formatNextWirdReminder(now: Date, time: TimeOfDay): string {
-  const next = computeNextWirdReminder(now, time);
+export function formatNextWirdReminder(
+  now: Date,
+  time: TimeOfDay,
+  goalMetToday = false,
+): string {
+  const next = computeNextWirdReminder(now, time, { goalMetToday });
   const isToday =
     next.getFullYear() === now.getFullYear() &&
     next.getMonth() === now.getMonth() &&
@@ -108,7 +121,7 @@ export function isWirdReminderArmed(
  *
  * **The stored preference being `true` does not mean a reminder is armed.**
  * `notifications['wird-daily']` defaults to `true`, but nothing requests
- * notification permission at boot — so on a fresh install `scheduleWirdReminderAsync`
+ * notification permission at boot — so on a fresh install the horizon reconcile
  * hits its permission gate and schedules nothing. The same divergence appears
  * when a user grants permission and later revokes it in system settings: the OS
  * cancels the notification, the preference stays `true`.
@@ -117,12 +130,19 @@ export function isWirdReminderArmed(
  * the three deleted mock `ReminderCard`s told. A reminder is armed only when the
  * user wants it AND the OS permits it.
  *
- * Pure: `now` and `permission` are both injected.
+ * `goalMetToday` is required for the same reason: once today's goal is met,
+ * today's entry is cancelled, so the caption must name tomorrow, not today.
+ *
+ * Pure: `now`, `permission` and `goalMetToday` are all injected.
  */
 export function describeWirdReminder(
   now: Date,
   time: TimeOfDay,
-  status: Readonly<{ enabled: boolean; permission: NotificationPermission }>,
+  status: Readonly<{
+    enabled: boolean;
+    permission: NotificationPermission;
+    goalMetToday: boolean;
+  }>,
 ): WirdReminderState {
   if (!isWirdReminderArmed(status.enabled, status.permission)) {
     if (!status.enabled) {
@@ -132,5 +152,31 @@ export function describeWirdReminder(
     // different (grant permission vs. flip the switch), so the copy must differ.
     return { armed: false, caption: 'التذكير متوقّف: يلزم السماح بالإشعارات' };
   }
-  return { armed: true, caption: formatNextWirdReminder(now, time) };
+  return { armed: true, caption: formatNextWirdReminder(now, time, status.goalMetToday) };
+}
+
+export type WirdSuppressionState = Readonly<{
+  goalMetToday: boolean;
+  snapshotDay: string;
+  todayLocalDay: string;
+}>;
+
+/**
+ * Foreground-only belt-and-braces (design §3.1): hide a wird reminder that
+ * arrives while the app is open if today's goal is already met. Covers the
+ * reconcile still in flight when the goal was met seconds before the fire time,
+ * and the legacy repeating DAILY request (no `localDay`) on the first launch
+ * after upgrade. Never trusts a snapshot taken for another day.
+ *
+ * Pure: the store snapshot and today's local day are injected.
+ */
+export function shouldSuppressWirdNotification(
+  data: unknown,
+  s: WirdSuppressionState,
+): boolean {
+  if (data === null || typeof data !== 'object') return false;
+  const d = data as { category?: unknown; localDay?: unknown };
+  if (d.category !== 'wird-daily') return false;
+  if (!s.goalMetToday || s.snapshotDay !== s.todayLocalDay) return false;
+  return d.localDay === undefined || d.localDay === s.todayLocalDay;
 }

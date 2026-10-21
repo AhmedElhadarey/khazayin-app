@@ -11,6 +11,9 @@ never drift from the 28-frame contract.
 
 - **Never clears app data.** Neither script runs `simctl erase` or `pm clear`;
   the audited screens depend on persisted notes, progress, and settings.
+- **Precondition: the saved library must be empty.** Saved lectures add a
+  bookmark to frames 18–24 (and fill the Home bookmarks on 05). Unsave
+  everything from `/library` before capturing, and confirm the empty state.
 - **Never writes into `docs/audit/2026-09-09`.** That directory is the immutable
   audited baseline. Captures go to `/tmp/khazayin-capture/...` by default, or to
   whatever `--out` you pass. Nothing is committed.
