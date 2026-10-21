@@ -1,7 +1,8 @@
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
-import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
+import { editorSeed, linkedNoteRow, NoteRefLink } from '@/components/khazain/notes';
+import { useNotesStore } from '@/store/notesStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
@@ -18,7 +19,20 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 
-type Params = { id?: string; title?: string };
+// `id`/`title` predate linked notes; the `ref*` keys are written by
+// services/noteRefs.ts `noteRefToParams` (prefixed to avoid clashing with them).
+type Params = {
+  id?: string;
+  title?: string;
+  refType?: string;
+  refId?: string;
+  refPos?: string;
+  refPage?: string;
+  refLabel?: string;
+  refContext?: string;
+  refTitle?: string;
+  refSpeaker?: string;
+};
 
 // Bottom-sheet styled note editor (Figma page-07).
 // Visual contract:
@@ -31,7 +45,7 @@ export default function NoteEditor() {
   const router = useRouter();
   const params = useLocalSearchParams<Params>();
   const editingId = typeof params.id === 'string' ? params.id : undefined;
-  const seedTitle = typeof params.title === 'string' ? params.title : undefined;
+  const { ref: seedRef, legacyTitle: seedTitle } = editorSeed(params);
 
   const addNote = useNotesStore((s) => s.addNote);
   const updateNote = useNotesStore((s) => s.updateNote);
@@ -48,6 +62,7 @@ export default function NoteEditor() {
   );
   // Preserved-title state for edit mode; we keep it in sync silently so the
   // notesStore public API (title + body) is unchanged.
+  const shownRef = existing?.ref ?? seedRef;
   const titleRef = useRef<string>(existing?.title ?? seedTitle ?? '');
 
   const didUnmount = useRef(false);
@@ -75,7 +90,7 @@ export default function NoteEditor() {
     if (editingId) {
       updateNote(editingId, { title: derivedTitle, body: cleanBody });
     } else {
-      addNote(derivedTitle, cleanBody);
+      addNote(derivedTitle, cleanBody, seedRef);
     }
     close();
   };
@@ -117,6 +132,8 @@ export default function NoteEditor() {
               <Text style={styles.sheetTitle}>
                 {editingId ? 'تعديل الملاحظة' : 'إضافة ملاحظة'}
               </Text>
+
+              {shownRef ? <NoteRefLink label={`مرتبطة بـ ${shownRef.label}`} /> : null}
 
               <View style={styles.bodyCard}>
                 <TextInput
@@ -169,17 +186,23 @@ export default function NoteEditor() {
               {recentNotes.length > 0 ? (
                 <View style={styles.recentBlock}>
                   <Text style={styles.recentHeader}>آخر الملاحظات</Text>
-                  {recentNotes.map((n) => (
-                    <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
-                      {/* Physical left -> right: relative time, title. */}
-                      <Text style={styles.recentTime} numberOfLines={1}>
-                        {formatRelativeAr(n.updatedAt)}
-                      </Text>
-                      <Text style={styles.recentTitle} numberOfLines={1}>
-                        {n.title || 'ملاحظة بلا عنوان'}
-                      </Text>
-                    </View>
-                  ))}
+                  {recentNotes.map((n) => {
+                    const row = linkedNoteRow(n);
+                    return (
+                      <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
+                        {/* Physical left -> right: relative time, title (+ source label). */}
+                        <Text style={styles.recentTime} numberOfLines={1}>
+                          {row.time}
+                        </Text>
+                        <View style={styles.recentColumn}>
+                          <Text style={styles.recentTitle} numberOfLines={1}>
+                            {row.title}
+                          </Text>
+                          {row.label ? <NoteRefLink label={row.label} /> : null}
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               ) : null}
             </ScrollView>
@@ -320,10 +343,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   recentTime: textStyle('caption', { color: KhazainColors.ink400 }),
-  recentTitle: {
-    ...textStyle('cardTitle', { color: KhazainColors.ink900 }),
-    flex: 1,
-  },
+  recentColumn: { flex: 1, gap: 2 },
+  recentTitle: textStyle('cardTitle', { color: KhazainColors.ink900 }),
 });
 
 const formatStyles = StyleSheet.create({

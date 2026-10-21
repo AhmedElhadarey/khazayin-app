@@ -2,7 +2,7 @@
  * Pure row model for notes that may carry a content reference. Shared by the
  * notes viewer, the editor's recent list and the content screens.
  */
-import { NOTE_REF_TYPES } from '@/services/noteRefs';
+import { NOTE_REF_TYPES, noteRefFromParams, type NoteRef } from '@/services/noteRefs';
 import { formatRelativeAr, type Note } from '@/store/notesStore';
 
 export type LinkedNoteRow = {
@@ -37,4 +37,18 @@ export function sortByPosition(notes: readonly Note[]): Note[] {
       return pa - pb || a.i - b.i;
     })
     .map((x) => x.n);
+}
+
+/**
+ * What the editor starts from. Editing an existing note (`id` set) ignores any
+ * ref params: the stored ref wins. A new note takes either a ref or the legacy
+ * `title` seed.
+ */
+export function editorSeed(
+  params: Record<string, string | string[] | undefined>,
+): { ref?: NoteRef; legacyTitle?: string } {
+  if (typeof params.id === 'string' && params.id.length > 0) return {};
+  const ref = noteRefFromParams(params);
+  if (ref) return { ref };
+  return typeof params.title === 'string' ? { legacyTitle: params.title } : {};
 }

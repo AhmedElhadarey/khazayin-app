@@ -1,5 +1,5 @@
-import { linkedNoteRow, sortByPosition } from '@/components/khazain/notes/linkedNotesModel';
-import { makeAyahRef } from '@/services/noteRefs';
+import { editorSeed, linkedNoteRow, sortByPosition } from '@/components/khazain/notes/linkedNotesModel';
+import { makeAyahRef, noteRefToParams } from '@/services/noteRefs';
 import type { Note } from '@/store/notesStore';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -52,5 +52,24 @@ describe('sortByPosition', () => {
       note({ id, ref: { type: 'ayah', id: '002', label: 'l', ...(position != null ? { position } : {}) } });
     const out = sortByPosition([mk('a', 286), mk('b'), mk('c', 255), mk('d', 255)]);
     expect(out.map((n) => n.id)).toEqual(['b', 'c', 'd', 'a']);
+  });
+});
+
+describe('editorSeed', () => {
+  it('decodes a linked note', () => {
+    const ref = makeAyahRef('2', 255);
+    expect(editorSeed(noteRefToParams(ref))).toEqual({ ref });
+  });
+  it('keeps the legacy title seed', () => {
+    expect(editorSeed({ title: 'x' })).toEqual({ legacyTitle: 'x' });
+  });
+  it('ignores a ref when editing an existing note', () => {
+    expect(editorSeed({ id: 'n1', ...noteRefToParams(makeAyahRef('2', 255)) })).toEqual({});
+  });
+  it('recent rows carry the label for an editor-shaped list', () => {
+    const rows = [note({ id: 'a', ref: makeAyahRef('2', 255) }), note({ id: 'b' })].map(
+      linkedNoteRow,
+    );
+    expect(rows.map((r) => r.label)).toEqual(['البقرة: ٢٥٥', undefined]);
   });
 });
