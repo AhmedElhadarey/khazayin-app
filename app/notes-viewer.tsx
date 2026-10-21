@@ -1,7 +1,10 @@
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
-import { formatRelativeAr, Note, useNotesStore } from '@/store/notesStore';
+import { linkedNoteRow, NoteRefLink } from '@/components/khazain/notes';
+import { startLecturePlayback } from '@/services/lecturePlayback';
+import { viewerSourceAction } from '@/services/noteNavigation';
+import { Note, useNotesStore } from '@/store/notesStore';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -22,6 +25,15 @@ export default function NotesViewer() {
     router.push({ pathname: '/note-editor' as any, params: { id } });
 
   const close = () => router.back();
+
+  // Close the sheet, then navigate. The viewer owns its own dismissal; the
+  // target runner never dismisses anything.
+  const openSource = (note: Note) =>
+    viewerSourceAction(note.ref, {
+      back: () => router.back(),
+      navigate: (href) => router.navigate(href as any),
+      play: startLecturePlayback,
+    });
 
   return (
     <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
@@ -44,7 +56,11 @@ export default function NotesViewer() {
               data={notes}
               keyExtractor={(n) => n.id}
               renderItem={({ item }) => (
-                <NoteRow note={item} onPress={() => openExisting(item.id)} />
+                <NoteRow
+                  note={item}
+                  onPress={() => openExisting(item.id)}
+                  onOpenSource={() => openSource(item)}
+                />
               )}
               contentContainerStyle={styles.listContent}
               ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
@@ -58,7 +74,16 @@ export default function NotesViewer() {
   );
 }
 
-function NoteRow({ note, onPress }: { note: Note; onPress: () => void }) {
+function NoteRow({
+  note,
+  onPress,
+  onOpenSource,
+}: {
+  note: Note;
+  onPress: () => void;
+  onOpenSource: () => void;
+}) {
+  const row = linkedNoteRow(note);
   return (
     <Pressable
       onPress={onPress}
@@ -68,13 +93,18 @@ function NoteRow({ note, onPress }: { note: Note; onPress: () => void }) {
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
-      {/* Physical left -> right: relative time, title. */}
+      {/* Physical left -> right: relative time, then title + source link. */}
       <Text style={styles.rowTime} numberOfLines={1}>
-        {formatRelativeAr(note.updatedAt)}
+        {row.time}
       </Text>
-      <Text style={styles.rowTitle} numberOfLines={1}>
-        {note.title || 'ملاحظة بلا عنوان'}
-      </Text>
+      <View style={styles.rowColumn}>
+        <Text style={styles.rowTitle} numberOfLines={1}>
+          {row.title}
+        </Text>
+        {row.label ? (
+          <NoteRefLink label={row.label} onPress={row.linkable ? onOpenSource : undefined} />
+        ) : null}
+      </View>
     </Pressable>
   );
 }
@@ -125,10 +155,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: KhazainColors.cardBorder,
   },
-  rowTitle: {
-    ...textStyle('sectionTitle', { color: KhazainColors.ink900 }),
-    flex: 1,
-  },
+  rowColumn: { flex: 1, gap: 2 },
+  rowTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
   rowTime: textStyle('caption', { color: KhazainColors.ink400 }),
   empty: {
     alignItems: 'center',

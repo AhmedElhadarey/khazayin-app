@@ -21,3 +21,14 @@ describe('shared linked-note UI', () => {
     expect(src).not.toContain('row-reverse');
   });
 });
+
+describe('notes viewer', () => {
+  const src = read('app/notes-viewer.tsx');
+  it('row stays physically ordered', () => {
+    expect(src).toMatch(/row: \{\s*\.\.\.PHYSICAL_ROW/);
+    expect(src).not.toContain('row-reverse');
+  });
+  it('follows a source through the pure close-then-navigate action', () => {
+    expect(src).toContain('viewerSourceAction(');
+  });
+});
