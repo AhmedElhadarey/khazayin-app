@@ -145,6 +145,7 @@ describe('syncBridge', () => {
       expect(mockStopPreview).toHaveBeenCalled();
     });
     it('B6: queue end stops the preview and NEVER clears the MiniPlayer track', () => {
+      usePreviewStore.getState().markPlaying('r3');
       handlerFor(Event.PlaybackQueueEnded)({ track: 0, position: 50 });
       expect(mockStopPreview).toHaveBeenCalled();
       expect(mockSetTrack).not.toHaveBeenCalled();
@@ -157,6 +158,51 @@ describe('syncBridge', () => {
         message: 'تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.',
       });
     });
+
+    it("B6b: queue end while still loading (the preview's own reset) does not end it", () => {
+      handlerFor(Event.PlaybackQueueEnded)({ track: 0, position: 0 });
+      expect(mockStopPreview).not.toHaveBeenCalled();
+      expect(mockSetTrack).not.toHaveBeenCalled();
+    });
+    it('B10: a failed stop is reported to Sentry, not swallowed silently', async () => {
+      usePreviewStore.getState().markPlaying('r3');
+      const err = new Error('bridge down');
+      mockStopPreview.mockRejectedValueOnce(err);
+      handlerFor(Event.PlaybackQueueEnded)({ track: 0, position: 50 });
+      await Promise.resolve();
+      await Promise.resolve();
+      expect(Sentry.captureException).toHaveBeenCalledWith(err);
+    });
+  });
+
+  describe('late events after a preview stopped (owner none) never reach the MiniPlayer', () => {
+    beforeEach(() => {
+      mockOwner = 'none';
+    });
+    it('N1: progress is ignored (no tick over the restored lecture position)', () => {
+      handlerFor(Event.PlaybackProgressUpdated)({ position: 5, duration: 50 });
+      expect(mockSetProgress).not.toHaveBeenCalled();
+    });
+    it('N2: an active-track change is ignored (the preview title never lands in the MiniPlayer)', () => {
+      handlerFor(Event.PlaybackActiveTrackChanged)({ track: { id: 'preview:r3', title: 'سورة الفاتحة — عيّنة', url: 'u' } });
+      expect(mockSetTrack).not.toHaveBeenCalled();
+    });
+    it('N3: an error is ignored (no lecture toast over onboarding)', () => {
+      handlerFor(Event.PlaybackError)({ code: 'x', message: 'net' });
+      expect(mockToastShow).not.toHaveBeenCalled();
+      expect(mockSetIsPlaying).not.toHaveBeenCalled();
+    });
+    it('N4: Playing never sets isPlaying without a lecture queue', () => {
+      handlerFor(Event.PlaybackState)({ state: State.Playing });
+      expect(mockSetIsPlaying).not.toHaveBeenCalled();
+    });
+    it.each([State.Paused, State.Stopped, State.Ended, State.None])(
+      'N5: %s still settles isPlaying to false',
+      (st) => {
+        handlerFor(Event.PlaybackState)({ state: st });
+        expect(mockSetIsPlaying).toHaveBeenLastCalledWith(false);
+      },
+    );
   });
 
   describe('queue-end only clears the MiniPlayer for a lecture queue', () => {
