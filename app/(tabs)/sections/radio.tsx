@@ -10,6 +10,7 @@ import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useRadioProgramsStore } from '@/store';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -38,7 +39,7 @@ export default function RadioScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title="برامج إذاعية" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <FlatList
         data={items}

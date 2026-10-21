@@ -5,6 +5,7 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useSectionsStore } from '@/store';
 import type { SectionEntry } from '@/types/content';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -38,7 +39,7 @@ export default function SectionsScreen() {
         <View style={styles.searchBlock}>
           {/* `بحث..` is what the file sets, on all twelve frames that carry a
               search pill — this screen was the only one paraphrasing it. */}
-          <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+          <SearchPill placeholder="بحث.." onPress={openSearch} />
         </View>
         <AsyncContent
           status={status}

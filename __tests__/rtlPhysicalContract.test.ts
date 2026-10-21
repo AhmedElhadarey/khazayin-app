@@ -45,9 +45,10 @@ const PINNED_SCREENS = [
   'app/settings-wird-reminder.tsx',
   'app/note-editor.tsx',
   'app/notes-viewer.tsx',
-  'app/search.tsx',
+  'app/content-search.tsx',
   'app/share-sheet.tsx',
   'app/(tabs)/more/settings-progress.tsx',
+  'app/(tabs)/sections/book/[id].tsx',
   'components/khazain/sheets/SheetRow.tsx',
   'components/khazain/settings/SettingsSection.tsx',
   // Onboarding. Not in the original sweep because it is the one flow the

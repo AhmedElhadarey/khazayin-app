@@ -13,6 +13,7 @@ import {
 import { LETTER_INDEX_EDGE } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import type { Lecture } from '@/types/content';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -46,7 +47,7 @@ export function RailedLectureList({
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title={title} onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <View style={styles.body}>
         <FlatList

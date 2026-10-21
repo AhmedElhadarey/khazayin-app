@@ -4,6 +4,7 @@ import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
+import { notifyRootRevealed } from '@/services/search/rootReveal';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -329,7 +330,18 @@ function RootLayout() {
           animation: Platform.OS === 'android' ? 'slide_from_right' : 'default',
         }}
       >
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="(tabs)"
+          options={{ headerShown: false }}
+          // When a full-screen modal over the tabs (search) finishes closing,
+          // (tabs) gets onAppear → transitionEnd {closing: false}. The modal's
+          // own closing event never arrives — see services/search/rootReveal.ts.
+          listeners={{
+            transitionEnd: (e) => {
+              if (!e.data.closing) notifyRootRevealed();
+            },
+          }}
+        />
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen
           name="resource/[id]"
@@ -401,10 +413,12 @@ function RootLayout() {
           }}
         />
         <Stack.Screen
-          name="search"
+          name="content-search"
           options={{
             headerShown: false,
-            presentation: 'modal',
+            // Full-screen, not a page sheet: the ticket asks for a full-screen
+            // search view; 'modal' is a card with the previous screen peeking on iOS.
+            presentation: 'fullScreenModal',
             animation: Platform.OS === 'android' ? 'slide_from_left' : 'default',
           }}
         />

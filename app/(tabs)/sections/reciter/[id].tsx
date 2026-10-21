@@ -5,6 +5,7 @@ import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { startSurahPlayback } from '@/services/surahPlayback';
 import { useRecitersStore, useSurahsStore } from '@/store';
+import { openSearch } from '@/services/searchNavigation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -34,7 +35,7 @@ export default function ReciterSurahListScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title={reciter?.name ?? 'القرآن حياة'} onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       {reciter ? (
         <FlatList
