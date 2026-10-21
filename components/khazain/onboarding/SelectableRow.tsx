@@ -23,8 +23,8 @@ type Props = {
  * Structure (design 2026-10-21 §4.3): the outer View is the card and carries
  * only chrome (border, background, shadow, gold selected border). Its slots run
  * in `SELECTABLE_ROW_ORDER`: the optional `preview` control, then the radio
- * `select` Pressable, which keeps the row's padding, minHeight and tick → text
- * order. The preview is a SIBLING of the radio, not nested in it, so screen
+ * `select` Pressable, which keeps the row's padding and tick → text order
+ * (minHeight stays on the card, beside the border). The preview is a SIBLING of the radio, not nested in it, so screen
  * readers reach it as its own focus stop. Without `preview` (the qira'a step)
  * the row renders as it did before.
  */
@@ -82,10 +82,13 @@ export function SelectableRow({
 
 const styles = StyleSheet.create({
   card: {
-    // Physical left -> right: [preview?] [select]. Chrome only — padding and
-    // minHeight live on `select` so a row without a preview is unchanged.
+    // Physical left -> right: [preview?] [select]. Chrome plus minHeight;
+    // padding lives on `select`. minHeight must sit here, beside the border:
+    // Yoga applies it to the border-box, so on `select` it made the card
+    // 64 + 2 * border, ~2pt taller than the base row.
     ...PHYSICAL_ROW,
     alignItems: 'center',
+    minHeight: 64,
     borderRadius: 16,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
@@ -101,9 +104,11 @@ const styles = StyleSheet.create({
     // of this, because under `forceRTL` the row is already RTL.
     ...PHYSICAL_ROW,
     flex: 1,
+    // Fill the card's full height (the card centres its children), so the
+    // radio's touch target is the whole row.
+    alignSelf: 'stretch',
     alignItems: 'center',
     gap: 12,
-    minHeight: 64,
     paddingVertical: 12,
     paddingHorizontal: 16,
   },

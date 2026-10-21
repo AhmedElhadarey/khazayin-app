@@ -73,16 +73,29 @@ describe('selectable row with a preview control', () => {
     expect(row().match(/<Pressable/g)).toHaveLength(1);
     expect(row()).toMatch(/accessibilityRole="radio"/);
   });
-  it('padding and minHeight stay on the select Pressable; the card View carries only chrome', () => {
+  it('padding stays on the select Pressable; the card View carries the chrome', () => {
     const src = row();
     const card = /card:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
     const select = /select:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
-    expect(select).toMatch(/minHeight:\s*64/);
     expect(select).toMatch(/paddingVertical:\s*12/);
     expect(select).toMatch(/paddingHorizontal:\s*16/);
-    expect(card).not.toMatch(/padding|minHeight/);
+    expect(card).not.toMatch(/padding/);
     expect(card).toMatch(/borderRadius:\s*16/);
     expect(card).toMatch(/backgroundColor/);
+  });
+  it('minHeight 64 sits on the bordered card, so the row keeps its base height (A3)', () => {
+    // Yoga applies minHeight to the border-box. At 0635ea1 the single Pressable
+    // carried both the border and minHeight 64; with minHeight on the inner
+    // Pressable the card grew to 64 + 2 * border.
+    const src = row();
+    const card = /card:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
+    const select = /select:\s*\{([^}]*)\}/.exec(src)?.[1] ?? '';
+    expect(card).toMatch(/borderWidth:\s*1\b/);
+    expect(card).toMatch(/minHeight:\s*64/);
+    expect(select).not.toMatch(/minHeight/);
+    // The radio still fills the card's full height (touch target), even though
+    // the card centres its children.
+    expect(select).toMatch(/alignSelf:\s*'stretch'/);
   });
   it('PreviewButton is a labelled 44pt button with busy state', () => {
     const src = code('components/khazain/onboarding/PreviewButton.tsx');
