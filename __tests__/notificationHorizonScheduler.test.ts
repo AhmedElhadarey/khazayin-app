@@ -1,6 +1,6 @@
 /**
  * Tests for the rolling-horizon OS boundary added to
- * `services/notificationScheduler.ts` (T-NHS-1..T-NHS-8, T107 legacy teardown,
+ * `services/notificationScheduler.ts` (T-NHS-1..T-NHS-12, T107 legacy teardown,
  * T104 mass-cancel guard).
  *
  * Uses the manual `__mocks__/expo-notifications.ts` (auto-resolved by Jest) and
@@ -13,7 +13,6 @@ import * as MockNotifications from 'expo-notifications';
 
 import {
   cancelCategoryAsync,
-  cancelEntryAsync,
   reconcileHorizonAsync,
 } from '@/services/notificationScheduler';
 import type { HorizonEntry } from '@/services/notificationHorizon';
@@ -302,30 +301,36 @@ describe('T-NHS-8 Expo Go short-circuit', () => {
 });
 
 // ---------------------------------------------------------------------------
-// T107 (INVERTED — see spec amendment "US4 descoped; wird moves to a repeating
-// trigger"): the repeating DAILY wird trigger (data.category === 'wird-daily'
-// with NO localDay) is now the CANONICAL, intended wird state — not legacy
-// debris. The horizon owns the five prayer categories ONLY, so a reconcile MUST
-// NEVER touch a `wird-daily` request. The old assertion (that reconcile tears it
-// down) is now the bug; this pins the survival guarantee instead.
+// T107: the legacy repeating DAILY wird trigger (data.category === 'wird-daily'
+// with NO localDay, armed by builds before 2026-10-21) is torn down by the
+// total reconcile. The wird reminder now lives on the one-shot DATE horizon
+// (design docs/plans/2026-10-21-daily-wird-reminders-design.md §5, "Legacy
+// migration"), so `wird-daily` is one of OUR categories again.
 // ---------------------------------------------------------------------------
-describe('T107 repeating DAILY wird trigger survives reconcile', () => {
-  it('leaves a repeating wird-daily request untouched across a prayer reconcile', async () => {
-    Mock.__setScheduledNotifications([
-      { identifier: 'wird-repeating', content: { data: { category: 'wird-daily' } } },
-    ]);
+describe('T107 legacy repeating DAILY wird trigger is torn down', () => {
+  it('cancels the legacy request and arms the horizon entry', async () => {
+    Mock.__setScheduledNotifications([{ identifier: 'wird-repeating', content: { data: { category: 'wird-daily' } } }]);
+    await reconcileHorizonAsync([entry('wird-daily', '2026-07-10')]);
+    expect(Mock.__getCancelCalls()).toContain('wird-repeating');
+    const wird = Mock.__getScheduledNotifications().filter((n) => n.content.data?.category === 'wird-daily');
+    expect(wird).toHaveLength(1);
+    expect(wird[0].content.data!.localDay).toBe('2026-07-10');
+  });
+  it('an empty intended set cancels every wird request', async () => {
+    await reconcileHorizonAsync([entry('wird-daily', '2026-07-10')]);
+    await reconcileHorizonAsync([]);
+    expect(Mock.__getScheduledNotifications().filter((n) => n.content.data?.category === 'wird-daily')).toHaveLength(0);
+  });
+});
 
-    // A normal prayer-only horizon reconcile.
-    await reconcileHorizonAsync([entry('prayer-fajr', '2026-07-09', 5)]);
-
-    // The repeating wird trigger must NOT be cancelled...
-    expect(Mock.__getCancelCalls()).not.toContain('wird-repeating');
-    // ...and must still be armed afterwards.
-    expect(
-      Mock.__getScheduledNotifications().some((n) => n.identifier === 'wird-repeating'),
-    ).toBe(true);
-    // The prayer entry is armed alongside it.
-    expect(keysOf()).toContain('prayer-fajr|2026-07-09');
+// ---------------------------------------------------------------------------
+// T-NHS-10: goal met — dropping today from intended cancels exactly today
+// ---------------------------------------------------------------------------
+describe('T-NHS-10 goal met: dropping today from intended cancels exactly today', () => {
+  it('cancels today and leaves tomorrow armed', async () => {
+    await reconcileHorizonAsync([entry('wird-daily', '2026-07-09'), entry('wird-daily', '2026-07-10')]);
+    await reconcileHorizonAsync([entry('wird-daily', '2026-07-10')]);
+    expect(Mock.__getScheduledNotifications().map((n) => n.content.data?.localDay)).toEqual(['2026-07-10']);
   });
 });
 
@@ -380,22 +385,5 @@ describe('T104 mass-cancel guard (orchestrator assembly path)', () => {
     // The notePageRead path reconciles again — prayers must survive.
     await assembleAndReconcile();
     expect(fajrArmedTomorrow()).toBe(true);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// cancelEntryAsync: cancels exactly one (category, localDay) entry.
-// ---------------------------------------------------------------------------
-describe('cancelEntryAsync', () => {
-  it('cancels only the single matching entry', async () => {
-    Mock.__setScheduledNotifications([
-      { identifier: 'w9', content: { data: { category: 'wird-daily', localDay: '2026-07-09' } } },
-      { identifier: 'w10', content: { data: { category: 'wird-daily', localDay: '2026-07-10' } } },
-    ]);
-
-    await cancelEntryAsync('wird-daily', '2026-07-09');
-
-    expect(Mock.__getCancelCalls()).toEqual(['w9']);
-    expect(Mock.__getScheduledNotifications().map((n) => n.identifier)).toEqual(['w10']);
   });
 });

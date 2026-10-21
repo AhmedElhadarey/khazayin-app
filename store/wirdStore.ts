@@ -15,10 +15,9 @@ import { assembleAndReconcile } from '@/services/horizonOrchestrator';
 // orchestrator reads the user's PERSISTED `wirdReminderTime` from settings —
 // rather than the `WIRD_REMINDER_DEFAULT_TIME` constant the previous
 // implementation always used, which meant the setting was stored but honoured by
-// nobody — and (spec amendment "US4 descoped; wird moves to a repeating trigger")
-// arms the wird reminder as a single repeating `DAILY` trigger while separately
-// reconciling the five prayer categories on the rolling horizon. Idempotent;
-// fails silently.
+// nobody — and arms the wird reminder as one-shot DATE entries on the rolling
+// horizon (today's dropped once the goal is met), alongside the five prayer
+// categories. Idempotent; fails silently.
 async function reconcileWirdSchedule(): Promise<void> {
   await assembleAndReconcile();
 }

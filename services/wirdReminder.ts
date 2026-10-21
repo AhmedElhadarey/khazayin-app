@@ -1,9 +1,10 @@
 /**
  * Pure helpers for the wird reminder's wall-clock time (US2).
  *
- * The wird reminder is a single repeating DAILY trigger at a fixed local time
- * (`settings.wirdReminderTime`), NOT a horizon entry — so the "next reminder"
- * shown on the Library card is not read from the OS schedule. It is derived
+ * The wird reminder is one one-shot DATE entry per local day on the rolling
+ * notification horizon, at a fixed local time (`settings.wirdReminderTime`),
+ * with today's entry dropped once today's goal is met. The "next reminder"
+ * shown on the Library card is not read from the OS schedule: it is derived
  * here from `now` + the persisted time, which keeps it testable without a
  * device and guarantees the UI can never display a time the app does not use.
  *
@@ -108,7 +109,7 @@ export function isWirdReminderArmed(
  *
  * **The stored preference being `true` does not mean a reminder is armed.**
  * `notifications['wird-daily']` defaults to `true`, but nothing requests
- * notification permission at boot — so on a fresh install `scheduleWirdReminderAsync`
+ * notification permission at boot — so on a fresh install the horizon reconcile
  * hits its permission gate and schedules nothing. The same divergence appears
  * when a user grants permission and later revokes it in system settings: the OS
  * cancels the notification, the preference stays `true`.

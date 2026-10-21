@@ -11,7 +11,7 @@ import * as Notifications from 'expo-notifications';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { Platform } from 'react-native';
 
-import { getCategory, isCategoryEnabled } from '@/services/notificationRegistry';
+import { getCategory } from '@/services/notificationRegistry';
 import type { HorizonEntry } from '@/services/notificationHorizon';
 import type { NotificationCategoryId } from '@/types/settings';
 
@@ -44,13 +44,6 @@ export type ScheduledId = string;
 
 export type PermissionStatus = 'granted' | 'denied' | 'undetermined';
 
-export type WirdReminderConfig = Readonly<{
-  /** Hour (0–23) in device-local time. */
-  hour: number;
-  /** Minute (0–59) in device-local time. */
-  minute: number;
-}>;
-
 // ---------------------------------------------------------------------------
 // Internal constants & module-scoped state
 // ---------------------------------------------------------------------------
@@ -77,13 +70,14 @@ const PRAYER_BODY_PLACEHOLDER = 'حان وقت الصلاة';
 
 // The categories the rolling horizon owns. Reconcile only ever cancels these.
 //
-// The five prayers ONLY (spec amendment "US4 descoped; wird moves to a repeating
-// trigger"). The wird reminder is now a single repeating `DAILY` trigger owned
-// by `scheduleWirdReminderAsync` / `cancelWirdReminderAsync`; it is deliberately
-// NOT in this set so the total reconcile can never cancel it. Adding
-// `wird-daily` back here would resurrect the old T107 teardown and destroy the
-// user's real wird reminder on every reconcile.
+// The wird reminder is one of them: it is one one-shot DATE entry per local day
+// on the horizon (design docs/plans/2026-10-21-daily-wird-reminders-design.md
+// §3.1), so the total reconcile is what cancels today's entry once the goal is
+// met. Being in this set is also what tears down the legacy repeating DAILY
+// wird request older builds armed (it has no `localDay`, so it matches no
+// intended key) — the restored T107 teardown.
 const OUR_CATEGORIES: ReadonlySet<string> = new Set<string>([
+  'wird-daily',
   'prayer-fajr',
   'prayer-dhuhr',
   'prayer-asr',
@@ -117,12 +111,6 @@ type ScheduledNotificationLike = Readonly<{
     data?: Readonly<Record<string, unknown>> | null;
   }>;
 }>;
-
-function isWirdDaily(notification: ScheduledNotificationLike): boolean {
-  const data = notification.content.data;
-  if (data === null || data === undefined) return false;
-  return data.category === WIRD_CATEGORY;
-}
 
 // ---------------------------------------------------------------------------
 // Public API
@@ -190,62 +178,6 @@ export async function getPermissionAsync(): Promise<PermissionStatus> {
   } catch (err) {
     logDev('getPermissionAsync failed', err);
     return 'undetermined';
-  }
-}
-
-export async function scheduleWirdReminderAsync(
-  cfg: WirdReminderConfig,
-): Promise<ScheduledId | null> {
-  try {
-    if (!isCategoryEnabled(WIRD_CATEGORY)) {
-      return null;
-    }
-
-    const permission = await Notifications.getPermissionsAsync();
-    if (normalizeStatus(permission?.status) !== 'granted') {
-      return null;
-    }
-
-    // Idempotency: clear any prior wird-daily before scheduling the next.
-    await cancelWirdReminderAsync();
-
-    // Ensure the named Android channel exists before scheduling against it.
-    await ensureAndroidChannelAsync();
-
-    const identifier = await Notifications.scheduleNotificationAsync({
-      content: {
-        title: WIRD_TITLE,
-        body: WIRD_BODY,
-        data: { category: WIRD_CATEGORY },
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: cfg.hour,
-        minute: cfg.minute,
-        channelId: WIRD_CATEGORY,
-      },
-    });
-
-    return identifier;
-  } catch (err) {
-    logDev('scheduleWirdReminderAsync failed', err);
-    return null;
-  }
-}
-
-export async function cancelWirdReminderAsync(): Promise<void> {
-  try {
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    const targets: ScheduledNotificationLike[] = (scheduled ?? []).filter(isWirdDaily);
-    for (const item of targets) {
-      try {
-        await Notifications.cancelScheduledNotificationAsync(item.identifier);
-      } catch (innerErr) {
-        logDev(`cancelScheduledNotificationAsync(${item.identifier}) failed`, innerErr);
-      }
-    }
-  } catch (err) {
-    logDev('cancelWirdReminderAsync failed', err);
   }
 }
 
@@ -347,15 +279,11 @@ async function scheduleHorizonEntryAsync(entry: HorizonEntry): Promise<void> {
  *   schedules every `intended` entry not already armed.
  * - Leaves matching entries untouched (no cancel-and-reschedule churn).
  *
- * NEVER touches the `wird-daily` category. Per the spec amendment "US4 descoped;
- * wird moves to a repeating trigger", the wird reminder is a single repeating
- * `DAILY` trigger — the canonical, intended state — scheduled and cancelled
- * exclusively by `scheduleWirdReminderAsync` / `cancelWirdReminderAsync`. It is
- * absent from `OUR_CATEGORIES`, so the reconcile can neither see it nor cancel
- * it. (This inverts the former T107 teardown, which would now destroy the real
- * wird reminder on every reconcile.)
+ * OUR categories are `wird-daily` and the five `prayer-*`. A legacy repeating
+ * DAILY wird request (no `localDay`) matches no intended key and is cancelled,
+ * once, on the first reconcile after upgrade (T107).
  *
- * Never touches foreign categories either. Fails silently on OS errors.
+ * Never touches foreign categories. Fails silently on OS errors.
  */
 export async function reconcileHorizonAsync(
   intended: readonly HorizonEntry[],
@@ -409,23 +337,5 @@ export async function cancelCategoryAsync(
     }
   } catch (err) {
     logDev('cancelCategoryAsync failed', err);
-  }
-}
-
-/** Cancels the single entry for (category, localDay). Used when a goal is met. */
-export async function cancelEntryAsync(
-  categoryId: NotificationCategoryId,
-  localDay: string,
-): Promise<void> {
-  try {
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    for (const n of (scheduled ?? []) as ScheduledNotificationLike[]) {
-      const data = n.content.data ?? {};
-      if (data.category === categoryId && data.localDay === localDay) {
-        await cancelByIdAsync(n.identifier);
-      }
-    }
-  } catch (err) {
-    logDev('cancelEntryAsync failed', err);
   }
 }

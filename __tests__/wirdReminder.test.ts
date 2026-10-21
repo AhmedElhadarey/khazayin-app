@@ -1,9 +1,9 @@
 /**
  * T050 [US2] — the pure "next reminder" function.
  *
- * The Library card's next-reminder time is NOT read from the horizon: the wird
- * reminder is a repeating DAILY trigger at a fixed wall-clock time. The next
- * occurrence is simply "today at that time if still future, else tomorrow".
+ * The Library card's next-reminder time is NOT read from the OS schedule: the
+ * wird reminder fires at a fixed wall-clock time each day. The next occurrence
+ * is simply "today at that time if still future, else tomorrow".
  * Written as a pure function taking `now` so it is testable without a device.
  */
 
@@ -52,7 +52,7 @@ describe('computeNextWirdReminder (US2, T050)', () => {
 //
 // Regression guard for the Phase 3/4 review BLOCKER: `wird-daily` defaults to
 // TRUE and nothing requests notification permission at boot, so on a fresh
-// install `scheduleWirdReminderAsync` hits its permission gate and schedules
+// install the scheduler hits its permission gate and schedules
 // nothing — while the card printed a next-reminder time anyway. The preference
 // being on is NOT the same as the reminder being armed.
 // ---------------------------------------------------------------------------

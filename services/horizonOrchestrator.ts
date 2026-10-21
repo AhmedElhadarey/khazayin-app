@@ -16,28 +16,29 @@
  * precisely its job: to gather the complete input in one audited place so the
  * pure `computeHorizon` always receives every field.
  *
- * It reconciles BOTH reminder kinds in one serialised pass:
- *   - the WIRD reminder, a single repeating `DAILY` trigger at the persisted
- *     `wirdReminderTime` (spec amendment "US4 descoped; wird moves to a repeating
- *     trigger"); scheduled/cancelled directly here, NOT part of the horizon; and
- *   - the five PRAYER categories, via `computeHorizon` → `reconcileHorizonAsync`.
+ * It reconciles BOTH reminder kinds in one serialised pass, both through
+ * `computeHorizon` → `reconcileHorizonAsync`:
+ *   - the WIRD reminder: one one-shot DATE entry per local day for
+ *     WIRD_HORIZON_DAYS days at the persisted `wirdReminderTime`, with today's
+ *     entry dropped once today's goal is met (`khz_days.wird_completed`, read
+ *     here from the DB so the headless background task sees it too); and
+ *   - the five PRAYER categories.
+ *
+ * Every "goal met" / time-change / toggle reschedule goes through
+ * `assembleAndReconcile`, never a direct cancel, so it cannot race a reconcile
+ * already in flight (design docs/plans/2026-10-21-daily-wird-reminders-design.md
+ * §3.3).
  *
  * Contract: specs/004-daily-wird-tracking/contracts/notification-horizon.contract.md
  */
 
-import { getRepos } from '@/db';
+import { getRepos, progressRepo } from '@/db';
 import { computeHorizon } from '@/services/notificationHorizon';
 import { getCategory } from '@/services/notificationRegistry';
-import {
-  cancelCategoryAsync,
-  reconcileHorizonAsync,
-  scheduleWirdReminderAsync,
-} from '@/services/notificationScheduler';
+import { reconcileHorizonAsync } from '@/services/notificationScheduler';
 import { useSettingsStore } from '@/store/settingsStore';
 import { toLocalDay } from '@/constants/progress';
 import type { NotificationCategoryId, PrayerTimeSet } from '@/types/settings';
-
-const WIRD_CATEGORY: NotificationCategoryId = 'wird-daily';
 
 type PrayerTimesProvider = (localDay: string) => PrayerTimeSet | null;
 
@@ -142,29 +143,26 @@ async function runOnce(): Promise<void> {
       ]),
     ) as Record<NotificationCategoryId, boolean>;
 
-    // --- wird: a single repeating DAILY trigger, NOT a horizon entry --------
-    // Per the spec amendment "US4 descoped; wird moves to a repeating trigger",
-    // the wird reminder is immortal-over-cancellable: one repeating `DAILY`
-    // trigger at the user's PERSISTED `wirdReminderTime` (never the
-    // WIRD_REMINDER_DEFAULT_TIME constant). `scheduleWirdReminderAsync` is
-    // idempotent (it cancels any prior wird before scheduling), so calling it on
-    // every reconcile simply re-asserts the current time.
-    if (enabled[WIRD_CATEGORY]) {
-      await scheduleWirdReminderAsync(settings.wirdReminderTime);
-    } else {
-      await cancelCategoryAsync(WIRD_CATEGORY);
+    // Today's goal, from the same DB flag the history grid and the wird store
+    // read. Fail toward reminding: a redundant reminder beats a silently
+    // missing one.
+    let wirdGoalMetToday = false;
+    try {
+      const done = await progressRepo.completedDaysInRange(todayLocalDay, todayLocalDay);
+      wirdGoalMetToday = done.includes(todayLocalDay);
+    } catch (err) {
+      if (typeof __DEV__ !== 'undefined' && __DEV__) {
+        console.warn('[horizonOrchestrator] goal-met read failed', err);
+      }
     }
 
-    // --- prayers: the rolling one-shot horizon ------------------------------
     const intended = computeHorizon({
       now,
       todayLocalDay,
+      enabled,
       prayerTimesFor,
-      // STOPGAP (Task 2 → removed in Task 4): wird stays on its DAILY trigger until
-      // the atomic switch-over, so it must not appear in the horizon yet.
-      enabled: { ...enabled, 'wird-daily': false },
       wirdReminderTime: settings.wirdReminderTime,
-      wirdGoalMetToday: false,
+      wirdGoalMetToday,
     });
 
     await reconcileHorizonAsync(intended);

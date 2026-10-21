@@ -117,13 +117,13 @@ export default function LibraryScreen() {
 
   // Wird reminder state lives in settingsStore (the single source of truth that
   // the scheduler reads), not in local component state. Toggling here persists
-  // the preference AND re-arms/cancels the repeating DAILY trigger (T047).
+  // the preference AND re-arms/cancels the wird reminder horizon (T047).
   //
   // Routed through `setWirdReminderEnabled` so this toggle has the SAME
   // permission semantics as the one in settings-notifications. Without it, a
   // user who has denied notification permission could switch this on: the
   // preference would persist, the card would render a next-reminder time, and
-  // `scheduleWirdReminderAsync` would silently no-op — the card would be
+  // the scheduler would silently arm nothing — the card would be
   // advertising a reminder that can never fire.
   const wirdReminderOn = useSettingsStore((s) => s.notifications['wird-daily']);
   const wirdReminderTime = useSettingsStore((s) => s.wirdReminderTime);

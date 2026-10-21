@@ -5,8 +5,8 @@
  * Two screens toggle this: the Library tab's inline `التذكير اليومي` switch and
  * the notifications settings screen. They MUST agree, because a persisted
  * `wird-daily: true` causes the Library card to render a next-reminder time.
- * If the OS has denied notification permission, `scheduleWirdReminderAsync`
- * silently no-ops — so flipping the preference anyway would leave the card
+ * If the OS has denied notification permission, the horizon reconcile
+ * silently schedules nothing — so flipping the preference anyway would leave the card
  * advertising a reminder that can never fire. That is the exact class of defect
  * this feature exists to remove (see the three deleted mock ReminderCards).
  *
@@ -64,15 +64,15 @@ export async function setWirdReminderEnabled(next: boolean): Promise<WirdToggleO
 }
 
 /**
- * Persist a new wird reminder time and re-arm the repeating DAILY trigger.
+ * Persist a new wird reminder time and re-arm the wird horizon at that time
+ * (every pending entry whose fire time changed is cancelled and re-armed).
  *
  * **This is the second place permission must be requested, and for a long while
  * it was the missing one.** `wird-daily` is registered `defaultOn: true`, so the
  * switch is already on for every new user — and `setWirdReminderEnabled` (the
  * only caller of `requestPermissionAsync`) runs solely when the user *flips* that
  * switch. A switch that starts on is never flipped on, so a fresh install never
- * saw an OS prompt, `scheduleWirdReminderAsync` hit its permission gate on every
- * boot, and the reminder could never fire. Choosing a time looked like it worked
+ * saw an OS prompt, the scheduler hit its permission gate on every boot, and the reminder could never fire. Choosing a time looked like it worked
  * and did nothing.
  *
  * Picking a reminder time is an unambiguous statement of intent, which is exactly
