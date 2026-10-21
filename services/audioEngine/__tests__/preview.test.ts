@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 const mockSetTrack = jest.fn();
 const mockSetVisible = jest.fn();
 const mockSetIsPlaying = jest.fn();
