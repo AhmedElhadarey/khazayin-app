@@ -256,13 +256,36 @@ describe('playLecture', () => {
       expect(TrackPlayer.seekTo).not.toHaveBeenCalled();
     });
 
-    it('is cancelled when the active track changes to another episode', async () => {
+    it('is cancelled once the player moves away from the episode it reached', async () => {
       const subs = listeners();
       await start45();
       const changed = subs.find((x) => x.event === Event.PlaybackActiveTrackChanged)!;
+      changed.cb({ track: { id: 'ABC/001.mp3' } });
+      subs.forEach((x) => expect(x.remove).not.toHaveBeenCalled());
       changed.cb({ track: { id: 'ABC/002.mp3' } });
       subs.forEach((x) => expect(x.remove).toHaveBeenCalled());
     });
+
+    it('survives the reset/setQueue track change to episode 0 before reaching its target', async () => {
+      const subs = listeners();
+      (TrackPlayer.getActiveTrack as jest.Mock).mockResolvedValue({ id: 'ABC/003.mp3' });
+      await engine.playLecture(LECTURE as any, { episodeId: 'ABC/003.mp3', positionSec: 45 });
+      const changed = subs.find((x) => x.event === Event.PlaybackActiveTrackChanged)!;
+      changed.cb({ track: { id: 'ABC/001.mp3' } }); // late event from reset()/setQueue()
+      subs.forEach((x) => expect(x.remove).not.toHaveBeenCalled());
+      await stateCb(subs).cb({ state: State.Ready });
+      expect(TrackPlayer.seekTo).toHaveBeenCalledWith(45);
+    });
+
+    it.each([Event.RemoteSeek, Event.RemoteNext, Event.RemotePrevious])(
+      'lock-screen %s cancels it',
+      async (event) => {
+        const subs = listeners();
+        await start45();
+        subs.find((x) => x.event === event)!.cb({});
+        subs.forEach((x) => expect(x.remove).toHaveBeenCalled());
+      },
+    );
 
     it('survives the active-track change to its own episode', async () => {
       const subs = listeners();

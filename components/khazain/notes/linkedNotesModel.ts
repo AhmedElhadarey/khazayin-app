@@ -78,7 +78,7 @@ export const OPEN_SOURCE_ACTION = 'openSource';
 export function noteRowA11y(row: LinkedNoteRow, onOpenSource: (() => void) | undefined) {
   const canOpen = row.linkable && !!row.label && !!onOpenSource;
   return {
-    accessibilityLabel: row.label ? `${row.title}، ${row.label}` : row.title,
+    accessibilityLabel: [row.title, row.label, row.time].filter(Boolean).join('، '),
     accessibilityActions: canOpen
       ? [{ name: OPEN_SOURCE_ACTION, label: `الانتقال إلى ${row.label}` }]
       : undefined,

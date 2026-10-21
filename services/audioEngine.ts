@@ -196,6 +196,7 @@ function cancelSeekCorrection(): void {
 function armSeekCorrection(episodeId: string, targetSec: number): void {
   cancelSeekCorrection();
   let done = false;
+  let reached = false;
   const subs = [
     TrackPlayer.addEventListener(Event.PlaybackState, async (e: PlaybackState) => {
       if (done || (e.state !== State.Ready && e.state !== State.Playing)) return;
@@ -209,12 +210,21 @@ function armSeekCorrection(episodeId: string, targetSec: number): void {
         Sentry.captureException(err);
       }
     }),
+    // Cancel only once the player moves AWAY from our episode after reaching
+    // it. reset()/setQueue() make episode 0 active first, and that event can
+    // arrive after we arm; it must not count as "moved away".
     TrackPlayer.addEventListener(
       Event.PlaybackActiveTrackChanged,
       (e: PlaybackActiveTrackChangedEvent) => {
-        if (e.track && e.track.id !== episodeId) cancelSeekCorrection();
+        if (e.track?.id === episodeId) reached = true;
+        else if (reached && e.track) cancelSeekCorrection();
       },
     ),
+    // Lock-screen transport calls TrackPlayer directly (playbackService.ts),
+    // bypassing the cancels in skipNext/skipPrev/seekTo.
+    TrackPlayer.addEventListener(Event.RemoteSeek, cancelSeekCorrection),
+    TrackPlayer.addEventListener(Event.RemoteNext, cancelSeekCorrection),
+    TrackPlayer.addEventListener(Event.RemotePrevious, cancelSeekCorrection),
   ];
   const timer = setTimeout(cancelSeekCorrection, SEEK_CORRECTION_TIMEOUT_MS);
   _cancelSeekCorrection = () => {

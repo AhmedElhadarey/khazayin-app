@@ -110,8 +110,10 @@ describe('noteRowA11y', () => {
     a11y.onAccessibilityAction({ nativeEvent: { actionName: 'other' } });
     expect(open).toHaveBeenCalledTimes(1);
   });
-  it('combines title and source in the label', () => {
-    expect(noteRowA11y(linked, jest.fn()).accessibilityLabel).toBe('عنوان، البقرة: ٢٥٥');
+  it('combines title, source and time in the label', () => {
+    const row = linkedNoteRow(note({ ref: makeAyahRef('2', 255) })); // Date.now is mocked here
+    expect(noteRowA11y(row, jest.fn()).accessibilityLabel).toBe('عنوان، البقرة: ٢٥٥، منذ ساعة');
+    expect(noteRowA11y(linkedNoteRow(note()), undefined).accessibilityLabel).toBe('عنوان، منذ ساعة');
   });
   it('has no action for a plain, unknown-type or handler-less row', () => {
     expect(noteRowA11y(linkedNoteRow(note()), jest.fn()).accessibilityActions).toBeUndefined();
