@@ -58,3 +58,41 @@ describe('the search screen file and its registration', () => {
     expect(fs.existsSync(path.join(ROOT, 'app/(tabs)/search.tsx'))).toBe(true);
   });
 });
+
+const LEGACY = new Set([
+  path.join('app', '(tabs)', '_legacy-home.tsx'),
+  path.join('app', '(tabs)', 'search.tsx'),
+]);
+/** Forwards its `onSearchOpen` prop to the pill; Home's own wiring is asserted below. */
+const FORWARDS_PROP = new Set([path.join('components', 'khazain', 'home', 'HomeHeader.tsx')]);
+const stripComments = (s: string) =>
+  s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+const sources = [...walk('app'), ...walk('components')].filter(
+  (f) => /\.(ts|tsx)$/.test(f) && !LEGACY.has(f),
+);
+
+describe('every entry point reaches the new search screen', () => {
+  it('no non-legacy file names the bare /search route', () => {
+    const offenders = sources.filter((f) => /['"`]\/search['"`]/.test(stripComments(read(f))));
+    expect(offenders).toEqual([]);
+  });
+
+  it('no SearchPill onPress builds a route inline', () => {
+    const offenders = sources.filter((f) =>
+      /<SearchPill[^>]*\bonPress=\{[^}]*['"`]\//.test(stripComments(read(f))));
+    expect(offenders).toEqual([]);
+  });
+
+  it('every tappable SearchPill goes through openSearch', () => {
+    const offenders = sources.filter((f) => {
+      if (FORWARDS_PROP.has(f)) return false;
+      const src = stripComments(read(f));
+      return /<SearchPill[^>]*\bonPress=/.test(src) && !/onPress=\{openSearch\}/.test(src);
+    });
+    expect(offenders).toEqual([]);
+  });
+
+  it('the Home header search opens through openSearch', () => {
+    expect(read('app/(tabs)/index.tsx')).toMatch(/onSearchOpen=\{openSearch\}/);
+  });
+});

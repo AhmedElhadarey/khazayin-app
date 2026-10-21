@@ -11,6 +11,7 @@ import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout
 import { LETTER_INDEX_EDGE } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { useScholarsStore } from '@/store';
+import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -33,7 +34,7 @@ export default function ScholarScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title="العلماء والمشايخ" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <View style={styles.body}>
         {/* Virtualized on success; AsyncContent owns loading/empty/error (T3.1). */}

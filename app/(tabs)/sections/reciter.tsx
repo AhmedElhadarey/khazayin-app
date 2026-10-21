@@ -15,6 +15,7 @@ import { DEFAULT_SETTINGS } from '@/constants/settings';
 import { reciterDestination, reciterTabFromParam } from '@/services/reciterNavigation';
 import type { Reciter } from '@/types/content';
 import { useRecitersStore, useSettingsStore } from '@/store';
+import { openSearch } from '@/services/searchNavigation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
@@ -65,7 +66,7 @@ export default function ReciterScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title="القرآن حياة" onBack={() => router.back()} />
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <SegmentTabs<string> tabs={RECITER_TABS} active={active} onChange={setActive} />
       {/* Body: scrollable list + absolute-positioned right-rail letter index. */}

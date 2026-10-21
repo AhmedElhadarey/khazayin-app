@@ -4,6 +4,7 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useScholarLecturesStore, useScholarsStore } from '@/store';
+import { openSearch } from '@/services/searchNavigation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
@@ -44,7 +45,7 @@ export default function ScholarDetailScreen() {
         <Text style={styles.name}>{name}</Text>
       </View>
       <View style={styles.searchBlock}>
-        <SearchPill placeholder="بحث.." onPress={() => router.push('/search' as any)} />
+        <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       {/* Virtualized on success — a scholar's lecture list is unbounded (T3.1).
           AsyncContent owns the loading/empty/error states. */}
