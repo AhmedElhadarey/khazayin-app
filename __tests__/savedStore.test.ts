@@ -100,4 +100,50 @@ describe('savedStore', () => {
     await useSavedStore.persist.rehydrate();
     expect(useSavedStore.getState().items).toEqual([persisted]);
   });
+
+  it('restore puts an unsaved item back at its original index with its original savedAt', () => {
+    saveAt(1, 'lecture', 'a', LECTURE);
+    saveAt(2, 'lecture', 'b', LECTURE);
+    saveAt(3, 'lecture', 'c', LECTURE);           // order: c, b, a
+    const removed = useSavedStore.getState().unsave('lecture', 'b')!;
+    now = 99;                                       // undo happens later
+    useSavedStore.getState().restore(removed);
+    const items = useSavedStore.getState().items;
+    expect(items.map((i) => i.entityId)).toEqual(['c', 'b', 'a']);
+    expect(items[1]).toBe(removed);                 // same entry, not a re-stamped copy
+    expect(items[1].savedAt).toBe(2);
+  });
+
+  it('restore of the oldest item appends it', () => {
+    saveAt(1, 'lecture', 'a', LECTURE);
+    saveAt(2, 'lecture', 'b', LECTURE);
+    const removed = useSavedStore.getState().unsave('lecture', 'a')!;
+    useSavedStore.getState().restore(removed);
+    expect(useSavedStore.getState().items.map((i) => i.entityId)).toEqual(['b', 'a']);
+  });
+
+  it('restore into an empty library', () => {
+    saveAt(4, 'scholar', 's4', SCHOLAR);
+    const removed = useSavedStore.getState().unsave('scholar', 's4')!;
+    useSavedStore.getState().restore(removed);
+    expect(useSavedStore.getState().items).toEqual([removed]);
+  });
+
+  it('restore is a no-op when the item is already saved', () => {
+    saveAt(1, 'lecture', 'a', LECTURE);
+    const stale = { ...useSavedStore.getState().items[0], savedAt: 0 };
+    useSavedStore.getState().restore(stale);
+    expect(useSavedStore.getState().items).toHaveLength(1);
+    expect(useSavedStore.getState().items[0].savedAt).toBe(1);
+  });
+
+  it('restore logs its own telemetry action', () => {
+    saveAt(1, 'lecture', 'a', LECTURE);
+    const removed = useSavedStore.getState().unsave('lecture', 'a')!;
+    useSavedStore.getState().restore(removed);
+    expect(console.log).toHaveBeenLastCalledWith(
+      '[khazayin]',
+      { context: 'saved-toggle', action: 'restore', type: 'lecture', total: 1 },
+    );
+  });
 });
