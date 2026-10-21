@@ -1,4 +1,4 @@
-import { editorSeed, linkedNoteRow, seriesIdsOf, sortByPosition, surahNotesBlock } from '@/components/khazain/notes/linkedNotesModel';
+import { editorSeed, noteRowA11y, OPEN_SOURCE_ACTION, linkedNoteRow, seriesIdsOf, sortByPosition, surahNotesBlock } from '@/components/khazain/notes/linkedNotesModel';
 import { makeAyahRef, noteRefToParams } from '@/services/noteRefs';
 import type { Note } from '@/store/notesStore';
 
@@ -95,5 +95,28 @@ describe('seriesIdsOf', () => {
     expect(seriesIdsOf([{ archiveId: 'A' }, {}, { archiveId: 'B' }, { archiveId: 'A' }])).toEqual(
       new Set(['A', 'B']),
     );
+  });
+});
+
+describe('noteRowA11y', () => {
+  const linked = linkedNoteRow(note({ ref: makeAyahRef('2', 255) }));
+  it('exposes an openSource action that calls the same handler as the link tap', () => {
+    const open = jest.fn();
+    const a11y = noteRowA11y(linked, open);
+    expect(a11y.accessibilityActions).toEqual([
+      { name: OPEN_SOURCE_ACTION, label: 'الانتقال إلى البقرة: ٢٥٥' },
+    ]);
+    a11y.onAccessibilityAction({ nativeEvent: { actionName: OPEN_SOURCE_ACTION } });
+    a11y.onAccessibilityAction({ nativeEvent: { actionName: 'other' } });
+    expect(open).toHaveBeenCalledTimes(1);
+  });
+  it('combines title and source in the label', () => {
+    expect(noteRowA11y(linked, jest.fn()).accessibilityLabel).toBe('عنوان، البقرة: ٢٥٥');
+  });
+  it('has no action for a plain, unknown-type or handler-less row', () => {
+    expect(noteRowA11y(linkedNoteRow(note()), jest.fn()).accessibilityActions).toBeUndefined();
+    const unknown = linkedNoteRow(note({ ref: { type: 'video', id: 'v', label: 'فيديو' } }));
+    expect(noteRowA11y(unknown, jest.fn()).accessibilityActions).toBeUndefined();
+    expect(noteRowA11y(linked, undefined).accessibilityActions).toBeUndefined();
   });
 });

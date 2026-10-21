@@ -6,7 +6,7 @@ import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import type { Note } from '@/store/notesStore';
 
-import { linkedNoteRow } from './linkedNotesModel';
+import { linkedNoteRow, noteRowA11y } from './linkedNotesModel';
 import { NoteRefLink } from './NoteRefLink';
 
 type Props = {
@@ -30,11 +30,13 @@ export function LinkedNotesSection({ title, notes, onOpenNote, onOpenSource, flu
       {title ? <Text style={styles.title}>{title}</Text> : null}
       {notes.map((note) => {
         const row = linkedNoteRow(note);
+        const openSource = onOpenSource ? () => onOpenSource(note) : undefined;
         return (
           <Pressable
             key={row.id}
             onPress={() => onOpenNote(row.id)}
             accessibilityRole="button"
+            {...noteRowA11y(row, openSource)}
             style={styles.row}
           >
             {/* Physical left -> right: time, then title + source label. */}
@@ -48,7 +50,7 @@ export function LinkedNotesSection({ title, notes, onOpenNote, onOpenSource, flu
               {row.label ? (
                 <NoteRefLink
                   label={row.label}
-                  onPress={row.linkable && onOpenSource ? () => onOpenSource(note) : undefined}
+                  onPress={row.linkable ? openSource : undefined}
                 />
               ) : null}
             </View>

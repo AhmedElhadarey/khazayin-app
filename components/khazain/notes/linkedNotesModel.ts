@@ -66,3 +66,24 @@ export function seriesIdsOf(lectures: readonly { archiveId?: string }[]): Set<st
   for (const l of lectures) if (l.archiveId) ids.add(l.archiveId);
   return ids;
 }
+
+export const OPEN_SOURCE_ACTION = 'openSource';
+
+/**
+ * Accessibility props for a note row. The row is one accessible element, so the
+ * inner source link is unreachable by a screen reader; a linkable row exposes
+ * the same navigation as a custom action instead (the MiniPlayer/mushaf
+ * pattern) and a label that reads title then source.
+ */
+export function noteRowA11y(row: LinkedNoteRow, onOpenSource: (() => void) | undefined) {
+  const canOpen = row.linkable && !!row.label && !!onOpenSource;
+  return {
+    accessibilityLabel: row.label ? `${row.title}، ${row.label}` : row.title,
+    accessibilityActions: canOpen
+      ? [{ name: OPEN_SOURCE_ACTION, label: `الانتقال إلى ${row.label}` }]
+      : undefined,
+    onAccessibilityAction: (e: { nativeEvent: { actionName: string } }) => {
+      if (canOpen && e.nativeEvent.actionName === OPEN_SOURCE_ACTION) onOpenSource?.();
+    },
+  };
+}

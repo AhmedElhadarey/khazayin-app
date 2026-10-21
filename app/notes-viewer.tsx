@@ -1,7 +1,7 @@
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
-import { linkedNoteRow, NoteRefLink } from '@/components/khazain/notes';
+import { linkedNoteRow, NoteRefLink, noteRowA11y } from '@/components/khazain/notes';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { viewerSourceAction } from '@/services/noteNavigation';
 import { Note, useNotesStore } from '@/store/notesStore';
@@ -87,6 +87,8 @@ function NoteRow({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      {...noteRowA11y(row, onOpenSource)}
       style={({ pressed }) => [
         styles.row,
         KhazainShadows.card,
