@@ -12,6 +12,7 @@ import { I18nManager, LogBox, Platform, Pressable, StyleSheet, Text, TextInput, 
 import { Image as ExpoImage } from 'expo-image';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import { useHorizonReconcile } from '@/hooks/useHorizonReconcile';
+import { useDayRollover } from '@/hooks/useDayRollover';
 import { ToastOverlay } from '@/components/khazain';
 import { useProgressStore } from '@/store/progressStore';
 import { useWirdStore } from '@/store/wirdStore';
@@ -261,6 +262,9 @@ function RootLayout() {
   // also guards this internally (the background task has no React lifecycle);
   // this gate just avoids a wasted pre-hydration pass.
   useHorizonReconcile(navigatorReady);
+  // Audit gap 2: reset the Library wird ring when the local day changes while
+  // the app is still in memory (on foreground, and at local midnight).
+  useDayRollover(navigatorReady);
 
   // The native splash stays up for the whole gate, so there is no blank frame
   // between it and the launch overlay.
