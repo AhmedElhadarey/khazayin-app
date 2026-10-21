@@ -24,6 +24,7 @@ import { useProgressStore } from '@/store/progressStore';
 import { useToastStore } from '@/store/toastStore';
 import { fetchItemMetadata } from './archive/archiveClient';
 import { resolveEpisodes, type ArchiveEpisode } from './archive/episodeResolver';
+import { archiveIdOfEpisode } from '@/services/noteRefs';
 import type { LectureSession } from '@/db/types';
 import type { Lecture } from '@/types/content';
 
@@ -330,7 +331,7 @@ export async function togglePlayback(): Promise<void> {
     if (!hasQueue) {
       const track = usePlayerStore.getState().track;
       if (!track) return;
-      const archiveId = track.id.split('/')[0];
+      const archiveId = archiveIdOfEpisode(track.id);
       await playLecture({
         id: track.id,
         title: track.title,

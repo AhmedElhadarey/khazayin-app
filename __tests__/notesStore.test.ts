@@ -4,7 +4,6 @@ import path from 'path';
 
 import { makeAyahRef } from '@/services/noteRefs';
 import {
-  archiveIdOfEpisode,
   coerceNotes,
   notesFor,
   notesForLectureSeries,
@@ -164,10 +163,6 @@ describe('linked-note selectors', () => {
   it('notesFor keeps store order', () => {
     const notes = [mk('x', makeAyahRef('2', 5)), mk('y', makeAyahRef('2', 1))];
     expect(notesFor(notes, 'ayah', '002').map((n) => n.id)).toEqual(['x', 'y']);
-  });
-
-  it('archiveIdOfEpisode', () => {
-    expect(archiveIdOfEpisode('ABC/sub/x.mp3')).toBe('ABC');
   });
 
   it('notesForLectureSeries matches by archive id', () => {

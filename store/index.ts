@@ -115,7 +115,6 @@ export {
   formatRelativeAr,
   notesFor,
   notesForLectureSeries,
-  archiveIdOfEpisode,
   useLinkedNotes,
 } from './notesStore';
 export type { Note } from './notesStore';

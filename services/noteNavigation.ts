@@ -4,7 +4,7 @@
  * nothing here dismisses a sheet (the notes viewer closes itself first).
  */
 import { bookDetailHref } from '@/services/bookDetail';
-import { isEpisodeId, type NoteRef } from '@/services/noteRefs';
+import { archiveIdOfEpisode, isEpisodeId, type NoteRef } from '@/services/noteRefs';
 import { normalizeSurahParam } from '@/services/mushafNavigation';
 import type { LectureStart } from '@/services/audioEngine';
 import type { Lecture } from '@/types/content';
@@ -27,16 +27,16 @@ export function noteSourceTarget(ref: NoteRef): NoteSourceTarget | null {
     }
     case 'lecture': {
       if (!isEpisodeId(ref.id)) return null;
-      const archiveId = ref.id.split('/')[0];
+      const archiveId = archiveIdOfEpisode(ref.id);
       // Mirrors the Lecture audioEngine.togglePlayback rebuilds from a track.
-      const lecture = {
+      const lecture: Lecture = {
         id: archiveId,
         archiveId,
         title: ref.title ?? '',
         scholar: ref.speaker ?? '',
         duration: '',
         category: 'scholar',
-      } as Lecture;
+      };
       return {
         kind: 'lecture',
         lecture,

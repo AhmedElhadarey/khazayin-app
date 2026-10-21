@@ -1,5 +1,6 @@
 import { pageForAyah } from '@/constants/quranPages';
 import {
+  archiveIdOfEpisode,
   ayahRefLabel,
   bookRefLabel,
   coerceNoteRef,
@@ -74,6 +75,9 @@ describe('builders', () => {
     expect(isEpisodeId('ABC/002.mp3')).toBe(true);
     expect(isEpisodeId('ABC/sub/x.mp3')).toBe(true);
     for (const bad of ['sl5-1', '/x', 'ABC/', '']) expect(isEpisodeId(bad)).toBe(false);
+  });
+  it('archiveIdOfEpisode', () => {
+    expect(archiveIdOfEpisode('ABC/sub/x.mp3')).toBe('ABC');
   });
   it('makeLectureRef rounds the position', () => {
     const r = makeLectureRef(

@@ -67,6 +67,9 @@ export function bookRefLabel(title: string, page?: number): string {
 /** Episode ids are `${archiveId}/${file}`; anything else cannot be resolved back. */
 export const isEpisodeId = (id: string): boolean => /^[^/]+\/.+$/.test(id);
 
+/** Archive (series) id of an episode id `${archiveId}/${file}`. */
+export const archiveIdOfEpisode = (episodeId: string): string => episodeId.split('/')[0];
+
 export function makeAyahRef(surah: string | number, ayah?: number): NoteRef {
   const id = normalizeSurahParam(String(surah)) ?? String(surah);
   const n = Number(id);

@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { toArabicDigits } from '@/constants/progress';
-import { coerceNoteRef, type NoteRef, type NoteRefType } from '@/services/noteRefs';
+import { archiveIdOfEpisode, coerceNoteRef, type NoteRef, type NoteRefType } from '@/services/noteRefs';
 
 export type Note = {
   id: string;
@@ -104,11 +104,6 @@ export const useNotesStore = create<NotesState>()(
 /** Notes linked to exactly (type, id), in store order (newest first). */
 export function notesFor(notes: readonly Note[], type: string, id: string): Note[] {
   return notes.filter((n) => n.ref?.type === type && n.ref.id === id);
-}
-
-/** Archive (series) id of an episode id `${archiveId}/${file}`. */
-export function archiveIdOfEpisode(episodeId: string): string {
-  return episodeId.split('/')[0];
 }
 
 /** Lecture notes whose episode belongs to any of the given archive ids. */
