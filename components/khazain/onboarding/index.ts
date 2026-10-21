@@ -7,8 +7,7 @@
 
 export { OnboardingProgress } from './OnboardingProgress';
 export { OnboardingFooter } from './OnboardingFooter';
-export { WelcomeStep } from './WelcomeStep';
+export { WELCOME_HIGHLIGHTS, WelcomeStep } from './WelcomeStep';
 export { QiraaStep } from './QiraaStep';
 export { ReciterStep } from './ReciterStep';
 export { ChannelsStep } from './ChannelsStep';
-export { FeatureStep, FEATURE_STEPS } from './FeatureStep';
