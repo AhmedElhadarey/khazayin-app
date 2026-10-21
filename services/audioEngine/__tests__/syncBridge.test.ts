@@ -13,6 +13,15 @@ jest.mock('@/store/toastStore', () => ({ useToastStore: { getState: () => ({ sho
 jest.mock('@sentry/react-native', () => ({ captureException: jest.fn() }));
 import * as Sentry from '@sentry/react-native';
 
+const mockStopPreview = jest.fn().mockResolvedValue(undefined);
+let mockOwner: 'none' | 'lecture' | 'preview' = 'lecture';
+jest.mock('../../audioEngine', () => ({
+  getQueueOwner: () => mockOwner,
+  stopReciterPreview: () => mockStopPreview(),
+  PREVIEW_ERROR_MESSAGE: 'تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.',
+}));
+import { usePreviewStore } from '@/store/previewStore';
+
 import { registerPlaybackListeners, unregisterPlaybackListeners } from '../syncBridge';
 
 /** Find the handler registered for a given RNTP Event. */
@@ -26,6 +35,7 @@ describe('syncBridge', () => {
   beforeEach(() => {
     (Platform as any).OS = 'ios';
     jest.clearAllMocks();
+    mockOwner = 'lecture'; // a lecture queue behaves exactly as before previews existed
     unregisterPlaybackListeners();
     registerPlaybackListeners();
   });
@@ -102,5 +112,64 @@ describe('syncBridge', () => {
     registerPlaybackListeners();
     expect(TrackPlayer.addEventListener).not.toHaveBeenCalled();
     (Platform as any).OS = 'ios';
+  });
+
+  describe('while a reciter preview owns the queue', () => {
+    beforeEach(() => {
+      mockOwner = 'preview';
+      usePreviewStore.getState().begin('r3');
+    });
+    afterEach(() => usePreviewStore.getState().clear());
+
+    it('B1: ignores active-track changes (MiniPlayer keeps the user track)', () => {
+      handlerFor(Event.PlaybackActiveTrackChanged)({ track: { id: 'preview:r3', url: 'u' } });
+      expect(mockSetTrack).not.toHaveBeenCalled();
+    });
+    it('B2: ignores progress (no lecture tick into SQLite)', () => {
+      handlerFor(Event.PlaybackProgressUpdated)({ position: 5, duration: 50 });
+      expect(mockSetProgress).not.toHaveBeenCalled();
+    });
+    it('B3: never writes isPlaying', () => {
+      handlerFor(Event.PlaybackState)({ state: State.Playing });
+      handlerFor(Event.PlaybackState)({ state: State.Paused });
+      expect(mockSetIsPlaying).not.toHaveBeenCalled();
+    });
+    it("B4: Stopped/None while loading (the preview's own reset) does not end it", () => {
+      handlerFor(Event.PlaybackState)({ state: State.Stopped });
+      handlerFor(Event.PlaybackState)({ state: State.None });
+      expect(mockStopPreview).not.toHaveBeenCalled();
+    });
+    it.each([State.Paused, State.Stopped, State.Ended])('B5: %s while playing ends the preview', (s) => {
+      usePreviewStore.getState().markPlaying('r3');
+      handlerFor(Event.PlaybackState)({ state: s });
+      expect(mockStopPreview).toHaveBeenCalled();
+    });
+    it('B6: queue end stops the preview and NEVER clears the MiniPlayer track', () => {
+      handlerFor(Event.PlaybackQueueEnded)({ track: 0, position: 50 });
+      expect(mockStopPreview).toHaveBeenCalled();
+      expect(mockSetTrack).not.toHaveBeenCalled();
+    });
+    it('B7: an error stops the preview and shows the preview toast exactly once', () => {
+      handlerFor(Event.PlaybackError)({ code: 'x', message: 'net' });
+      expect(mockStopPreview).toHaveBeenCalled();
+      expect(mockToastShow).toHaveBeenCalledTimes(1);
+      expect(mockToastShow).toHaveBeenCalledWith({
+        message: 'تعذّر تشغيل العيّنة. تحقق من اتصالك ثم حاول مجددًا.',
+      });
+    });
+  });
+
+  describe('queue-end only clears the MiniPlayer for a lecture queue', () => {
+    it('B8: owner none (e.g. a late event after a preview stopped) → ignored', () => {
+      mockOwner = 'none';
+      handlerFor(Event.PlaybackQueueEnded)({ track: 0, position: 50 });
+      expect(mockSetTrack).not.toHaveBeenCalled();
+      expect(mockStopPreview).not.toHaveBeenCalled();
+    });
+    it('B9: owner lecture → clears as before', () => {
+      mockOwner = 'lecture';
+      handlerFor(Event.PlaybackQueueEnded)({ track: 0, position: 50 });
+      expect(mockSetTrack).toHaveBeenCalledWith(null);
+    });
   });
 });
