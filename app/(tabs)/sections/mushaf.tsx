@@ -9,6 +9,7 @@ import {
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
 import { findSurahIdForPage, normalizeSurahParam, surahMetaLine } from '@/services/mushafNavigation';
+import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import {
@@ -21,9 +22,9 @@ import { usePlayerStore } from '@/store/playerStore';
 import { useProgressStore } from '@/store/progressStore';
 import { getRepos, progressRepo } from '@/db';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { AppState, type AppStateStatus, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
 
@@ -150,30 +151,57 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
   // the hook reference is stable across re-renders of the same surah.
   const useAyat = useAyatStore(surahId);
   const { data: ayat, status: ayatStatus, error: ayatError, fetch: fetchAyat, refresh: refreshAyat } = useAyat();
-  const notePageRead = useProgressStore((s) => s.notePageRead);
   const { fontSize: ayatFontSize, lineHeight: ayatLineHeight } = useFontScale();
 
-  // Each surah opening counts as a page read for the surah's first page
-  // (FR-001 — see CLAUDE.md note: a real page-swipe Mushaf will refine this later).
+  // The meta line shows the surah's first page (frame 2349:982); reading is tracked per page below.
   const surahNumber = useMemo(() => Number(surahId), [surahId]);
   const currentPage = useMemo(() => surahStartPage(surahNumber), [surahNumber]);
   const displayName = useMemo(() => surahName(surahNumber), [surahNumber]);
+  const segments = useMemo(() => groupAyatByPage(surahNumber, ayat), [surahNumber, ayat]);
+
+  // Page-read tracking (design 2026-10-21 §4.3). Every gate lives in the
+  // controller; this component only forwards events to it.
+  const [tracking] = useState(
+    () =>
+      new MushafPageTrackingController({
+        onRead: (page) => {
+          useProgressStore.getState().notePageRead(page).catch(() => undefined);
+        },
+      }),
+  );
+
+  // Tabs keep this screen mounted behind other tabs: count time only while focused.
+  useFocusEffect(
+    useCallback(() => {
+      tracking.setFocused(true, Date.now());
+      const tick = setInterval(() => tracking.tick(Date.now()), 1000);
+      return () => {
+        clearInterval(tick);
+        tracking.setFocused(false, Date.now());
+      };
+    }, [tracking]),
+  );
+
+  useEffect(() => {
+    tracking.setAppActive(AppState.currentState === 'active', Date.now());
+    const sub = AppState.addEventListener('change', (s: AppStateStatus) => {
+      tracking.setAppActive(s === 'active', Date.now());
+    });
+    return () => sub.remove();
+  }, [tracking]);
+
+  // AsyncContent unmounts the segments unless the status is 'success'.
+  useEffect(() => {
+    tracking.setContentReady(ayatStatus === 'success', Date.now());
+  }, [tracking, ayatStatus]);
+
+  useEffect(() => {
+    tracking.retainPages(segments.map((s) => s.page));
+  }, [tracking, segments]);
 
   useEffect(() => {
     fetchAyat();
   }, [fetchAyat]);
-
-  // Debounced page-read recording (research R5 — 400 ms window).
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  useEffect(() => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      notePageRead(currentPage).catch(() => undefined);
-    }, 400);
-    return () => {
-      if (debounceRef.current) clearTimeout(debounceRef.current);
-    };
-  }, [currentPage, notePageRead]);
 
   // Revelation type comes from the surah catalogue. The old comment here said
   // the store "is already cached from the index, so this costs nothing" — true
@@ -201,7 +229,13 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
         <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
         <Text style={styles.subtitle}>{metaLine}</Text>
       </View>
-      <ScrollView contentContainerStyle={styles.pageContent} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.pageContent}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={250}
+        onLayout={(e) => tracking.setViewportHeight(e.nativeEvent.layout.height)}
+        onScroll={(e) => tracking.onScroll(e.nativeEvent.contentOffset.y, Date.now())}
+      >
         <View style={styles.ornamentWrap}>
           <LinearGradient
             colors={['#F3E0B6', '#EAD19A']}
@@ -217,28 +251,37 @@ function ReadingView({ onBack, surahId }: { onBack: () => void; surahId: string 
               : `سورة ${displayName}`}
           </Text>
         </View>
-        <AsyncContent
-          status={ayatStatus}
-          error={ayatError}
-          onRetry={refreshAyat}
-          skeleton={<SkeletonRowList count={5} />}
-          emptyMessage="لا توجد آيات لهذه السورة"
-        >
-          <Text
-            style={[
-              styles.ayatBody,
-              { fontSize: ayatFontSize, lineHeight: ayatLineHeight },
-            ]}
+        <View onLayout={(e) => tracking.setBodyY(e.nativeEvent.layout.y)}>
+          <AsyncContent
+            status={ayatStatus}
+            error={ayatError}
+            onRetry={refreshAyat}
+            skeleton={<SkeletonRowList count={5} />}
+            emptyMessage="لا توجد آيات لهذه السورة"
           >
-            {ayat.map((a, i) => (
-              <React.Fragment key={a.number}>
-                {a.text}
-                <AyahNum n={String(a.number)} />
-                {i < ayat.length - 1 ? ' ' : ''}
-              </React.Fragment>
+            {segments.map((segment) => (
+              <Text
+                key={segment.page}
+                onLayout={(e) => {
+                  const { y, height } = e.nativeEvent.layout;
+                  tracking.setSegmentLayout(segment.page, y, height);
+                }}
+                style={[
+                  styles.ayatBody,
+                  { fontSize: ayatFontSize, lineHeight: ayatLineHeight },
+                ]}
+              >
+                {segment.ayat.map((a, i) => (
+                  <React.Fragment key={a.number}>
+                    {a.text}
+                    <AyahNum n={String(a.number)} />
+                    {i < segment.ayat.length - 1 ? ' ' : ''}
+                  </React.Fragment>
+                ))}
+              </Text>
             ))}
-          </Text>
-        </AsyncContent>
+          </AsyncContent>
+        </View>
       </ScrollView>
       {/* Physical left → right: الفهرس، الانتقال للعلامة، حفظ علامة
           (MUSHAF_FOOTER_ORDER, Figma node 2349:982). */}
