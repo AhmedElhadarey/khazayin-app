@@ -170,3 +170,34 @@ describe('T-NS-8 scheduled content matches documented Arabic copy', () => {
     expect(call.content.body).toBe('حان وقت قراءة وردك اليومي من القرآن الكريم.');
   });
 });
+
+// ---------------------------------------------------------------------------
+// T-NS-9: the foreground handler honours the injected suppress predicate.
+// Isolated module so `handlerRegistered` is fresh.
+// ---------------------------------------------------------------------------
+describe('T-NS-9 handler honours the injected suppress predicate', () => {
+  const note = (data: Record<string, unknown>) => ({ request: { content: { data } } });
+  it('all-false when suppressed, all-true otherwise, fails OPEN on throw', async () => {
+    await jest.isolateModulesAsync(async () => {
+      const M = require('expo-notifications');
+      M.__resetMock();
+      const { bootstrapNotificationHandler: bootstrap } = require('@/services/notificationScheduler');
+      bootstrap({
+        suppress: (d: { category?: string }) => {
+          if (d.category === 'boom') throw new Error('x');
+          return d.category === 'wird-daily';
+        },
+      });
+      const h = M.__getHandler();
+      expect(await h.handleNotification(note({ category: 'wird-daily' }))).toEqual(
+        expect.objectContaining({ shouldShowBanner: false, shouldShowList: false, shouldPlaySound: false }),
+      );
+      expect(await h.handleNotification(note({ category: 'prayer-fajr' }))).toEqual(
+        expect.objectContaining({ shouldShowBanner: true }),
+      );
+      expect(await h.handleNotification(note({ category: 'boom' }))).toEqual(
+        expect.objectContaining({ shouldShowBanner: true }),
+      );
+    });
+  });
+});

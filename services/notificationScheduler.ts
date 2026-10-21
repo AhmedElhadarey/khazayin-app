@@ -132,7 +132,36 @@ async function ensureAndroidChannelAsync(): Promise<void> {
   }
 }
 
-export function bootstrapNotificationHandler(): void {
+export type NotificationHandlerOptions = Readonly<{
+  /**
+   * Injected predicate: return true to hide a notification that arrives while
+   * the app is foregrounded. Used to suppress a wird reminder whose goal is
+   * already met (design docs/plans/2026-10-21-daily-wird-reminders-design.md
+   * §3.1). Injected so this module never imports a store. Fails OPEN: a throw
+   * shows the notification.
+   */
+  suppress?: (data: Readonly<Record<string, unknown>>) => boolean;
+}>;
+
+const SHOW = {
+  // Legacy + new SDK 54 fields — set both so behavior is stable across
+  // versions and lint deprecations don't drop the flag silently.
+  shouldShowAlert: true,
+  shouldShowBanner: true,
+  shouldShowList: true,
+  shouldPlaySound: true,
+  shouldSetBadge: false,
+} as const;
+
+const HIDE = {
+  shouldShowAlert: false,
+  shouldShowBanner: false,
+  shouldShowList: false,
+  shouldPlaySound: false,
+  shouldSetBadge: false,
+} as const;
+
+export function bootstrapNotificationHandler(options?: NotificationHandlerOptions): void {
   if (handlerRegistered) return;
   if (IS_EXPO_GO && typeof __DEV__ !== 'undefined' && __DEV__) {
     console.warn(
@@ -143,15 +172,17 @@ export function bootstrapNotificationHandler(): void {
   }
   try {
     Notifications.setNotificationHandler({
-      handleNotification: async () => ({
-        // Legacy + new SDK 54 fields — set both so behavior is stable across
-        // versions and lint deprecations don't drop the flag silently.
-        shouldShowAlert: true,
-        shouldShowBanner: true,
-        shouldShowList: true,
-        shouldPlaySound: true,
-        shouldSetBadge: false,
-      }),
+      handleNotification: async (notification) => {
+        const data: Readonly<Record<string, unknown>> =
+          notification?.request?.content?.data ?? {};
+        let suppressed = false;
+        try {
+          suppressed = options?.suppress?.(data) === true;
+        } catch (err) {
+          logDev('suppress predicate threw; showing the notification', err);
+        }
+        return suppressed ? HIDE : SHOW;
+      },
     });
     // Fire-and-forget — channel creation must not block handler registration.
     void ensureAndroidChannelAsync();

@@ -17,6 +17,8 @@ import { useProgressStore } from '@/store/progressStore';
 import { useWirdStore } from '@/store/wirdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
+import { shouldSuppressWirdNotification } from '@/services/wirdReminder';
+import { toLocalDay } from '@/constants/progress';
 import { registerCacheRoot } from '@/services/cacheFacade';
 import { registerPlaybackService, restoreLastLecture, setupPlayer } from '@/services/audioEngine';
 import { registerPlaybackListeners } from '@/services/audioEngine/syncBridge';
@@ -280,7 +282,18 @@ function RootLayout() {
   // Library tab never crashes if the DB layer mis-initializes.
   useEffect(() => {
     if (!navigatorReady) return;
-    bootstrapNotificationHandler();
+    // Hide a foreground wird reminder once today's goal is met (defence in
+    // depth for the reconcile that cancels it; design 2026-10-21 §3.1).
+    bootstrapNotificationHandler({
+      suppress: (data) => {
+        const w = useWirdStore.getState();
+        return shouldSuppressWirdNotification(data, {
+          goalMetToday: w.goalMetToday,
+          snapshotDay: w.snapshotDay,
+          todayLocalDay: toLocalDay(),
+        });
+      },
+    });
     Promise.all([
       useProgressStore.getState().hydrate(),
       useWirdStore.getState().hydrate(),

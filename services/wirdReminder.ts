@@ -135,3 +135,29 @@ export function describeWirdReminder(
   }
   return { armed: true, caption: formatNextWirdReminder(now, time) };
 }
+
+export type WirdSuppressionState = Readonly<{
+  goalMetToday: boolean;
+  snapshotDay: string;
+  todayLocalDay: string;
+}>;
+
+/**
+ * Foreground-only belt-and-braces (design §3.1): hide a wird reminder that
+ * arrives while the app is open if today's goal is already met. Covers the
+ * reconcile still in flight when the goal was met seconds before the fire time,
+ * and the legacy repeating DAILY request (no `localDay`) on the first launch
+ * after upgrade. Never trusts a snapshot taken for another day.
+ *
+ * Pure: the store snapshot and today's local day are injected.
+ */
+export function shouldSuppressWirdNotification(
+  data: unknown,
+  s: WirdSuppressionState,
+): boolean {
+  if (data === null || typeof data !== 'object') return false;
+  const d = data as { category?: unknown; localDay?: unknown };
+  if (d.category !== 'wird-daily') return false;
+  if (!s.goalMetToday || s.snapshotDay !== s.todayLocalDay) return false;
+  return d.localDay === undefined || d.localDay === s.todayLocalDay;
+}

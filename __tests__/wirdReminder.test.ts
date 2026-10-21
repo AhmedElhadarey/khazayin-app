@@ -11,6 +11,7 @@ import {
   computeNextWirdReminder,
   describeWirdReminder,
   isWirdReminderArmed,
+  shouldSuppressWirdNotification,
 } from '@/services/wirdReminder';
 
 describe('computeNextWirdReminder (US2, T050)', () => {
@@ -124,5 +125,30 @@ describe('T-ARM — isWirdReminderArmed', () => {
         );
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T-SUP — foreground suppression of a wird reminder whose goal is already met
+// (design docs/plans/2026-10-21-daily-wird-reminders-design.md §3.1).
+// ---------------------------------------------------------------------------
+const S = { goalMetToday: true, snapshotDay: '2026-10-21', todayLocalDay: '2026-10-21' };
+describe('T-SUP shouldSuppressWirdNotification', () => {
+  it('T-SUP-1: suppresses today’s wird when today’s goal is met', () => {
+    expect(shouldSuppressWirdNotification({ category: 'wird-daily', localDay: '2026-10-21' }, S)).toBe(true);
+  });
+  it('T-SUP-2: suppresses the legacy DAILY wird (no localDay) when met', () => {
+    expect(shouldSuppressWirdNotification({ category: 'wird-daily' }, S)).toBe(true);
+  });
+  it('T-SUP-3: never suppresses when the goal is not met', () => {
+    expect(shouldSuppressWirdNotification({ category: 'wird-daily', localDay: '2026-10-21' }, { ...S, goalMetToday: false })).toBe(false);
+  });
+  it('T-SUP-4: never trusts a stale snapshot (yesterday met ≠ today met)', () => {
+    expect(shouldSuppressWirdNotification({ category: 'wird-daily', localDay: '2026-10-21' }, { ...S, snapshotDay: '2026-10-20' })).toBe(false);
+  });
+  it('T-SUP-5: never suppresses another day’s entry, another category, or junk', () => {
+    expect(shouldSuppressWirdNotification({ category: 'wird-daily', localDay: '2026-10-22' }, S)).toBe(false);
+    expect(shouldSuppressWirdNotification({ category: 'prayer-fajr', localDay: '2026-10-21' }, S)).toBe(false);
+    expect(shouldSuppressWirdNotification(null, S)).toBe(false);
   });
 });

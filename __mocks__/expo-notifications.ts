@@ -90,6 +90,7 @@ let allCancelCount = 0;
 let handlerSetCount = 0;
 let scheduledNotifications: MockScheduledNotification[] = [];
 let nextIdentifier = 1;
+let currentHandler: MockNotificationHandler | null = null;
 
 // ---------------------------------------------------------------------------
 // Mocked public API surface
@@ -99,6 +100,7 @@ export function setNotificationHandler(handler: MockNotificationHandler | null):
   if (handler !== null) {
     handlerSetCount += 1;
   }
+  currentHandler = handler;
 }
 
 export async function getPermissionsAsync(): Promise<MockPermissionResponse> {
@@ -172,6 +174,12 @@ export function __getHandlerSetCount(): number {
   return handlerSetCount;
 }
 
+/** The handler most recently installed via `setNotificationHandler`, so tests
+ *  can invoke `handleNotification` directly. */
+export function __getHandler(): MockNotificationHandler | null {
+  return currentHandler;
+}
+
 export function __setScheduledNotifications(arr: MockScheduledNotification[]): void {
   scheduledNotifications = arr.slice();
 }
@@ -193,4 +201,5 @@ export function __resetMock(): void {
   handlerSetCount = 0;
   scheduledNotifications = [];
   nextIdentifier = 1;
+  currentHandler = null;
 }
