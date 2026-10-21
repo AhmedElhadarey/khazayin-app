@@ -100,7 +100,6 @@ export default function LibraryScreen() {
   const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
 
   const [filter, setFilter] = useState<LibraryFilter>('all');
-  const [lastReadPage, setLastReadPage] = useState<number>(1);
 
   // Wird completion history (US5). Loaded lazily when the السجل pill is active.
   // The window defaults to 12 weeks and grows via the "show more" affordance so
@@ -178,6 +177,7 @@ export default function LibraryScreen() {
 
   // Progress snapshot (SQLite-backed, hydrated at app boot).
   const currentStreak = useProgressStore((s) => s.currentStreak);
+  const lastReadPage = useProgressStore((s) => s.lastReadPage);
   const trendLast28 = useProgressStore((s) => s.trendLast28);
   const longestStreak = useProgressStore((s) => s.longestStreakEver);
   const bestDayPages = useProgressStore((s) => s.bestWirdDayPages);
@@ -190,21 +190,6 @@ export default function LibraryScreen() {
   const pendingSuggestion = useWirdStore((s) => s.pendingSuggestion);
   const acceptSuggestion = useWirdStore((s) => s.acceptSuggestion);
   const dismissSuggestion = useWirdStore((s) => s.dismissSuggestion);
-
-  // last_read_page lives in settings — refresh whenever the wird ring nudges
-  // (proxy for "user just recorded a page"). Awaits `getRepos()` so the Proxy
-  // accessor never throws the pre-hydration error.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      await getRepos();
-      const p = await progressRepo.getLastReadPage();
-      if (!cancelled) setLastReadPage(p);
-    })().catch(() => undefined);
-    return () => {
-      cancelled = true;
-    };
-  }, [todayPct]);
 
   // Load completion history when the السجل pill is active. Re-runs when the
   // window grows (show more) or when today's wird ring nudges (a fresh page
