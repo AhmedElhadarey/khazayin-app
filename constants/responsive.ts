@@ -13,6 +13,7 @@ import {
   CAROUSEL_CARD_GAP,
   FIGMA_CAROUSEL_CARD_WIDTH,
   TAB_BAR,
+  TAB_PHYSICAL_ORDER,
   horizontalGutter,
   type CarouselCardKind,
 } from '@/constants/layout';
@@ -44,7 +45,7 @@ export const TABLET_TAB_GAP = 24;
 export const MINI_PLAYER_MAX = 600;
 export const SHEET_MAX = 600;
 
-export interface Insets {
+export interface HorizontalInsets {
   left: number;
   right: number;
 }
@@ -63,7 +64,7 @@ export function screenGutter(w: number): number {
  */
 export function centredColumn(
   maxWidth: number,
-  insets?: Insets,
+  insets?: HorizontalInsets,
 ): Pick<ViewStyle, 'width' | 'maxWidth' | 'alignSelf' | 'marginLeft' | 'marginRight'> {
   return {
     width: '100%',
@@ -149,7 +150,12 @@ export function splitPane(w: number, h: number): { side: number; gap: number } |
 
 export function tabBarRow(w: number): { itemWidth: number; maxWidth: number | undefined } {
   if (!isTabletWidth(w)) return { itemWidth: TAB_BAR.itemWidth, maxWidth: undefined };
-  return { itemWidth: TABLET_TAB_ITEM, maxWidth: 4 * TABLET_TAB_ITEM + 3 * TABLET_TAB_GAP };
+  return {
+    itemWidth: TABLET_TAB_ITEM,
+    maxWidth:
+      TAB_PHYSICAL_ORDER.length * TABLET_TAB_ITEM +
+      (TAB_PHYSICAL_ORDER.length - 1) * TABLET_TAB_GAP,
+  };
 }
 
 export function miniPlayerMaxWidth(w: number): number | undefined {
@@ -167,11 +173,45 @@ export function sheetMaxWidth(w: number): number | undefined {
  */
 export function columnStyles(
   available: number,
-  insets: Insets,
+  insets: HorizontalInsets,
 ): { columnStyle: ViewStyle; homeColumnStyle: ViewStyle } {
   if (!isTabletWidth(available)) return { columnStyle: {}, homeColumnStyle: {} };
   return {
     columnStyle: centredColumn(readingColumn(available).width, insets),
     homeColumnStyle: centredColumn(homeColumnWidth(available), insets),
+  };
+}
+
+export interface ResponsiveLayout {
+  /** Window width minus the left/right safe-area insets. */
+  width: number;
+  height: number;
+  isTablet: boolean;
+  gutter: number;
+  /** `inset` is measured from the window's physical right edge on every width. */
+  reading: { width: number; inset: number };
+  columnStyle: ViewStyle;
+  homeColumnStyle: ViewStyle;
+  splitPane: { side: number; gap: number } | null;
+}
+
+/** Everything `useResponsiveLayout` returns, as a pure function of the window. */
+export function responsiveLayout(
+  windowWidth: number,
+  height: number,
+  insets: HorizontalInsets,
+): ResponsiveLayout {
+  const width = windowWidth - insets.left - insets.right;
+  const column = readingColumn(width);
+  const { columnStyle, homeColumnStyle } = columnStyles(width, insets);
+  return {
+    width,
+    height,
+    isTablet: isTabletWidth(width),
+    gutter: screenGutter(width),
+    reading: { width: column.width, inset: insets.right + column.inset },
+    columnStyle,
+    homeColumnStyle,
+    splitPane: splitPane(width, height),
   };
 }

@@ -1,7 +1,13 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..');
+// The mods are applied directly so the wiring (not just the helpers) is tested.
+jest.mock('expo/config-plugins', () => ({
+  ...jest.requireActual('expo/config-plugins'),
+  withMainActivity: (c: unknown, f: (c: unknown) => unknown) => f(c),
+  withAndroidManifest: (c: unknown, f: (c: unknown) => unknown) => f(c),
+}));
+
 const plugin = require('../plugins/withTabletRotation');
 const { addTabletRotation, addSmallestScreenSize, assertKotlin, MARKER } = plugin;
 
@@ -33,6 +39,20 @@ const KT_WITH_CONFIG = KT.replace(
   override fun getMainComponentName`,
 );
 
+/** Body of `onConfigurationChanged`, from `fun` to its matching closing brace. */
+function configChangedBody(src: string): string {
+  const start = src.indexOf('fun onConfigurationChanged');
+  const open = src.indexOf('{', start);
+  let depth = 0;
+  for (let i = open; i < src.length; i++) {
+    if (src[i] === '{') depth++;
+    if (src[i] === '}' && --depth === 0) return src.slice(start, i + 1);
+  }
+  throw new Error('unbalanced onConfigurationChanged');
+}
+
+const FIXTURE = fs.readFileSync(path.join(__dirname, 'fixtures/MainActivity.kt'), 'utf8');
+
 const count = (s: string, needle: string) => s.split(needle).length - 1;
 
 describe('addTabletRotation', () => {
@@ -60,7 +80,7 @@ describe('addTabletRotation', () => {
   });
 
   it('calls super.onConfigurationChanged before the rotation', () => {
-    const body = out.slice(out.indexOf('fun onConfigurationChanged'));
+    const body = configChangedBody(out);
     expect(body.indexOf('super.onConfigurationChanged(newConfig)')).toBeGreaterThan(-1);
     expect(body.indexOf('super.onConfigurationChanged(newConfig)')).toBeLessThan(
       body.indexOf('applyTabletRotation(newConfig.smallestScreenWidthDp)'),
@@ -68,9 +88,9 @@ describe('addTabletRotation', () => {
   });
 
   it('sets both the unlocked and the portrait orientation', () => {
-    expect(out).toContain('if (smallestWidthDp >= 600)');
-    expect(out).toContain('ActivityInfo.SCREEN_ORIENTATION_FULL_USER');
-    expect(out).toContain('ActivityInfo.SCREEN_ORIENTATION_PORTRAIT');
+    expect(out).toMatch(
+      />= 600\)\s*\{\s*ActivityInfo\.SCREEN_ORIENTATION_FULL_USER\s*\}\s*else\s*\{\s*ActivityInfo\.SCREEN_ORIENTATION_PORTRAIT/,
+    );
   });
 
   it('marks inserted blocks', () => {
@@ -80,7 +100,7 @@ describe('addTabletRotation', () => {
   it('does not duplicate an existing onConfigurationChanged', () => {
     const o = addTabletRotation(KT_WITH_CONFIG);
     expect(count(o, 'fun onConfigurationChanged')).toBe(1);
-    const body = o.slice(o.indexOf('fun onConfigurationChanged'));
+    const body = configChangedBody(o);
     expect(body.indexOf('super.onConfigurationChanged(config)')).toBeLessThan(
       body.indexOf('applyTabletRotation(config.smallestScreenWidthDp)'),
     );
@@ -89,6 +109,16 @@ describe('addTabletRotation', () => {
 
   it('throws when the onCreate anchor is missing', () => {
     expect(() => addTabletRotation(KT.replace('super.onCreate(null)', ''))).toThrow(/super\.onCreate/);
+  });
+
+  it('throws when an existing onConfigurationChanged has no super call', () => {
+    const bad = KT_WITH_CONFIG.replace('    super.onConfigurationChanged(config)\n', '');
+    expect(() => addTabletRotation(bad)).toThrow(/no super\.onConfigurationChanged/);
+  });
+
+  it('throws when there is no class declaration', () => {
+    const noClass = 'package com.example.app\n\nfun x() {\n  super.onCreate(null)\n}\n';
+    expect(() => addTabletRotation(noClass)).toThrow(/class declaration/);
   });
 });
 
@@ -122,24 +152,67 @@ describe('registration', () => {
   });
 });
 
-describe('real generated MainActivity.kt', () => {
-  const dir = path.join(ROOT, 'android/app/src/main/java');
-  const find = (d: string): string | null => {
-    for (const e of fs.readdirSync(d, { withFileTypes: true })) {
-      const p = path.join(d, e.name);
-      if (e.isDirectory()) {
-        const r = find(p);
-        if (r) return r;
-      } else if (e.name === 'MainActivity.kt') return p;
-    }
-    return null;
-  };
-  const file = fs.existsSync(dir) ? find(dir) : null;
-  (file ? it : it.skip)('transforms cleanly', () => {
-    const src = fs.readFileSync(file as string, 'utf8');
-    const o = addTabletRotation(src);
+describe('SDK 54 template MainActivity.kt fixture', () => {
+  it('transforms cleanly', () => {
+    const o = addTabletRotation(FIXTURE);
     expect(count(o, 'private fun applyTabletRotation')).toBe(1);
+    expect(count(o, 'fun onConfigurationChanged')).toBe(1);
     expect(o.indexOf('applyTabletRotation(resources')).toBeLessThan(o.indexOf('super.onCreate('));
+    const body = configChangedBody(o);
+    expect(body.indexOf('super.onConfigurationChanged(newConfig)')).toBeLessThan(
+      body.indexOf('applyTabletRotation(newConfig.smallestScreenWidthDp)'),
+    );
     expect(addTabletRotation(o)).toBe(o);
+  });
+});
+
+describe('plugin mod wiring', () => {
+  // The mocked with* helpers call the mod at once with the same config, so one
+  // modResults object carries both the Kotlin source and the manifest.
+  const manifest = (extra: Record<string, string> = {}) => ({
+    manifest: {
+      application: [
+        {
+          activity: [
+            {
+              $: {
+                'android:name': '.MainActivity',
+                'android:configChanges': 'keyboard|orientation',
+                ...extra,
+              },
+              'intent-filter': [
+                {
+                  action: [{ $: { 'android:name': 'android.intent.action.MAIN' } }],
+                  category: [{ $: { 'android:name': 'android.intent.category.LAUNCHER' } }],
+                },
+              ],
+            },
+          ],
+        },
+      ],
+    },
+  });
+  const attrs = (m: ReturnType<typeof manifest>) => m.manifest.application[0].activity[0].$ as Record<string, string>;
+
+  it('rejects a Java MainActivity', () => {
+    const modResults = { ...manifest(), language: 'java', contents: KT };
+    expect(() => plugin({ modResults })).toThrow(/Kotlin/);
+  });
+
+  it('appends smallestScreenSize once and leaves the orientation lock alone', () => {
+    const modResults = {
+      ...manifest({ 'android:screenOrientation': 'portrait' }),
+      language: 'kt',
+      contents: KT,
+    };
+    plugin({ modResults });
+    expect(attrs(modResults)['android:configChanges']).toBe('keyboard|orientation|smallestScreenSize');
+    expect(attrs(modResults)['android:screenOrientation']).toBe('portrait');
+    expect(modResults.contents).toContain('private fun applyTabletRotation');
+
+    const contents = modResults.contents;
+    plugin({ modResults });
+    expect(attrs(modResults)['android:configChanges']).toBe('keyboard|orientation|smallestScreenSize');
+    expect(modResults.contents).toBe(contents);
   });
 });

@@ -143,6 +143,22 @@ describe('tablet behaviour', () => {
     expect(s.columnStyle).toEqual(centredColumn(720, { left: 0, right: 0 }));
     expect(s.homeColumnStyle).toEqual(centredColumn(984, { left: 0, right: 0 }));
   });
+
+  it('columnStyles carries non-zero insets as margins', () => {
+    const insets = { left: 20, right: 44 };
+    const s = columnStyles(1012, insets);
+    expect(s.columnStyle).toEqual(centredColumn(720, insets));
+    expect(s.homeColumnStyle).toEqual(centredColumn(964, insets));
+    expect(s.columnStyle.marginLeft).toBe(20);
+    expect(s.columnStyle.marginRight).toBe(44);
+  });
+
+  it('columnStyles stays empty on phones whatever the insets', () => {
+    expect(columnStyles(393, { left: 0, right: 10 })).toEqual({
+      columnStyle: {},
+      homeColumnStyle: {},
+    });
+  });
 });
 
 describe('reading-order row contracts', () => {

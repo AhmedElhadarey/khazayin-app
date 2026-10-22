@@ -159,3 +159,4 @@ module.exports.addTabletRotation = addTabletRotation;
 module.exports.addSmallestScreenSize = addSmallestScreenSize;
 module.exports.assertKotlin = assertKotlin;
 module.exports.MARKER = MARKER;
+module.exports.TABLET_MIN_DP = TABLET_MIN_DP;
