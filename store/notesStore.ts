@@ -127,20 +127,23 @@ export function useLinkedNotes(type: NoteRefType, id: string): Note[] {
 
 // Relative-time helper used by the UI (e.g. "منذ ساعتين", "أمس", "الآن").
 // Keeps locale handling in Arabic numerals to match the mock's voice.
+// Counted units agree with their number: 1 singular, 2 dual, 3-10 plural, 11+ singular.
+function counted(n: number, one: string, two: string, few: string, many: string): string {
+  if (n === 1) return one;
+  if (n === 2) return two;
+  const lastTwo = n % 100;
+  return `${toArabicDigits(n)} ${lastTwo >= 3 && lastTwo <= 10 ? few : many}`;
+}
+
 export function formatRelativeAr(ts: number): string {
   const diffMs = Date.now() - ts;
   const mins = Math.floor(diffMs / 60000);
   if (mins < 1) return 'الآن';
   if (mins < 60) return `منذ ${toArabicDigits(mins)} د`;
   const hrs = Math.floor(mins / 60);
-  if (hrs < 24)
-    return hrs === 1
-      ? 'منذ ساعة'
-      : hrs === 2
-        ? 'منذ ساعتين'
-        : `منذ ${toArabicDigits(hrs)} ساعات`;
+  if (hrs < 24) return `منذ ${counted(hrs, 'ساعة', 'ساعتين', 'ساعات', 'ساعة')}`;
   const days = Math.floor(hrs / 24);
   if (days === 1) return 'أمس';
-  if (days < 7) return `قبل ${toArabicDigits(days)} أيام`;
-  return `قبل ${toArabicDigits(Math.floor(days / 7))} أسبوع`;
+  if (days < 7) return `قبل ${counted(days, 'يوم', 'يومين', 'أيام', 'يومًا')}`;
+  return `قبل ${counted(Math.floor(days / 7), 'أسبوع', 'أسبوعين', 'أسابيع', 'أسبوع')}`;
 }
