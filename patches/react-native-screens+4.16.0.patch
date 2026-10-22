@@ -1,19 +1,22 @@
 diff --git a/node_modules/react-native-screens/ios/RNSScreen.mm b/node_modules/react-native-screens/ios/RNSScreen.mm
 --- a/node_modules/react-native-screens/ios/RNSScreen.mm
 +++ b/node_modules/react-native-screens/ios/RNSScreen.mm
-@@ -1343,7 +1343,14 @@
+@@ -1343,7 +1343,17 @@
    _oldLayoutMetrics = oldLayoutMetrics;
    UIViewController *parentVC = self.reactViewController.parentViewController;
    if (parentVC == nil || ![parentVC isKindOfClass:[RNSNavigationController class]]) {
 -    [super updateLayoutMetrics:layoutMetrics oldLayoutMetrics:oldLayoutMetrics];
 +    react::LayoutMetrics metrics = layoutMetrics;
++    react::LayoutMetrics oldMetrics = oldLayoutMetrics;
 +    if (self.isPresentedAsNativeModal) {
 +      // UIKit owns a presented modal's origin. Under RTL, Yoga anchors the
 +      // sheet-sized screen to the window's right edge, so an iPad page sheet
 +      // (narrower than the window) was shifted right by the difference.
 +      metrics.frame.origin = {0, 0};
++      // Zero the old origin too, or super's frame-change check always differs.
++      oldMetrics.frame.origin = {0, 0};
 +    }
-+    [super updateLayoutMetrics:metrics oldLayoutMetrics:oldLayoutMetrics];
++    [super updateLayoutMetrics:metrics oldLayoutMetrics:oldMetrics];
    }
    // when screen is mounted under RNSNavigationController it's size is controller
    // by the navigation controller itself. That is, it is set to fill space of
