@@ -93,6 +93,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: 8,
   },
+  // Note: the label fills the pill, so a future leading/trailing icon on a full-width pill
+  // would sit at the pill's edge, not beside the centred text.
   label: {
     flexGrow: 1,
     flexShrink: 1,

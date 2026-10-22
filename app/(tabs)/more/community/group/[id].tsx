@@ -161,7 +161,10 @@ export default function GroupDetailScreen() {
               <View style={styles.card}>
                 <Text style={styles.label}>{COMMUNITY_COPY.joinCodeLabel}</Text>
                 <View style={styles.codeBox} accessible accessibilityLabel={codeA11y(detail.group.joinCode)}>
-                  <Text style={styles.code} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{detail.group.joinCode}</Text>
+                  {/* Shrink floor is RN's default (a 6-character code does not shrink in practice); a real one needs an RN patch, as minimumFontSize is not a Fabric Text attribute. */}
+                  <Text style={styles.code} numberOfLines={1} adjustsFontSizeToFit>
+                    {detail.group.joinCode}
+                  </Text>
                 </View>
                 <PillButton label={COMMUNITY_COPY.shareCode} variant="cream" onPress={onShareCode} />
               </View>

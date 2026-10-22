@@ -14,7 +14,9 @@ describe('group join-code chip', () => {
     expect(text).not.toBeNull();
     expect(text![1]).toMatch(/numberOfLines=\{1\}/);
     expect(text![1]).toMatch(/adjustsFontSizeToFit/);
-    expect(text![1]).toMatch(/minimumFontScale=\{/);
+    // `minimumFontSize` is not a Fabric Text attribute, so it never reaches native code.
+    expect(text![1]).not.toMatch(/minimumFontSize|minimumFontScale|\{\.\.\./);
+    expect(source).not.toMatch(/CODE_FIT/);
   });
 
   it('does not shrink-wrap the code Text (Android 15 line-break mismatch)', () => {
