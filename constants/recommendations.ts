@@ -40,16 +40,21 @@ export const LISTEN_LIMIT = 50;
 /** One page-read row per Mushaf page, so the read query can never exceed it (§4.3). */
 export const PAGE_READ_LIMIT = PAGES_PER_QURAN;
 
-/** Padding inside a recommendation row (top + bottom). */
-const SLOT_PADDING = 24;
+/** RibbonCard's ribbon variant: 4pt vertical padding plus a 1pt border, top and bottom. */
+const SLOT_CHROME = 2 * (4 + 1);
+/** RibbonCard's titleBlock gap, once between each of its three lines. */
+const SLOT_LINE_GAPS = 2 * 2;
 
 /**
- * One row: caption reason, two lines of title, caption meta, plus padding.
+ * One typical row: one line each of caption reason, title and caption meta.
  * Derived from the type scale so the skeleton, hint and items share one
- * height and the sections below never move on the swap (§6.5).
+ * height and the sections below do not move on the swap (§6.5). A title that
+ * wraps grows its row past the slot; sizing for that worst case instead left a
+ * blank band under every section of one-line rows.
+ * `__tests__/recommendationSlotHeight.test.ts` pins this to RibbonCard.
  */
 export const RECOMMENDATION_SLOT_HEIGHT =
-  TEXT_ROLES.caption.lineHeight * 2 + TEXT_ROLES.bodyCompact.lineHeight * 2 + SLOT_PADDING;
+  TEXT_ROLES.caption.lineHeight * 2 + TEXT_ROLES.bodyCompact.lineHeight + SLOT_LINE_GAPS + SLOT_CHROME;
 
 /** Kill switch (§7.7). */
 export const RECOMMENDATIONS_ENABLED = true;

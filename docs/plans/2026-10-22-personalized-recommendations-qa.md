@@ -66,9 +66,11 @@ Each fix has its own failing test first.
 
 ## Observations (no change)
 
-- **Blank band under short rows.** `RECOMMENDATION_SLOT_HEIGHT` reserves a two-line title so the
-  skeleton → rows swap never moves the sections below (§6.5). One-line titles leave space under the
-  section. By design.
+- **Blank band under short rows (fixed after QA).** `RECOMMENDATION_SLOT_HEIGHT` reserved a two-line
+  title, so three one-line rows left ~90pt blank above «أنت ملكة» on the iPhone 16. The slot is now
+  one typical one-line row (71pt, pinned to `RibbonCard` by `__tests__/recommendationSlotHeight.test.ts`);
+  re-checked on the iPhone 16 after a clean build: the gap under the section matches the other Home
+  sections. A wrapped title now grows its row once the items arrive (§6.5 residual).
 - **Repeated titles from different scholars** («شرح رياض الصالحين» by Ibn Baz and by Ibn
   Uthaymin) can sit side by side; the meta line names the scholar. Intended (different recordings).
 - **Realme font clipping at 1.3–2.0 font scale** appeared only after changing the system font

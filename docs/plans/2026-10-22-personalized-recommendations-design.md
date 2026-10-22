@@ -288,11 +288,12 @@ The rules, in order:
 | ≥1 signal, items available | up to `limit` `RecommendationRow`s | `limit` slots |
 | ≥1 signal, every candidate dismissed or none qualifies | «لا توجد اقتراحات جديدة الآن» | `limit` slots |
 
-- `RECOMMENDATION_SLOT_HEIGHT` is defined once in `constants/recommendations.ts`. It is derived from the row's line heights: caption reason, two lines of `bodyCompact` title, caption meta, plus padding. Every with-signal state uses the same `limit × slot + gaps` height, so the skeleton → content swap does not move the sections below.
+- `RECOMMENDATION_SLOT_HEIGHT` is defined once in `constants/recommendations.ts`. It is the height of a typical one-line `RibbonCard` row: caption reason, one line of `bodyCompact` title, caption meta, the title block's gaps, and the card's padding and border (pinned by `__tests__/recommendationSlotHeight.test.ts`). Every with-signal state uses the same `limit × slot + gaps` height, so the skeleton → content swap does not move the sections below. (It first reserved a two-line title, which left a ~90pt blank band under every section of one-line rows.)
 - Residuals that are accepted and written down:
   - The 1-slot → `limit`-slot change on the first activity resolve, for a user whose only history is listening.
   - Trailing blank space when fewer than `limit` items qualify.
   - Growth at very large OS font scales, recorded in QA #12.
+  - Growth when a title or reason wraps to a second line: that row grows past its slot once the items arrive.
 - The hint and empty lines use `textStyle('bodyCompact')` + `RTL_TEXT` in `KhazainColors.ink500`, with no Pressable.
 
 ### 6.6 Routing
