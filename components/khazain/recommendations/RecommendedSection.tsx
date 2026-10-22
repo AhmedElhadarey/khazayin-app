@@ -15,35 +15,14 @@ import { recommendationTarget } from '@/services/recommendations/target';
 import type { Recommendation } from '@/services/recommendations/types';
 import { useRecommendations } from '@/services/recommendations/useRecommendations';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { AccessibilityInfo, StyleSheet, Text, View } from 'react-native';
+import React from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 import { HomeSectionHeader } from '../home/HomeSectionHeader';
 import { SkeletonRibbonList } from '../state/SkeletonRibbon';
 import { RecommendationRow } from './RecommendationRow';
+import { useScreenReaderOn } from './useScreenReaderOn';
 
 const ROW_GAP = 12;
-
-/** One shared screen-reader flag, read by a row at dismiss time. */
-function useScreenReaderOn(): boolean {
-  const [on, setOn] = useState(false);
-  useEffect(() => {
-    let alive = true;
-    // A change event is newer than the initial read, so it wins a race.
-    let settled = false;
-    void AccessibilityInfo.isScreenReaderEnabled().then((v) => {
-      if (alive && !settled) setOn(v);
-    });
-    const sub = AccessibilityInfo.addEventListener('screenReaderChanged', (v) => {
-      settled = true;
-      setOn(v);
-    });
-    return () => {
-      alive = false;
-      sub.remove();
-    };
-  }, []);
-  return on;
-}
 
 // Home's "مقترح لك" section (design §6.5). Always rendered; `sectionState`
 // picks the body. Every with-signal state reserves the same `rows x slot +

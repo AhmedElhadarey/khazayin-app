@@ -33,12 +33,9 @@ import {
   useFeaturedDawahStore,
   useScholarsStore,
 } from '@/store';
-import { indexCatalogue } from '@/services/recommendations/recommend';
-import { toSignals } from '@/services/recommendations/signals';
+import { signalCountNow } from '@/services/recommendations/signalCount';
 import { openSearch } from '@/services/searchNavigation';
-import { useNotesStore } from '@/store/notesStore';
 import { useRecommendationInputsStore } from '@/store/recommendationInputsStore';
-import { useSavedStore } from '@/store/savedStore';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef } from 'react';
@@ -62,25 +59,12 @@ const NAME_ART_BY_ID: Record<string, number> = {
   's1': IBN_BAZ, // awaiting art: عبد المحسن العباد البدر
 };
 
-// Signals as they stand now, read at call time. The catalogue is not loaded
-// yet, so they resolve against an empty index and the count may run high;
-// only whether any signal exists matters (the gate is `signalCount > 0`).
-const EMPTY_INDEX = indexCatalogue({ scholars: [], lectures: [], books: [] });
-function currentSignalCount(): number {
-  return toSignals(
-    useSavedStore.getState().items,
-    useNotesStore.getState().notes,
-    useRecommendationInputsStore.getState().activity,
-    EMPTY_INDEX,
-  ).length;
-}
-
 // Idempotent and single-flight in the store; the early return skips the signal
 // count once the load has settled.
 function tryLoadCatalogue(): void {
   const store = useRecommendationInputsStore.getState();
   if (store.catalogueStatus === 'ready' || store.catalogueStatus === 'aborted') return;
-  void store.loadCatalogue({ signalCount: currentSignalCount() });
+  void store.loadCatalogue({ signalCount: signalCountNow() });
 }
 
 // The design's own book lockup. Figma draws every card in the "الكتب العلمية"

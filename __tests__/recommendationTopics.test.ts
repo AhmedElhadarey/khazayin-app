@@ -66,5 +66,6 @@ describe('recommendation constants', () => {
     expect(C.RECOMMENDATION_COPY.sectionTitle).toBe('مقترح لك');
     expect(C.RECOMMENDATION_COPY.hint).toBe('احفظ درسًا أو استمع إليه لتظهر هنا اقتراحات تناسبك');
     expect(C.RECOMMENDATION_COPY.empty).toBe('لا توجد اقتراحات جديدة الآن');
+    expect(C.RECOMMENDATION_COPY.nextSurah('البقرة')).toBe('السورة التالية: سورة البقرة');
   });
 });

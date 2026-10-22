@@ -8,6 +8,15 @@
 import { SURAH_START_PAGES, toArabicDigits } from '@/constants/progress';
 
 export const MUSHAF_PAGE_COUNT = 604;
+export const LAST_SURAH = 114;
+
+/** The padded three-digit id the ayat store and the `?surah=` param use. */
+export const toSurahParam = (n: number): string => String(n).padStart(3, '0');
+
+/** Params that move the reader to the next surah (C1); null after the last. */
+export function nextSurahParams(n: number): { surah: string; ayah: undefined } | null {
+  return n >= LAST_SURAH ? null : { surah: toSurahParam(n + 1), ayah: undefined };
+}
 
 /**
  * `?surah=` accepts a plain surah number; the ayat store is keyed by a padded
@@ -18,8 +27,8 @@ export function normalizeSurahParam(param: string | undefined | null): string | 
   if (!param) return null;
   if (!/^\d{1,3}$/.test(param)) return null;
   const n = Number(param);
-  if (!Number.isInteger(n) || n < 1 || n > 114) return null;
-  return String(n).padStart(3, '0');
+  if (!Number.isInteger(n) || n < 1 || n > LAST_SURAH) return null;
+  return toSurahParam(n);
 }
 
 /**

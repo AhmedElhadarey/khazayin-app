@@ -271,7 +271,7 @@ Expo-router's typed-routes index (`.expo/types/router.d.ts`) regenerates on `exp
 
 ## Mushaf-specific
 
-`app/(tabs)/sections/mushaf.tsx` hides the MiniPlayer on mount via `usePlayerStore.setVisible(false)` and restores on unmount. The TabBar stays visible. If the user asks for fully immersive mushaf, move the screen to a root-level stack entry outside `(tabs)`.
+`app/(tabs)/sections/mushaf.tsx` hides the MiniPlayer while it is the focused screen (`useFocusEffect` → `usePlayerStore.setVisible(false)`). A scholar or book screen pushed over it gets its player back; root overlays (note editor, notes viewer, sheets) blur the tab group but leave the Mushaf visible, so `services/mushafPlayerVisibility.ts` keeps the player hidden until focus lands elsewhere. The TabBar stays visible. If the user asks for fully immersive mushaf, move the screen to a root-level stack entry outside `(tabs)`.
 
 ---
 

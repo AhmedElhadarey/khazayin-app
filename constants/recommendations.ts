@@ -72,6 +72,7 @@ export const RECOMMENDATION_COPY = Object.freeze({
   reasonRead: (surahName: string) => `لقراءتك سورة ${surahName}`,
   reasonScholar: (topicLabel: string) => `له دروس في ${topicLabel}`,
   reasonMushafFallback: 'للاستزادة في تفسير ما قرأت',
+  nextSurah: (name: string) => `السورة التالية: سورة ${name}`,
   metaBook: 'كتاب',
   metaScholar: 'عالم',
 } as const);
