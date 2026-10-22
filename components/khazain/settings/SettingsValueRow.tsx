@@ -19,13 +19,16 @@ type Props = {
   value: string;
   icon: React.ReactNode;
   onPress: () => void;
+  /** Set on a row that expands a list, so a screen reader announces its state. */
+  expanded?: boolean;
 };
 
-export function SettingsValueRow({ title, value, icon, onPress }: Props) {
+export function SettingsValueRow({ title, value, icon, onPress, expanded }: Props) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityState={expanded === undefined ? undefined : { expanded }}
       accessibilityLabel={`${title}، ${value}`}
       style={({ pressed }) => [styles.card, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
     >

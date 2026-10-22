@@ -9,6 +9,11 @@ export default function MoreLayout() {
       <Stack.Screen name="about" />
       <Stack.Screen name="archive" />
       <Stack.Screen name="settings-progress" />
+      <Stack.Screen name="community/index" />
+      <Stack.Screen name="community/guidelines" />
+      <Stack.Screen name="community/create" />
+      <Stack.Screen name="community/join" />
+      <Stack.Screen name="community/group/[id]" />
     </Stack>
   );
 }

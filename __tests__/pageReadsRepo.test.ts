@@ -1,3 +1,5 @@
+import * as fs from 'fs';
+import * as path from 'path';
 jest.mock('react-native', () => ({ Platform: { OS: 'web' } }));
 
 const mockStore: Record<string, string> = {};
@@ -59,5 +61,26 @@ describe('progress totals (web shim)', () => {
     await repos.reset.resetAll(5000);
     expect(await repos.lectureSessions.listenedCount()).toBe(0);
     expect(await repos.pageReads.totalPagesRead()).toBe(0);
+  });
+});
+
+describe('distinctPagesSince (shared progress, design §6)', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('returns the distinct pages read on or after a local day, ascending', async () => {
+    jest.useFakeTimers({ now: new Date(2026, 9, 20, 10, 0, 0) });
+    const { pageReads } = createWebRepos();
+    await pageReads.recordPageRead(7);
+    await pageReads.recordPageRead(5);
+    jest.setSystemTime(new Date(2026, 9, 22, 10, 0, 0));
+    await pageReads.recordPageRead(9);
+    await pageReads.recordPageRead(7);
+    expect(await pageReads.distinctPagesSince('2026-10-21')).toEqual([7, 9]);
+    expect(await pageReads.distinctPagesSince('2026-10-20')).toEqual([5, 7, 9]);
+  });
+
+  it('is served by a parameterised range on the sqlite repo', () => {
+    const src = fs.readFileSync(path.join(__dirname, '..', 'db/repositories/pageReads.ts'), 'utf8');
+    expect(src).toContain('WHERE local_day >= ?');
   });
 });

@@ -334,9 +334,10 @@ export function createPaginatedStore<T>(
           items: [...s.items, ...newItems],
           nextCursor,
           hasMore: nextCursor !== null,
-          // Keep current status (success/empty) unless it was idle/loading.
+          // Keep current status (success/empty) unless it was idle/loading, or an
+          // earlier page failed and this retry succeeded.
           status:
-            s.status === 'idle' || s.status === 'loading'
+            s.status === 'idle' || s.status === 'loading' || s.status === 'error'
               ? deriveStatus([...s.items, ...newItems], false)
               : s.status,
           error: null,

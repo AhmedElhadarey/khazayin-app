@@ -147,12 +147,15 @@ app/                              ← expo-router file-based routing
       reciter.tsx / mushaf.tsx / qiraat.tsx / scholar.tsx / dawah.tsx
       reciter/[id].tsx            ← surah list for one reciter
       audiobooks.tsx / exclusive.tsx  ← both render <RailedLectureList/>
+      discussion/index.tsx / [lectureId].tsx  ← community: a scholar's lecture threads (__DEV__ only)
     more/                         ← stack-per-tab
       _layout.tsx
       index.tsx / contact.tsx / about.tsx / archive.tsx / settings.tsx (track 002)
+      community/                  ← community hub, guidelines, create, join, group/[id] (__DEV__ only)
     browse.tsx / saved.tsx / settings.tsx / search.tsx   ← legacy, hidden via href:null
   note-editor.tsx / notes-viewer.tsx                     ← modal presentation
   telegram-sheet.tsx / youtube-sheet.tsx / share-sheet.tsx  ← transparentModal + fade
+  community-report-sheet.tsx                              ← transparentModal + fade (__DEV__ only)
   settings-qiraa.tsx / settings-reciter.tsx / settings-font-size.tsx
   settings-about.tsx / settings-notifications.tsx        ← track 002 modal screens
   about.tsx / contact.tsx                                ← LEGACY root routes (keep alongside)
@@ -176,6 +179,8 @@ components/khazain/               ← all new UI lives here
                                      FontSizePreview (track 002)
   notes/                          ← LinkedNotesSection, NoteRefLink, linkedNotesModel (pure row
                                      model + editorSeed + surahNotesBlock): notes linked to content
+  community/                      ← PreviewBanner, GroupRow, ChallengeCard, ProgressBar, MemberRow,
+                                     ScholarDiscussionsEntry, DiscussionGlyph, PostRow, Composer
   recommendations/                ← RecommendedSection (Home), RecommendationRow, SurahEndSuggestions
                                      (Mushaf end block), useScreenReaderOn
 
@@ -188,6 +193,9 @@ services/                         ← non-store side-effect modules
   notificationScheduler.ts        ← SINGLE boundary touching expo-notifications (track 002)
   cacheFacade.ts                  ← registry-based clearAppCache, user-content-safe (track 002)
   notesExporter.ts                ← pure formatNotesExport + share-sheet glue (track 002)
+  community/                      ← community client: gate/config (mode), communityService port +
+                                     __DEV__ mock adapter, adab filter, enrollment, deletion runner,
+                                     progress sync, pure group/thread/post orchestration
   recommendations/                ← pure local recommender: recommend(), toSignals(), catalogue loader
                                      helpers, sectionState, recommendationTarget, dismiss, signalCountNow,
                                      useRecommendations hook
@@ -267,6 +275,7 @@ Expo-router's typed-routes index (`.expo/types/router.d.ts`) regenerates on `exp
 
 - **`playerStore`** (`store/playerStore.ts`) — UI state only. `{ track, isPlaying, progress, isVisible, togglePlay, setProgress, setVisible, setTrack }`. Seeded with a mock Fatiha track. The file has a JSDoc block at the top documenting the **audio integration boundary** — read it before wiring a real player (expo-av / react-native-track-player).
 - **`notesStore`** (`store/notesStore.ts`) — persisted via `zustand/middleware` + AsyncStorage at `@khazain/notes`. API: `addNote / updateNote / deleteNote`. Also exports `formatRelativeAr(ts)` helper for Arabic relative time strings. **Linked notes:** `addNote(title, body, ref?)` takes an optional `NoteRef` (`type` ayah/lecture/book, `id`, `position`, frozen Arabic `label`, ...). Persist uses `merge` + `coerceNotes` and deliberately has **no `version`/`migrate`**: bumping the persist version makes an older build discard the record on downgrade, losing every note. Unknown ref types and keys are kept so a newer build's refs survive. Selectors: `notesFor`, `notesForLectureSeries`, `useLinkedNotes(type, id)` (filter in a memo, never inside the zustand selector). Pure logic lives in `services/noteRefs.ts` (types, labels, route params), `services/noteActions.ts` (params each take-note action pushes) and `services/noteNavigation.ts` (ref -> route or playback; never dismisses).
+- **Community** (`store/communityLocalStore.ts`, `store/communityStores.ts`, `store/communityMutations.ts`) — the local store is persisted under `@khazain/community` with **no `version`/`migrate`** (same reason as `notesStore`) and carries a **mode tag**: a record written under another mode is discarded on hydrate. `services/community/config.ts` derives the mode (`gate.ts` holds the pure rule): dev builds run in `mock` mode against an in-memory adapter and seed, required only inside the `if (__DEV__)` block in `services/community/index.ts` so production bundles drop it; production is `off`, so **community UI exists only in `__DEV__` until design §13 (go-live checklist) is complete**. Every community screen calls `useCommunityGuard(...)` and renders `<PreviewBanner/>`; every write goes through `runMutation` (single-flight, idempotent request ids) and async catches check `communityGeneration()` so nothing lands after a reset or deletion. Release builds must not contain the seed: grep the production `expo export` for `KHZ_COMMUNITY_SEED` and the seed join codes (design §3.2). Design: `docs/plans/2026-10-22-community-design.md`.
 - **`recommendationsStore`** (`store/recommendationsStore.ts`) — dismissed recommendations, persisted under `@khazain/recommendations` (capped at 300). Like `notesStore`, it deliberately has **no `version`/`migrate`**: bumping the version makes an older build discard the record on downgrade. `merge` + `coerceDismissed` instead.
 - **`recommendationInputsStore`** (`store/recommendationInputsStore.ts`) — NOT persisted. Holds the activity snapshot (`refreshActivity`, via `@/db` repos) and the catalogue (`loadCatalogue`: single-flight, gated by signals or a Mushaf `contextSurah`, a no-op after `ready`/`aborted`). Home loads it only after its first fetches settle; `RECOMMENDATIONS_ENABLED` in `constants/recommendations.ts` is the kill switch. Design: `docs/plans/2026-10-22-personalized-recommendations-design.md`.
 - **`useAppStore`** (`store/useAppStore.ts`) — legacy, used by legacy tabs. Don't extend it; new features use `notesStore` / new dedicated stores.
@@ -358,7 +367,7 @@ npx tsc --noEmit       # type-check — use this liberally, it's fast
 - When adding an external URL or share target: use `Linking.openURL` with a `canOpenURL` check + Arabic Alert fallback (pattern in `app/share-sheet.tsx`).
 - When touching progress data: go through `progressRepo` / `lectureRepo` / `wirdRepo` / `achievementsRepo` / `resetFacade` (re-exports from `@/db`). Never write raw SQL outside `db/`; never persist progress fields via zustand middleware.
 
-- **Long-press means** (app-wide): long-press on a lecture row (`LectureCard`, `RibbonCard`) is **SAVE** to المحفوظات; long-press on an ayah in the Mushaf reader, or on the MiniPlayer, is **NOTE**. The two never share a surface. Recommendation rows (Home and the Mushaf end block) take **no** long-press, and the Mushaf end block never saves. `__tests__/contextualNotesInvariants.test.ts` pins this.
+- **Long-press means** (app-wide): long-press on a lecture row (`LectureCard`, `RibbonCard`) is **SAVE** to المحفوظات; long-press on an ayah in the Mushaf reader, or on the MiniPlayer, is **NOTE**. The two never share a surface. Recommendation rows (Home and the Mushaf end block) take **no** long-press, and the Mushaf end block never saves. Community surfaces (groups, posts, the discussion entry) take **no** long-press. `__tests__/contextualNotesInvariants.test.ts` and `__tests__/communityInvariants.test.ts` pin this.
 
 ## Active Technologies
 - TypeScript 5.9, React 19.1, React Native 0.81.5 (Expo SDK 54) (001-progress-tracking)

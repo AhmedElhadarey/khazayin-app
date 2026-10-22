@@ -17,7 +17,7 @@
  * Track: khazain-backend-integration_20260506  Phase 1 / T1.2
  */
 
-import type { ApiError, ApiErrorCode } from './types';
+import type { ApiError, ApiErrorCode, JoinConflictDetail } from './types';
 
 // ---------------------------------------------------------------------------
 // Arabic copy map
@@ -36,6 +36,8 @@ const ARABIC_COPY: Record<ApiErrorCode, string> = {
   validation: 'البيانات المرسلة غير صحيحة. يرجى مراجعة الإدخال.',
   server:     'حدث خطأ في الخادم. يرجى المحاولة مجدداً بعد قليل.',
   rateLimit:  'تم تجاوز عدد الطلبات المسموح به. يرجى الانتظار قليلاً ثم المحاولة مجدداً.',
+  moderation: 'لم تُنشر المشاركة لأنها تخالف إرشادات المجتمع. يُرجى مراجعتها.',
+  conflict:   'تعذّر إتمام الطلب لتعارضه مع تغيير آخر. حدّث الصفحة وحاول مجددًا.',
   unknown:    'حدث خطأ غير متوقع. يرجى المحاولة مجدداً.',
 };
 
@@ -80,12 +82,13 @@ export function isApiError(e: unknown): e is ApiError {
  */
 export function makeApiError(
   code: ApiErrorCode,
-  { message, retriable = false }: { message?: string; retriable?: boolean } = {},
+  { message, retriable = false, detail }: { message?: string; retriable?: boolean; detail?: JoinConflictDetail } = {},
 ): ApiError {
   const err = new Error(message ?? arabicCopyForCode(code)) as ApiError;
   err.name = 'ApiError';
   err.code = code;
   err.retriable = retriable;
+  if (detail !== undefined) err.detail = detail;
   return err;
 }
 

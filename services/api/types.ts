@@ -40,6 +40,8 @@ export type ApiErrorCode =
   | 'validation' // 400 — request parameters invalid
   | 'server'     // 5xx — internal server error
   | 'rateLimit'  // 429 — too many requests
+  | 'moderation' // community: post rejected by moderation (mock-only in v1)
+  | 'conflict'   // community: clashes with another change (mock-only in v1)
   | 'unknown';   // catch-all
 
 /**
@@ -48,6 +50,9 @@ export type ApiErrorCode =
  * existing <ErrorState message={error.message} /> components display
  * user-friendly text with zero changes.
  */
+/** Why a community join `conflict` happened: the group is full, or the member is at the 5-group cap. */
+export type JoinConflictDetail = 'full' | 'groupCap';
+
 export interface ApiError extends Error {
   /** Discriminated code for programmatic handling. */
   code: ApiErrorCode;
@@ -55,6 +60,8 @@ export interface ApiError extends Error {
   status?: number;
   /** True if the error is safe to retry (network, timeout, 429, 5xx). */
   retriable: boolean;
+  /** Machine-readable cause when one code has several (community join `conflict`). Never shown to the user. */
+  detail?: JoinConflictDetail;
 }
 
 // ---------------------------------------------------------------------------

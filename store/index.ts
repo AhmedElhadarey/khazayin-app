@@ -132,3 +132,31 @@ export type { SettingsState } from './settingsStore';
 
 export { usePreviewStore } from './previewStore';
 export type { PreviewState, PreviewStatus } from './previewStore';
+
+// ---------------------------------------------------------------------------
+// Community local state (community track)
+// ---------------------------------------------------------------------------
+
+export { useCommunityLocalStore } from './communityLocalStore';
+
+// ---------------------------------------------------------------------------
+// Community read stores and mutations (community track)
+// ---------------------------------------------------------------------------
+
+export {
+  useMyGroupsStore,
+  groupDetailStore,
+  useThreadSummariesStore,
+  useThreadPostsStore,
+  resetCommunityStores,
+  visiblePosts,
+} from './communityStores';
+export type { GroupDetail } from './communityStores';
+export {
+  runMutation,
+  useMutationStatus,
+  prependPost,
+  replacePost,
+  removePost,
+} from './communityMutations';
+export type { MutationStatus } from './communityMutations';

@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
+import { COMMUNITY_POST_ORDER, COMPOSER_ORDER, GROUP_ROW_ORDER } from '@/constants/rtlContracts';
+
 /**
  * The RTL contract, enforced on source text.
  *
@@ -48,8 +50,24 @@ const PINNED_SCREENS = [
   'app/content-search.tsx',
   'app/share-sheet.tsx',
   'app/(tabs)/more/settings-progress.tsx',
+  'app/(tabs)/more/settings.tsx',
+  'app/(tabs)/more/community/index.tsx',
+  'app/(tabs)/more/community/guidelines.tsx',
+  'app/(tabs)/more/community/create.tsx',
+  'app/(tabs)/more/community/join.tsx',
+  'app/(tabs)/more/community/group/[id].tsx',
   'app/(tabs)/sections/book/[id].tsx',
   'components/khazain/sheets/SheetRow.tsx',
+  'components/khazain/community/PreviewBanner.tsx',
+  'components/khazain/community/GroupRow.tsx',
+  'components/khazain/community/MemberRow.tsx',
+  'components/khazain/community/ChallengeCard.tsx',
+  'components/khazain/community/ProgressBar.tsx',
+  'components/khazain/community/PostRow.tsx',
+  'components/khazain/community/Composer.tsx',
+  'app/(tabs)/sections/discussion/index.tsx',
+  'app/(tabs)/sections/discussion/[lectureId].tsx',
+  'app/community-report-sheet.tsx',
   'components/khazain/settings/SettingsSection.tsx',
   // Onboarding. Not in the original sweep because it is the one flow the
   // captures never reached: the persisted `onboardingComplete` flag meant a
@@ -132,5 +150,61 @@ describe('onboarding survives the first launch after install', () => {
     const src = code('app/onboarding.tsx');
     expect(src).toMatch(/if \(!finished\) anim\.setValue\(0\)/);
     expect(src).toMatch(/animation\.stop\(\);\s*anim\.setValue\(0\);/);
+  });
+});
+
+describe('PreviewBanner', () => {
+  const src = code('components/khazain/community/PreviewBanner.tsx');
+
+  it('returns early unless the mode is mock, so mode off renders nothing', () => {
+    expect(src).toMatch(/if \(mode !== 'mock'\) return null;/);
+  });
+
+  it('is a static text banner, not an alert', () => {
+    expect(src).toMatch(/accessibilityRole="text"/);
+    expect(src).not.toMatch(/accessibilityRole="alert"/);
+  });
+});
+
+describe('GroupRow and MemberRow', () => {
+  const group = code('components/khazain/community/GroupRow.tsx');
+  const member = code('components/khazain/community/MemberRow.tsx');
+
+  it('GroupRow authors its children in GROUP_ROW_ORDER inside a PHYSICAL_ROW', () => {
+    expect(group).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(group).toMatch(/GROUP_ROW_ORDER\.map\(/);
+  });
+
+  it('MemberRow pins its row and keeps the name at the physical right', () => {
+    expect(member).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(member).toMatch(/\.\.\.RTL_TEXT/);
+  });
+
+  it('freezes the group row order left to right', () => {
+    expect(GROUP_ROW_ORDER).toEqual(['disclosure', 'text', 'progress']);
+  });
+});
+
+describe('PostRow and Composer', () => {
+  const post = code('components/khazain/community/PostRow.tsx');
+  const composer = code('components/khazain/community/Composer.tsx');
+
+  it('PostRow authors its children in COMMUNITY_POST_ORDER inside a PHYSICAL_ROW', () => {
+    expect(post).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(post).toMatch(/COMMUNITY_POST_ORDER\.map\(/);
+    expect(post).toMatch(/\.\.\.RTL_TEXT/);
+  });
+
+  it('Composer authors its children in COMPOSER_ORDER inside a PHYSICAL_ROW', () => {
+    expect(composer).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(composer).toMatch(/COMPOSER_ORDER\.map\(/);
+    expect(composer).toMatch(/\.\.\.PHYSICAL_BOX/);
+  });
+
+  it('freezes the post and composer orders left to right', () => {
+    expect(COMMUNITY_POST_ORDER).toEqual(['actions', 'text', 'avatar']);
+    expect(COMPOSER_ORDER).toEqual(['send', 'field']);
+    expect(Object.isFrozen(COMMUNITY_POST_ORDER)).toBe(true);
+    expect(Object.isFrozen(COMPOSER_ORDER)).toBe(true);
   });
 });

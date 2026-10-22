@@ -3,6 +3,7 @@ import {
   MORE_EXTERNAL_URLS,
   MORE_REFERENCE_ORDER,
   MORE_ROWS,
+  visibleExtensionRows,
 } from '../sections';
 
 /**
@@ -34,7 +35,11 @@ describe('More reference group', () => {
   });
 
   it('keeps the settings rows available, after the reference group', () => {
-    expect(MORE_EXTENSION_ROWS.map((row) => row.id)).toEqual(['settings', 'progress']);
+    expect(MORE_EXTENSION_ROWS.map((row) => row.id)).toEqual([
+      'settings',
+      'progress',
+      'community',
+    ]);
     MORE_EXTENSION_ROWS.forEach((row) => {
       expect([row.id, row.route]).toEqual([row.id, expect.stringMatching(/^\//)]);
       expect(row.title.length).toBeGreaterThan(0);
@@ -65,5 +70,26 @@ describe('More row destinations', () => {
     MORE_ROWS.forEach((row) => {
       expect([row.id, row.isExternal && !!row.route]).toEqual([row.id, false]);
     });
+  });
+});
+
+describe('visibleExtensionRows', () => {
+  const ids = (mode: 'off' | 'mock') =>
+    visibleExtensionRows(MORE_EXTENSION_ROWS, mode).map((row) => row.id);
+
+  it('leaves the More screen exactly as before when community is off', () => {
+    expect(ids('off')).toEqual(['settings', 'progress']);
+  });
+
+  it('adds the community row in mock mode, last', () => {
+    expect(ids('mock')).toEqual(['settings', 'progress', 'community']);
+  });
+
+  it('gates only the community row and points it at the hub', () => {
+    const gated = MORE_EXTENSION_ROWS.filter((row) => row.gate);
+    expect(gated.map((row) => [row.id, row.gate])).toEqual([['community', 'community']]);
+    expect(gated[0].route).toBe('/(tabs)/more/community');
+    expect(gated[0].title).toBe('المجتمع');
+    expect(gated[0].subtitle).toBe('مجموعات القراءة · الختمات · نقاشات الدروس');
   });
 });

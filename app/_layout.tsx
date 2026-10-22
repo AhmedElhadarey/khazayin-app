@@ -23,6 +23,8 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
 import { shouldSuppressWirdNotification } from '@/services/wirdReminder';
 import { toLocalDay } from '@/constants/progress';
+import { startCommunityProgressSync } from '@/services/community/progressSync';
+import { startDeletionRunner } from '@/services/community/deletionRunner';
 import { registerCacheRoot } from '@/services/cacheFacade';
 import { registerPlaybackService, restoreLastLecture, setupPlayer } from '@/services/audioEngine';
 import { registerPlaybackListeners } from '@/services/audioEngine/syncBridge';
@@ -309,6 +311,9 @@ function RootLayout() {
         });
       },
     });
+    // Independent of the progress DB: a pending community deletion must still
+    // retry when that hydrate fails. Idempotent, and a no-op in `off` mode.
+    startDeletionRunner();
     // Subscribe before hydrating so the ready transition is not missed (design §7.4).
     if (RECOMMENDATIONS_ENABLED) startActivityWatch();
     Promise.all([
@@ -317,6 +322,7 @@ function RootLayout() {
     ])
       .then(() => {
         restoreLastLecture();
+        startCommunityProgressSync();
       })
       .catch((err) => {
         console.warn('[khazayin] progress hydration failed', err);
@@ -451,6 +457,14 @@ function RootLayout() {
         />
         <Stack.Screen
           name="share-sheet"
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            animation: 'fade',
+          }}
+        />
+        <Stack.Screen
+          name="community-report-sheet"
           options={{
             headerShown: false,
             presentation: 'transparentModal',

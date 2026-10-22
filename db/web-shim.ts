@@ -216,6 +216,14 @@ export function createWebRepos(): Repos {
       return countCompletedJuz(pages);
     },
 
+    async distinctPagesSince(fromLocalDay) {
+      await load();
+      const pages = ensure()
+        .pageReads.filter((r) => r.localDay >= fromLocalDay)
+        .map((r) => r.pageNumber);
+      return [...new Set(pages)].sort((a, b) => a - b);
+    },
+
     async longestStreakEver() {
       await load();
       const days = Object.entries(ensure().days)
