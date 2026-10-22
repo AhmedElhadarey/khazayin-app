@@ -45,6 +45,8 @@ export function PillButton({
     <Pressable
       onPress={disabled ? undefined : onPress}
       disabled={disabled}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: !!disabled }}
       style={({ pressed }) => [
         styles.base,
         variant !== 'ghost' ? KhazainShadows.press : null,
@@ -70,6 +72,9 @@ export function PillButton({
             fontWeight: '600',
             writingDirection: 'rtl',
           },
+          // Full inner width, centred by textAlign: a shrink-wrapped Text loses
+          // its last word on Android 15+ (bounds-vs-advance line breaking).
+          styles.label,
           labelStyle,
         ]}
       >
@@ -87,6 +92,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
+  },
+  label: {
+    flexGrow: 1,
+    flexShrink: 1,
+    textAlign: 'center',
   },
   slot: {
     alignItems: 'center',
