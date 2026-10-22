@@ -21,12 +21,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Book detail, reached from search. No Figma frame covers it — governed by
 // constants/layout.ts (PHYSICAL_BOX, RTL text via textStyle) and
 // constants/typography.ts. The cover reuses the Home book card (node 2001:940)
 // so the book reads as the same object.
 export default function BookDetailScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const { width: windowWidth } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -137,8 +139,8 @@ export default function BookDetailScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <InlineHeader title="الكتب العلمية" onBack={() => router.back()} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <InlineHeader title="الكتب العلمية" onBack={() => router.back()} style={columnStyle} />
+      <ScrollView contentContainerStyle={[styles.content, columnStyle]} showsVerticalScrollIndicator={false}>
         {body}
       </ScrollView>
     </SafeAreaView>

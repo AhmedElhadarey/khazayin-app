@@ -71,6 +71,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 
 function surahNameForPage(page: number): { name: string; surahNumber: number } | null {
@@ -100,6 +101,7 @@ const STAT_GLYPH = 22;
 const FORMAT_GLYPH = 16;
 
 export default function LibraryScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const notes = useNotesStore((s) => s.notes);
   const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
@@ -656,7 +658,7 @@ export default function LibraryScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 24 }}
+        contentContainerStyle={[{ paddingBottom: 24 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         {visibleLibrarySections(filter).map((key) => (

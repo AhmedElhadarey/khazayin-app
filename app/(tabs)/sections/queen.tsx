@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Page 33: أنتِ ملكة — paginated list of lecture cards with a tulip-glyph cream disc.
 // FlatList for virtualisation + onEndReached infinite scroll.
@@ -25,6 +26,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // debounce releases.
 
 export default function QueenScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const {
     items, status, error, fetchingMore, hasMore,
@@ -35,14 +37,14 @@ export default function QueenScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <InlineHeader title="أنتِ ملكة" onBack={() => router.back()} />
-      <View style={styles.searchBlock}>
+      <InlineHeader title="أنتِ ملكة" onBack={() => router.back()} style={columnStyle} />
+      <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <FlatList
         data={items}
         keyExtractor={(l) => l.id}
-        contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 24 }, columnStyle]}
         renderItem={({ item }) => (
           <LectureCard
             id={item.id}

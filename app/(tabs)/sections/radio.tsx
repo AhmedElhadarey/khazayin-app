@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Page 35: برامج إذاعية — paginated radio programme cards. Node 2606:3830
 // draws the same `DIV-139` as prophet, queen and books: 64 tall at radius 16
@@ -27,6 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // debounce releases.
 
 export default function RadioScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const {
     items, status, error, fetchingMore, hasMore,
@@ -37,14 +39,14 @@ export default function RadioScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <InlineHeader title="برامج إذاعية" onBack={() => router.back()} />
-      <View style={styles.searchBlock}>
+      <InlineHeader title="برامج إذاعية" onBack={() => router.back()} style={columnStyle} />
+      <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <FlatList
         data={items}
         keyExtractor={(p) => p.id}
-        contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 24 }, columnStyle]}
         renderItem={({ item }) => (
           <LectureCard
             id={item.id}

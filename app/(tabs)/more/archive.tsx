@@ -13,6 +13,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Node 2558:1334. The three cards are `DIV-59` — the Sections root's card at a
 // looser density (112 rather than 96, inset 22 rather than 14) with the same
@@ -30,14 +31,15 @@ const GLYPH_BY_ID: Record<ArchiveRow['id'], React.ReactNode> = {
 };
 
 export default function ArchiveScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <HeaderArt />
-      <InlineHeader title="الأرشيف" onBack={() => router.back()} />
+      <InlineHeader title="الأرشيف" onBack={() => router.back()} style={columnStyle} />
       <ScrollView
-        contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
+        contentContainerStyle={[styles.container, { paddingBottom: 24 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.searchBlock}>

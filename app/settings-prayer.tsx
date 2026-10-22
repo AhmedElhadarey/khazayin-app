@@ -16,6 +16,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
@@ -85,6 +86,7 @@ function promptLocationPermission() {
 }
 
 export default function SettingsPrayerScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const config = useSettingsStore((s) => s.prayer);
   const setPrayerMethod = useSettingsStore((s) => s.setPrayerMethod);
   const setPrayerMadhab = useSettingsStore((s) => s.setPrayerMadhab);
@@ -131,7 +133,7 @@ export default function SettingsPrayerScreen() {
       </View>
       <Text style={styles.title}>مواقيت الصلاة</Text>
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: 48 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 48 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         {/* 1. Today's times — the live preview. */}

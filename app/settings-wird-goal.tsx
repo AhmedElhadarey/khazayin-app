@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
@@ -39,6 +40,7 @@ const PRESETS: readonly { id: JuzPreset; label: string }[] = [
 ];
 
 export default function SettingsWirdGoalScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const currentTarget = useWirdStore((s) => s.target);
   const setTarget = useWirdStore((s) => s.setTarget);
@@ -71,7 +73,7 @@ export default function SettingsWirdGoalScreen() {
       </View>
       <Text style={styles.title}>هدف الورد اليومي</Text>
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: 120 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 120 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.list}>

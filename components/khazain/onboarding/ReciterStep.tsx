@@ -8,6 +8,7 @@ import { KhazainColors } from '@/constants/theme';
 import { selectOnboardingReciters } from '@/services/onboardingReciters';
 import { canPreview, stopPreview, toggleReciterPreview } from '@/services/reciterPreview';
 import { usePreviewStore, useRecitersStore, useSettingsStore } from '@/store';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 import { PreviewButton } from './PreviewButton';
 import { SelectableRow } from './SelectableRow';
@@ -50,8 +51,9 @@ export function ReciterStep(): React.ReactElement {
     return () => sub.remove();
   }, []);
 
+  const { columnStyle } = useResponsiveLayout();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, columnStyle]}>
       <Text style={styles.title}>اختر القارئ المفضّل</Text>
       <Text style={styles.subtitle}>يمكنك تغييره لاحقاً من الإعدادات.</Text>
       <ScrollView

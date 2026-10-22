@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { FontSizePreview } from '@/components/khazain/settings';
@@ -22,6 +23,7 @@ const LEVEL_LABELS: Record<FontSizeLevel, string> = {
 const LEVELS: readonly FontSizeLevel[] = [1, 2, 3, 4, 5];
 
 export default function SettingsFontSizeScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const currentLevel = useSettingsStore((s) => s.fontSizeLevel);
   const setFontSizeLevel = useSettingsStore((s) => s.setFontSizeLevel);
@@ -39,7 +41,7 @@ export default function SettingsFontSizeScreen() {
       </View>
       <Text style={styles.title}>حجم خط القرآن</Text>
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: 120 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 120 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <FontSizePreview level={focused} />

@@ -40,6 +40,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Group title lookups for the 4 result types.
 const GROUP_TITLES: Record<'surah' | 'scholar' | 'book' | 'lecture', string> = {
@@ -51,6 +52,7 @@ const GROUP_TITLES: Record<'surah' | 'scholar' | 'book' | 'lecture', string> = {
 
 export default function SearchModalScreen() {
   const insets = useSafeAreaInsets();
+  const { columnStyle } = useResponsiveLayout();
 
   // ── Search state ──
   const query = useSearchStore((s) => s.query);
@@ -165,10 +167,10 @@ export default function SearchModalScreen() {
     // to the native view, which put the header and its back button under the
     // status bar — and a fullScreenModal has no swipe-to-dismiss.
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <InlineHeader title="بحث" onBack={() => router.back()} />
+      <InlineHeader title="بحث" onBack={() => router.back()} style={columnStyle} />
 
       {/* Active search input */}
-      <View style={styles.inputRow}>
+      <View style={[styles.inputRow, columnStyle]}>
         <SearchPill
           autoFocus
           value={query}
@@ -226,10 +228,11 @@ function EmptyState({
   onClearAllRecents: () => void;
   onPickSuggestion: (q: string) => void;
 }) {
+  const { columnStyle } = useResponsiveLayout();
   return (
     <FlatList
       style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[styles.scrollContent, columnStyle]}
       data={[] as readonly never[]}
       renderItem={() => null}
       keyboardShouldPersistTaps="handled"
@@ -273,10 +276,11 @@ function ResultsList({
   results: ResultGroup[];
   onPress: (target: SearchTarget) => void;
 }) {
+  const { columnStyle } = useResponsiveLayout();
   return (
     <FlatList
       style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[styles.scrollContent, columnStyle]}
       data={results}
       keyExtractor={(g) => g.type}
       keyboardShouldPersistTaps="handled"

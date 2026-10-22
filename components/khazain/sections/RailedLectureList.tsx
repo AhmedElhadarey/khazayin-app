@@ -18,6 +18,8 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { railListGeometry } from '@/constants/railList';
 
 /**
  * Header → search → compact lecture rows → alphabet rail, the shape shared by
@@ -42,10 +44,12 @@ export function RailedLectureList({
   onPressItem: (item: Lecture) => void;
 }) {
   const router = useRouter();
+  const { columnStyle, isTablet, reading } = useResponsiveLayout();
+  const rail = railListGeometry(isTablet, reading.inset);
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <InlineHeader title={title} onBack={() => router.back()} />
+      <InlineHeader title={title} onBack={() => router.back()} style={columnStyle} />
       <View style={styles.searchBlock}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
@@ -53,8 +57,8 @@ export function RailedLectureList({
         <FlatList
           data={items}
           keyExtractor={(item) => item.id}
-          style={styles.list}
-          contentContainerStyle={styles.listContent}
+          style={rail.list}
+          contentContainerStyle={[styles.listContent, rail.inner, columnStyle]}
           renderItem={({ item }) => (
             <LectureCard
               id={item.id}
@@ -69,7 +73,7 @@ export function RailedLectureList({
           )}
           showsVerticalScrollIndicator={false}
         />
-        <View style={styles.rail} pointerEvents="box-none">
+        <View style={[styles.rail, { [LETTER_INDEX_EDGE]: rail.edge }]} pointerEvents="box-none">
           <LetterIndex active={activeLetter} />
         </View>
       </View>
@@ -88,11 +92,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     position: 'relative',
   },
-  list: {
-    flex: 1,
-    paddingLeft: 16,
-    paddingRight: RESERVED_COLUMNS.letterRailInset,
-  },
   listContent: {
     gap: CARD_DENSITY.listGap,
     paddingBottom: SCREEN_BOTTOM_BREATHING,
@@ -101,8 +100,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     bottom: 0,
-    // LETTER_INDEX_EDGE — the alphabet rail lives on the physical right edge.
-    [LETTER_INDEX_EDGE]: 16,
+    // The right offset (`LETTER_INDEX_EDGE`) is set at render time from
+    // `railListGeometry`: 16 on phones, the column's edge on tablets.
     width: RESERVED_COLUMNS.letterRail,
     alignItems: 'center',
   },

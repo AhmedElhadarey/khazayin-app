@@ -6,6 +6,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Page 30: تصميمات دعوية → month detail. Header is the month-pair title
 // (e.g. "من شوال إلى رمضان"), then a stack of poster cards. Each row has
@@ -14,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Data sourced from useDawahByMonthStore (content service layer).
 
 export default function DawahMonthScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const { month } = useLocalSearchParams<{ month: string }>();
 
@@ -39,9 +41,9 @@ export default function DawahMonthScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <InlineHeader title={title} onBack={() => router.back()} />
+      <InlineHeader title={title} onBack={() => router.back()} style={columnStyle} />
       <ScrollView
-        contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 24 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <AsyncContent

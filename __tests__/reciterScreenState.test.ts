@@ -141,7 +141,7 @@ describe('reciter.tsx wiring (nodes 2031:6193 / 2102:3187)', () => {
     expect(src).toContain('RECITER_STATE_COPY.listEmpty');
   });
   it('keeps the loaded FlatList geometry untouched', () => {
-    expect(src).toContain('contentContainerStyle={[styles.listContent, { paddingBottom: 24 }]}');
+    expect(src).toContain('contentContainerStyle={[styles.listContent, { paddingBottom: 24 }');
   });
 });
 
@@ -160,7 +160,7 @@ describe('reciter/[id].tsx wiring (node 2207:5270)', () => {
     expect(src).not.toMatch(/\{reciter \? \(/);
   });
   it('keeps the loaded FlatList geometry untouched', () => {
-    expect(src).toContain('contentContainerStyle={[styles.list, { paddingBottom: 24 }]}');
+    expect(src).toContain('contentContainerStyle={[styles.list, { paddingBottom: 24 }');
   });
   it('feeds the store data into the state, and titles the header from the ready reciter', () => {
     expect(src).toMatch(/reciterDetailState\(\{[\s\S]{0,200}\bsurahs,/);

@@ -24,6 +24,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 
 // Real phone / email values to be supplied by the foundation. Defaults match
@@ -41,6 +42,7 @@ const CONTACT_EMAIL = 'khazayin@email.com';
 const CONTACT_GLYPH = 20;
 
 export default function ContactScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
 
   const [name, setName] = useState('');
@@ -77,13 +79,13 @@ export default function ContactScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <HeaderArt corners="single" />
-      <InlineHeader title="تواصل معنا" onBack={() => router.back()} />
+      <InlineHeader title="تواصل معنا" onBack={() => router.back()} style={columnStyle} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={[styles.body, { paddingBottom: 24 }]}
+          contentContainerStyle={[styles.body, { paddingBottom: 24 }, columnStyle]}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >

@@ -20,6 +20,7 @@ import {
 import { ONBOARDING_STEP_COUNT, ONBOARDING_STEPS } from '@/constants/settings';
 import { KhazainColors } from '@/constants/theme';
 import { stopPreview } from '@/services/reciterPreview';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { useSettingsStore } from '@/store';
 
 const SLIDE_OFFSET = 40;
@@ -27,6 +28,7 @@ const SLIDE_DURATION = 280;
 
 export default function OnboardingScreen(): React.ReactElement {
   const router = useRouter();
+  const { columnStyle } = useResponsiveLayout();
   const setOnboardingStep = useSettingsStore((s) => s.setOnboardingStep);
   const setOnboardingComplete = useSettingsStore((s) => s.setOnboardingComplete);
 
@@ -148,7 +150,7 @@ export default function OnboardingScreen(): React.ReactElement {
     // from below the screen, and the native view reads its insets from where it
     // sits, so it would jump as it landed (launch design R6).
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <View style={styles.progressWrap}>
+      <View style={[styles.progressWrap, columnStyle]}>
         <OnboardingProgress count={ONBOARDING_STEP_COUNT} index={step} />
       </View>
 
@@ -156,7 +158,7 @@ export default function OnboardingScreen(): React.ReactElement {
         {renderStep(step)}
       </Animated.View>
 
-      <View style={styles.footerWrap}>
+      <View style={[styles.footerWrap, columnStyle]}>
         <OnboardingFooter
           step={step}
           count={ONBOARDING_STEP_COUNT}

@@ -26,10 +26,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 const toAr = toArabicDigits;
 
 export default function SettingsProgressScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const currentTarget = useWirdStore((s) => s.target);
   const setTarget = useWirdStore((s) => s.setTarget);
@@ -87,13 +89,13 @@ export default function SettingsProgressScreen() {
           other three under More — uses InlineHeader, which puts the title at the
           physical right in the body face. This screen was the last one still on
           InlineHeader, whose Amiri title is centred. */}
-      <InlineHeader title="إعدادات التقدّم" onBack={() => router.back()} />
+      <InlineHeader title="إعدادات التقدّم" onBack={() => router.back()} style={columnStyle} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       >
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, columnStyle]}
           showsVerticalScrollIndicator={false}
         >
           <View style={[styles.card, KhazainShadows.card]}>

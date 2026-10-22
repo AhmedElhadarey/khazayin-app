@@ -6,6 +6,7 @@ import { FoundationMark } from '@/components/khazain/home/FoundationMark';
 import { Wordmark } from '@/components/khazain/primitives';
 import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 /** The four "how the app works" highlights, folded in from the old feature screens. */
 export const WELCOME_HIGHLIGHTS: readonly { key: string; text: string }[] = Object.freeze([
@@ -28,6 +29,7 @@ export const WELCOME_HIGHLIGHTS: readonly { key: string; text: string }[] = Obje
  * rather than forced square.
  */
 export function WelcomeStep(): React.ReactElement {
+  const { columnStyle } = useResponsiveLayout();
   return (
     <LinearGradient
       colors={[KhazainColors.cream50, KhazainColors.cream100, KhazainColors.cream200]}
@@ -35,7 +37,7 @@ export function WelcomeStep(): React.ReactElement {
       style={styles.gradient}
     >
       <ScrollView
-        contentContainerStyle={styles.container}
+        contentContainerStyle={[styles.container, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.identity}>

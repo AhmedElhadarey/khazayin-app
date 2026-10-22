@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // JSX order is [text, badge]. Want text on left, badge on right.
 
@@ -15,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // Data sourced from useDawahMonthsStore (content service layer).
 
 export default function DawahScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const { data, status, error, fetch, refresh } = useDawahMonthsStore();
 
@@ -29,9 +31,9 @@ export default function DawahScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <HeaderArt corners="single" />
-      <InlineHeader title="تصميمات دعوية" onBack={() => router.back()} />
+      <InlineHeader title="تصميمات دعوية" onBack={() => router.back()} style={columnStyle} />
       <ScrollView
-        contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 24 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <AsyncContent

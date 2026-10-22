@@ -8,7 +8,7 @@ import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 // Pages 13/14/15/21/25/26/28/29/34: an inline page header that does NOT use
 // the circular back-chip from DetailHeader. The title sits at the physical
@@ -30,9 +30,12 @@ const BACK_GLYPH = 20;
 export function InlineHeader({
   title,
   onBack,
+  style,
 }: {
   title: string;
   onBack?: () => void;
+  /** Tablet reading column (`columnStyle`); `{}` on phones. */
+  style?: StyleProp<ViewStyle>;
 }) {
   const slots: Record<InlineHeaderSlot, React.ReactNode> = {
     title: (
@@ -48,7 +51,7 @@ export function InlineHeader({
   };
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, style]}>
       <Pressable
         onPress={onBack}
         hitSlop={10}

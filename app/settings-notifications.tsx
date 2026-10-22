@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { textStyle } from '@/constants/typography';
@@ -44,6 +45,7 @@ function promptOpenOsSettings() {
 }
 
 export default function SettingsNotificationsScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const notifications = useSettingsStore((s) => s.notifications);
   const setNotificationEnabled = useSettingsStore((s) => s.setNotificationEnabled);
@@ -111,7 +113,7 @@ export default function SettingsNotificationsScreen() {
       </View>
       <Text style={styles.title}>الإشعارات</Text>
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: 48 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 48 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         {permission === 'denied' ? (
