@@ -91,7 +91,23 @@ describe('every list screen sits in the tablet reading column', () => {
 
   it.each(HEADER_SCREENS)('%s gives its fixed header the column', (file) => {
     const src = read(file);
-    expect(src).toMatch(/<InlineHeader[\s\S]*?style=\{columnStyle\}|<View style=\{\[styles\.\w+, columnStyle\]\}/);
+    const tags = [...src.matchAll(/<InlineHeader\b[\s\S]*?\/>/g)].map((m) => m[0]);
+    expect(tags.length).toBeGreaterThan(0);
+    for (const tag of tags) expect(tag).toMatch(/style=\{columnStyle\}/);
+  });
+
+  // archive and settings-progress render their search/input block inside the
+  // scroll content, which already carries the column.
+  const OUTSIDE_SCROLL = HEADER_SCREENS.filter(
+    (f) => !/more\/(archive|settings-progress)/.test(f),
+  );
+  it.each(OUTSIDE_SCROLL)('%s gives every search block outside the scroll the column', (file) => {
+    const src = read(file);
+    for (const m of src.matchAll(/<View style=(\{[^\n]*\})>/g)) {
+      if (/styles\.(searchBlock|inputRow|stateBlock)\b/.test(m[1])) {
+        expect(m[1]).toMatch(/columnStyle/);
+      }
+    }
   });
 });
 

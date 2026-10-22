@@ -64,6 +64,7 @@ export default function ReciterSurahListScreen() {
       <InlineHeader
         title={(state.kind === 'ready' ? state.reciter.name : reciter?.name) ?? 'القرآن حياة'}
         onBack={() => router.back()}
+        style={columnStyle}
       />
       <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
@@ -87,7 +88,7 @@ export default function ReciterSurahListScreen() {
         // from CARD_DENSITY (surah row 60, gap 6), cards from EmptyState /
         // ErrorState tokens. Not wrapped around the FlatList: the fade
         // wrapper has no flex and would break scrolling.
-        <View style={styles.stateBlock}>
+        <View style={[styles.stateBlock, columnStyle]}>
           <AsyncContent
             {...reciterDetailAsyncProps(state)}
             onRetry={onRetry}

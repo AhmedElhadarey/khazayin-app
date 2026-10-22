@@ -50,7 +50,7 @@ export function RailedLectureList({
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <InlineHeader title={title} onBack={() => router.back()} style={columnStyle} />
-      <View style={styles.searchBlock}>
+      <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <View style={styles.body}>
