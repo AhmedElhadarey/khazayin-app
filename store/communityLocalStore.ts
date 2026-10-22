@@ -65,6 +65,8 @@ const API_ERROR_CODES: Record<ApiErrorCode, true> = {
   validation: true,
   server: true,
   rateLimit: true,
+  moderation: true,
+  conflict: true,
   unknown: true,
 };
 const isApiErrorCode = (v: unknown): v is ApiErrorCode =>

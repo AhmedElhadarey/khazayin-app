@@ -41,6 +41,17 @@ describe('makeApiError', () => {
   });
 });
 
+describe('community error copy', () => {
+  it.each([
+    ['moderation', 'لم تُنشر المشاركة لأنها تخالف إرشادات المجتمع. يُرجى مراجعتها.'],
+    ['conflict', 'تعذّر إتمام الطلب لتعارضه مع تغيير آخر. حدّث الصفحة وحاول مجددًا.'],
+  ] as const)('%s', (code, copy) => {
+    expect(arabicCopyForCode(code)).toBe(copy);
+    expect(copy).not.toMatch(/[A-Za-z]/);
+    expect(makeApiError(code).message).toBe(copy);
+  });
+});
+
 describe('toApiError classification (pinned before the makeApiError refactor)', () => {
   it.each([
     ['HTTP 500', () => toApiError(undefined, 500), 'server', true, 500],

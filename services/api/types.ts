@@ -40,6 +40,8 @@ export type ApiErrorCode =
   | 'validation' // 400 — request parameters invalid
   | 'server'     // 5xx — internal server error
   | 'rateLimit'  // 429 — too many requests
+  | 'moderation' // community: post rejected by moderation (mock-only in v1)
+  | 'conflict'   // community: clashes with another change (mock-only in v1)
   | 'unknown';   // catch-all
 
 /**
