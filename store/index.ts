@@ -132,3 +132,9 @@ export type { SettingsState } from './settingsStore';
 
 export { usePreviewStore } from './previewStore';
 export type { PreviewState, PreviewStatus } from './previewStore';
+
+// ---------------------------------------------------------------------------
+// Community local state (community track)
+// ---------------------------------------------------------------------------
+
+export { useCommunityLocalStore } from './communityLocalStore';
