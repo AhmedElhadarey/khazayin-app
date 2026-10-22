@@ -86,6 +86,9 @@ export default function HomeScreen() {
   // and is asserted by __tests__/homePresentation.test.ts.
   const quranHero = <HeroQuran onMore={goToSections} />;
   const prophetHero = <HeroProphet onMore={goToSections} />;
+  // In the tablet pair the cards grow to the taller one's height.
+  const quranHeroFilled = <HeroQuran onMore={goToSections} fill />;
+  const prophetHeroFilled = <HeroProphet onMore={goToSections} fill />;
   const queen = <QueenCard onMore={goToSections} />;
   // Physical left → right, authored in HOME_QUICK_CHIPS.
   const quickChips = HOME_QUICK_CHIPS.map((chip) => (
@@ -179,8 +182,8 @@ export default function HomeScreen() {
   // The same content as the phone sections, minus the horizontal padding the
   // shared row already carries.
   const pairCells: Partial<Record<HomeSectionKey, React.ReactNode>> = {
-    quranHero,
-    prophetHero,
+    quranHero: quranHeroFilled,
+    prophetHero: prophetHeroFilled,
     queen,
     quickChips: <View style={styles.quickChipsCell}>{quickChips}</View>,
   };

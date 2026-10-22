@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { heroCardFill } from '@/components/khazain/home/HeroShell';
 import { HOME_SECTION_ORDER, homeTabletRows } from '@/constants/homePresentation';
 
 const read = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
@@ -56,5 +57,26 @@ describe('Home screen', () => {
     expect(src).toMatch(/isTablet/);
     expect(src).toMatch(/stageWidth=\{dawahStageWidth\(width\)\}/);
     expect(src).toMatch(/homeTabletRows\(HOME_SECTION_ORDER\)/);
+  });
+});
+
+describe('tablet hero pair', () => {
+  it('heroCardFill grows only when asked', () => {
+    expect(heroCardFill(true)).toEqual({ flexGrow: 1 });
+    expect(heroCardFill(false)).toBeUndefined();
+    expect(heroCardFill()).toBeUndefined();
+  });
+
+  it('only the tablet pair cells pass fill', () => {
+    const src = read('app/(tabs)/index.tsx');
+    expect(src.match(/<Hero(Quran|Prophet)[^>]*\bfill\b/g)).toHaveLength(2);
+    expect(src).toMatch(/quranHero: quranHeroFilled/);
+    expect(src).toMatch(/prophetHero: prophetHeroFilled/);
+    expect(src).toMatch(/<View style=\{styles\.heroPad\}>\{quranHero\}<\/View>/);
+  });
+
+  it('puts homeColumnStyle on the ScrollView content container', () => {
+    const src = read('app/(tabs)/index.tsx');
+    expect(src).toMatch(/contentContainerStyle=\{\[[^\]]*homeColumnStyle[^\]]*\]\}/s);
   });
 });

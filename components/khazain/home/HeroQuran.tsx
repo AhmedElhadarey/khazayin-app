@@ -33,7 +33,16 @@ const TRAILING_INSET = 5.8;
 
 const SUBTITLE = 'اقْتَرَبَ فَثَمَّ حَيَاة مع القرآن لَمْ تَحْيَهَا بُعْد !';
 
-export function HeroQuran({ onPress, onMore }: { onPress?: () => void; onMore?: () => void }) {
+export function HeroQuran({
+  onPress,
+  onMore,
+  fill,
+}: {
+  onPress?: () => void;
+  onMore?: () => void;
+  /** Grow to the height of the row this card shares (tablet pair). */
+  fill?: boolean;
+}) {
   return (
     <HeroShell
       background={BG}
@@ -44,6 +53,7 @@ export function HeroQuran({ onPress, onMore }: { onPress?: () => void; onMore?: 
       column={COLUMN}
       accessibilityLabel="القرآن حياة"
       onPress={onPress ?? onMore}
+      fill={fill}
     >
       {(scale) => (
         <>
