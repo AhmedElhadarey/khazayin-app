@@ -33,7 +33,7 @@ describe('Home recommended-for-you wiring', () => {
     expect(src).toMatch(/refreshActivity\(\)[\s\S]{0,160}\.catch\(/);
   });
 
-  it('re-attempts the load when a signal source changes while Home stays focused', () => {
+  it('re-attempts the load when a signal source changes while Home is mounted', () => {
     expect(src).toContain('useSavedStore.subscribe(');
     expect(src).toContain('useNotesStore.subscribe(');
     expect(src).toContain('useRecommendationInputsStore.subscribe(');
