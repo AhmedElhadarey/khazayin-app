@@ -16,6 +16,18 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
  */
 export const SECTION_TILE_MIN_HEIGHT = 176;
 
+/**
+ * Side padding for the tablet grid and the blocks above it. The responsive
+ * width already excludes the side safe-area insets, so the padding must add
+ * them back or the first tile lands under a cutout.
+ */
+export function sectionsTabletPadding(
+  gutter: number,
+  insets: { left: number; right: number },
+): { paddingLeft: number; paddingRight: number } {
+  return { paddingLeft: gutter + insets.left, paddingRight: gutter + insets.right };
+}
+
 export function SectionTile({
   icon,
   title,

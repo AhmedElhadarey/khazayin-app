@@ -7,7 +7,7 @@ import fs from 'fs';
 import path from 'path';
 import React from 'react';
 
-import { SectionTile } from '../components/khazain/primitives/SectionTile';
+import { SectionTile, sectionsTabletPadding } from '../components/khazain/primitives/SectionTile';
 import { listRowAccessibilityLabel } from '../constants/rtlContracts';
 
 const read = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
@@ -58,5 +58,25 @@ describe('SectionTile', () => {
     expect(el.props.accessibilityLabel).toBe(
       listRowAccessibilityLabel({ title: 'القرآن', subtitle: 'المصحف', count: '114 سورة' }),
     );
+  });
+});
+
+describe('tablet side padding', () => {
+  it('adds the side safe-area insets to the gutter', () => {
+    expect(sectionsTabletPadding(24, { left: 0, right: 0 })).toEqual({
+      paddingLeft: 24,
+      paddingRight: 24,
+    });
+    expect(sectionsTabletPadding(24, { left: 47, right: 12 })).toEqual({
+      paddingLeft: 71,
+      paddingRight: 36,
+    });
+  });
+
+  it('is applied to the grid, skeleton and header blocks, not a bare gutter', () => {
+    const src = read('app/(tabs)/sections/index.tsx');
+    expect(src).toMatch(/useSafeAreaInsets\(\)/);
+    expect(src).toMatch(/sectionsTabletPadding\(gutter, insets\)/);
+    expect(src).not.toMatch(/paddingHorizontal: gutter/);
   });
 });

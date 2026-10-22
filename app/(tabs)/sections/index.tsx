@@ -10,7 +10,10 @@ import { SECTION_ICONS, SectionIconKey } from '@/components/khazain/icons/sectio
 import { HeaderArt } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, READING_GRID } from '@/constants/layout';
 import { GRID_GAP, gridItemWidth, sectionGridColumns } from '@/constants/responsive';
-import { SECTION_TILE_MIN_HEIGHT } from '@/components/khazain/primitives/SectionTile';
+import {
+  SECTION_TILE_MIN_HEIGHT,
+  sectionsTabletPadding,
+} from '@/components/khazain/primitives/SectionTile';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -20,11 +23,12 @@ import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function SectionsScreen() {
   const router = useRouter();
   const { width, isTablet, gutter } = useResponsiveLayout();
+  const insets = useSafeAreaInsets();
   const { data, status, error, fetch, refresh } = useSectionsStore();
 
   useEffect(() => {
@@ -41,7 +45,8 @@ export default function SectionsScreen() {
 
   // Phones keep today's 16pt margin and ListRowCard column; tablets use the
   // tablet gutter and a reading-order tile grid.
-  const pad = isTablet ? { paddingHorizontal: gutter } : null;
+  const sidePad = sectionsTabletPadding(gutter, insets);
+  const pad = isTablet ? sidePad : null;
   const tileWidth = gridItemWidth(width, sectionGridColumns(width));
 
   return (
@@ -70,7 +75,7 @@ export default function SectionsScreen() {
                 width={tileWidth}
                 minHeight={SECTION_TILE_MIN_HEIGHT}
                 gap={GRID_GAP}
-                gridStyle={{ ...READING_GRID, paddingHorizontal: gutter }}
+                gridStyle={{ ...READING_GRID, ...sidePad }}
               />
             ) : (
               <SkeletonRibbonList count={9} />
@@ -81,7 +86,7 @@ export default function SectionsScreen() {
           <View
             style={
               isTablet
-                ? { ...READING_GRID, paddingHorizontal: gutter, gap: GRID_GAP }
+                ? { ...READING_GRID, ...sidePad, gap: GRID_GAP }
                 : styles.list
             }
           >
