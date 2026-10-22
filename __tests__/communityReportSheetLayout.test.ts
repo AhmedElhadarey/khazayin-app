@@ -5,6 +5,7 @@ import {
   REPORT_ERROR_RESERVE,
   REPORT_LIST_MIN_HEIGHT,
   reportListMaxHeight,
+  sheetKeyboardLift,
   shouldRevealNote,
 } from '@/services/community/reportSheetLayout';
 
@@ -49,6 +50,16 @@ describe('reportListMaxHeight', () => {
   });
 });
 
+describe('sheetKeyboardLift', () => {
+  it('lifts the sheet by the keyboard height on Android and drops back to 0 when it hides', () => {
+    expect(sheetKeyboardLift('android', 280)).toBe(280);
+    expect(sheetKeyboardLift('android', 0)).toBe(0);
+  });
+  it('leaves iOS to KeyboardAvoidingView', () => {
+    expect(sheetKeyboardLift('ios', 280)).toBe(0);
+  });
+});
+
 describe('shouldRevealNote', () => {
   it('scrolls only when «سبب آخر» becomes the choice', () => {
     expect(shouldRevealNote(null, 'other')).toBe(true);
@@ -84,6 +95,11 @@ describe('report sheet wiring', () => {
 
   it('keeps the keyboard avoidance and shows a scroll indicator', () => {
     expect(src).toMatch(/<KeyboardAvoidingView/);
+    // On Android the sheet is a transparent modal over an edge-to-edge window: nothing
+    // resizes it, and KeyboardAvoidingView's padding outlives the keyboard there.
+    const kav = src.slice(src.indexOf('<KeyboardAvoidingView'), src.indexOf('<SheetShell'));
+    expect(kav).toMatch(/behavior=\{Platform\.OS === 'ios' \? 'padding' : undefined\}/);
+    expect(kav).toMatch(/paddingBottom: sheetKeyboardLift\(Platform\.OS, keyboardHeight\)/);
     expect(src).not.toMatch(/showsVerticalScrollIndicator=\{false\}/);
   });
 });

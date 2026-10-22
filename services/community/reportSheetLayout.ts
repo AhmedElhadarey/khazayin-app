@@ -48,6 +48,16 @@ export function reportListMaxHeight({
   return Math.max(REPORT_LIST_MIN_HEIGHT, Math.min(half, room));
 }
 
+/**
+ * Bottom padding that keeps the sheet above the keyboard. Android only: the
+ * sheet is a transparent modal over an edge-to-edge window, which is never
+ * resized, and KeyboardAvoidingView's padding stays after the keyboard hides
+ * there. iOS keeps KeyboardAvoidingView.
+ */
+export function sheetKeyboardLift(os: string, keyboardHeight: number): number {
+  return os === 'android' ? keyboardHeight : 0;
+}
+
 /** The note field appears below the fold, so choosing «سبب آخر» scrolls it into view. */
 export function shouldRevealNote(prev: ReportReason | null, next: ReportReason): boolean {
   return next === 'other' && prev !== 'other';

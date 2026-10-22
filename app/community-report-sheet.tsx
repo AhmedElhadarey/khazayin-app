@@ -12,7 +12,7 @@ import { useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { arabicCopyForCode, isApiError } from '@/services/api/errors';
 import { communityService } from '@/services/community';
 import { codePointLength, counterAnnouncement, normalizePostInput } from '@/services/community/postForm';
-import { reportListMaxHeight, shouldRevealNote } from '@/services/community/reportSheetLayout';
+import { reportListMaxHeight, sheetKeyboardLift, shouldRevealNote } from '@/services/community/reportSheetLayout';
 import { REPORT_REASON_ORDER, closeOnce, newGuard, runSubmitReport } from '@/services/community/threadActions';
 import { runMutation } from '@/store/communityMutations';
 import { communityGeneration, findThreadPost } from '@/store/communityStores';
@@ -157,7 +157,10 @@ export default function CommunityReportSheet() {
   if (!allowed || !post || post.isMine) return null;
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <KeyboardAvoidingView
+      style={[styles.flex, { paddingBottom: sheetKeyboardLift(Platform.OS, keyboardHeight) }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <SheetShell title={COMMUNITY_COPY.reportTitle} onClose={close}>
         <View style={styles.body}>
           <PreviewBanner />
