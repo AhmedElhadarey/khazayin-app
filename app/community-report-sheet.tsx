@@ -12,6 +12,7 @@ import { useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { arabicCopyForCode, isApiError } from '@/services/api/errors';
 import { communityService } from '@/services/community';
 import { codePointLength, counterAnnouncement, normalizePostInput } from '@/services/community/postForm';
+import { reportListMaxHeight, shouldRevealNote } from '@/services/community/reportSheetLayout';
 import { REPORT_REASON_ORDER, closeOnce, newGuard, runSubmitReport } from '@/services/community/threadActions';
 import { runMutation } from '@/store/communityMutations';
 import { communityGeneration, findThreadPost } from '@/store/communityStores';
@@ -22,6 +23,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AccessibilityInfo,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
@@ -31,6 +33,7 @@ import {
   View,
   useWindowDimensions,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle } from 'react-native-svg';
 
 const NOTE_MAX = COMMUNITY_LIMITS.reportNote.max;
@@ -54,7 +57,30 @@ function RadioGlyph({ checked }: { checked: boolean }) {
 export default function CommunityReportSheet() {
   const allowed = useCommunityGuard('open');
   const router = useRouter();
-  const { height } = useWindowDimensions();
+  const { height, fontScale } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const [keyboardHeight, setKeyboardHeight] = useState(0);
+  useEffect(() => {
+    // `will` events run with the animation on iOS; Android only emits `did`.
+    const show = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hide = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const a = Keyboard.addListener(show, (e) => setKeyboardHeight(e.endCoordinates.height));
+    const b = Keyboard.addListener(hide, () => setKeyboardHeight(0));
+    return () => {
+      a.remove();
+      b.remove();
+    };
+  }, []);
+  const listMaxHeight = reportListMaxHeight({
+    windowHeight: height,
+    topInset: insets.top,
+    bottomInset: insets.bottom,
+    keyboardHeight,
+    fontScale,
+  });
+  const scroller = useRef<ScrollView>(null);
+  // Set when «سبب آخر» is picked; consumed once the note field has been laid out.
+  const revealNote = useRef(false);
   const params = useLocalSearchParams<{ postId?: string | string[] }>();
   const postId = typeof params.postId === 'string' ? params.postId : '';
   // Read once: a refresh of the thread behind the sheet must not pull its target away.
@@ -126,12 +152,17 @@ export default function CommunityReportSheet() {
       <SheetShell title={COMMUNITY_COPY.reportTitle} onClose={close}>
         <View style={styles.body}>
           <PreviewBanner />
-          {/* The list scrolls so the note field and the button stay reachable above the keyboard. */}
+          {/* The list scrolls and is capped by the keyboard and status bar; the button below stays pinned. */}
           <ScrollView
-            style={{ maxHeight: height * 0.5 }}
+            ref={scroller}
+            style={{ maxHeight: listMaxHeight }}
             contentContainerStyle={styles.rows}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
+            onContentSizeChange={() => {
+              if (!revealNote.current) return;
+              revealNote.current = false;
+              scroller.current?.scrollToEnd({ animated: true });
+            }}
           >
             {REPORT_REASON_ORDER.map((r) => (
               <SheetRow
@@ -140,6 +171,7 @@ export default function CommunityReportSheet() {
                 title={COMMUNITY_COPY.reportReasons[r]}
                 checked={reason === r}
                 onPress={() => {
+                  revealNote.current = shouldRevealNote(reason, r);
                   setReason(r);
                   setError(null);
                 }}
@@ -187,9 +219,10 @@ export default function CommunityReportSheet() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  body: { ...PHYSICAL_BOX, gap: 12, paddingBottom: 12 },
+  body: { ...PHYSICAL_BOX, gap: 16, paddingBottom: 12 },
   rows: { ...PHYSICAL_BOX, gap: 8 },
-  noteBox: { ...PHYSICAL_BOX, gap: 6 },
+  // Bottom padding keeps the counter clear of the submit button when scrolled to the end.
+  noteBox: { ...PHYSICAL_BOX, gap: 6, paddingTop: 4, paddingBottom: 8 },
   label: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }) },
   input: {
     ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
