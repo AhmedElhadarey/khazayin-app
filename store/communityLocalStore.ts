@@ -5,7 +5,7 @@ import type { ApiErrorCode } from '@/services/api/types';
 import { COMMUNITY_MODE } from '@/services/community/config';
 import { nextDeletionState, type DeletionOutcome } from '@/services/community/deletion';
 import type { CommunityMode, DeletionState } from '@/services/community/gate';
-import type { Challenge, Group, Membership, Post } from '@/types/community';
+import type { Challenge, Group, Membership, Post, ProgressReport } from '@/types/community';
 
 /** The mock adapter's own writes (design §5.4). Dev only; reset on a mode change. */
 export type MockLedger = {
@@ -15,6 +15,10 @@ export type MockLedger = {
   challenges: Challenge[];
   /** 2xx results by requestId (§5.3), pruned at 24 h. */
   responses: Record<string, { at: number; value: unknown }>;
+  /** Members' reported progress, one per (challengeId, memberId). Absent = none. */
+  progress?: ProgressReport[];
+  /** Rolling 24 h log of rate-limited actions (§7.5). Absent = none. */
+  log?: { op: 'post' | 'group' | 'join' | 'report'; memberId: string; at: number }[];
 };
 
 export type CommunityProfile = { memberId: string; displayName: string; serverIssued: boolean };

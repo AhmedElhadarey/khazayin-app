@@ -23,3 +23,96 @@ describe('community build flags', () => {
     expect(src).not.toContain('process.env[');
   });
 });
+
+// ---------------------------------------------------------------------------
+// N1 and bundle hygiene (design §3.2)
+// ---------------------------------------------------------------------------
+
+const SCANNED_DIRS = ['services', 'app', 'store', 'components', 'hooks'];
+const SOURCE_DIRS_ALL = [...SCANNED_DIRS, 'data', 'constants', 'types', 'db', 'lib', 'plugins'];
+const isSource = (f: string) => /\.(ts|tsx)$/.test(f) && !f.endsWith('.d.ts');
+
+function walk(rel: string): string[] {
+  const abs = path.join(ROOT, rel);
+  if (!fs.existsSync(abs)) return [];
+  return fs.readdirSync(abs, { withFileTypes: true }).flatMap((e) => {
+    const r = path.posix.join(rel, e.name);
+    if (e.isDirectory()) return e.name === 'node_modules' ? [] : walk(r);
+    return isSource(e.name) ? [r] : [];
+  });
+}
+
+const MOCK_PATH = /['"][^'"]*\/mockAdapter['"]/;
+const MOCK_REQUIRE = /require\(\s*['"][^'"]*\/mockAdapter['"]/g;
+
+/** Why `src` (a file that names the mock adapter module) breaks the §3.2 form. */
+function mockAdapterViolations(src: string): string[] {
+  if (!MOCK_PATH.test(src)) return [];
+  const out: string[] = [];
+  if (/__DEV__\s*\?/.test(src)) out.push('ternary on __DEV__');
+  if (/&&\s*__DEV__/.test(src)) out.push('__DEV__ placed second');
+  if (/\?\s*require\(\s*['"]\.\/mockAdapter['"]/.test(src)) out.push('ternary require');
+  if (/^\s*import\s+(?!type\b)[^;]*?from\s+['"][^'"]*\/mockAdapter['"]/m.test(src)) {
+    out.push('static import');
+  }
+  if (/\bimport\(\s*['"][^'"]*\/mockAdapter['"]\s*\)/.test(src)) out.push('dynamic import');
+  return out;
+}
+
+describe('N1: the mock adapter is reachable only through the __DEV__ require', () => {
+  it('has exactly one require, in services/community/index.ts', () => {
+    const hits = SCANNED_DIRS.flatMap(walk).filter((f) => (read(f).match(MOCK_REQUIRE) ?? []).length > 0);
+    expect(hits).toEqual(['services/community/index.ts']);
+    expect(read('services/community/index.ts').match(MOCK_REQUIRE)).toHaveLength(1);
+  });
+
+  it.each([
+    ["require('./mockAdapter')"],
+    ["require('@/services/community/mockAdapter')"],
+    ['require("../community/mockAdapter")'],
+  ])('counts %s as a require', (src) => {
+    expect(src.match(MOCK_REQUIRE)).toHaveLength(1);
+  });
+
+  it('wraps it as `if (__DEV__) { … }`', () => {
+    expect(read('services/community/index.ts')).toMatch(/if \(__DEV__\) \{[^}]*require\('\.\/mockAdapter'\)/);
+  });
+
+  it('has no other violating form anywhere in the scanned source', () => {
+    const bad = SCANNED_DIRS.flatMap(walk).filter((f) => mockAdapterViolations(read(f)).length > 0);
+    expect(bad).toEqual([]);
+  });
+
+  it.each([
+    ["const a = __DEV__ ? require('./mockAdapter') : null;"],
+    ["const a = ok && __DEV__ && require('./mockAdapter');"],
+    ["const a = flag ? require('./mockAdapter') : null;"],
+    ["import { mockCommunityAdapter } from './mockAdapter';"],
+    ["import * as m from '@/services/community/mockAdapter';"],
+    ["const m = await import('./mockAdapter');"],
+  ])('flags %s', (src) => {
+    expect(mockAdapterViolations(src).length).toBeGreaterThan(0);
+  });
+
+  it.each([
+    ["import type { MockCommunityAdapter } from './mockAdapter';"],
+    ["if (__DEV__) {\n  if (x) selected = require('./mockAdapter').mockCommunityAdapter;\n}"],
+  ])('accepts %s', (src) => {
+    expect(mockAdapterViolations(src)).toEqual([]);
+  });
+
+  it('references data/community/seed only from mockAdapter.ts', () => {
+    const files = SOURCE_DIRS_ALL.flatMap(walk).filter((f) => !f.endsWith('data/community/seed.ts'));
+    const hits = files.filter((f) => /community\/seed['"]/.test(read(f)));
+    expect(hits).toEqual(['services/community/mockAdapter.ts']);
+  });
+
+  it('declares the sentinel beside the join codes', () => {
+    expect(read('data/community/seed.ts')).toContain("SEED_SENTINEL = 'KHZ_COMMUNITY_SEED'");
+  });
+
+  it('never routes a community token through setAuthToken', () => {
+    const hits = walk('services/community').filter((f) => read(f).includes('setAuthToken'));
+    expect(hits).toEqual([]);
+  });
+});
