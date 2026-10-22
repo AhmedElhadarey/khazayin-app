@@ -42,7 +42,16 @@ const TITLE_SIZE = { width: 95, height: 26, trailingInset: 5.8 };
 const BODY =
   'وِجهتُك المُثلى لِتَعرفَ وتَغرفَ مِن سِيرة: النبيِّ ﷺ وأصحابِه العِظام، وأزواجِه الكِرام عَبْرَ محتوًى موثوقٍ شاملٍ يعزِّز الفَهم العميق لشخصيَّاتهم ويبيِّن الأثر العظيم لتضحيَاتهم.';
 
-export function HeroProphet({ onPress, onMore }: { onPress?: () => void; onMore?: () => void }) {
+export function HeroProphet({
+  onPress,
+  onMore,
+  fill,
+}: {
+  onPress?: () => void;
+  onMore?: () => void;
+  /** Grow to the height of the row this card shares (tablet pair). */
+  fill?: boolean;
+}) {
   return (
     <HeroShell
       background={BG}
@@ -53,6 +62,7 @@ export function HeroProphet({ onPress, onMore }: { onPress?: () => void; onMore?
       column={COLUMN}
       accessibilityLabel="محمد رسول الله"
       onPress={onPress ?? onMore}
+      fill={fill}
     >
       {(scale) => (
         <>

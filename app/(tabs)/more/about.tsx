@@ -8,6 +8,7 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Node 2106:2712. Three paragraphs, then two cards — رؤيتنا and رسالتنا.
 //
@@ -17,14 +18,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // the headings in Amiri Bold 18 gold, which made a page of prose read like a
 // page of titles.
 export default function AboutScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <HeaderArt corners="single" />
-      <InlineHeader title="مؤسسة خزائن الرحمن" onBack={() => router.back()} />
+      <InlineHeader title="مؤسسة خزائن الرحمن" onBack={() => router.back()} style={columnStyle} />
       <ScrollView
-        contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
+        contentContainerStyle={[styles.container, { paddingBottom: 24 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         {ABOUT_PARAGRAPHS.map((paragraph) => (

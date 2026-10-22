@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { PHYSICAL_ROW } from '@/constants/layout';
@@ -45,6 +46,7 @@ function build(hour12: number, minute: number, period: Period): TimeOfDay {
 }
 
 export default function SettingsWirdReminderScreen() {
+  const { columnStyle } = usePageSheetLayout();
   const router = useRouter();
   const current = useSettingsStore((s) => s.wirdReminderTime);
 
@@ -82,7 +84,7 @@ export default function SettingsWirdReminderScreen() {
       </View>
       <Text style={styles.title}>وقت تذكير الورد</Text>
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: 120 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 120 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         {/* Live preview — the same 12-hour, LTR-isolated string the card shows. */}
@@ -112,14 +114,17 @@ export default function SettingsWirdReminderScreen() {
         </View>
       </ScrollView>
       <View style={styles.footer}>
-        <Pressable
-          onPress={apply}
-          accessibilityRole="button"
-          accessibilityLabel="تطبيق"
-          style={({ pressed }) => [styles.applyBtn, { opacity: pressed ? 0.85 : 1 }]}
-        >
-          <Text style={styles.applyBtnLabel}>تطبيق</Text>
-        </Pressable>
+        {/* The rule spans the sheet; the button sits in the reading column. */}
+        <View style={[styles.footerInner, columnStyle]}>
+          <Pressable
+            onPress={apply}
+            accessibilityRole="button"
+            accessibilityLabel="تطبيق"
+            style={({ pressed }) => [styles.applyBtn, { opacity: pressed ? 0.85 : 1 }]}
+          >
+            <Text style={styles.applyBtnLabel}>تطبيق</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -293,13 +298,13 @@ const styles = StyleSheet.create({
   periodLabel: textStyle('sectionTitle', { color: KhazainColors.ink700 }),
   periodLabelActive: { color: '#fff' },
   footer: {
-    paddingHorizontal: 16,
     paddingBottom: 24,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: 'rgba(141,107,52,0.12)',
     backgroundColor: KhazainColors.pageBg,
   },
+  footerInner: { paddingHorizontal: 16 },
   applyBtn: {
     backgroundColor: KhazainColors.navy800,
     borderRadius: 999,

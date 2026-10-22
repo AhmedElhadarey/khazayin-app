@@ -2,7 +2,15 @@ import { PHYSICAL_ROW, SEGMENT_TABS, physicalTabOrder } from '@/constants/layout
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 // The reciter tab strip — node "\u0661" on 2031:6193. Four 84 x 45 tabs 8
 // apart on `#EDE0D1`, each labelled in the display face at 10 in navy, with a
@@ -23,43 +31,50 @@ export function SegmentTabs<T extends string>({
   tabs,
   active,
   onChange,
+  style,
 }: {
   tabs: { key: T; label: string }[];
   active: T;
   onChange: (k: T) => void;
+  /** Outer strip style, e.g. the tablet reading column. */
+  style?: StyleProp<ViewStyle>;
 }) {
+  // `style` goes on a wrapper: a column's side borders on the ScrollView
+  // itself would offset its content, which iOS applies twice.
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={styles.strip}
-      contentContainerStyle={styles.scroll}
-    >
-      <View style={styles.row}>
-        {physicalTabOrder(tabs).map((t) => {
-          const isActive = t.key === active;
-          return (
-            <Pressable
-              key={t.key}
-              onPress={() => onChange(t.key)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-              accessibilityLabel={t.label}
-              style={({ pressed }) => [
-                styles.tab,
-                isActive ? styles.tabActive : null,
-                { opacity: pressed ? 0.8 : 1 },
-              ]}
-            >
-              {/* The file sets every label navy, selected or not — the bar is
-                  the whole of the selected state. */}
-              <Text style={styles.label}>{t.label}</Text>
-              {isActive ? <View style={styles.underline} /> : null}
-            </Pressable>
-          );
-        })}
-      </View>
-    </ScrollView>
+    <View style={style}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.strip}
+        contentContainerStyle={styles.scroll}
+      >
+        <View style={styles.row}>
+          {physicalTabOrder(tabs).map((t) => {
+            const isActive = t.key === active;
+            return (
+              <Pressable
+                key={t.key}
+                onPress={() => onChange(t.key)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={t.label}
+                style={({ pressed }) => [
+                  styles.tab,
+                  isActive ? styles.tabActive : null,
+                  { opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                {/* The file sets every label navy, selected or not — the bar is
+                    the whole of the selected state. */}
+                <Text style={styles.label}>{t.label}</Text>
+                {isActive ? <View style={styles.underline} /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 

@@ -9,7 +9,6 @@ import {
   SkeletonRibbonList,
 } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
-import { LETTER_INDEX_EDGE } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
@@ -22,12 +21,16 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { railListGeometry } from '@/constants/responsive';
 
 // Page 13/14: reciter tabs + reciter list with right-rail letter index.
 // Tabs sit between the InlineHeader+SearchPill and the list.
 
 export default function ReciterScreen() {
   const router = useRouter();
+  const { columnStyle, isTablet, reading } = useResponsiveLayout();
+  const rail = railListGeometry({ isTablet, reading });
   const { tab } = useLocalSearchParams<{ tab?: string | string[] }>();
   const requestedTab = reciterTabFromParam(tab);
   const [active, setActive] = useState<string>(requestedTab);
@@ -67,11 +70,16 @@ export default function ReciterScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <InlineHeader title="القرآن حياة" onBack={() => router.back()} />
-      <View style={styles.searchBlock}>
+      <InlineHeader title="القرآن حياة" onBack={() => router.back()} style={columnStyle} />
+      <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
-      <SegmentTabs<string> tabs={RECITER_TABS} active={active} onChange={setActive} />
+      <SegmentTabs<string>
+        tabs={RECITER_TABS}
+        active={active}
+        onChange={setActive}
+        style={columnStyle}
+      />
       {/* Body: scrollable list + absolute-positioned right-rail letter index. */}
       <View style={styles.body}>
         {/* Three bodies: the virtualized list when the active tab has
@@ -90,19 +98,19 @@ export default function ReciterScreen() {
                 onPress={() => onPickReciter(r)}
               />
             )}
-            style={styles.list}
-            contentContainerStyle={[styles.listContent, { paddingBottom: 24 }]}
+            style={rail.list}
+            contentContainerStyle={[styles.listContent, { paddingBottom: 24 }, rail.inner, columnStyle]}
             showsVerticalScrollIndicator={false}
           />
         ) : view.kind === 'tabEmpty' ? (
           // Reciters loaded, but none in this tab: the store's `empty` is
           // whole-dataset, so this case needs its own card (no frame —
           // EmptyState tokens, letter-rail inset from styles.list).
-          <View style={styles.list}>
+          <View style={[rail.list, rail.inner, columnStyle]}>
             <EmptyState message={RECITER_STATE_COPY.tabEmpty} />
           </View>
         ) : (
-          <View style={styles.list}>
+          <View style={[rail.list, rail.inner, columnStyle]}>
             <AsyncContent
               status={status}
               error={error}
@@ -114,7 +122,7 @@ export default function ReciterScreen() {
             </AsyncContent>
           </View>
         )}
-        <View style={styles.rail} pointerEvents="box-none">
+        <View style={[styles.rail, rail.railStyle]} pointerEvents="box-none">
           <LetterIndex active="م" />
         </View>
       </View>
@@ -133,11 +141,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     position: 'relative',
   },
-  list: {
-    flex: 1,
-    paddingLeft: 16,
-    paddingRight: RESERVED_COLUMNS.letterRailInset,
-  },
   listContent: {
     gap: CARD_DENSITY.lectureListGap,
   },
@@ -146,9 +149,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     bottom: 0,
-    // LETTER_INDEX_EDGE — the rail lives on the physical right edge, hard
-    // against the 16pt page margin.
-    [LETTER_INDEX_EDGE]: 16,
+    // The right offset (`LETTER_INDEX_EDGE`) is set at render time from
+    // `railListGeometry`: 16 on phones, the column's edge on tablets.
     width: RESERVED_COLUMNS.letterRail,
     alignItems: 'center',
   },

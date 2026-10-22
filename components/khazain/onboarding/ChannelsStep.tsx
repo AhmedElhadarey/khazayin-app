@@ -4,6 +4,7 @@ import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native
 import { PillButton } from '@/components/khazain/primitives';
 import { ONBOARDING_CHANNELS } from '@/constants/settings';
 import { KhazainColors } from '@/constants/theme';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 /**
  * Onboarding step 3 (track 003, US4): optional community-channel promotion.
@@ -12,6 +13,7 @@ import { KhazainColors } from '@/constants/theme';
  * footer "finish" control is independent of any CTA interaction.
  */
 export function ChannelsStep(): React.ReactElement {
+  const { columnStyle } = useResponsiveLayout();
   const openExternal = async (url: string, channelName: string): Promise<void> => {
     try {
       const can = await Linking.canOpenURL(url);
@@ -25,7 +27,7 @@ export function ChannelsStep(): React.ReactElement {
   return (
     <ScrollView
       style={styles.flex}
-      contentContainerStyle={styles.container}
+      contentContainerStyle={[styles.container, columnStyle]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={styles.title}>انضمّ إلى مجتمع المؤسسة</Text>

@@ -8,7 +8,6 @@ import {
   SkeletonRibbonList,
 } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
-import { LETTER_INDEX_EDGE } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { useScholarsStore } from '@/store';
 import { openSearch } from '@/services/searchNavigation';
@@ -16,6 +15,8 @@ import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { railListGeometry } from '@/constants/responsive';
 
 // Page 26: العلماء والمشايخ list of scholars with right-rail letter index.
 // Each scholar = RibbonCard (gold-bar on right edge) with pretitle "فضيلة الشيخ"
@@ -24,6 +25,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ScholarScreen() {
   const router = useRouter();
+  const { columnStyle, isTablet, reading } = useResponsiveLayout();
+  const rail = railListGeometry({ isTablet, reading });
   const { data, status, error, fetch, refresh } = useScholarsStore();
 
   useEffect(() => {
@@ -32,8 +35,8 @@ export default function ScholarScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <InlineHeader title="العلماء والمشايخ" onBack={() => router.back()} />
-      <View style={styles.searchBlock}>
+      <InlineHeader title="العلماء والمشايخ" onBack={() => router.back()} style={columnStyle} />
+      <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <View style={styles.body}>
@@ -50,12 +53,12 @@ export default function ScholarScreen() {
                 onPress={() => router.push(`/sections/scholar/${s.id}` as any)}
               />
             )}
-            style={styles.list}
-            contentContainerStyle={[styles.listContent, { paddingBottom: 24 }]}
+            style={rail.list}
+            contentContainerStyle={[styles.listContent, { paddingBottom: 24 }, rail.inner, columnStyle]}
             showsVerticalScrollIndicator={false}
           />
         ) : (
-          <View style={styles.list}>
+          <View style={[rail.list, rail.inner, columnStyle]}>
             <AsyncContent
               status={status}
               error={error}
@@ -67,7 +70,7 @@ export default function ScholarScreen() {
             </AsyncContent>
           </View>
         )}
-        <View style={styles.rail} pointerEvents="box-none">
+        <View style={[styles.rail, rail.railStyle]} pointerEvents="box-none">
           <LetterIndex active="م" />
         </View>
       </View>
@@ -86,11 +89,6 @@ const styles = StyleSheet.create({
     paddingTop: 8,
     position: 'relative',
   },
-  list: {
-    flex: 1,
-    paddingLeft: 16,
-    paddingRight: RESERVED_COLUMNS.letterRailInset,
-  },
   listContent: {
     gap: CARD_DENSITY.listGap,
   },
@@ -99,9 +97,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     bottom: 0,
-    // LETTER_INDEX_EDGE — the rail lives on the physical right edge, hard
-    // against the 16pt page margin.
-    [LETTER_INDEX_EDGE]: 16,
+    // The right offset (`LETTER_INDEX_EDGE`) is set at render time from
+    // `railListGeometry`: 16 on phones, the column's edge on tablets.
     width: RESERVED_COLUMNS.letterRail,
     alignItems: 'center',
   },

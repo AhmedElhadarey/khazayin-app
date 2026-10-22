@@ -14,6 +14,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Reciter listening list — Figma node 2207:5270.
 //
@@ -27,6 +28,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 // for an unknown id, no-surahs, and the loaded list. Only the loaded list has a
 // frame; the other states follow CARD_DENSITY and the shared state cards.
 export default function ReciterSurahListScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
 
@@ -62,15 +64,16 @@ export default function ReciterSurahListScreen() {
       <InlineHeader
         title={(state.kind === 'ready' ? state.reciter.name : reciter?.name) ?? 'القرآن حياة'}
         onBack={() => router.back()}
+        style={columnStyle}
       />
-      <View style={styles.searchBlock}>
+      <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       {state.kind === 'ready' ? (
         <FlatList
           data={surahs}
           keyExtractor={(s) => s.id}
-          contentContainerStyle={[styles.list, { paddingBottom: 24 }]}
+          contentContainerStyle={[styles.list, { paddingBottom: 24 }, columnStyle]}
           renderItem={({ item }) => (
             <ReciterSurahRow
               surah={item}
@@ -85,7 +88,7 @@ export default function ReciterSurahListScreen() {
         // from CARD_DENSITY (surah row 60, gap 6), cards from EmptyState /
         // ErrorState tokens. Not wrapped around the FlatList: the fade
         // wrapper has no flex and would break scrolling.
-        <View style={styles.stateBlock}>
+        <View style={[styles.stateBlock, columnStyle]}>
           <AsyncContent
             {...reciterDetailAsyncProps(state)}
             onRetry={onRetry}

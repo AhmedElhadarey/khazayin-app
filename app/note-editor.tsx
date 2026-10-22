@@ -1,4 +1,6 @@
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { noteEditorSheetExtra, sheetColumn } from '@/constants/responsive';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { editorSeed, linkedNoteRow, NoteRefLink } from '@/components/khazain/notes';
@@ -43,6 +45,7 @@ type Params = {
 //   - In edit mode: a small "حذف" link replaces "آخر الملاحظات"
 export default function NoteEditor() {
   const router = useRouter();
+  const { width, height, sideInsets } = useResponsiveLayout();
   const params = useLocalSearchParams<Params>();
   const editingId = typeof params.id === 'string' ? params.id : undefined;
   const { ref: seedRef, legacyTitle: seedTitle } = editorSeed(params);
@@ -120,7 +123,14 @@ export default function NoteEditor() {
       {/* Backdrop — tap outside the sheet to dismiss. */}
       <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
         {/* Stop touches from propagating into the dismiss handler. */}
-        <Pressable onPress={() => {}} style={styles.sheetOuter}>
+        <Pressable
+          onPress={() => {}}
+          style={[
+            styles.sheetOuter,
+            sheetColumn(width, sideInsets),
+            noteEditorSheetExtra(width, height),
+          ]}
+        >
           <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
             <View style={styles.handleWrap}>
               <View style={styles.handle} />

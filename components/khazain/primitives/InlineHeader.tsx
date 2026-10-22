@@ -7,8 +7,9 @@ import {
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
 // Pages 13/14/15/21/25/26/28/29/34: an inline page header that does NOT use
 // the circular back-chip from DetailHeader. The title sits at the physical
@@ -30,9 +31,12 @@ const BACK_GLYPH = 20;
 export function InlineHeader({
   title,
   onBack,
+  style,
 }: {
   title: string;
   onBack?: () => void;
+  /** Outer row style, e.g. the tablet reading column. */
+  style?: StyleProp<ViewStyle>;
 }) {
   const slots: Record<InlineHeaderSlot, React.ReactNode> = {
     title: (
@@ -47,14 +51,20 @@ export function InlineHeader({
     back: <FigmaIcon name="Back" size={BACK_GLYPH} color={KhazainColors.navy800} />,
   };
 
+  // In an iPad window the system's window controls sit over a top corner; a margin
+  // (not padding) leaves the caller's row padding intact.
+  const controls = useWindowControlsInset();
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, style]}>
       <Pressable
         onPress={onBack}
         hitSlop={10}
         accessibilityRole="button"
         accessibilityLabel={backAccessibilityLabel(title)}
-        style={({ pressed }) => [styles.touchArea, { opacity: pressed ? 0.7 : 1 }]}
+        style={({ pressed }) => [
+          styles.touchArea,
+          { marginLeft: controls.left, marginRight: controls.right, opacity: pressed ? 0.7 : 1 },
+        ]}
       >
         {INLINE_HEADER_ORDER.map((slot) => (
           <React.Fragment key={slot}>{slots[slot]}</React.Fragment>

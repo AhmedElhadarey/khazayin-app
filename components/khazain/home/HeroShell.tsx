@@ -48,6 +48,8 @@ export type HeroShellProps = {
   designWidth: number;
   /** The card's minimum height; text is free to push it past this. */
   designHeight: number;
+  /** Grow to the row's height (tablet pair); `minHeight` stays the floor. */
+  fill?: boolean;
   /** Text column, in design units, from the card's physical left edge. */
   column: { left: number; width: number; top: number; bottom: number };
   accessibilityLabel: string;
@@ -61,6 +63,7 @@ export function HeroShell({
   layers,
   designWidth,
   designHeight,
+  fill,
   column,
   accessibilityLabel,
   onPress,
@@ -101,6 +104,7 @@ export function HeroShell({
         styles.card,
         PHYSICAL_BOX,
         KhazainShadows.hero,
+        fill && styles.fill,
         {
           backgroundColor,
           // Before the first layout there is no width to scale by, so the card
@@ -143,5 +147,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: KhazainRadius.lg,
     overflow: 'hidden',
+  },
+  fill: {
+    flexGrow: 1,
   },
 });

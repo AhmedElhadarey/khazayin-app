@@ -10,7 +10,7 @@ import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -76,6 +76,34 @@ export function SkeletonRibbonList({
     <View style={{ gap }}>
       {Array.from({ length: count }).map((_, i) => (
         <SkeletonRibbon key={i} height={height} />
+      ))}
+    </View>
+  );
+}
+
+/**
+ * Tablet Sections placeholder: tile-shaped boxes in the same wrapping grid, so
+ * the page does not jump when the real tiles arrive.
+ */
+export function SkeletonTileGrid({
+  count,
+  width,
+  minHeight,
+  gap,
+  gridStyle,
+}: {
+  count: number;
+  width: number;
+  minHeight: number;
+  gap: number;
+  gridStyle: StyleProp<ViewStyle>;
+}) {
+  return (
+    <View style={[gridStyle, { gap }]}>
+      {Array.from({ length: count }).map((_, i) => (
+        <View key={i} style={{ width, minHeight }}>
+          <SkeletonRibbon height={minHeight} />
+        </View>
       ))}
     </View>
   );

@@ -49,7 +49,14 @@ export function RtlCarousel({
         // row-reverse renders the FIRST child on the right under LTR;
         // under native forceRTL it auto-flips back to row, which also
         // puts the first child on the right.
-        { flexDirection: I18nManager.isRTL ? 'row' : 'row-reverse' },
+        {
+          flexDirection: I18nManager.isRTL ? 'row' : 'row-reverse',
+          // Grows the content to the viewport so a row narrower than it (a
+          // short list on a tablet) packs against the start edge — the
+          // physical right in an RTL row / row-reverse on web — instead of
+          // sitting at the left. A no-op when the content overflows.
+          flexGrow: 1,
+        },
         contentContainerStyle,
       ]}
     >

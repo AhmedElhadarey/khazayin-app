@@ -27,6 +27,7 @@ import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 const FONT_LEVEL_LABELS: Record<FontSizeLevel, string> = {
@@ -39,6 +40,7 @@ const FONT_LEVEL_LABELS: Record<FontSizeLevel, string> = {
 
 
 export default function SettingsScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const defaultQiraaId = useSettingsStore((s) => s.defaultQiraaId);
   const preferredReciterId = useSettingsStore((s) => s.preferredReciterId);
@@ -146,7 +148,7 @@ export default function SettingsScreen() {
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <HeaderArt />
       <ScrollView
-        contentContainerStyle={{ paddingBottom: 60 }}
+        contentContainerStyle={[{ paddingBottom: 60 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         {/*

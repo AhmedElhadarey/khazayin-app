@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
@@ -10,6 +11,7 @@ import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useQiratStore, useSettingsStore } from '@/store';
 
 export default function SettingsQiraaScreen() {
+  const { columnStyle } = usePageSheetLayout();
   const router = useRouter();
   const { data, status, error, fetch, refresh } = useQiratStore();
   const selectedId = useSettingsStore((s) => s.defaultQiraaId);
@@ -31,7 +33,7 @@ export default function SettingsQiraaScreen() {
       </View>
       <Text style={styles.title}>اختر القراءة الافتراضية</Text>
       <ScrollView
-        contentContainerStyle={[styles.list, { paddingBottom: 32 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 32 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <AsyncContent

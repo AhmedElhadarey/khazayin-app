@@ -19,6 +19,32 @@ export const HOME_SECTION_ORDER = Object.freeze([
 
 export type HomeSectionKey = (typeof HOME_SECTION_ORDER)[number];
 
+/** A tablet Home row: one section, or two that share a row (first = physical right). */
+export type HomeTabletRow = HomeSectionKey | readonly [HomeSectionKey, HomeSectionKey];
+
+const TABLET_PAIRS: readonly (readonly [HomeSectionKey, HomeSectionKey])[] = [
+  ['quranHero', 'prophetHero'],
+  ['queen', 'quickChips'],
+];
+
+/**
+ * The tablet render list: the two heroes and the queen card + quick chips each
+ * share a row. Derived from the order so the running order stays in one place.
+ */
+export function homeTabletRows(order: readonly HomeSectionKey[]): HomeTabletRow[] {
+  const rows: HomeTabletRow[] = [];
+  for (let i = 0; i < order.length; i++) {
+    const pair = TABLET_PAIRS.find((p) => p[0] === order[i] && p[1] === order[i + 1]);
+    if (pair) {
+      rows.push(pair);
+      i++;
+    } else {
+      rows.push(order[i]);
+    }
+  }
+  return rows;
+}
+
 /** One vertical rhythm between sections, rather than a per-section margin. */
 export const HOME_SECTION_GAP = 24;
 

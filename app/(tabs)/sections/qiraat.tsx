@@ -8,12 +8,14 @@ import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Page 16: آختر القراءة — 10 qira'at rows (bottom-sheet style).
 // Each row uses ReciterRow without subtitle.
 // Data sourced from useQiratStore (content service layer).
 
 export default function QiraatScreen() {
+  const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const { data, status, error, fetch, refresh } = useQiratStore();
   const defaultQiraaId = useSettingsStore((s) => s.defaultQiraaId);
@@ -41,7 +43,7 @@ export default function QiraatScreen() {
       </View>
       <Text style={styles.title}>اختر القراءة</Text>
       <ScrollView
-        contentContainerStyle={[styles.list, { paddingBottom: 32 }]}
+        contentContainerStyle={[styles.list, { paddingBottom: 32 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <AsyncContent

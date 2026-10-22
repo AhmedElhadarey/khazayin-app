@@ -2,7 +2,73 @@ import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { Image } from 'expo-image';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type ImageStyle } from 'react-native';
+import { RAIL_EDGE_GUTTER } from '@/constants/responsive';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+
+/** The frame the art was drawn on, and the gutter its title sits inside. */
+const ART_FRAME_WIDTH = 393;
+const ART_GUTTER = 16;
+
+const PHONE_GEOMETRY = Object.freeze({
+  tile: Object.freeze<ImageStyle>({ position: 'absolute', left: 0, top: 0, right: 0, height: 549 }),
+  cornerLarge: Object.freeze<ImageStyle>({
+    position: 'absolute',
+    left: 84,
+    top: -17,
+    width: 96,
+    height: 94,
+  }),
+  cornerSmall: Object.freeze<ImageStyle>({
+    position: 'absolute',
+    left: 356,
+    top: 36,
+    width: 37,
+    height: 36,
+  }),
+});
+
+/**
+ * Tile and corner placement. Phones keep the frame's left anchors, stretched
+ * across the screen. A tablet is wider than the frame and the tile is not
+ * seamless, so it cannot stretch or repeat: it stays at its drawn 393pt and
+ * anchors from the physical right, where the page title is anchored. `inset`
+ * is the page column's distance from the window's right edge; the art's own
+ * 16pt gutter is subtracted so the frame's right edge lines up with the column.
+ *
+ * Left anchors become right anchors as `393 - left - width`: the large corner
+ * (84, 96 wide) is 213 from the frame's right edge, the small one (356, 37
+ * wide) is 0.
+ */
+/** Content (title) edge from the physical right: the column's outer edge plus the screens' gutter. */
+export function headerArtInset(readingInset: number, inset?: number): number {
+  return inset ?? readingInset + RAIL_EDGE_GUTTER;
+}
+
+export function headerArtGeometry(
+  isTablet: boolean,
+  inset: number,
+): { tile: ImageStyle; cornerLarge: ImageStyle; cornerSmall: ImageStyle } {
+  if (!isTablet) return PHONE_GEOMETRY;
+  const right = inset - ART_GUTTER;
+  return {
+    tile: { position: 'absolute', top: 0, right, width: ART_FRAME_WIDTH, height: 549 },
+    cornerLarge: {
+      position: 'absolute',
+      right: right + (ART_FRAME_WIDTH - 84 - 96),
+      top: -17,
+      width: 96,
+      height: 94,
+    },
+    cornerSmall: {
+      position: 'absolute',
+      right: right + (ART_FRAME_WIDTH - 356 - 37),
+      top: 36,
+      width: 37,
+      height: 36,
+    },
+  };
+}
 
 /**
  * The art every mobile frame lays over its page ground.
@@ -28,12 +94,26 @@ import { StyleSheet, View } from 'react-native';
  * writes an opaque asset that renders identically at full opacity on that
  * ground. Nothing here guesses an opacity.
  */
-export function HeaderArt({ corners = 'pair' }: { corners?: 'pair' | 'single' | 'none' }) {
+export function HeaderArt({
+  corners = 'pair',
+  inset,
+}: {
+  corners?: 'pair' | 'single' | 'none';
+  /**
+   * Where the page's content (its title) starts, measured from the window's
+   * physical right edge (tablets only; phones anchor left). Defaults to the
+   * reading column's outer edge plus the screens' own gutter, which suits every
+   * screen that pads by it; a full-width grid screen passes its own.
+   */
+  inset?: number;
+}) {
+  const layout = useResponsiveLayout();
+  const geo = headerArtGeometry(layout.isTablet, headerArtInset(layout.reading.inset, inset));
   return (
     <View style={styles.layer} pointerEvents="none" accessible={false} accessibilityElementsHidden>
       <Image
         source={require('@/assets/figma/pattern-geometric-on-page.png')}
-        style={styles.tile}
+        style={geo.tile}
         contentFit="cover"
         contentPosition="top center"
         cachePolicy="memory-disk"
@@ -41,7 +121,10 @@ export function HeaderArt({ corners = 'pair' }: { corners?: 'pair' | 'single' | 
       {corners === 'none' ? null : (
         <Image
           source={require('@/assets/figma/ornament-corner-on-page.png')}
-          style={[styles.cornerLarge, corners === 'single' && styles.cornerLargeSingle]}
+          style={[
+            geo.cornerLarge,
+            corners === 'single' && styles.cornerLargeSingle,
+          ]}
           contentFit="contain"
           cachePolicy="memory-disk"
         />
@@ -49,7 +132,7 @@ export function HeaderArt({ corners = 'pair' }: { corners?: 'pair' | 'single' | 
       {corners === 'pair' ? (
         <Image
           source={require('@/assets/figma/ornament-corner-on-page.png')}
-          style={styles.cornerSmall}
+          style={geo.cornerSmall}
           contentFit="contain"
           cachePolicy="memory-disk"
         />
@@ -60,21 +143,16 @@ export function HeaderArt({ corners = 'pair' }: { corners?: 'pair' | 'single' | 
 
 const styles = StyleSheet.create({
   layer: {
-    // The two corner motifs are placed by physical `left`, and the file places
-    // them asymmetrically — 84 and 356 across a 393 frame. Without a pinned
-    // direction, forceRTL maps `left` to `start` and mirrors both.
+    // The corner motifs are placed by physical offsets (`left` on phones,
+    // `right` on tablets), and the file places them asymmetrically — 84 and
+    // 356 across a 393 frame. Without a pinned direction, forceRTL maps
+    // `left`/`right` to `start`/`end` and mirrors both.
     ...PHYSICAL_BOX,
     ...StyleSheet.absoluteFillObject,
     backgroundColor: KhazainColors.pageBg,
     overflow: 'hidden',
   },
-  // `Vector Smart Object` — 392 x 549 at the frame's top-left, on a 393 frame.
-  tile: { position: 'absolute', left: 0, top: 0, right: 0, height: 549 },
-  // `Shape 2 copy` — 96.42 x 93.82 at (84.2, -16.9). The negative y is why it
-  // reads as a motif entering the frame rather than one sitting inside it.
-  cornerLarge: { position: 'absolute', left: 84, top: -17, width: 96, height: 94 },
   // The frames that carry only one copy sit it 8 lower (2106:2683, 2106:2746).
+  // On tablets this may only override `top`: the right anchor is set by the geometry.
   cornerLargeSingle: { top: -9 },
-  // The second copy, 37 x 36 at (356, 36).
-  cornerSmall: { position: 'absolute', left: 356, top: 36, width: 37, height: 36 },
 });

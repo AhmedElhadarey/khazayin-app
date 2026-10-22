@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { FontSizePreview } from '@/components/khazain/settings';
@@ -22,6 +23,7 @@ const LEVEL_LABELS: Record<FontSizeLevel, string> = {
 const LEVELS: readonly FontSizeLevel[] = [1, 2, 3, 4, 5];
 
 export default function SettingsFontSizeScreen() {
+  const { columnStyle } = usePageSheetLayout();
   const router = useRouter();
   const currentLevel = useSettingsStore((s) => s.fontSizeLevel);
   const setFontSizeLevel = useSettingsStore((s) => s.setFontSizeLevel);
@@ -39,7 +41,7 @@ export default function SettingsFontSizeScreen() {
       </View>
       <Text style={styles.title}>حجم خط القرآن</Text>
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: 120 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 120 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <FontSizePreview level={focused} />
@@ -56,15 +58,18 @@ export default function SettingsFontSizeScreen() {
         </View>
       </ScrollView>
       <View style={styles.footer}>
-        <Pressable
-          onPress={apply}
-          style={({ pressed }) => [
-            styles.applyBtn,
-            { opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Text style={styles.applyBtnLabel}>تطبيق</Text>
-        </Pressable>
+        {/* The rule spans the sheet; the button sits in the reading column. */}
+        <View style={[styles.footerInner, columnStyle]}>
+          <Pressable
+            onPress={apply}
+            style={({ pressed }) => [
+              styles.applyBtn,
+              { opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Text style={styles.applyBtnLabel}>تطبيق</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -155,13 +160,13 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   footer: {
-    paddingHorizontal: 16,
     paddingBottom: 24,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: 'rgba(141,107,52,0.12)',
     backgroundColor: KhazainColors.pageBg,
   },
+  footerInner: { paddingHorizontal: 16 },
   applyBtn: {
     backgroundColor: KhazainColors.navy800,
     borderRadius: 999,

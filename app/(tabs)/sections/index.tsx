@@ -1,7 +1,22 @@
-import { AsyncContent, ListRowCard, SearchPill, SkeletonRibbonList } from '@/components/khazain';
+import {
+  AsyncContent,
+  ListRowCard,
+  SearchPill,
+  SectionTile,
+  SkeletonRibbonList,
+  SkeletonTileGrid,
+} from '@/components/khazain';
 import { SECTION_ICONS, SectionIconKey } from '@/components/khazain/icons/sections';
 import { HeaderArt } from '@/components/khazain/patterns';
-import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX } from '@/constants/layout';
+import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, READING_GRID } from '@/constants/layout';
+import {
+  GRID_GAP,
+  SECTION_TILE_MIN_HEIGHT,
+  gridItemWidth,
+  sectionGridColumns,
+  tabletGutterPadding,
+} from '@/constants/responsive';
+import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useSectionsStore } from '@/store';
@@ -14,6 +29,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SectionsScreen() {
   const router = useRouter();
+  const { width, isTablet, gutter, sideInsets } = useResponsiveLayout();
+  const controls = useWindowControlsInset();
   const { data, status, error, fetch, refresh } = useSectionsStore();
 
   useEffect(() => {
@@ -28,17 +45,22 @@ export default function SectionsScreen() {
     }
   };
 
+  // Phones keep today's 16pt margin and ListRowCard column; tablets use the
+  // tablet gutter and a reading-order tile grid.
+  const pad = tabletGutterPadding(width, sideInsets);
+  const tileWidth = gridItemWidth(width, sectionGridColumns(width));
+
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <HeaderArt />
+      <HeaderArt inset={sideInsets.right + gutter} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerBlock}>
-          <Text style={styles.h1}>الأقسام</Text>
+        <View style={[styles.headerBlock, pad]}>
+          <Text style={[styles.h1, { marginLeft: controls.left, marginRight: controls.right }]}>الأقسام</Text>
         </View>
-        <View style={styles.searchBlock}>
+        <View style={[styles.searchBlock, pad]}>
           {/* `بحث..` is what the file sets, on all twelve frames that carry a
               search pill — this screen was the only one paraphrasing it. */}
           <SearchPill placeholder="بحث.." onPress={openSearch} />
@@ -47,13 +69,35 @@ export default function SectionsScreen() {
           status={status}
           error={error}
           onRetry={refresh}
-          skeleton={<SkeletonRibbonList count={9} />}
+          skeleton={
+            isTablet ? (
+              <SkeletonTileGrid
+                count={9}
+                width={tileWidth}
+                minHeight={SECTION_TILE_MIN_HEIGHT}
+                gap={GRID_GAP}
+                gridStyle={[styles.grid, pad]}
+              />
+            ) : (
+              <SkeletonRibbonList count={9} />
+            )
+          }
           emptyMessage="لا يوجد أقسام متاحة"
         >
-          <View style={styles.list}>
+          <View style={isTablet ? [styles.grid, pad] : styles.list}>
             {data.map((s) => {
               const Icon = SECTION_ICONS[s.iconKey as SectionIconKey];
-              return (
+              return isTablet ? (
+                <SectionTile
+                  key={s.id}
+                  title={s.title}
+                  subtitle={s.subtitle}
+                  count={s.count ?? undefined}
+                  width={tileWidth}
+                  onPress={() => open(s)}
+                  icon={<Icon />}
+                />
+              ) : (
                 <ListRowCard
                   key={s.id}
                   title={s.title}
@@ -72,6 +116,8 @@ export default function SectionsScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Tablet grid: reading order, first tile at the physical right.
+  grid: { ...READING_GRID, gap: GRID_GAP },
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   container: { paddingTop: 0 },
   // Figma node 2031:5675 anchors the page title at the physical right.

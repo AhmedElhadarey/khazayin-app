@@ -1,4 +1,6 @@
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { sheetColumn } from '@/constants/responsive';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { linkedNoteRow, NoteRefLink, noteRowA11y } from '@/components/khazain/notes';
@@ -18,6 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 //   - No FAB / no close button — backdrop tap or handle drag (visual cue only) dismisses
 export default function NotesViewer() {
   const router = useRouter();
+  const { width, sideInsets } = useResponsiveLayout();
   const notes = useNotesStore((s) => s.notes);
 
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
@@ -37,7 +40,10 @@ export default function NotesViewer() {
 
   return (
     <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
-      <Pressable onPress={() => {}} style={styles.sheetOuter}>
+      <Pressable
+        onPress={() => {}}
+        style={[styles.sheetOuter, sheetColumn(width, sideInsets)]}
+      >
         <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
           <View style={styles.handleWrap}>
             <View style={styles.handle} />

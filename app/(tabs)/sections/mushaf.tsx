@@ -9,6 +9,8 @@ import {
   surahNotesBlock,
 } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { insetColumn, mushafSheetWidth, mushafType } from '@/constants/responsive';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
 import {
   ayahCharOffset,
@@ -21,6 +23,7 @@ import {
   surahMetaLine,
   type TextLine,
 } from '@/services/mushafNavigation';
+import { ReadingPlaceController, currentKeyEntry } from '@/services/mushafAnchor';
 import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -140,10 +143,17 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
     fetchSurahs();
   }, [fetchSurahs]);
 
+  // `{}` on phones; on tablets the reading column. Applied to the content
+  // container, not a wrapper around the ScrollView, so the side insets still
+  // scroll (design 2026-10-22 §3.3).
+  const { columnStyle } = useResponsiveLayout();
+
   return (
     <SafeAreaView style={styles.listScreen} edges={['top', 'bottom']}>
-      <InlineHeader title="قراءة القرآن" onBack={onBack} />
-      <View style={styles.searchBlock}>
+      <View style={columnStyle}>
+        <InlineHeader title="قراءة القرآن" onBack={onBack} />
+      </View>
+      <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
       <AsyncContent
@@ -154,7 +164,7 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
         emptyMessage="لا يوجد سور متاحة"
       >
         <ScrollView
-          contentContainerStyle={[styles.surahList, { paddingBottom: 24 }]}
+          contentContainerStyle={[styles.surahList, { paddingBottom: 24 }, columnStyle]}
           showsVerticalScrollIndicator={false}
         >
           {surahs.map((s) => (
@@ -185,6 +195,12 @@ function ReadingView({
   const useAyat = useAyatStore(surahId);
   const { data: ayat, status: ayatStatus, error: ayatError, fetch: fetchAyat, refresh: refreshAyat } = useAyat();
   const { fontSize: ayatFontSize, lineHeight: ayatLineHeight } = useFontScale();
+  // Tablets read from a centred sheet with type scaled to it; phones get the
+  // user's font values back unchanged (mushafType / mushafSheetWidth).
+  const { width, isTablet, sideInsets } = useResponsiveLayout();
+  const sheetWidth = mushafSheetWidth(width);
+  const type = mushafType(width, ayatFontSize, ayatLineHeight);
+  const sheetColumn = isTablet ? insetColumn(width, sheetWidth, sideInsets) : undefined;
 
   // The meta line shows the surah's first page (frame 2349:982); reading is tracked per page below.
   const surahNumber = useMemo(() => Number(surahId), [surahId]);
@@ -245,10 +261,17 @@ function ReadingView({
   const targetAyah = normalizeAyahParam(rawAyah, ayat.length || undefined);
   const scrollRef = useRef<ScrollView>(null);
   const bodyYRef = useRef(0);
-  const layoutsRef = useRef(new Map<number, { y: number; height: number }>());
-  const linesRef = useRef(new Map<number, TextLine[]>());
+  // Entries carry the layout key they were measured under; see currentKeyEntry.
+  const typeKey = `${sheetWidth}:${type.fontSize}`;
+  const layoutsRef = useRef(new Map<number, { key: string; y: number; height: number }>());
+  const linesRef = useRef(new Map<number, { key: string; lines: TextLine[] }>());
   const scrolledAyahRef = useRef<number | null>(null);
   const scrolledPreciseRef = useRef(false);
+  const [place] = useState(() => new ReadingPlaceController(`${sheetWidth}:${type.fontSize}`, isTablet));
+  const flushPlace = useCallback(() => {
+    const y = place.takeScrollRequest();
+    if (y != null) scrollRef.current?.scrollTo({ y, animated: false });
+  }, [place]);
 
   const tryScroll = useCallback(() => {
     if (targetAyah == null) {
@@ -259,9 +282,9 @@ function ReadingView({
     const i = segmentForAyah(segments, targetAyah);
     if (i < 0) return;
     const segment = segments[i];
-    const layout = layoutsRef.current.get(segment.page);
+    const layout = currentKeyEntry(layoutsRef.current.get(segment.page), typeKey);
     if (!layout) return; // a later layout callback retries
-    const lines = linesRef.current.get(segment.page);
+    const lines = currentKeyEntry(linesRef.current.get(segment.page), typeKey)?.lines;
     const precise = !!lines && lines.length > 0;
     // Already there; only a first scroll made without line data may refine.
     if (targetAyah === scrolledAyahRef.current && (scrolledPreciseRef.current || !precise)) return;
@@ -273,29 +296,73 @@ function ReadingView({
       offset: ayahCharOffset(segment.ayat, targetAyah),
       expectedLength: segmentCharLength(segment.ayat),
     });
-    scrollRef.current?.scrollTo({ y: Math.max(0, y - AYAH_SCROLL_HEADROOM), animated: false });
+    const toY = Math.max(0, y - AYAH_SCROLL_HEADROOM);
+    scrollRef.current?.scrollTo({ y: toY, animated: false });
     scrolledAyahRef.current = targetAyah;
     scrolledPreciseRef.current = precise;
-  }, [targetAyah, segments]);
+    place.onProgrammaticScroll(toY, Date.now());
+  }, [targetAyah, segments, place, typeKey]);
 
   useEffect(() => {
     tryScroll();
   }, [tryScroll]);
 
-  // A note's label inside this screen re-targets the scroll. The same ayah
-  // is re-armed explicitly because the param would not change.
-  const jumpToAyah = useCallback(
-    (n?: number) => {
+  // Rotation / Split View changes the sheet width or the scaled font, so the
+  // text reflows and the old offset points at other text. Keep the place; the
+  // rules live in `ReadingPlaceController` (tablets only, phones never scroll
+  // on a reflow):
+  //  - a linked ayah the user has not scrolled away from is re-armed and
+  //    scrolled to again once the new onLayout / onTextLayout arrive;
+  //  - otherwise the page + fraction captured while scrolling is restored from
+  //    the anchor page's new layout.
+  useEffect(() => {
+    place.setTargetAyah(targetAyah);
+  }, [place, targetAyah]);
+  useEffect(() => {
+    place.setSegments(
+      segments.map((s) => s.page),
+      ayatStatus === 'success',
+      Date.now(),
+    );
+    flushPlace();
+  }, [place, segments, ayatStatus, flushPlace]);
+  useEffect(() => {
+    const outcome = place.onKeyChange(typeKey, isTablet, Date.now());
+    if (outcome === 'rearmAyah') {
+      // Old-key measurements are ignored by tryScroll, so nothing is cleared
+      // here (the reflow's layout may already have landed): tryScroll runs on
+      // whatever current-key entries exist and otherwise waits for them.
       scrolledAyahRef.current = null;
       scrolledPreciseRef.current = false;
+      tryScroll();
+    }
+    flushPlace();
+  }, [place, typeKey, isTablet, tryScroll, flushPlace]);
+
+  // A note's label inside this screen re-targets the scroll. The same ayah
+  // is re-armed explicitly because the param would not change. A surah-level
+  // note (no ayah) goes to the top and spends the deep-link target, WITHOUT
+  // clearing scrolledAyahRef: clearing it would let the next segment layout
+  // call tryScroll and pull the reader back to the old ?ayah.
+  const jumpToAyah = useCallback(
+    (n?: number) => {
       if (n == null) {
+        place.onTargetLeft(Date.now());
+        // Spent for good: a later onTextLayout must not refine back to the old ?ayah.
+        scrolledPreciseRef.current = true;
         scrollRef.current?.scrollTo({ y: 0, animated: true });
         return;
       }
-      if (n === targetAyah) tryScroll();
-      else router.setParams({ ayah: String(n) } as any);
+      if (n === targetAyah) {
+        scrolledAyahRef.current = null;
+        scrolledPreciseRef.current = false;
+        place.onAyahJump();
+        tryScroll();
+      } else {
+        router.setParams({ ayah: String(n) } as any);
+      }
     },
-    [router, targetAyah, tryScroll],
+    [router, targetAyah, tryScroll, place],
   );
 
   // Long-press an ayah (or the VoiceOver/TalkBack action, which has no ayah)
@@ -334,16 +401,26 @@ function ReadingView({
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={[styles.headerBg, { backgroundColor: MUSHAF_BG }]}>
-        <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
-        <Text style={styles.subtitle}>{metaLine}</Text>
+        {/* The sheet column, not the reading column: the title sits over the
+            page it names rather than over a different-width block. */}
+        <View style={sheetColumn}>
+          <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
+          <Text style={styles.subtitle}>{metaLine}</Text>
+        </View>
       </View>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={styles.pageContent}
+        contentContainerStyle={[styles.pageContent, sheetColumn]}
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={250}
         onLayout={(e) => tracking.setViewportHeight(e.nativeEvent.layout.height)}
-        onScroll={(e) => tracking.onScroll(e.nativeEvent.contentOffset.y, Date.now())}
+        onScrollBeginDrag={() => place.onUserScrollBegin()}
+        onMomentumScrollBegin={() => place.onUserScrollBegin()}
+        onScroll={(e) => {
+          tracking.onScroll(e.nativeEvent.contentOffset.y, Date.now());
+          place.onScroll(e.nativeEvent.contentOffset.y, Date.now(), typeKey);
+          flushPlace();
+        }}
       >
         <View style={styles.ornamentWrap}>
           <LinearGradient
@@ -363,6 +440,7 @@ function ReadingView({
         <View
           onLayout={(e) => {
             bodyYRef.current = e.nativeEvent.layout.y;
+            place.setBodyY(e.nativeEvent.layout.y);
             tracking.setBodyY(e.nativeEvent.layout.y);
             tryScroll();
           }}
@@ -380,16 +458,18 @@ function ReadingView({
                 onLayout={(e) => {
                   const { y, height } = e.nativeEvent.layout;
                   tracking.setSegmentLayout(segment.page, y, height);
-                  layoutsRef.current.set(segment.page, { y, height });
+                  layoutsRef.current.set(segment.page, { key: typeKey, y, height });
+                  place.onSegmentLayout(segment.page, { y, height }, Date.now());
+                  flushPlace();
                   tryScroll();
                 }}
                 onTextLayout={(e) => {
-                  linesRef.current.set(segment.page, e.nativeEvent.lines);
+                  linesRef.current.set(segment.page, { key: typeKey, lines: e.nativeEvent.lines });
                   tryScroll();
                 }}
                 style={[
                   styles.ayatBody,
-                  { fontSize: ayatFontSize, lineHeight: ayatLineHeight },
+                  { fontSize: type.fontSize, lineHeight: type.lineHeight },
                 ]}
                 accessibilityActions={[{ name: 'addSurahNote', label: 'إضافة ملاحظة على السورة' }]}
                 onAccessibilityAction={(e) => {
@@ -425,7 +505,7 @@ function ReadingView({
       </ScrollView>
       {/* Physical left → right: الفهرس، الانتقال للعلامة، حفظ علامة
           (MUSHAF_FOOTER_ORDER, Figma node 2349:982). */}
-      <View style={styles.footer}>
+      <View style={[styles.footer, sheetColumn]}>
         {MUSHAF_FOOTER_ORDER.map((slot) => (
           <MushafBtn
             key={slot}

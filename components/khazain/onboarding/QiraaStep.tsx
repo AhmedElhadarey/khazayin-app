@@ -5,6 +5,7 @@ import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
 import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { useQiratStore, useSettingsStore } from '@/store';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 import { SelectableRow } from './SelectableRow';
 
@@ -22,8 +23,9 @@ export function QiraaStep(): React.ReactElement {
     fetch();
   }, [fetch]);
 
+  const { columnStyle } = useResponsiveLayout();
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, columnStyle]}>
       <Text style={styles.title}>اختر القراءة الافتراضية</Text>
       <Text style={styles.subtitle}>يمكنك تغييرها لاحقاً من الإعدادات.</Text>
       <ScrollView

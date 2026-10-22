@@ -68,3 +68,48 @@ export function dawahLayout(windowWidth: number): DawahLayout {
     sidePadding: Math.max(0, (windowWidth - slot) / 2),
   };
 }
+
+/**
+ * The slot whose centre is closest to the middle of the viewport, given the
+ * centres measured so far (`undefined` / holes = not measured yet). Falls back
+ * when nothing has been measured.
+ */
+export function nearestSlot(
+  centres: readonly (number | undefined)[],
+  offsetX: number,
+  stageWidth: number,
+  fallback: number,
+): number {
+  const focus = offsetX + stageWidth / 2;
+  let nearest = fallback;
+  let best = Infinity;
+  for (let i = 0; i < centres.length; i++) {
+    const centre = centres[i];
+    if (centre === undefined) continue;
+    const gap = Math.abs(centre - focus);
+    if (gap < best) {
+      best = gap;
+      nearest = i;
+    }
+  }
+  return nearest;
+}
+
+/**
+ * The carousel is wrapped with a clone at each end (slots 0 and last+1). When
+ * momentum lands on a clone, focus its real twin and say where to jump.
+ */
+export function resolveWrap(
+  nearest: number,
+  firstReal: number,
+  lastReal: number,
+): { focus: number; jumpTo?: number } {
+  if (nearest < firstReal) return { focus: lastReal, jumpTo: lastReal };
+  if (nearest > lastReal) return { focus: firstReal, jumpTo: firstReal };
+  return { focus: nearest };
+}
+
+/** Keeps a remembered focus on a real slot when the list length changes. */
+export function clampFocus(focus: number, firstReal: number, lastReal: number): number {
+  return Math.min(Math.max(focus, firstReal), Math.max(firstReal, lastReal));
+}

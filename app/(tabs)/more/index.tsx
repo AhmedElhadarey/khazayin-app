@@ -11,12 +11,15 @@ import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 
 /** Node 2102:2711 draws each row glyph at ~20pt inside the 48pt squircle. */
 const MORE_GLYPH = 20;
 
 export default function MoreScreen() {
+  const { columnStyle } = useResponsiveLayout();
+  const controls = useWindowControlsInset();
   const router = useRouter();
   const { data, status, error, fetch, refresh } = useMoreRowsStore();
 
@@ -56,11 +59,11 @@ export default function MoreScreen() {
       <HeaderArt />
       <ScrollView
         // React Navigation already reserves the measured tab-bar height.
-        contentContainerStyle={{ paddingBottom: SCREEN_BOTTOM_BREATHING }}
+        contentContainerStyle={[{ paddingBottom: SCREEN_BOTTOM_BREATHING }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.headerBlock}>
-          <Text style={styles.h1}>المزيد</Text>
+          <Text style={[styles.h1, { marginLeft: controls.left, marginRight: controls.right }]}>المزيد</Text>
         </View>
         <View style={styles.list}>
           {/* The Figma reference group first, so the initial viewport starts

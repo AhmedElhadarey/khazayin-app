@@ -1,6 +1,7 @@
 import React from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
@@ -36,6 +37,7 @@ function openFoundationWebsite() {
 }
 
 export default function SettingsAboutScreen() {
+  const { columnStyle } = usePageSheetLayout();
   const version = resolveVersion();
   const build = resolveBuildNumber({
     executionEnvironment: Constants.executionEnvironment,
@@ -49,7 +51,7 @@ export default function SettingsAboutScreen() {
       </View>
       <Text style={styles.title}>حول التطبيق</Text>
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: 48 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 48 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.card, KhazainShadows.card]}>

@@ -38,8 +38,11 @@ import {
   StyleSheet,
   Text,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Group title lookups for the 4 result types.
 const GROUP_TITLES: Record<'surah' | 'scholar' | 'book' | 'lecture', string> = {
@@ -51,6 +54,7 @@ const GROUP_TITLES: Record<'surah' | 'scholar' | 'book' | 'lecture', string> = {
 
 export default function SearchModalScreen() {
   const insets = useSafeAreaInsets();
+  const { columnStyle } = useResponsiveLayout();
 
   // ── Search state ──
   const query = useSearchStore((s) => s.query);
@@ -165,10 +169,10 @@ export default function SearchModalScreen() {
     // to the native view, which put the header and its back button under the
     // status bar — and a fullScreenModal has no swipe-to-dismiss.
     <View style={[styles.screen, { paddingTop: insets.top, paddingBottom: insets.bottom }]}>
-      <InlineHeader title="بحث" onBack={() => router.back()} />
+      <InlineHeader title="بحث" onBack={() => router.back()} style={columnStyle} />
 
       {/* Active search input */}
-      <View style={styles.inputRow}>
+      <View style={[styles.inputRow, columnStyle]}>
         <SearchPill
           autoFocus
           value={query}
@@ -188,9 +192,10 @@ export default function SearchModalScreen() {
           onRemoveRecent={removeRecent}
           onClearAllRecents={handleConfirmClearRecents}
           onPickSuggestion={(q) => setQuery(q)}
+          columnStyle={columnStyle}
         />
       ) : body === 'results' ? (
-        <ResultsList results={results} onPress={handleResultPress} />
+        <ResultsList results={results} onPress={handleResultPress} columnStyle={columnStyle} />
       ) : body === 'loading' ? (
         <View
           style={styles.loadingWrap}
@@ -205,6 +210,7 @@ export default function SearchModalScreen() {
           query={query}
           onSections={goToSections}
           onPickSuggestion={(q) => setQuery(q)}
+          columnStyle={columnStyle}
         />
       ) : null}
     </View>
@@ -219,17 +225,19 @@ function EmptyState({
   onRemoveRecent,
   onClearAllRecents,
   onPickSuggestion,
+  columnStyle,
 }: {
   recents: string[];
   onPickRecent: (q: string) => void;
   onRemoveRecent: (q: string) => void;
   onClearAllRecents: () => void;
   onPickSuggestion: (q: string) => void;
+  columnStyle: StyleProp<ViewStyle>;
 }) {
   return (
     <FlatList
       style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[styles.scrollContent, columnStyle]}
       data={[] as readonly never[]}
       renderItem={() => null}
       keyboardShouldPersistTaps="handled"
@@ -269,14 +277,16 @@ type ResultGroup = ReturnType<typeof useSearchStore.getState>['results'][number]
 function ResultsList({
   results,
   onPress,
+  columnStyle,
 }: {
   results: ResultGroup[];
   onPress: (target: SearchTarget) => void;
+  columnStyle: StyleProp<ViewStyle>;
 }) {
   return (
     <FlatList
       style={styles.scroll}
-      contentContainerStyle={styles.scrollContent}
+      contentContainerStyle={[styles.scrollContent, columnStyle]}
       data={results}
       keyExtractor={(g) => g.type}
       keyboardShouldPersistTaps="handled"
@@ -309,13 +319,15 @@ function NoResults({
   query,
   onSections,
   onPickSuggestion,
+  columnStyle,
 }: {
   query: string;
   onSections: () => void;
   onPickSuggestion: (q: string) => void;
+  columnStyle: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={styles.noResultsWrap}>
+    <View style={[styles.noResultsWrap, columnStyle]}>
       <Text style={styles.noResultsTitle}>لا توجد نتائج لـ &quot;{query}&quot;</Text>
       <Text style={styles.noResultsSubtitle}>جرّب كلمة أخرى أو تصفّح الأقسام</Text>
       <View style={styles.noResultsSuggestions}>

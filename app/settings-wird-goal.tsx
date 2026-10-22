@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
@@ -39,6 +40,7 @@ const PRESETS: readonly { id: JuzPreset; label: string }[] = [
 ];
 
 export default function SettingsWirdGoalScreen() {
+  const { columnStyle } = usePageSheetLayout();
   const router = useRouter();
   const currentTarget = useWirdStore((s) => s.target);
   const setTarget = useWirdStore((s) => s.setTarget);
@@ -71,7 +73,7 @@ export default function SettingsWirdGoalScreen() {
       </View>
       <Text style={styles.title}>هدف الورد اليومي</Text>
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingBottom: 120 }]}
+        contentContainerStyle={[styles.body, { paddingBottom: 120 }, columnStyle]}
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.list}>
@@ -107,14 +109,17 @@ export default function SettingsWirdGoalScreen() {
         </View>
       </ScrollView>
       <View style={styles.footer}>
-        <Pressable
-          onPress={apply}
-          accessibilityRole="button"
-          accessibilityLabel="تطبيق"
-          style={({ pressed }) => [styles.applyBtn, { opacity: pressed ? 0.85 : 1 }]}
-        >
-          <Text style={styles.applyBtnLabel}>تطبيق</Text>
-        </Pressable>
+        {/* The rule spans the sheet; the button sits in the reading column. */}
+        <View style={[styles.footerInner, columnStyle]}>
+          <Pressable
+            onPress={apply}
+            accessibilityRole="button"
+            accessibilityLabel="تطبيق"
+            style={({ pressed }) => [styles.applyBtn, { opacity: pressed ? 0.85 : 1 }]}
+          >
+            <Text style={styles.applyBtnLabel}>تطبيق</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -231,13 +236,13 @@ const styles = StyleSheet.create({
   },
   customUnit: textStyle('bodyCompact', { color: KhazainColors.ink500 }),
   footer: {
-    paddingHorizontal: 16,
     paddingBottom: 24,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: 'rgba(141,107,52,0.12)',
     backgroundColor: KhazainColors.pageBg,
   },
+  footerInner: { paddingHorizontal: 16 },
   applyBtn: {
     backgroundColor: KhazainColors.navy800,
     borderRadius: 999,
