@@ -20,8 +20,11 @@ import {
   HOME_SECTION_GAP,
   HOME_SECTION_ORDER,
   type HomeSectionKey,
+  homeTabletRows,
 } from '@/constants/homePresentation';
-import { PHYSICAL_ROW, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
+import { PHYSICAL_ROW, READING_ROW, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
+import { carouselVisibleCount, dawahStageWidth } from '@/constants/responsive';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { KhazainColors } from '@/constants/theme';
 import {
   useBookLecturesStore,
@@ -60,6 +63,7 @@ const BOOK_TITLE_ART = require('@/assets/khazain/home/book-title.webp');
 export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width, isTablet, homeColumnStyle } = useResponsiveLayout();
 
   const goToSections = () => router.push('/sections');
 
@@ -80,19 +84,25 @@ export default function HomeScreen() {
 
   // Rendered from HOME_SECTION_ORDER so the running order lives in one place
   // and is asserted by __tests__/homePresentation.test.ts.
+  const quranHero = <HeroQuran onMore={goToSections} />;
+  const prophetHero = <HeroProphet onMore={goToSections} />;
+  const queen = <QueenCard onMore={goToSections} />;
+  // Physical left → right, authored in HOME_QUICK_CHIPS.
+  const quickChips = HOME_QUICK_CHIPS.map((chip) => (
+    <QuickChip key={chip.id} label={chip.label} onPress={() => router.push(chip.route as any)}>
+      {QUICK_CHIP_GLYPH[chip.id]}
+    </QuickChip>
+  ));
+
   const sections: Record<HomeSectionKey, React.ReactNode> = {
     header: <HomeHeader onSearchOpen={openSearch} />,
 
     quranHero: (
-      <View style={styles.heroPad}>
-        <HeroQuran onMore={goToSections} />
-      </View>
+      <View style={styles.heroPad}>{quranHero}</View>
     ),
 
     prophetHero: (
-      <View style={styles.heroPad}>
-        <HeroProphet onMore={goToSections} />
-      </View>
+      <View style={styles.heroPad}>{prophetHero}</View>
     ),
 
     scholars: (
@@ -106,7 +116,9 @@ export default function HomeScreen() {
           emptyMessage="لا يوجد علماء"
         >
           <RtlCarousel contentContainerStyle={styles.scrollerPad}>
-            {featuredScholars.map((s) => (
+            {featuredScholars
+              .slice(0, carouselVisibleCount(width, 'scholar', featuredScholars.length))
+              .map((s) => (
               <ScholarCard key={s.id} id={s.id} nameArt={NAME_ART_BY_ID[s.id]} name={s.name} />
             ))}
           </RtlCarousel>
@@ -125,7 +137,7 @@ export default function HomeScreen() {
           emptyMessage="لا توجد كتب"
         >
           <RtlCarousel contentContainerStyle={styles.scrollerPad}>
-            {bookLectures.slice(0, 3).map((b) => (
+            {bookLectures.slice(0, carouselVisibleCount(width, 'book', bookLectures.length)).map((b) => (
               <BookCard key={b.id} id={b.id} name={b.title} titleArt={BOOK_TITLE_ART} />
             ))}
           </RtlCarousel>
@@ -134,25 +146,10 @@ export default function HomeScreen() {
     ),
 
     queen: (
-      <View style={styles.heroPad}>
-        <QueenCard onMore={goToSections} />
-      </View>
+      <View style={styles.heroPad}>{queen}</View>
     ),
 
-    // Physical left → right, authored in HOME_QUICK_CHIPS.
-    quickChips: (
-      <View style={styles.quickChipsRow}>
-        {HOME_QUICK_CHIPS.map((chip) => (
-          <QuickChip
-            key={chip.id}
-            label={chip.label}
-            onPress={() => router.push(chip.route as any)}
-          >
-            {QUICK_CHIP_GLYPH[chip.id]}
-          </QuickChip>
-        ))}
-      </View>
-    ),
+    quickChips: <View style={styles.quickChipsRow}>{quickChips}</View>,
 
     dawah: (
       <View>
@@ -166,6 +163,7 @@ export default function HomeScreen() {
         >
           <DawahCarousel
             items={dawahData}
+            stageWidth={dawahStageWidth(width)}
             onItemPress={(p) =>
               router.push({
                 pathname: '/share-sheet' as any,
@@ -178,6 +176,15 @@ export default function HomeScreen() {
     ),
   };
 
+  // The same content as the phone sections, minus the horizontal padding the
+  // shared row already carries.
+  const pairCells: Partial<Record<HomeSectionKey, React.ReactNode>> = {
+    quranHero,
+    prophetHero,
+    queen,
+    quickChips: <View style={styles.quickChipsCell}>{quickChips}</View>,
+  };
+
   return (
     // The inset hook, not the native SafeAreaView: a cold start slides this screen up
     // from below the screen, and the native view reads its insets from where it
@@ -185,14 +192,38 @@ export default function HomeScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <StatusBar style="dark" backgroundColor={KhazainColors.pageBg} />
       <ScrollView
-        contentContainerStyle={[styles.container, { paddingBottom: SCREEN_BOTTOM_BREATHING }]}
+        contentContainerStyle={[
+          styles.container,
+          { paddingBottom: SCREEN_BOTTOM_BREATHING },
+          homeColumnStyle,
+        ]}
         showsVerticalScrollIndicator={false}
       >
-        {HOME_SECTION_ORDER.map((key, index) => (
-          <View key={key} style={index === 0 ? undefined : styles.sectionGap}>
-            {sections[key]}
-          </View>
-        ))}
+        {isTablet
+          ? homeTabletRows(HOME_SECTION_ORDER).map((row, index) => (
+              <View
+                key={typeof row === 'string' ? row : row.join('+')}
+                style={index === 0 ? undefined : styles.sectionGap}
+              >
+                {typeof row === 'string' ? (
+                  sections[row]
+                ) : (
+                  // First section authored first → physical right.
+                  <View style={styles.pairRow}>
+                    {row.map((key) => (
+                      <View key={key} style={styles.pairCell}>
+                        {pairCells[key]}
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            ))
+          : HOME_SECTION_ORDER.map((key, index) => (
+              <View key={key} style={index === 0 ? undefined : styles.sectionGap}>
+                {sections[key]}
+              </View>
+            ))}
       </ScrollView>
     </View>
   );
@@ -260,6 +291,24 @@ const styles = StyleSheet.create({
   heroPad: {
     paddingHorizontal: 16,
     marginTop: HOME_HERO_TOP_GAP,
+  },
+  // Tablet only: two sections side by side, the first on the physical right.
+  pairRow: {
+    ...READING_ROW,
+    gap: 12,
+    alignItems: 'stretch',
+    paddingHorizontal: 16,
+    marginTop: HOME_HERO_TOP_GAP,
+  },
+  pairCell: {
+    flex: 1,
+  },
+  // quickChipsRow without the side padding the pair row already supplies.
+  quickChipsCell: {
+    ...PHYSICAL_ROW,
+    gap: 12,
+    paddingTop: 11,
+    paddingBottom: 4,
   },
   scrollerPad: {
     paddingHorizontal: 16,

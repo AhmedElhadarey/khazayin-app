@@ -42,12 +42,20 @@ const STEPS = [-2, -1, 0, 1, 2];
 export function DawahCarousel({
   items,
   onItemPress,
+  stageWidth: stageWidthProp,
 }: {
   items: DawahPosterModel[];
   onItemPress?: (item: DawahPosterModel, index: number) => void;
+  /**
+   * Width of the viewport the fan lives in. Defaults to the window, which is
+   * the phone behaviour; tablets pass a capped stage so the fan keeps its
+   * proportions instead of stretching across the whole screen.
+   */
+  stageWidth?: number;
 }) {
   const { width: windowWidth } = useWindowDimensions();
-  const layout = useMemo(() => dawahLayout(windowWidth), [windowWidth]);
+  const stageWidth = stageWidthProp ?? windowWidth;
+  const layout = useMemo(() => dawahLayout(stageWidth), [stageWidth]);
   const { cardWidth, cardHeight, slot, sidePadding } = layout;
 
   // All hooks must be called unconditionally — guards (G10) live below.
@@ -76,24 +84,36 @@ export function DawahCarousel({
   // against centres left behind by a longer one.
   const centres = useRef<number[]>([]);
   const anchored = useRef(false);
+  // The stage the centres were measured at. A new stage re-lays every slot, so
+  // the first slot to report afterwards clears the stale centres (done in the
+  // layout callback, never during render).
+  const measuredStage = useRef(stageWidth);
+  // The real slot that was last in focus, so a stage change re-centres on it.
+  const focused = useRef(FIRST_REAL);
   useEffect(() => {
     centres.current = [];
     anchored.current = false;
-  }, [wrapped.length, windowWidth]);
+  }, [wrapped.length]);
   const scrollToSlot = useCallback((index: number, animated: boolean) => {
     const centre = centres.current[index];
     if (centre === undefined) return;
-    ref.current?.scrollTo({ x: centre - windowWidth / 2, animated });
-  }, [windowWidth]);
+    ref.current?.scrollTo({ x: centre - stageWidth / 2, animated });
+  }, [stageWidth]);
 
   const onSlotLayout = useCallback((index: number, centre: number) => {
-    centres.current[index] = centre;
-    // Anchor on the first real poster as soon as it has been measured.
-    if (!anchored.current && centres.current[FIRST_REAL] !== undefined) {
-      anchored.current = true;
-      scrollToSlot(FIRST_REAL, false);
+    if (measuredStage.current !== stageWidth) {
+      measuredStage.current = stageWidth;
+      centres.current = [];
+      anchored.current = false;
     }
-  }, [scrollToSlot]);
+    centres.current[index] = centre;
+    // Anchor on the focused poster (the first real one initially) as soon as
+    // it has been measured.
+    if (!anchored.current && centres.current[focused.current] !== undefined) {
+      anchored.current = true;
+      scrollToSlot(focused.current, false);
+    }
+  }, [scrollToSlot, stageWidth]);
 
   // Guard: with 0 items render nothing; with 1 item the wrap-around clones
   // would overlap the only real card and onMomentumEnd math breaks (G10).
@@ -121,7 +141,7 @@ export function DawahCarousel({
   // When momentum lands on a clone, silently jump to its real twin so the
   // carousel feels infinite without seams.
   const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const focus = e.nativeEvent.contentOffset.x + windowWidth / 2;
+    const focus = e.nativeEvent.contentOffset.x + stageWidth / 2;
     let nearest = FIRST_REAL;
     let best = Infinity;
     for (let i = 0; i < wrapped.length; i++) {
@@ -133,8 +153,15 @@ export function DawahCarousel({
         nearest = i;
       }
     }
-    if (nearest < FIRST_REAL) scrollToSlot(LAST_REAL, false);
-    else if (nearest > LAST_REAL) scrollToSlot(FIRST_REAL, false);
+    if (nearest < FIRST_REAL) {
+      focused.current = LAST_REAL;
+      scrollToSlot(LAST_REAL, false);
+    } else if (nearest > LAST_REAL) {
+      focused.current = FIRST_REAL;
+      scrollToSlot(FIRST_REAL, false);
+    } else {
+      focused.current = nearest;
+    }
   };
 
   return (
@@ -145,6 +172,7 @@ export function DawahCarousel({
       decelerationRate="fast"
       showsHorizontalScrollIndicator={false}
       onScroll={onScroll}
+      style={{ width: stageWidth, alignSelf: 'center' }}
       onMomentumScrollEnd={handleMomentumEnd}
       scrollEventThrottle={16}
       contentContainerStyle={{
@@ -161,7 +189,7 @@ export function DawahCarousel({
           index={i}
           scrollX={scrollX}
           slot={slot}
-          viewportWidth={windowWidth}
+          viewportWidth={stageWidth}
           cardWidth={cardWidth}
           cardHeight={cardHeight}
           onMeasure={onSlotLayout}
