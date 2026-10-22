@@ -4,7 +4,8 @@ import { HeaderArt } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
-import { MORE_EXTENSION_ROWS, MORE_EXTERNAL_URLS } from '@/data/content/sections';
+import { MORE_EXTENSION_ROWS, MORE_EXTERNAL_URLS, visibleExtensionRows } from '@/data/content/sections';
+import { COMMUNITY_MODE } from '@/services/community/config';
 import { useMoreRowsStore } from '@/store';
 import type { MoreRow as MoreRowData } from '@/types/content';
 import { useRouter } from 'expo-router';
@@ -12,7 +13,7 @@ import React, { useEffect } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 
 /** Node 2102:2711 draws each row glyph at ~20pt inside the 48pt squircle. */
 const MORE_GLYPH = 20;
@@ -97,7 +98,7 @@ export default function MoreScreen() {
           </AsyncContent>
           {/* This app's own entry rows follow. They are local state, so they
               render immediately and never wait on the More-rows fetch. */}
-          {MORE_EXTENSION_ROWS.map((row) => (
+          {visibleExtensionRows(MORE_EXTENSION_ROWS, COMMUNITY_MODE).map((row) => (
             <ListRowCard
               key={row.id}
               variant="more"
@@ -125,7 +126,7 @@ export default function MoreScreen() {
  * addressed by `overrideKey` rather than by guid — so the first read found the
  * disc and nothing else, and looked like an unfinished placeholder.
  *
- * The rows below the frame's eight (settings, progress) have no frame at all,
+ * The rows below the frame's eight (settings, progress, community) have no frame at all,
  * so they keep their drawn glyphs.
  */
 const ROW_ICONS: Partial<Record<string, FigmaIconName>> = {
@@ -147,7 +148,7 @@ function RowGlyph({ id }: { id: string }) {
   return <DrawnRowGlyph id={id} />;
 }
 
-/** The two rows the design file has no frame for. */
+/** The rows the design file has no frame for (settings, progress, community). */
 function DrawnRowGlyph({ id }: { id: string }) {
   const c = KhazainColors.navy800;
   const size = MORE_GLYPH;
@@ -169,6 +170,16 @@ function DrawnRowGlyph({ id }: { id: string }) {
             strokeWidth={1.3}
             strokeLinejoin="round"
           />
+        </Svg>
+      );
+    case 'community':
+      // Two heads over shoulders: a group, drawn on the same 20pt grid.
+      return (
+        <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
+          <Circle cx={7.5} cy={7} r={2.5} stroke={c} strokeWidth={1.5} />
+          <Path d="M3 15.5a4.5 4.5 0 019 0" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
+          <Path d="M12.5 4.7a2.5 2.5 0 010 4.6" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
+          <Path d="M14 11a4.5 4.5 0 013 4.5" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
         </Svg>
       );
     default:

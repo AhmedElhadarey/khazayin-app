@@ -50,6 +50,7 @@ const PINNED_SCREENS = [
   'app/(tabs)/more/settings-progress.tsx',
   'app/(tabs)/sections/book/[id].tsx',
   'components/khazain/sheets/SheetRow.tsx',
+  'components/khazain/community/PreviewBanner.tsx',
   'components/khazain/settings/SettingsSection.tsx',
   // Onboarding. Not in the original sweep because it is the one flow the
   // captures never reached: the persisted `onboardingComplete` flag meant a
@@ -132,5 +133,18 @@ describe('onboarding survives the first launch after install', () => {
     const src = code('app/onboarding.tsx');
     expect(src).toMatch(/if \(!finished\) anim\.setValue\(0\)/);
     expect(src).toMatch(/animation\.stop\(\);\s*anim\.setValue\(0\);/);
+  });
+});
+
+describe('PreviewBanner', () => {
+  const src = code('components/khazain/community/PreviewBanner.tsx');
+
+  it('returns early unless the mode is mock, so mode off renders nothing', () => {
+    expect(src).toMatch(/if \(mode !== 'mock'\) return null;/);
+  });
+
+  it('is a static text banner, not an alert', () => {
+    expect(src).toMatch(/accessibilityRole="text"/);
+    expect(src).not.toMatch(/accessibilityRole="alert"/);
   });
 });

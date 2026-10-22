@@ -539,7 +539,21 @@ Production builds render no community UI, so every Figma capture is unaffected. 
   - the existing page forms
 - `arabicCount` is defined for n ≥ 1. Zero uses dedicated copy (for example «لا توجد نقاشات بعد»).
 - Its single `many` form is accusative («يومًا»), which is wrong at 100+. Limits keep members ≤50, days ≤60 and seconds ≤60. Unbounded totals use label form instead («أيام الإنجاز: ١٢٠ من ٣٠٠٠»), and a test pins this.
-- Other strings carry over from v1: intro, composer placeholder «شارك فائدة أو سؤالًا حول الدرس…», empty thread «لا توجد مشاركات بعد. كن أول من يشارك بفائدة.», and the filter reasons.
+- Further strings (pending Foundation review):
+  - `introTitle` «مجتمع خزائن الرحمن»
+  - `introBody` «انضم إلى مجموعة قراءة مع أهلك وأصحابك، فاختموا القرآن معًا أو التزموا وردًا يوميًا، وتدارسوا الدروس في نقاشات يحكمها أدب طالب العلم.»
+  - `introPrivacy` «لا نشارك صفحاتك ولا ملاحظاتك. يرى أعضاء مجموعتك الاسم الذي تختاره ومجموع تقدّمك في التحدي فقط، ويمكنك إيقاف المشاركة متى شئت.»
+  - `nameLabel` «الاسم الذي يظهر للأعضاء», `namePlaceholder` «مثال: أبو عبد الله»
+  - `guidelinesLink` «إرشادات المجتمع», `policyLink` «سياسة الخصوصية», `accept` «قرأت الإرشادات وأوافق عليها»
+  - `composerPlaceholder` «شارك فائدة أو سؤالًا حول الدرس…», `emptyThread` «لا توجد مشاركات بعد. كن أول من يشارك بفائدة.»
+  - `filterReason` (one per `AdabRejectReason`):
+    - empty «اكتب شيئًا قبل الإرسال»
+    - tooShort «النص قصير جدًا»
+    - tooLong «النص أطول من المسموح»
+    - link «لا يُسمح بالروابط في المشاركات»
+    - phone «لا يُسمح بأرقام الهواتف حفاظًا على الخصوصية»
+    - term «يُرجى مراجعة الصياغة بما يليق بأدب الحوار»
+    - repetition «يُرجى تجنّب تكرار الأحرف أو الكلمات»
 
 ### 8.7 Tablet
 - `columnStyle` goes on `contentContainerStyle` and on `InlineHeader`, and `inputRow` takes `columnStyle` where it is set.

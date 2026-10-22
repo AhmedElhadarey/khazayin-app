@@ -13,6 +13,7 @@
  */
 
 import type { LibraryFilter, Lookup, MoreRow, SectionEntry } from '../../types/content';
+import type { CommunityMode } from '../../services/community/gate';
 
 // ---------------------------------------------------------------------------
 // SECTIONS — 9-item sections list (sections/index.tsx)
@@ -135,12 +136,16 @@ export const MORE_REFERENCE_ORDER: readonly string[] = MORE_ROWS.map((row) => ro
  * Rows this app added after the design. They stay available but render after
  * the reference group, so the initial viewport matches the frame.
  */
-export const MORE_EXTENSION_ROWS: readonly {
+export type MoreExtensionRow = {
   id: string;
   title: string;
   subtitle: string;
   route: string;
-}[] = [
+  /** Present only on rows that exist in some community modes (design §8.3). */
+  gate?: 'community';
+};
+
+export const MORE_EXTENSION_ROWS: readonly MoreExtensionRow[] = [
   {
     id: 'settings',
     title: 'الإعدادات',
@@ -153,7 +158,26 @@ export const MORE_EXTENSION_ROWS: readonly {
     subtitle: 'هدف الورد اليومي · إعادة تعيين',
     route: '/(tabs)/more/settings-progress',
   },
+  {
+    id: 'community',
+    title: 'المجتمع',
+    subtitle: 'مجموعات القراءة · الختمات · نقاشات الدروس',
+    route: '/(tabs)/more/community',
+    gate: 'community',
+  },
 ];
+
+/**
+ * Drops gated rows the current community mode does not offer. With the mode
+ * `off` (production) the list is exactly the ungated rows, so the More screen
+ * renders as it did before community existed.
+ */
+export function visibleExtensionRows(
+  rows: readonly MoreExtensionRow[],
+  mode: CommunityMode,
+): MoreExtensionRow[] {
+  return rows.filter((row) => row.gate !== 'community' || mode !== 'off');
+}
 
 // ---------------------------------------------------------------------------
 // MORE_EXTERNAL_URLS — Partial map of external URLs (more/index.tsx)
