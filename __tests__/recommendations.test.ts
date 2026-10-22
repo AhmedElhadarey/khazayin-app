@@ -234,6 +234,76 @@ describe('recommend', () => {
     expect(out.map((r) => r.key)).not.toContain('scholar:s9');
   });
 
+  describe('same-title duplicates of a signal target', () => {
+    it('does not recommend a different book whose title equals a saved book (tashkeel and hamza variants too)', () => {
+      // The Home rail saves lecture-row b2; the catalogue's twin is bk5.
+      const out = recommend([savedBook('b2', 'شرح كتاب التوحيد')], index, NOW, none, 20);
+      expect(out.map((r) => r.key)).not.toContain('book:bk5');
+      const variant = recommend([savedBook('zz', 'إِضَاءَاتٌ في العقيدة')], index, NOW, none, 20);
+      expect(variant.map((r) => r.key)).not.toContain('book:bk4');
+      const hamza = recommend([savedBook('zz', 'اضاءات في العقيدة')], index, NOW, none, 20);
+      expect(hamza.map((r) => r.key)).not.toContain('book:bk4');
+    });
+
+    it('still recommends a different-titled book in the same topic', () => {
+      const out = recommend([savedBook('b2', 'شرح كتاب التوحيد')], index, NOW, none, 20);
+      expect(out.map((r) => r.key)).toContain('book:bk4');
+    });
+
+    it('excludes a lecture with the same title as a saved book', () => {
+      const out = recommend([savedBook('bk5', 'شرح كتاب التوحيد')], index, NOW, none, 20);
+      expect(out.some((r) => r.kind === 'lecture' && r.title === 'شرح كتاب التوحيد')).toBe(false);
+      expect(out.map((r) => r.key)).not.toContain('lecture:b2');
+    });
+
+    it('saving a Home-rail Riyad book keeps other scholars\' Riyad series', () => {
+      const out = recommend([savedBook('b4', 'شرح رياض الصالحين')], index, NOW, none, 6).map((r) => r.key);
+      expect(out).toContain('lecture:011_20210710');
+      expect(out).toContain('lecture:001_20210704_202107');
+      expect(out).not.toContain('lecture:b4');
+    });
+
+    it('saving catalogue book bk2 keeps the Riyad lecture series', () => {
+      const out = recommend([savedBook('bk2', 'شرح رياض الصالحين')], index, NOW, none, 6).map((r) => r.key);
+      expect(out).toContain('lecture:011_20210710');
+      expect(out).toContain('lecture:001_20210704_202107');
+    });
+
+    it('a listening session on a scholar Riyad series does not hide the book bk2', () => {
+      const listened: Signal = { kind: 'listened', target: { type: 'lecture', id: 'sl4-3' }, atMs: NOW, label: 'a' };
+      expect(recommend([listened], index, NOW, none, 20).map((r) => r.key)).toContain('book:bk2');
+    });
+
+    it('an unresolved session titled like a catalogue book does not hide it', () => {
+      const listened: Signal = {
+        kind: 'listened',
+        target: { type: 'lecture', id: 'unknown-session', title: 'شرح رياض الصالحين' },
+        atMs: NOW,
+        label: 'شرح رياض الصالحين',
+      };
+      const sigs = [listened, saved('sl5-2', 'x')];
+      expect(recommend(sigs, index, NOW, none, 20).map((r) => r.key)).toContain('book:bk2');
+    });
+
+    it('saving catalogue book bk6 keeps the same-titled prophet-section lecture p3, and bk2/bk5 hide their book rows', () => {
+      const keys = (id: string, title: string) => recommend([savedBook(id, title)], index, NOW, none, 20).map((r) => r.key);
+      expect(keys('bk6', 'فقه العبادات')).toContain('lecture:p3');
+      expect(keys('bk2', 'شرح رياض الصالحين')).not.toContain('lecture:b4');
+      expect(keys('bk5', 'شرح كتاب التوحيد')).not.toContain('lecture:b2');
+    });
+
+    it('saving b1 hides the same-titled radio rows it duplicates', () => {
+      const out = recommend([savedBook('b1', 'الإعجاز العلمي في السنة النبوية')], index, NOW, none, 20);
+      expect(out.some((r) => r.title === 'الإعجاز العلمي في السنة النبوية')).toBe(false);
+    });
+
+    it('does not title-match on a note label', () => {
+      const note: Signal = { kind: 'note', target: { type: 'book', id: 'zz' }, atMs: NOW, label: 'شرح كتاب التوحيد' };
+      const out = recommend([note], index, NOW, none, 20);
+      expect(out.map((r) => r.key)).toContain('book:bk5');
+    });
+  });
+
   it('excludes an episode-id signal target by its series, and a listened series stays excluded', () => {
     const listened: Signal = {
       kind: 'listened',

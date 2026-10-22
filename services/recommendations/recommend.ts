@@ -176,6 +176,18 @@ interface Resolved {
   scholarId?: string;
   /** Key of the item the signal points at, which is never recommended back. */
   excludeKey?: string;
+  /**
+   * `normalize()`d title of a book-like target (a book, or a lecture row with
+   * category 'book'), so the same work under another id is not recommended
+   * back as a book. Set only when the title names the target: it resolves in
+   * the catalogue or came from a saved snapshot, never a note label or an
+   * unresolved session's episode title.
+   */
+  excludeTitle?: string;
+  /** Book target that is a Home-rail lecture row: also hides same-titled non-scholar lectures. */
+  excludeRowTwins?: boolean;
+  /** A book target that is a Home-rail lecture row also excludes that lecture. */
+  excludeLectureKey?: string;
 }
 
 function targetKey(sig: Signal): string {
@@ -189,6 +201,7 @@ function resolve(sig: Signal, index: CatalogueIndex, nowMs: number): Resolved {
   const base = { sig, sigKey: `${sig.kind}|${targetKey(sig)}`, c };
   const t = sig.target;
   const canon = (id: string): string => index.canonicalScholarId.get(id) ?? id;
+  const named = (title: string | undefined): string | undefined => normalize(title ?? '') || undefined;
 
   if (t.type === 'lecture') {
     const archiveId = t.archiveId ?? (isEpisodeId(t.id) ? archiveIdOfEpisode(t.id) : undefined);
@@ -199,6 +212,9 @@ function resolve(sig: Signal, index: CatalogueIndex, nowMs: number): Resolved {
         topics: topicsForTitle(l.title, l.category),
         scholarId: l.scholarId ? canon(l.scholarId) : undefined,
         excludeKey: lectureKey(l),
+        // Only a book row is a book-like work; a scholar series titled like a
+        // book (Ibn Baz's Riyad) is a different work from the book.
+        excludeTitle: l.category === 'book' ? named(l.title) : undefined,
       };
     }
     // Not in the catalogue: keywords on the title, no scholar.
@@ -214,8 +230,19 @@ function resolve(sig: Signal, index: CatalogueIndex, nowMs: number): Resolved {
     };
   }
   if (t.type === 'book') {
-    const title = index.bookById.get(t.id)?.title ?? t.title ?? sig.label;
-    return { ...base, topics: topicsForTitle(title), excludeKey: `book:${t.id}` };
+    const book = index.bookById.get(t.id);
+    // A Home-rail book is a lecture row (b1-b7): its twin is that lecture.
+    const row = index.byLectureId.get(t.id);
+    const resolvedTitle = book?.title ?? row?.title;
+    const titleOfTarget = resolvedTitle ?? (sig.kind === 'saved' ? (t.title ?? sig.label) : undefined);
+    return {
+      ...base,
+      topics: topicsForTitle(book?.title ?? row?.title ?? t.title ?? sig.label),
+      excludeKey: `book:${t.id}`,
+      excludeTitle: named(titleOfTarget),
+      excludeRowTwins: row !== undefined,
+      excludeLectureKey: row ? lectureKey(row) : undefined,
+    };
   }
   return { ...base, topics: ['tafsir'] };
 }
@@ -328,7 +355,24 @@ export function recommend(
   // Even an expired signal's target is excluded: a save older than 120 days is
   // still saved.
   const excluded = new Set<string>(dismissed);
-  for (const r of resolved) if (r.excludeKey) excluded.add(r.excludeKey);
+  // The same work under another id (Home rails and the catalogue are separate
+  // sources) is also excluded; scholars are not title-matched. Scholar series
+  // are never title-matched: several scholars teach «شرح رياض الصالحين» and each
+  // is a different recording. A book target hides `category: 'book'` lecture
+  // rows of that title; a Home-rail book also hides non-scholar lectures of
+  // that title (the radio duplicates) but a catalogue book does not (p3 stays).
+  // A book-row lecture target hides same-titled books.
+  const bookTitles = new Set<string>();
+  const bookRowTitles = new Set<string>();
+  const rowTwinTitles = new Set<string>();
+  for (const r of resolved) {
+    if (r.excludeKey) excluded.add(r.excludeKey);
+    if (r.excludeLectureKey) excluded.add(r.excludeLectureKey);
+    if (!r.excludeTitle) continue;
+    bookTitles.add(r.excludeTitle);
+    if (r.sig.target.type === 'book') bookRowTitles.add(r.excludeTitle);
+    if (r.excludeRowTwins) rowTwinTitles.add(r.excludeTitle);
+  }
   const live = resolved.filter((r) => r.c > 0);
 
   const topicSum = new Map<string, number>();
@@ -342,7 +386,11 @@ export function recommend(
 
   const lectures: Cand[] = [];
   for (const lc of index.lectureCandidates) {
-    if (excluded.has(lc.key)) continue;
+    const lt = normalize(lc.lecture.title);
+    const twin =
+      (lc.lecture.category === 'book' && bookRowTitles.has(lt)) ||
+      (lc.lecture.category !== 'scholar' && rowTwinTitles.has(lt));
+    if (excluded.has(lc.key) || twin) continue;
     const best = bestTopic(lc.topics, topicAff);
     const term = lc.scholarId ? SCHOLAR_TERM * (scholarAff.get(lc.scholarId) ?? 0) : 0;
     lectures.push({
@@ -360,7 +408,7 @@ export function recommend(
   }
   const books: Cand[] = [];
   for (const bc of index.bookCandidates) {
-    if (excluded.has(bc.key)) continue;
+    if (excluded.has(bc.key) || bookTitles.has(normalize(bc.book.title))) continue;
     const best = bestTopic(bc.topics, topicAff);
     books.push({
       key: bc.key,
