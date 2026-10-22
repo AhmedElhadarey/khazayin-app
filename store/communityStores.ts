@@ -31,7 +31,8 @@ const groupDetails = new Map<string, GroupDetailStore>();
 const threadSummaries = new Map<string, SummariesStore>();
 const threadPosts = new Map<string, PostsStore>();
 
-export function useGroupDetailStore(id: string): GroupDetailStore {
+/** Not a hook: it writes a Map. Resolve it once per screen instance (`useState(() => …)`), never per render. */
+export function groupDetailStore(id: string): GroupDetailStore {
   let store = groupDetails.get(id);
   if (!store) {
     store = createAsyncStore<GroupDetail | null>({

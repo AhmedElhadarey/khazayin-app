@@ -14,6 +14,7 @@ import { arabicCount, type CountForms } from '@/services/libraryStats';
 export const MEMBERS: CountForms = { one: 'عضو واحد', two: 'عضوان', few: 'أعضاء', many: 'عضوًا' };
 export const DAYS: CountForms = { one: 'يوم واحد', two: 'يومان', few: 'أيام', many: 'يومًا' };
 export const SECONDS: CountForms = { one: 'ثانية واحدة', two: 'ثانيتان', few: 'ثوانٍ', many: 'ثانية' };
+export const PAGES: CountForms = { one: 'صفحة واحدة', two: 'صفحتان', few: 'صفحات', many: 'صفحة' };
 export const DISCUSSIONS: CountForms = { one: 'نقاش واحد', two: 'نقاشان', few: 'نقاشات', many: 'نقاشًا' };
 
 export const COMMUNITY_COPY = Object.freeze({
@@ -49,11 +50,34 @@ export const COMMUNITY_COPY = Object.freeze({
   joinWithCode: 'الانضمام برمز',
   badCode: 'رمز غير صحيح أو منتهٍ',
   full: 'المجموعة مكتملة',
+  groupCap: 'بلغت الحد الأقصى من المجموعات. غادر مجموعة للانضمام إلى أخرى.',
   challengeStarts: 'تُحتسب الصفحات المقروءة من تاريخ بدء التحدي',
   totalsHidden: 'يظهر مجموع المجموعة بعد مشاركة مزيد من الأعضاء في التحدي',
   totalsNote: 'مجموع ما قرأه الأعضاء منذ بدء التحدي',
   shareProgress: 'إظهار تقدّمي لأعضاء المجموعة',
   resetHelp: 'لا ينقص التقدّم المُرسَل بعد إعادة تعيين القراءة',
+  // Group screens (T8; pending Foundation review)
+  groupNameLabel: 'اسم المجموعة',
+  groupNamePlaceholder: 'مثال: ختمة العائلة',
+  challengeLabel: 'التحدي',
+  khatmOption: 'ختمة القرآن',
+  wirdOption: 'ورد يومي',
+  khatmTitle: 'ختمة جماعية',
+  wirdTitle: 'ورد يومي',
+  pagesPerDayLabel: 'عدد الصفحات في اليوم',
+  daysLabel: 'عدد الأيام',
+  joinCodeLabel: 'رمز المجموعة',
+  joinSubmit: 'انضمام',
+  shareCode: 'مشاركة الرمز',
+  noChallenge: 'لا يوجد تحدٍّ نشط في هذه المجموعة',
+  ownProgress: 'تقدّمي',
+  membersHeading: 'الأعضاء',
+  ownerBadge: 'المالك',
+  youBadge: 'أنت',
+  leaveGroup: 'مغادرة المجموعة',
+  leaveConfirmTitle: 'مغادرة المجموعة؟',
+  leaveConfirmBody: 'ستفقد الوصول إلى تقدّم هذه المجموعة، ويمكنك الانضمام إليها مجددًا برمزها.',
+  cancel: 'إلغاء',
   // Threads and posts
   composerPlaceholder: 'شارك فائدة أو سؤالًا حول الدرس…',
   emptyThread: 'لا توجد مشاركات بعد. كن أول من يشارك بفائدة.',
@@ -106,6 +130,15 @@ export function daysMetLabel(done: number, total: number): string {
   return `أيام الإنجاز: ${toArabicDigits(done)} من ${toArabicDigits(total)}`;
 }
 
+/**
+ * Group days for a daily wird: «أيام الإنجاز: نحو ١٠ من ٤٠». The server rounds
+ * the sum to 10 but not the denominator, so the figure is hedged and clamped
+ * rather than reading «١٠ من ٩».
+ */
+export function daysMetApproxLabel(done: number, total: number): string {
+  return `أيام الإنجاز: نحو ${toArabicDigits(Math.min(done, total))} من ${toArabicDigits(total)}`;
+}
+
 /** Post cooldown (§7.5): «يمكنك المشاركة مجددًا بعد ٣ ثوانٍ». n >= 1. */
 export function cooldownCopy(seconds: number): string {
   return `يمكنك المشاركة مجددًا بعد ${arabicCount(Math.max(1, Math.ceil(seconds)), SECONDS)}`;
@@ -127,4 +160,39 @@ export function muteA11y(name: string): string {
 /** Row label for a muted member; names are never stored, so the row is numbered. */
 export function mutedMemberLabel(n: number): string {
   return `عضو مكتوم ${toArabicDigits(n)}`;
+}
+
+/** Own khatm label: «صفحاتك: ٣ من ٦٠٤». */
+export function ownPagesLabel(done: number, total: number): string {
+  return `صفحاتك: ${toArabicDigits(done)} من ${toArabicDigits(total)}`;
+}
+
+/** Daily-wird summary: «٥ صفحات يوميًا لمدة ١٠ أيام». n >= 1 for both. */
+export function wirdSummary(pagesPerDay: number, days: number): string {
+  return `${arabicCount(pagesPerDay, PAGES)} يوميًا لمدة ${arabicCount(days, DAYS)}`;
+}
+
+/** Hint under a bounded number field: «من ١ إلى ٦٠٤». */
+export function rangeHint(min: number, max: number): string {
+  return `من ${toArabicDigits(min)} إلى ${toArabicDigits(max)}`;
+}
+
+/** The text a member shares: «انضم إلى مجموعتي «اسم» في تطبيق خزائن الرحمن برمز: ABC123». */
+export function shareCodeMessage(name: string, code: string): string {
+  return `انضم إلى مجموعتي «${name}» في تطبيق خزائن الرحمن برمز: ${code}`;
+}
+
+/** Accessibility label for the code box, spelled letter by letter: «رمز المجموعة A B C 1 2 3». */
+export function codeA11y(code: string): string {
+  return `رمز المجموعة ${code.split('').join(' ')}`;
+}
+
+/** A member's shared khatm figure: «الصفحات: ٣». */
+export function memberPagesLabel(n: number): string {
+  return `الصفحات: ${toArabicDigits(n)}`;
+}
+
+/** A member's shared daily-wird figure: «الأيام: ٣». */
+export function memberDaysLabel(n: number): string {
+  return `الأيام: ${toArabicDigits(n)}`;
 }

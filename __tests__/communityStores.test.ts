@@ -11,7 +11,7 @@ import {
 } from '@/store/communityMutations';
 import {
   resetCommunityStores,
-  useGroupDetailStore,
+  groupDetailStore,
   useMyGroupsStore,
   useThreadPostsStore,
   useThreadSummariesStore,
@@ -59,8 +59,8 @@ beforeEach(() => {
 
 describe('keyed factories', () => {
   it('returns one store per key', () => {
-    expect(useGroupDetailStore('g1')).toBe(useGroupDetailStore('g1'));
-    expect(useGroupDetailStore('g1')).not.toBe(useGroupDetailStore('g2'));
+    expect(groupDetailStore('g1')).toBe(groupDetailStore('g1'));
+    expect(groupDetailStore('g1')).not.toBe(groupDetailStore('g2'));
     expect(useThreadPostsStore('L1')).toBe(useThreadPostsStore('L1'));
     expect(useThreadPostsStore('L1')).not.toBe(useThreadPostsStore('L2'));
     expect(useThreadSummariesStore('s1')).toBe(useThreadSummariesStore('s1'));
@@ -107,7 +107,7 @@ describe('runMutation', () => {
 
   it('refreshes a cached group detail quietly after setShareMyProgress', async () => {
     const g = await communityService.groups.join({ requestId: 'r-join', code: 'KHZ7Q2' });
-    const detail = useGroupDetailStore(g.id);
+    const detail = groupDetailStore(g.id);
     await detail.getState().fetch();
     const seen: string[] = [];
     const unsub = detail.subscribe((s) => seen.push(s.status));
@@ -178,9 +178,9 @@ describe('runMutation', () => {
 
   it('drops the cached group detail after leaving that group', async () => {
     const g = await communityService.groups.join({ requestId: 'r-join', code: 'KHZ7Q2' });
-    const detail = useGroupDetailStore(g.id);
+    const detail = groupDetailStore(g.id);
     await runMutation('leaveGroup', g.id, {}, (requestId) => communityService.groups.leave({ requestId, groupId: g.id }));
-    expect(useGroupDetailStore(g.id)).not.toBe(detail);
+    expect(groupDetailStore(g.id)).not.toBe(detail);
   });
 
   it('prepends a created post without a loading flash', async () => {
@@ -312,7 +312,7 @@ describe('visiblePosts', () => {
 
 describe('resetCommunityStores', () => {
   it('empties the keyed maps and my groups', async () => {
-    const detail = useGroupDetailStore('g1');
+    const detail = groupDetailStore('g1');
     const posts = useThreadPostsStore('L1');
     const summaries = useThreadSummariesStore('s1');
     await useMyGroupsStore.getState().refresh();
@@ -320,7 +320,7 @@ describe('resetCommunityStores', () => {
     await runMutation('joinGroup', '-', {}, (requestId) => communityService.groups.join({ requestId, code: 'KHZ7Q2' }));
     expect(useMyGroupsStore.getState().data.length).toBeGreaterThan(0);
     resetCommunityStores();
-    expect(useGroupDetailStore('g1')).not.toBe(detail);
+    expect(groupDetailStore('g1')).not.toBe(detail);
     expect(useThreadPostsStore('L1')).not.toBe(posts);
     expect(useThreadSummariesStore('s1')).not.toBe(summaries);
     expect(useMyGroupsStore.getState()).toMatchObject({ data: [], status: 'idle' });

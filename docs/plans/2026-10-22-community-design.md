@@ -526,6 +526,7 @@ Production builds render no community UI, so every Figma capture is unaffected. 
   - `COMMUNITY_POST_ORDER = ['actions','text','avatar']`
   - `GROUP_ROW_ORDER = ['disclosure','text','progress']`
   - `COMPOSER_ORDER = ['send','field']`
+  - `GroupRow`'s `progress` slot holds the group glyph for now, because `listMine` carries no challenge progress. The bar lives on group detail.
 - The join code renders in a `PHYSICAL_BOX`.
 
 ### 8.6 Copy (frozen in `constants/communityCopy.ts`)
@@ -561,6 +562,12 @@ Production builds render no community UI, so every Figma capture is unaffected. 
     - `deleteConfirmBody` «سيُحذف اسمك ومشاركاتك وعضويتك في المجموعات من المجتمع نهائيًا، ولا يمكن التراجع عن ذلك.»
     - `mutedMemberLabel(n)` «عضو مكتوم {n}» (names are never stored, so muted members are numbered)
     - `dueNow` «الآن» (the pending-deletion row when the next attempt is already due)
+  - Added with the group screens (T8), also pending Foundation review:
+    - create: `groupNameLabel` «اسم المجموعة», `groupNamePlaceholder` «مثال: ختمة العائلة», `challengeLabel` «التحدي», `khatmOption` «ختمة القرآن», `wirdOption` «ورد يومي», `khatmTitle` «ختمة جماعية» and `wirdTitle` «ورد يومي» (the challenge titles sent to the service), `pagesPerDayLabel` «عدد الصفحات في اليوم», `daysLabel` «عدد الأيام», `rangeHint(min, max)` «من ١ إلى ٦٠٤»
+    - join: `joinCodeLabel` «رمز المجموعة», `joinSubmit` «انضمام», `groupCap` «بلغت الحد الأقصى من المجموعات. غادر مجموعة للانضمام إلى أخرى.» (a join `conflict` with `detail: 'groupCap'`; `detail: 'full'` shows the frozen «المجموعة مكتملة», and a conflict without a known detail shows the generic conflict text)
+    - detail: `shareCode` «مشاركة الرمز», `codeA11y(code)` (accessibility label of the code box, spelled letter by letter) «رمز المجموعة A B C 1 2 3», `shareCodeMessage(name, code)` «انضم إلى مجموعتي «{name}» في تطبيق خزائن الرحمن برمز: {code}», `noChallenge` «لا يوجد تحدٍّ نشط في هذه المجموعة», `ownProgress` «تقدّمي», `ownPagesLabel(n, 604)` «صفحاتك: {n} من ٦٠٤», `wirdSummary(pages, days)` «{n صفحات} يوميًا لمدة {n أيام}», `membersHeading` «الأعضاء», `ownerBadge` «المالك», `youBadge` «أنت», `memberPagesLabel(n)` «الصفحات: {n}», `memberDaysLabel(n)` «الأيام: {n}», `daysMetApproxLabel(done, total)` «أيام الإنجاز: نحو {done} من {total}» (the group daily-wird bar; the server rounds the sum to 10 but not the denominator, so the figure is hedged with «نحو» and clamped to the total. The own-progress bar keeps the exact `daysMetLabel`)
+    - leave: `leaveGroup` «مغادرة المجموعة», `leaveConfirmTitle` «مغادرة المجموعة؟», `leaveConfirmBody` «ستفقد الوصول إلى تقدّم هذه المجموعة، ويمكنك الانضمام إليها مجددًا برمزها.», `cancel` «إلغاء»
+    - `PAGES {صفحة واحدة، صفحتان، صفحات، صفحة}` joins the count forms above
 
 ### 8.7 Tablet
 - `columnStyle` goes on `contentContainerStyle` and on `InlineHeader`, and `inputRow` takes `columnStyle` where it is set.
@@ -570,7 +577,7 @@ Production builds render no community UI, so every Figma capture is unaffected. 
 ## 9. Stores
 - `store/communityStores.ts`, no SWR:
   - `useMyGroupsStore = createAsyncStore<Group[]>({ name:'community-groups', initialData: [], fetcher: () => communityService.groups.listMine(), isEmpty: (d) => d.length === 0 })`. `initialData` is required (`store/createAsyncStore.ts:88-89`).
-  - Keyed factories modelled on `store/scholarStore.ts:21-47`: `useGroupDetailStore(id)`, `useThreadSummariesStore(scholarId)`, and `useThreadPostsStore(lectureId)` (`createPaginatedStore<Post>`). Confirm the paginated fetcher envelope at T6 start.
+  - Keyed factories modelled on `store/scholarStore.ts:21-47`: `groupDetailStore(id)`, `useThreadSummariesStore(scholarId)`, and `useThreadPostsStore(lectureId)` (`createPaginatedStore<Post>`). Confirm the paginated fetcher envelope at T6 start.
 - `store/communityMutations.ts`:
   - `runMutation(op, target, payload, perform)` applies §5.3 (the key is derived as `intentKey(op, target)`), tracks `inFlight`, and dedupes concurrent calls.
   - Patchers `prependPost`, `replacePost` and `removePost` use `setState`, because `refresh()` clears items (`store/paginated.ts:354-372`).
@@ -666,6 +673,7 @@ Each item must be signed off by the named owner before the `http` track merges.
 10. **Lost-token deletion channel.** A published email and the contact-form handling (§4.3). *Owner: Foundation.*
 11. **Appendix A implemented,** including idempotency and in-flight semantics and the A.2 differencing rule, and contract tests passing against staging. *Owner: backend.*
 12. **Release grep in CI.** The §3.2 production-export grep for `KHZ_COMMUNITY_SEED` and the seed join codes, plus the dev-export positive control, runs on every release build in CI. Until CI exists, it is a manual release step. *Owner: user / whoever owns the build pipeline.*
+13. **HTTP error detail.** `toApiError` does not yet fill `ApiError.detail` from the 409 body, so over `http` a join `conflict` would fall back to the generic conflict text. Map `detail: 'full' | 'groupCap'` (A.2) in the HTTP adapter and add a contract test. *Owner: backend + whoever builds the `http` adapter.*
 
 ---
 
@@ -697,7 +705,7 @@ Each item must be signed off by the named owner before the `http` track merges.
 - `GET /groups/mine` → `Group[]`.
 - `GET /groups/{id}` → `{group, members, challenge, progress: GroupProgress, me: Membership}`. Per-member figures are included only for `shareMyProgress` members. `progress.totals` is computed **per viewer**: it is `null` unless at least 2 reporters other than the viewer have `shareMyProgress: false`, and otherwise each sum is rounded to the nearest 10. The server must never return exact totals or a per-member figure for a non-sharer.
 - `POST /groups` `{name}` → 201.
-- `POST /groups/join` `{code}` → `Group` (404 bad code; 409 full or at the 5-group cap).
+- `POST /groups/join` `{code}` → `Group` (404 bad code; 409 full or at the 5-group cap). The 409 body carries `detail: 'full' | 'groupCap'` so the client can show the right copy; the mock does the same.
 - `DELETE /groups/{id}/membership` → 204.
 - `PUT /groups/{id}/membership` `{shareMyProgress}` → `Membership`.
 - `POST /groups/{id}/challenges` `{title, startsOn, kind, pagesPerDay?, days?}` → 201 (403 non-owner; 409 if one is active).

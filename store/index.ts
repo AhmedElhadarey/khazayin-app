@@ -145,7 +145,7 @@ export { useCommunityLocalStore } from './communityLocalStore';
 
 export {
   useMyGroupsStore,
-  useGroupDetailStore,
+  groupDetailStore,
   useThreadSummariesStore,
   useThreadPostsStore,
   resetCommunityStores,

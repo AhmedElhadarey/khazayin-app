@@ -10,7 +10,15 @@ import {
   cooldownCopy,
   daysMetLabel,
   khatmLabel,
+  codeA11y,
+  daysMetApproxLabel,
+  memberDaysLabel,
+  memberPagesLabel,
   mutedMemberLabel,
+  ownPagesLabel,
+  rangeHint,
+  shareCodeMessage,
+  wirdSummary,
 } from '@/constants/communityCopy';
 import { COMMUNITY_GUIDELINES, GUIDELINES_TITLE } from '@/constants/communityGuidelines';
 import { GUIDELINES_VERSION } from '@/services/community/gate';
@@ -155,5 +163,37 @@ describe('T7b copy', () => {
     expect(COMMUNITY_COPY.screenTitle).toBe('المجتمع');
     expect(COMMUNITY_COPY.dueNow).toBe('الآن');
     expect(mutedMemberLabel(3)).toBe('عضو مكتوم ٣');
+  });
+});
+
+describe('group screen labels', () => {
+  it('formats the wird summary with agreeing nouns', () => {
+    expect(wirdSummary(5, 10)).toBe('٥ صفحات يوميًا لمدة ١٠ أيام');
+    expect(wirdSummary(1, 1)).toBe('صفحة واحدة يوميًا لمدة يوم واحد');
+    expect(wirdSummary(11, 30)).toBe('١١ صفحة يوميًا لمدة ٣٠ يومًا');
+  });
+
+  it('formats the own-progress, range and share texts', () => {
+    expect(ownPagesLabel(3, 604)).toBe('صفحاتك: ٣ من ٦٠٤');
+    expect(rangeHint(1, 604)).toBe('من ١ إلى ٦٠٤');
+    expect(shareCodeMessage('ختمة العائلة', 'AB12CD')).toBe(
+      'انضم إلى مجموعتي «ختمة العائلة» في تطبيق خزائن الرحمن برمز: AB12CD',
+    );
+  });
+});
+
+describe('group detail labels', () => {
+  it('spells the code letter by letter', () => {
+    expect(codeA11y('AB12CD')).toBe('رمز المجموعة A B 1 2 C D');
+  });
+
+  it('formats the shared member figures', () => {
+    expect(memberPagesLabel(3)).toBe('الصفحات: ٣');
+    expect(memberDaysLabel(12)).toBe('الأيام: ١٢');
+  });
+
+  it('hedges the rounded group days and never exceeds the total', () => {
+    expect(daysMetApproxLabel(10, 40)).toBe('أيام الإنجاز: نحو ١٠ من ٤٠');
+    expect(daysMetApproxLabel(10, 9)).toBe('أيام الإنجاز: نحو ٩ من ٩');
   });
 });

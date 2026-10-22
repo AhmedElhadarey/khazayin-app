@@ -19,6 +19,14 @@
 export const LIST_ROW_ORDER = Object.freeze(['disclosure', 'text', 'iconBadge'] as const);
 export type ListRowSlot = (typeof LIST_ROW_ORDER)[number];
 
+/**
+ * Community group row (design §8.5). No Figma frame, contract-only: the
+ * disclosure at the physical left, the name and member count, then the
+ * progress or glyph badge at the physical right.
+ */
+export const GROUP_ROW_ORDER = Object.freeze(['disclosure', 'text', 'progress'] as const);
+export type GroupRowSlot = (typeof GROUP_ROW_ORDER)[number];
+
 /** Lecture-style card — nodes 2465:1911, 2589:1772, 2597:2552, 2606:3830. */
 export const LECTURE_CARD_ORDER = Object.freeze(['meta', 'text', 'badge'] as const);
 export type LectureCardSlot = (typeof LECTURE_CARD_ORDER)[number];

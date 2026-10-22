@@ -1,9 +1,9 @@
-import { InlineHeader, ListRowCard } from '@/components/khazain';
-import { PreviewBanner } from '@/components/khazain/community/PreviewBanner';
+import { InlineHeader } from '@/components/khazain';
+import { GroupRow, PreviewBanner } from '@/components/khazain/community';
 import { HeaderArt } from '@/components/khazain/patterns';
 import { PillButton } from '@/components/khazain/primitives';
 import { AsyncContent } from '@/components/khazain/state/AsyncContent';
-import { COMMUNITY_COPY, MEMBERS } from '@/constants/communityCopy';
+import { COMMUNITY_COPY } from '@/constants/communityCopy';
 import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, READING_GRID, RTL_TEXT } from '@/constants/layout';
 import { Colors, KhazainColors, KhazainRadius } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -12,7 +12,6 @@ import { useCommunityAccess, useCommunityGuard } from '@/hooks/useCommunityGuard
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { arabicCopyForCode } from '@/services/api/errors';
 import { enrollMember } from '@/services/community/enrollment';
-import { arabicCount } from '@/services/libraryStats';
 import { openPrivacyPolicy } from '@/services/privacyPolicy';
 import { useCommunityLocalStore } from '@/store/communityLocalStore';
 import { useMyGroupsStore } from '@/store/communityStores';
@@ -35,7 +34,6 @@ import Svg, { Path } from 'react-native-svg';
 import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
 
 const GUIDELINES_ROUTE = '/(tabs)/more/community/guidelines';
-// Owned by the group screens (T8); until they land these paths show Expo Router's unmatched screen.
 const CREATE_ROUTE = '/(tabs)/more/community/create';
 const JOIN_ROUTE = '/(tabs)/more/community/join';
 const groupRoute = (id: string) => `/(tabs)/more/community/group/${encodeURIComponent(id)}`;
@@ -214,27 +212,15 @@ function OpenHub() {
         style={styles.list}
       >
         {groups.map((g) => (
-          <ListRowCard
+          <GroupRow
             key={g.id}
-            variant="more"
-            title={g.name}
-            subtitle={arabicCount(g.memberCount, MEMBERS)}
-            icon={<GroupGlyph />}
+            name={g.name}
+            memberCount={g.memberCount}
             onPress={() => router.push(groupRoute(g.id) as any)}
           />
         ))}
       </AsyncContent>
     </>
-  );
-}
-
-function GroupGlyph() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path d="M9 11a3 3 0 100-6 3 3 0 000 6zM3 19a6 6 0 0112 0" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M16 6.5a2.5 2.5 0 010 5M17.5 14.5A5 5 0 0121 19" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
-    </Svg>
   );
 }
 

@@ -249,7 +249,7 @@ Order: T1 → T2 → T3 → T4a → T4b → T5 → T6 → T7a → T7b → T8 →
 **Files:**
 - `store/communityStores.ts` (new):
   - `useMyGroupsStore`, which **includes `initialData: []`** (`store/createAsyncStore.ts:88-89`);
-  - keyed `useGroupDetailStore(id)`, `useThreadSummariesStore(scholarId)` and `useThreadPostsStore(lectureId)`, following `store/scholarStore.ts:21-47`;
+  - keyed `groupDetailStore(id)`, `useThreadSummariesStore(scholarId)` and `useThreadPostsStore(lectureId)`, following `store/scholarStore.ts:21-47`;
   - `resetCommunityStores()`.
 - `store/communityMutations.ts` (new): `runMutation(...)`, `useMutationStatus`, `prependPost`, `replacePost`, `removePost`
 - `store/index.ts`: exports
@@ -258,7 +258,7 @@ Order: T1 → T2 → T3 → T4a → T4b → T5 → T6 → T7a → T7b → T8 →
 **Before writing code:** read `store/paginated.ts:72-128` and confirm the fetcher's return envelope. Adapt `Paged<Post>` in the fetcher, not in the factory.
 
 **Failing tests first:**
-- **Keyed factories.** `useGroupDetailStore('g1') === useGroupDetailStore('g1')`, and `!== useGroupDetailStore('g2')`.
+- **Keyed factories.** `groupDetailStore('g1') === groupDetailStore('g1')`, and `!== groupDetailStore('g2')`.
 - **Join refresh.** After a mock `join('KHZ7Q2')`, `useMyGroupsStore.getState().data` contains the group, because the mutation calls `refresh()`.
 - **Prepend.** After `runMutation('createPost', 'L1', ...)`, `useThreadPostsStore('L1').getState().items[0].id` is the new post, and `status` never passed through `'loading'`.
 - **Retry reuse.** With `simulateError` on the first call, a second `runMutation` with the same payload sends the same `requestId`. After a forced `moderation` error, it sends a different one.
@@ -317,7 +317,7 @@ Order: T1 → T2 → T3 → T4a → T4b → T5 → T6 → T7a → T7b → T8 →
 - **Deletion runner** (mock adapter; `AppState` mocked the way `store/savedStore.ts:86` is exercised):
   - With `deletion.state === 'none'`, `runDeletionIfDue` calls nothing.
   - With `pending` and `nextAttemptAt > now`, it calls nothing, but `{ force: true }` calls `deleteMe` once.
-  - On success, `AsyncStorage.removeItem('@khazain/community')` was called, the store equals the defaults, and `useGroupDetailStore('g1')` returns a fresh instance (the keyed maps were cleared).
+  - On success, `AsyncStorage.removeItem('@khazain/community')` was called, the store equals the defaults, and `groupDetailStore('g1')` returns a fresh instance (the keyed maps were cleared).
   - On `simulateError` (server), the state stays `pending` with `attempts: 1` and `nextAttemptAt === now + 60_000`, and the same `requestId` is reused on the next attempt.
   - A rejection with code `notFound`, and separately one with `auth`, wipes the store exactly like success.
   - An `AppState` change to `active` triggers exactly one run. Calling `startDeletionRunner()` twice registers one listener.

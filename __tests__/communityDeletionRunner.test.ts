@@ -7,7 +7,7 @@ import { makeApiError } from '@/services/api/errors';
 import { runDeletionIfDue, startDeletionRunner } from '@/services/community/deletionRunner';
 import { mockCommunityAdapter as mock } from '@/services/community/mockAdapter';
 import { resetMutations, useMutationStatusStore } from '@/store/communityMutations';
-import { resetCommunityStores, useGroupDetailStore } from '@/store/communityStores';
+import { resetCommunityStores, groupDetailStore } from '@/store/communityStores';
 import {
   defaultCommunity,
   ledgerPort,
@@ -96,11 +96,11 @@ describe('runDeletionIfDue', () => {
 
   it('wipes the store and the keyed read stores on success', async () => {
     pending(NOW);
-    const before = useGroupDetailStore('g1');
+    const before = groupDetailStore('g1');
     await runDeletionIfDue(NOW);
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith('@khazain/community');
     expect(plainState()).toEqual(defaultCommunity());
-    expect(useGroupDetailStore('g1')).not.toBe(before);
+    expect(groupDetailStore('g1')).not.toBe(before);
   });
 
   it('keeps the state pending after a server error and reuses the requestId', async () => {
@@ -129,22 +129,22 @@ describe('runDeletionIfDue', () => {
 
   it('still resets the read stores and mutations when removing the record rejects', async () => {
     pending(NOW);
-    const before = useGroupDetailStore('g1');
+    const before = groupDetailStore('g1');
     useMutationStatusStore.setState({ byKey: { 'createPost:L1': { inFlight: false, error: 'server' } } });
     (AsyncStorage.removeItem as jest.Mock).mockRejectedValueOnce(new Error('disk'));
     await runDeletionIfDue(NOW);
     expect(useMutationStatusStore.getState().byKey).toEqual({});
-    expect(useGroupDetailStore('g1')).not.toBe(before);
+    expect(groupDetailStore('g1')).not.toBe(before);
   });
 
   it.each(['notFound', 'auth'] as const)('treats a %s rejection as done and wipes', async (code) => {
     pending(NOW);
-    const before = useGroupDetailStore('g1');
+    const before = groupDetailStore('g1');
     deleteMe.mockRejectedValueOnce(makeApiError(code));
     await runDeletionIfDue(NOW);
     expect(AsyncStorage.removeItem).toHaveBeenCalledWith('@khazain/community');
     expect(plainState()).toEqual(defaultCommunity());
-    expect(useGroupDetailStore('g1')).not.toBe(before);
+    expect(groupDetailStore('g1')).not.toBe(before);
   });
 
   it('shares one attempt between overlapping callers', async () => {

@@ -144,6 +144,7 @@ describe('groups', () => {
       })),
     }));
     expect(await codeOf(join('HDY9P3'))).toBe('conflict');
+    expect(await join('HDY9P3').catch((e: { detail?: string }) => e.detail)).toBe('full');
   });
 
   it('refuses a 6th group with conflict', async () => {
@@ -152,6 +153,7 @@ describe('groups', () => {
     await join('NUR4M8');
     expect(await mock.groups.listMine()).toHaveLength(5);
     expect(await codeOf(join('HDY9P3'))).toBe('conflict');
+    expect(await join('HDY9P3').catch((e: { detail?: string }) => e.detail)).toBe('groupCap');
   });
 
   it('limits group creation to 3 per day', async () => {

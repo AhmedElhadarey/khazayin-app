@@ -194,7 +194,7 @@ function assertUnderRate(l: MockLedger, op: LogOp, memberId: string, windowMs: n
 /** Throws `conflict` when the member is already in the maximum number of groups. */
 function assertRoomForAnotherGroup(l: MockLedger, memberId: string): void {
   if (l.memberships.filter((m) => m.memberId === memberId).length >= COMMUNITY_LIMITS.groupsPerMember.max) {
-    throw makeApiError('conflict');
+    throw makeApiError('conflict', { detail: 'groupCap' });
   }
 }
 
@@ -467,7 +467,7 @@ export const mockCommunityAdapter: CommunityService = {
         if (myMembership(l, row.id, v.memberId)) return toGroup(l, row);
         assertUnderRate(l, 'join', v.memberId, DAY_MS, COMMUNITY_RATES.joinsPerDay);
         assertRoomForAnotherGroup(l, v.memberId);
-        if (memberIdsOf(l, row).length >= COMMUNITY_LIMITS.members.max) throw makeApiError('conflict');
+        if (memberIdsOf(l, row).length >= COMMUNITY_LIMITS.members.max) throw makeApiError('conflict', { detail: 'full' });
         commit((cur) => ({
           memberships: [
             ...cur.memberships,

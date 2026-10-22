@@ -50,6 +50,9 @@ export type ApiErrorCode =
  * existing <ErrorState message={error.message} /> components display
  * user-friendly text with zero changes.
  */
+/** Why a community join `conflict` happened: the group is full, or the member is at the 5-group cap. */
+export type JoinConflictDetail = 'full' | 'groupCap';
+
 export interface ApiError extends Error {
   /** Discriminated code for programmatic handling. */
   code: ApiErrorCode;
@@ -57,6 +60,8 @@ export interface ApiError extends Error {
   status?: number;
   /** True if the error is safe to retry (network, timeout, 429, 5xx). */
   retriable: boolean;
+  /** Machine-readable cause when one code has several (community join `conflict`). Never shown to the user. */
+  detail?: JoinConflictDetail;
 }
 
 // ---------------------------------------------------------------------------

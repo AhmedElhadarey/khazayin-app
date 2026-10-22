@@ -52,7 +52,8 @@ function warn(): void {
   if (__DEV__) console.warn('[community] progress sync failed');
 }
 
-async function ownCounts(c: Challenge): Promise<OwnProgress> {
+/** The member's own counts for one challenge; the group screen shows the same figures it pushes. */
+export async function ownCounts(c: Challenge): Promise<OwnProgress> {
   const pages = await progressRepo.distinctPagesSince(c.startsOn);
   const { pagesCovered } = ownKhatm(pages);
   if (c.kind === 'khatm') return { pagesCovered, daysMet: 0 }; // the mock rejects anything else

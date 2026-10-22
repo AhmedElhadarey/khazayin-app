@@ -1,6 +1,8 @@
 import fs from 'fs';
 import path from 'path';
 
+import { GROUP_ROW_ORDER } from '@/constants/rtlContracts';
+
 /**
  * The RTL contract, enforced on source text.
  *
@@ -51,9 +53,16 @@ const PINNED_SCREENS = [
   'app/(tabs)/more/settings.tsx',
   'app/(tabs)/more/community/index.tsx',
   'app/(tabs)/more/community/guidelines.tsx',
+  'app/(tabs)/more/community/create.tsx',
+  'app/(tabs)/more/community/join.tsx',
+  'app/(tabs)/more/community/group/[id].tsx',
   'app/(tabs)/sections/book/[id].tsx',
   'components/khazain/sheets/SheetRow.tsx',
   'components/khazain/community/PreviewBanner.tsx',
+  'components/khazain/community/GroupRow.tsx',
+  'components/khazain/community/MemberRow.tsx',
+  'components/khazain/community/ChallengeCard.tsx',
+  'components/khazain/community/ProgressBar.tsx',
   'components/khazain/settings/SettingsSection.tsx',
   // Onboarding. Not in the original sweep because it is the one flow the
   // captures never reached: the persisted `onboardingComplete` flag meant a
@@ -149,5 +158,24 @@ describe('PreviewBanner', () => {
   it('is a static text banner, not an alert', () => {
     expect(src).toMatch(/accessibilityRole="text"/);
     expect(src).not.toMatch(/accessibilityRole="alert"/);
+  });
+});
+
+describe('GroupRow and MemberRow', () => {
+  const group = code('components/khazain/community/GroupRow.tsx');
+  const member = code('components/khazain/community/MemberRow.tsx');
+
+  it('GroupRow authors its children in GROUP_ROW_ORDER inside a PHYSICAL_ROW', () => {
+    expect(group).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(group).toMatch(/GROUP_ROW_ORDER\.map\(/);
+  });
+
+  it('MemberRow pins its row and keeps the name at the physical right', () => {
+    expect(member).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(member).toMatch(/\.\.\.RTL_TEXT/);
+  });
+
+  it('freezes the group row order left to right', () => {
+    expect(GROUP_ROW_ORDER).toEqual(['disclosure', 'text', 'progress']);
   });
 });

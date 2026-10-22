@@ -152,6 +152,186 @@ describe('community screens under More', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// T8: group screens
+// ---------------------------------------------------------------------------
+
+const GROUP_SCREENS = [
+  'app/(tabs)/more/community/create.tsx',
+  'app/(tabs)/more/community/join.tsx',
+  'app/(tabs)/more/community/group/[id].tsx',
+];
+
+describe('group screens', () => {
+  it('are found by the screen walk, so the guard and banner scans cover them', () => {
+    expect(COMMUNITY_SCREENS).toEqual(expect.arrayContaining(GROUP_SCREENS));
+  });
+
+  it.each(GROUP_SCREENS)("%s needs an open community", (file) => {
+    expect(read(file)).toContain("useCommunityGuard('open')");
+  });
+
+  it.each(GROUP_SCREENS)('%s has no long-press and no row-reverse', (file) => {
+    expect(read(file)).not.toMatch(/onLongPress|row-reverse/);
+  });
+
+  it('registers the three routes in the More stack', () => {
+    const layout = read('app/(tabs)/more/_layout.tsx');
+    for (const name of ['community/create', 'community/join', 'community/group/[id]']) {
+      expect(layout).toContain(`name="${name}"`);
+    }
+  });
+
+  it('is reached through the exact paths the hub pushes', () => {
+    const hub = read('app/(tabs)/more/community/index.tsx');
+    expect(hub).toContain("'/(tabs)/more/community/create'");
+    expect(hub).toContain("'/(tabs)/more/community/join'");
+    expect(hub).toContain('`/(tabs)/more/community/group/${encodeURIComponent(id)}`');
+  });
+
+  describe('group/[id].tsx', () => {
+    const src = read('app/(tabs)/more/community/group/[id].tsx');
+
+    it('pushes progress from useFocusEffect', () => {
+      expect(src).toMatch(/useFocusEffect\(\s*useCallback\([\s\S]*?onGroupFocused\(/);
+    });
+
+    it('shows the share toggle and the reset help from the frozen copy', () => {
+      expect(src).toContain('COMMUNITY_COPY.shareProgress');
+      expect(src).toContain('COMMUNITY_COPY.resetHelp');
+      const copy = read('constants/communityCopy.ts');
+      expect(copy).toContain("'إظهار تقدّمي لأعضاء المجموعة'");
+      expect(copy).toContain("'لا ينقص التقدّم المُرسَل بعد إعادة تعيين القراءة'");
+    });
+
+    it('gates the totals through groupView and sums nothing itself', () => {
+      expect(src).toContain('groupView(');
+      expect(src).not.toMatch(/\.reduce\(/);
+    });
+
+    it('shares the code with Share.share inside a PHYSICAL_BOX', () => {
+      expect(src).toContain('Share.share(');
+      expect(src).toContain('PHYSICAL_BOX');
+    });
+
+    it('leaves through a destructive Alert and runMutation', () => {
+      expect(src).toContain("style: 'destructive'");
+      expect(src).toContain("runMutation('leaveGroup'");
+    });
+
+    it('fetches the detail only while the guard allows the screen', () => {
+      expect(src).toMatch(/if \(allowed && !leaveGuard\.current\.left\) void fetchDetail\(\)/);
+    });
+
+    it('has no empty-state prop: the detail store has no empty state', () => {
+      expect(src).not.toContain('emptyMessage=');
+    });
+
+    it('sends the share toggle through runMutation', () => {
+      expect(src).toContain("runMutation('setShareMyProgress'");
+    });
+  });
+
+  describe('create.tsx and join.tsx', () => {
+    const create = read('app/(tabs)/more/community/create.tsx');
+    const join = read('app/(tabs)/more/community/join.tsx');
+
+    it('filters the group name with the adab filter', () => {
+      expect(create).toMatch(/checkText\([^)]*'groupName'\)/);
+    });
+
+    it('creates and starts through runMutation and reports the challenge', () => {
+      expect(create).toMatch(/runMutation\(\s*'createGroup'/);
+      expect(create).toMatch(/runMutation\(\s*'startChallenge'/);
+      expect(create).toContain('onChallengeJoined(');
+    });
+
+    it('joins through runMutation, uppercased, with the code length cap', () => {
+      expect(join).toContain("runMutation('joinGroup'");
+      expect(join).toContain('normalizeJoinCode(');
+      expect(join).not.toContain('maxLength=');
+      expect(join).toContain('onChallengeJoined(');
+    });
+
+    it('sets error state only while the generation is current', () => {
+      for (const src of [create, join]) {
+        expect(src).toMatch(/catch \(e\) \{\s*if \(gen === communityGeneration\(\)\) \{?\s*setError\(/);
+      }
+    });
+
+    it('keeps the code field in the fixed input row', () => {
+      expect(join).toContain('styles.inputRow');
+    });
+  });
+
+  it('pins direction on the scroll content so inherited-RTL texts align right', () => {
+    // A Text with RTL_TEXT directly in the content (or AsyncContent's fade wrapper)
+    // is not inside any PHYSICAL_BOX and renders on the physical left on native.
+    const styleBody = (src: string, key: string) =>
+      src.match(new RegExp(`\\n  ${key}: \\{[^}]*\\}`))?.[0] ?? '';
+    for (const file of GROUP_SCREENS) {
+      expect(styleBody(read(file), 'content')).toContain('...PHYSICAL_BOX');
+    }
+    expect(styleBody(read('app/(tabs)/more/community/group/[id].tsx'), 'body')).toContain('...PHYSICAL_BOX');
+  });
+
+  it('resolves the group detail store once per screen, outside render', () => {
+    const src = read('app/(tabs)/more/community/group/[id].tsx');
+    expect(src).toMatch(/useState\(\(\) => groupDetailStore\(groupId\)\)/);
+    expect(src).not.toMatch(/=\s*groupDetailStore\(groupId\);/);
+  });
+
+  it('leaves through the guarded runner and creates through the retrying flow', () => {
+    expect(read('app/(tabs)/more/community/group/[id].tsx')).toContain('runLeave(');
+    expect(read('app/(tabs)/more/community/create.tsx')).toContain('runCreateFlow(');
+  });
+
+  it('does not wait for the progress report before navigating', () => {
+    const create = read('app/(tabs)/more/community/create.tsx');
+    expect(create).not.toMatch(/await onChallengeJoined\(/);
+    expect(create).toMatch(/router\.replace\([^;]*;\s*void onChallengeJoined\(/);
+    const join = read('app/(tabs)/more/community/join.tsx');
+    expect(join).not.toMatch(/await reportJoined\(/);
+    expect(join).toMatch(/router\.replace\([^;]*;\s*void reportJoined\(/);
+  });
+
+  it('keys the focus push on the challenge id', () => {
+    expect(read('app/(tabs)/more/community/group/[id].tsx')).toMatch(/\[challenge\?\.id\]/);
+  });
+
+  it('picker options are radios with a checked state', () => {
+    const src = read('app/(tabs)/more/community/create.tsx');
+    expect(src).toContain('accessibilityRole="radio"');
+    expect(src).toMatch(/accessibilityState=\{\{ checked:/);
+    expect(src).not.toMatch(/accessibilityState=\{\{ selected/);
+  });
+
+  it('ProgressBar is a progressbar with a value', () => {
+    const src = read('components/khazain/community/ProgressBar.tsx');
+    expect(src).toContain('accessibilityRole="progressbar"');
+    expect(src).toContain('accessibilityValue');
+  });
+
+  it('GroupRow spreads PHYSICAL_ROW and authors its children in GROUP_ROW_ORDER', () => {
+    const src = read('components/khazain/community/GroupRow.tsx');
+    expect(src).toContain('...PHYSICAL_ROW');
+    expect(src).toContain('GROUP_ROW_ORDER');
+  });
+
+  it('exports the four components from the community barrel', () => {
+    const barrel = read('components/khazain/community/index.ts');
+    for (const name of ['GroupRow', 'ChallengeCard', 'ProgressBar', 'MemberRow']) {
+      expect(barrel).toContain(name);
+    }
+  });
+
+  it('keeps the seeded join codes out of every file except the seed', () => {
+    const files = SOURCE_DIRS_ALL.flatMap(walk).filter((f) => !f.endsWith('data/community/seed.ts'));
+    const hits = files.filter((f) => /KHZ7Q2|NUR4M8|HDY9P3/.test(read(f)));
+    expect(hits).toEqual([]);
+  });
+});
+
 describe('Settings community section', () => {
   const src = read('app/(tabs)/more/settings.tsx');
 
