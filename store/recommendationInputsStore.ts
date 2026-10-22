@@ -14,7 +14,7 @@ import {
   shouldLoadCatalogue,
   toCatalogueSnapshot,
 } from '@/services/recommendations/catalogue';
-import type { ActivityInput, CatalogueSnapshot } from '@/services/recommendations/types';
+import type { ActivityInput, CatalogueSnapshot, CatalogueStatus } from '@/services/recommendations/types';
 import type { Lecture, LoadState } from '@/types/content';
 import { useBooksStore } from './booksStore';
 import {
@@ -31,7 +31,7 @@ import {
   useScholarsStore,
 } from './scholarStore';
 
-export type CatalogueStatus = 'idle' | 'loading' | 'ready' | 'aborted';
+export type { CatalogueStatus };
 
 const POOL_SIZE = 4;
 /** Longest a store already mid-fetch elsewhere is waited for. */
@@ -73,7 +73,7 @@ type RecommendationInputsState = {
   activity: ActivityInput | null;
   catalogue: CatalogueSnapshot | null;
   catalogueStatus: CatalogueStatus;
-  /** Clock for the engine. Set only by refreshActivity (the feature's one clock read). */
+  /** Clock for the engine. Seeded at store creation; refreshed by refreshActivity. */
   nowMs: number;
   refreshActivity: () => Promise<void>;
   loadCatalogue: (args: { signalCount: number; contextSurah?: number | null }) => Promise<void>;
@@ -146,7 +146,7 @@ export const useRecommendationInputsStore = create<RecommendationInputsState>((s
   activity: null,
   catalogue: null,
   catalogueStatus: 'idle',
-  nowMs: 0,
+  nowMs: Date.now(),
 
   refreshActivity: async () => {
     const now = Date.now();

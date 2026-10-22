@@ -8,6 +8,9 @@
 import type { Book, Lecture, Scholar } from '@/types/content';
 import type { TopicId } from '@/constants/recommendationTopics';
 
+/** Where the catalogue load stands (design §7.4). */
+export type CatalogueStatus = 'idle' | 'loading' | 'ready' | 'aborted';
+
 export type SignalKind = 'saved' | 'note' | 'listened' | 'completed' | 'read';
 
 export type SignalTarget =

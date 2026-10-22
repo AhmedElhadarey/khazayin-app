@@ -266,6 +266,10 @@ describe('activity (T6)', () => {
     expect(m.useRecommendationInputsStore.getState().nowMs).toBe(1_000_000_000_000);
   });
 
+  it('seeds nowMs at store creation, so a fresh store is never at epoch 0', () => {
+    expect(m.useRecommendationInputsStore.getState().nowMs).toBeGreaterThan(0);
+  });
+
   it('skips the DB when progressStore.dbFailed is set', async () => {
     m.useProgressStore.setState({ dbFailed: true });
     await m.useRecommendationInputsStore.getState().refreshActivity();

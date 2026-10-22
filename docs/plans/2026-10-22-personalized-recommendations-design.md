@@ -340,7 +340,7 @@ Persist key `@khazain/recommendations`, through `createJSONStorage(() => AsyncSt
 ```
 
 **`refreshActivity()` (C6/S9)**
-- It awaits `getRepos()` before touching `lectureRepo` / `progressRepo`. Those are Proxies that throw before hydration (`db/index.ts:69-80`); the pattern is at `mushaf.tsx:90-95`. It then reads `listRecent(50)` and `recentPageReads(now − 120d, 604)` and sets `nowMs = Date.now()`. This is the **only clock read** in the feature.
+- It awaits `getRepos()` before touching `lectureRepo` / `progressRepo`. Those are Proxies that throw before hydration (`db/index.ts:69-80`); the pattern is at `mushaf.tsx:90-95`. It then reads `listRecent(50)` and `recentPageReads(now − 120d, 604)` and sets `nowMs = Date.now()`. `nowMs` is seeded at store creation; refreshed by `refreshActivity`. Nothing else in the feature reads the clock.
 - On error, or when `progressStore.dbFailed` is set (`store/progressStore.ts:171`), it sets `activity = { sessions: [], pageReads: [], failed: true }`. The engine then runs on saved items and notes only.
 - **Triggers:** Home focus (`useFocusEffect`), Mushaf mount, and once when `progressStore.ready` turns `true` (`progressStore.ts:53,165`). The ready trigger lives in the inputs store, not in a screen. `startActivityWatch()` subscribes with `useProgressStore.subscribe` and calls `refreshActivity()` on a `false → true` transition, or at once if `ready` is already `true`. It is called once from `app/_layout.tsx` next to the existing hydration. The v1 `totalPagesRead` / `listenedLectureCount` triggers are removed. Activity that happens while Home stays focused (MiniPlayer playing on Home) appears on the next focus. This is accepted.
 
