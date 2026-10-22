@@ -23,7 +23,13 @@ import {
   surahMetaLine,
   type TextLine,
 } from '@/services/mushafNavigation';
-import { captureReadingAnchor, restoreOffset, type ReadingAnchor } from '@/services/mushafAnchor';
+import {
+  RESTORE_TTL_MS,
+  captureReadingAnchor,
+  resolvePendingRestore,
+  type PendingRestore,
+  type ReadingAnchor,
+} from '@/services/mushafAnchor';
 import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -270,7 +276,7 @@ function ReadingView({
   // key change below turns it into `pendingRestoreRef` until the page it names
   // reports its new layout.
   const anchorRef = useRef<ReadingAnchor | null>(null);
-  const pendingRestoreRef = useRef<ReadingAnchor | null>(null);
+  const pendingRestoreRef = useRef<PendingRestore | null>(null);
 
   const tryScroll = useCallback(() => {
     if (targetAyah == null) {
@@ -304,6 +310,34 @@ function ReadingView({
     tryScroll();
   }, [tryScroll]);
 
+  // Settles a pending place restore from whatever is known now. Runs from the
+  // key-change effect, every segment layout, every scroll and when the content
+  // changes, so it never waits on one particular event order.
+  const settlePending = useCallback(() => {
+    const pending = pendingRestoreRef.current;
+    if (!pending) return;
+    const res = resolvePendingRestore(
+      pending,
+      ayatStatus === 'success' && segments.some((s) => s.page === pending.anchor.page),
+      layoutsRef.current.get(pending.anchor.page),
+      bodyYRef.current,
+      Date.now(),
+    );
+    if (res.action === 'wait') return;
+    pendingRestoreRef.current = null;
+    if (res.action === 'restore') scrollRef.current?.scrollTo({ y: res.offset, animated: false });
+  }, [ayatStatus, segments]);
+
+  // Page unmounted by a refresh / retry, or segments changed: drop a stale restore.
+  useEffect(() => {
+    settlePending();
+  }, [settlePending]);
+
+  // The user took over: whatever was pending is no longer wanted.
+  const cancelPending = useCallback(() => {
+    pendingRestoreRef.current = null;
+  }, []);
+
   // Rotation / Split View changes the sheet width or the scaled font, so the
   // text reflows and the old offset points at other text. Keep the place:
   //  - a linked ayah is re-armed and scrolled to again once the new
@@ -315,14 +349,21 @@ function ReadingView({
   useEffect(() => {
     if (prevTypeKeyRef.current === typeKey) return;
     prevTypeKeyRef.current = typeKey;
+    // Phones keep today's scroll behaviour exactly.
+    if (!isTablet) return;
     if (targetAyah != null) {
       scrolledAyahRef.current = null;
       scrolledPreciseRef.current = false;
       tryScroll();
     } else {
-      pendingRestoreRef.current = anchorRef.current;
+      const anchor = anchorRef.current;
+      pendingRestoreRef.current = anchor
+        ? { anchor, deadline: Date.now() + RESTORE_TTL_MS }
+        : null;
+      // The reflow's onLayout can land before this passive effect: settle now.
+      settlePending();
     }
-  }, [typeKey, targetAyah, tryScroll]);
+  }, [typeKey, isTablet, targetAyah, tryScroll, settlePending]);
 
   // A note's label inside this screen re-targets the scroll. The same ayah
   // is re-armed explicitly because the param would not change.
@@ -389,11 +430,15 @@ function ReadingView({
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={250}
         onLayout={(e) => tracking.setViewportHeight(e.nativeEvent.layout.height)}
+        onScrollBeginDrag={cancelPending}
+        onMomentumScrollBegin={cancelPending}
         onScroll={(e) => {
           tracking.onScroll(e.nativeEvent.contentOffset.y, Date.now());
           const y = e.nativeEvent.contentOffset.y;
           // Frozen while a restore is pending: the reflow itself emits scroll
           // events that would overwrite the place with the clamped one.
+          if (!isTablet) return;
+          settlePending();
           if (!pendingRestoreRef.current) {
             anchorRef.current = captureReadingAnchor(
               y,
@@ -440,14 +485,7 @@ function ReadingView({
                   const { y, height } = e.nativeEvent.layout;
                   tracking.setSegmentLayout(segment.page, y, height);
                   layoutsRef.current.set(segment.page, { y, height });
-                  const pending = pendingRestoreRef.current;
-                  if (pending && pending.page === segment.page) {
-                    pendingRestoreRef.current = null;
-                    scrollRef.current?.scrollTo({
-                      y: restoreOffset(pending, bodyYRef.current, { y, height }),
-                      animated: false,
-                    });
-                  }
+                  settlePending();
                   tryScroll();
                 }}
                 onTextLayout={(e) => {
