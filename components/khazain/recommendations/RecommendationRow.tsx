@@ -36,7 +36,8 @@ export function RecommendationRow({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={`إخفاء الاقتراح: ${rec.title}`}
-        // Widens the target into the gap on the card's side only.
+        // hitSlop is physical: the button sits at the row's physical left (READING_ROW),
+        // so this widens it outward into the screen gutter and never over the card.
         hitSlop={{ left: 15 }}
         onPress={() => dismissRecommendation(rec, { announce: screenReaderOn })}
         style={({ pressed }) => [styles.dismiss, pressed && { opacity: 0.6 }]}
