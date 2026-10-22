@@ -44,8 +44,14 @@ describe('formatRelativeAr', () => {
     [21 * DAY, 'قبل ٣ أسابيع'],
     [49 * DAY, 'قبل ٧ أسابيع'],
     [70 * DAY, 'قبل ١٠ أسابيع'],
-    [77 * DAY, 'قبل ١١ أسبوع'],
-    [364 * DAY, 'قبل ٥٢ أسبوع'],
+    [77 * DAY, 'قبل ١١ أسبوعًا'],
+    [364 * DAY, 'قبل ٥٢ أسبوعًا'],
+    // 11-99 take the accusative, 100+ the bare noun, and the last two digits decide plural
+    [693 * DAY, 'قبل ٩٩ أسبوعًا'],
+    [700 * DAY, 'قبل ١٠٠ أسبوع'],
+    [707 * DAY, 'قبل ١٠١ أسبوع'],
+    [721 * DAY, 'قبل ١٠٣ أسابيع'],
+    [777 * DAY, 'قبل ١١١ أسبوعًا'],
   ])('%d ms ago reads «%s»', (ms, expected) => {
     expect(at(ms)).toBe(expected);
   });
