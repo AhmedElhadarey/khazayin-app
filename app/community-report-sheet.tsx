@@ -59,28 +59,25 @@ export default function CommunityReportSheet() {
   const router = useRouter();
   const { height, fontScale } = useWindowDimensions();
   const insets = useSafeAreaInsets();
+  // Set when the keyboard shows; consumed by the list's next layout.
+  const revealOnResize = useRef(false);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
   useEffect(() => {
     // `will` events run with the animation on iOS; Android only emits `did`.
     const show = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
     const hide = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const a = Keyboard.addListener(show, (e) => setKeyboardHeight(e.endCoordinates.height));
+    const a = Keyboard.addListener(show, (e) => {
+      // The list is about to shrink; iOS Fabric does not keep the focused child visible.
+      revealOnResize.current = true;
+      setKeyboardHeight(e.endCoordinates.height);
+    });
     const b = Keyboard.addListener(hide, () => setKeyboardHeight(0));
     return () => {
       a.remove();
       b.remove();
     };
   }, []);
-  const listMaxHeight = reportListMaxHeight({
-    windowHeight: height,
-    topInset: insets.top,
-    bottomInset: insets.bottom,
-    keyboardHeight,
-    fontScale,
-  });
-  const scroller = useRef<ScrollView>(null);
-  // Set when «سبب آخر» is picked; consumed once the note field has been laid out.
-  const revealNote = useRef(false);
+
   const params = useLocalSearchParams<{ postId?: string | string[] }>();
   const postId = typeof params.postId === 'string' ? params.postId : '';
   // Read once: a refresh of the thread behind the sheet must not pull its target away.
@@ -90,6 +87,18 @@ export default function CommunityReportSheet() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const guard = useRef(newGuard());
+
+  const listMaxHeight = reportListMaxHeight({
+    windowHeight: height,
+    topInset: insets.top,
+    bottomInset: insets.bottom,
+    keyboardHeight,
+    fontScale,
+    errorShown: !!error,
+  });
+  const scroller = useRef<ScrollView>(null);
+  // Set when «سبب آخر» is picked; consumed once the note field has been laid out.
+  const revealNote = useRef(false);
 
   // Closing twice (a backdrop tap while the report is in flight, then its success) would pop the thread too.
   const latch = useRef({ closed: false });
@@ -158,6 +167,12 @@ export default function CommunityReportSheet() {
             style={{ maxHeight: listMaxHeight }}
             contentContainerStyle={styles.rows}
             keyboardShouldPersistTaps="handled"
+            onLayout={() => {
+              // The keyboard resized the list: the offset it kept may now hide the note.
+              if (!revealOnResize.current) return;
+              revealOnResize.current = false;
+              if (reason === 'other') scroller.current?.scrollToEnd({ animated: true });
+            }}
             onContentSizeChange={() => {
               if (!revealNote.current) return;
               revealNote.current = false;
@@ -189,6 +204,7 @@ export default function CommunityReportSheet() {
                     setNote(next);
                     setError(null);
                   }}
+                  onFocus={() => scroller.current?.scrollToEnd({ animated: true })}
                   multiline
                   textAlign="right"
                   accessibilityLabel={COMMUNITY_COPY.reportNoteLabel}

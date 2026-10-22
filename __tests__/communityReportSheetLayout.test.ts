@@ -2,39 +2,50 @@ import fs from 'fs';
 import path from 'path';
 import {
   REPORT_CHROME_RESERVE,
+  REPORT_ERROR_RESERVE,
   REPORT_LIST_MIN_HEIGHT,
   reportListMaxHeight,
   shouldRevealNote,
 } from '@/services/community/reportSheetLayout';
 
 describe('reportListMaxHeight', () => {
-  const phone = { windowHeight: 800, topInset: 24, bottomInset: 0, fontScale: 1 };
+  const phone = { windowHeight: 800, topInset: 24, bottomInset: 0, fontScale: 1, errorShown: false };
 
   it('keeps the original half-height cap while there is room', () => {
     expect(reportListMaxHeight({ ...phone, keyboardHeight: 0 })).toBe(400);
   });
 
-  it('shrinks the list so the title stays below the status bar when the keyboard is open', () => {
-    const h = reportListMaxHeight({ windowHeight: 844, topInset: 47, bottomInset: 34, fontScale: 1, keyboardHeight: 336 });
-    expect(h).toBe(844 - 47 - 336 - REPORT_CHROME_RESERVE);
-    // Everything stacked (chrome + list + keyboard) fits under the status bar.
-    expect(h + REPORT_CHROME_RESERVE + 336 + 47).toBeLessThanOrEqual(844);
+  it('reserves keyboard + bottom inset (the sheet shell still pads its safe area above the keyboard)', () => {
+    const h = reportListMaxHeight({ windowHeight: 844, topInset: 47, bottomInset: 34, fontScale: 1, errorShown: false, keyboardHeight: 336 });
+    expect(h).toBe(844 - 47 - (336 + 34) - REPORT_CHROME_RESERVE);
+    expect(h + REPORT_CHROME_RESERVE + 336 + 34 + 47).toBeLessThanOrEqual(844);
   });
 
-  it('reserves more chrome at large font scales', () => {
-    const a = reportListMaxHeight({ ...phone, keyboardHeight: 300 });
-    const b = reportListMaxHeight({ ...phone, keyboardHeight: 300, fontScale: 1.3 });
-    expect(b).toBeLessThan(a);
+  it('reserves more chrome at large font scales, capped at 1.5x', () => {
+    const base = { ...phone, windowHeight: 1000, keyboardHeight: 300 };
+    const one = reportListMaxHeight(base);
+    const big = reportListMaxHeight({ ...base, fontScale: 1.3 });
+    expect(one - big).toBeCloseTo(REPORT_CHROME_RESERVE * 0.3);
+    const cap = reportListMaxHeight({ ...base, fontScale: 1.5 });
+    expect(one - cap).toBeCloseTo(REPORT_CHROME_RESERVE * 0.5);
+    expect(reportListMaxHeight({ ...base, fontScale: 2 })).toBe(cap);
   });
 
-  it('never collapses below a couple of rows', () => {
+  it('reserves room for the error line when it is shown', () => {
+    const base = { ...phone, keyboardHeight: 300 };
+    expect(reportListMaxHeight(base) - reportListMaxHeight({ ...base, errorShown: true })).toBe(REPORT_ERROR_RESERVE);
+  });
+
+  it('never collapses below two rows', () => {
+    expect(REPORT_LIST_MIN_HEIGHT).toBeGreaterThanOrEqual(2 * 56 + 8);
     expect(reportListMaxHeight({ ...phone, windowHeight: 500, keyboardHeight: 400 })).toBe(REPORT_LIST_MIN_HEIGHT);
   });
 
-  it('accounts for the bottom inset when no keyboard is shown', () => {
-    const noInset = reportListMaxHeight({ windowHeight: 500, topInset: 0, bottomInset: 0, fontScale: 1, keyboardHeight: 0 });
-    const inset = reportListMaxHeight({ windowHeight: 500, topInset: 0, bottomInset: 60, fontScale: 1, keyboardHeight: 0 });
-    expect(inset).toBeLessThanOrEqual(noInset);
+  it('subtracts exactly the bottom inset when no keyboard is shown', () => {
+    const at = (bottomInset: number) =>
+      reportListMaxHeight({ windowHeight: 500, topInset: 0, bottomInset, fontScale: 1, errorShown: false, keyboardHeight: 0 });
+    expect(at(0)).toBe(240);
+    expect(at(60)).toBe(180);
   });
 });
 
@@ -62,6 +73,13 @@ describe('report sheet wiring', () => {
     expect(src).toMatch(/scrollToEnd\(/);
     const scroller = src.slice(src.indexOf('<ScrollView'), src.indexOf('</ScrollView>'));
     expect(scroller).not.toMatch(/<PillButton/);
+  });
+
+  it('scrolls the note back into view when the field is focused or the list is resized by the keyboard', () => {
+    expect(src).toMatch(/onFocus=\{/);
+    expect(src).toMatch(/onLayout=\{/);
+    expect(src.match(/scrollToEnd\(/g)!.length).toBeGreaterThanOrEqual(2);
+    expect(src).toMatch(/errorShown:/);
   });
 
   it('keeps the keyboard avoidance and shows a scroll indicator', () => {
