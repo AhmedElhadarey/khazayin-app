@@ -66,6 +66,8 @@ const COLUMN_SCREENS: ColumnSpec[] = [
   { file: `${M}/about.tsx`, scroll: 1, header: true, blocks: true },
   { file: `${M}/archive.tsx`, scroll: 1, header: true },
   { file: `${M}/contact.tsx`, scroll: 1, header: true, blocks: true },
+  { file: `${M}/community/index.tsx`, scroll: 1, header: true },
+  { file: `${M}/community/guidelines.tsx`, scroll: 1, header: true },
   { file: `${M}/settings.tsx`, scroll: 1 },
   { file: `${M}/settings-progress.tsx`, scroll: 1, header: true },
   { file: "app/settings-about.tsx", scroll: 1 },

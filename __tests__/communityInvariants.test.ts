@@ -116,3 +116,88 @@ describe('N1: the mock adapter is reachable only through the __DEV__ require', (
     expect(hits).toEqual([]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// T7b: guard, banner, Settings section and deletion-runner wiring
+// ---------------------------------------------------------------------------
+
+const COMMUNITY_SCREENS = walk('app/(tabs)/more/community').filter((f) => f.endsWith('.tsx'));
+
+describe('community screens under More', () => {
+  it('finds the hub and the guidelines screen', () => {
+    expect(COMMUNITY_SCREENS).toEqual(
+      expect.arrayContaining([
+        'app/(tabs)/more/community/index.tsx',
+        'app/(tabs)/more/community/guidelines.tsx',
+      ]),
+    );
+  });
+
+  it.each(COMMUNITY_SCREENS)('%s calls useCommunityGuard(', (file) => {
+    expect(read(file)).toContain('useCommunityGuard(');
+  });
+
+  it.each(COMMUNITY_SCREENS)('%s renders <PreviewBanner', (file) => {
+    expect(read(file)).toContain('<PreviewBanner');
+  });
+
+  it.each(COMMUNITY_SCREENS)('%s opts in only through enrollMember', (file) => {
+    expect(read(file)).not.toMatch(/\.optIn\(|members\.(register|rename)/);
+  });
+
+  it('registers the hub and the guidelines screen in the More stack', () => {
+    const layout = read('app/(tabs)/more/_layout.tsx');
+    expect(layout).toContain('name="community/index"');
+    expect(layout).toContain('name="community/guidelines"');
+  });
+});
+
+describe('Settings community section', () => {
+  const src = read('app/(tabs)/more/settings.tsx');
+
+  it('uses the frozen copy for the three entry strings', () => {
+    for (const key of ['joinCommunity', 'participate', 'deletionPending']) {
+      expect(src).toContain(`COMMUNITY_COPY.${key}`);
+    }
+    const copy = read('constants/communityCopy.ts');
+    for (const s of ['الانضمام إلى المجتمع', 'المشاركة في المجتمع', 'جارٍ حذف بياناتك في المجتمع']) {
+      expect(copy).toContain(`'${s}'`);
+    }
+  });
+
+  it('mounts the section exactly once, behind the mode check', () => {
+    expect(src.match(/<CommunitySettingsSection/g)).toHaveLength(1);
+    expect(src).toContain("{COMMUNITY_MODE !== 'off' ? <CommunitySettingsSection /> : null}");
+  });
+
+  it('renders the section only when the mode is not off', () => {
+    expect(src).toMatch(/COMMUNITY_MODE !== 'off'/);
+    const at = src.indexOf("COMMUNITY_MODE !== 'off'");
+    expect(src.indexOf('COMMUNITY_COPY.settingsSection')).toBeGreaterThan(at);
+    expect(src.indexOf('COMMUNITY_COPY.deleteMyData')).toBeGreaterThan(at);
+  });
+
+  it('confirms the deletion with a destructive Alert', () => {
+    const from = src.indexOf('Alert.alert(COMMUNITY_COPY.deleteMyData');
+    expect(from).toBeGreaterThan(-1);
+    const call = src.slice(from, src.indexOf(']);', from));
+    expect(call).toContain('COMMUNITY_COPY.deleteConfirmBody');
+    expect(call.match(/style: 'destructive'/g)).toHaveLength(1);
+  });
+});
+
+describe('deletion runner wiring', () => {
+  it('starts once in the root layout', () => {
+    expect(read('app/_layout.tsx').match(/startDeletionRunner\(\)/g)).toHaveLength(1);
+  });
+
+  it('is a no-op in off mode', () => {
+    expect(read('services/community/deletionRunner.ts')).toMatch(/COMMUNITY_MODE === 'off'/);
+  });
+});
+
+describe('community name checks', () => {
+  it('adab-checks the name in the enrollment flow', () => {
+    expect(read('services/community/enrollment.ts')).toMatch(/checkText\([^)]*'name'\)/);
+  });
+});

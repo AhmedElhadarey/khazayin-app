@@ -554,6 +554,13 @@ Production builds render no community UI, so every Figma capture is unaffected. 
     - phone «لا يُسمح بأرقام الهواتف حفاظًا على الخصوصية»
     - term «يُرجى مراجعة الصياغة بما يليق بأدب الحوار»
     - repetition «يُرجى تجنّب تكرار الأحرف أو الكلمات»
+  - Added with the hub, Settings section and deletion runner (T7b), also pending Foundation review:
+    - `screenTitle` «المجتمع»
+    - `myGroups` «مجموعاتي», `noGroupsYet` «لم تنضمّ إلى أي مجموعة بعد»
+    - `createGroup` «إنشاء مجموعة», `joinWithCode` «الانضمام برمز»
+    - `deleteConfirmBody` «سيُحذف اسمك ومشاركاتك وعضويتك في المجموعات من المجتمع نهائيًا، ولا يمكن التراجع عن ذلك.»
+    - `mutedMemberLabel(n)` «عضو مكتوم {n}» (names are never stored, so muted members are numbered)
+    - `dueNow` «الآن» (the pending-deletion row when the next attempt is already due)
 
 ### 8.7 Tablet
 - `columnStyle` goes on `contentContainerStyle` and on `InlineHeader`, and `inputRow` takes `columnStyle` where it is set.

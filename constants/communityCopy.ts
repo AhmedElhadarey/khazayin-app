@@ -21,6 +21,7 @@ export const COMMUNITY_COPY = Object.freeze({
   previewBanner: 'بيانات تجريبية للمعاينة — الأعضاء والمشاركات هنا ليست حقيقية',
   scholarDiscussions: 'نقاشات دروس الشيخ',
   // Intro (pending Foundation review)
+  screenTitle: 'المجتمع',
   introTitle: 'مجتمع خزائن الرحمن',
   introBody:
     'انضم إلى مجموعة قراءة مع أهلك وأصحابك، فاختموا القرآن معًا أو التزموا وردًا يوميًا، وتدارسوا الدروس في نقاشات يحكمها أدب طالب العلم.',
@@ -42,6 +43,10 @@ export const COMMUNITY_COPY = Object.freeze({
     repetition: 'يُرجى تجنّب تكرار الأحرف أو الكلمات',
   }),
   // Groups
+  myGroups: 'مجموعاتي',
+  noGroupsYet: 'لم تنضمّ إلى أي مجموعة بعد',
+  createGroup: 'إنشاء مجموعة',
+  joinWithCode: 'الانضمام برمز',
   badCode: 'رمز غير صحيح أو منتهٍ',
   full: 'المجموعة مكتملة',
   challengeStarts: 'تُحتسب الصفحات المقروءة من تاريخ بدء التحدي',
@@ -82,6 +87,9 @@ export const COMMUNITY_COPY = Object.freeze({
   pauseNote: 'إيقاف المشاركة يخفي المجتمع ولا يحذف بياناتك.',
   deletionPending: 'جارٍ حذف بياناتك في المجتمع',
   retryNow: 'إعادة المحاولة الآن',
+  dueNow: 'الآن',
+  deleteConfirmBody:
+    'سيُحذف اسمك ومشاركاتك وعضويتك في المجموعات من المجتمع نهائيًا، ولا يمكن التراجع عن ذلك.',
   deletionLostToken: 'تعذّر التحقق من حسابك. راسلنا من "تواصل معنا" لحذف بياناتك',
   // Errors (mirror services/api/errors.ts)
   moderation: 'لم تُنشر المشاركة لأنها تخالف إرشادات المجتمع. يُرجى مراجعتها.',
@@ -114,4 +122,9 @@ export function reportA11y(name: string): string {
 }
 export function muteA11y(name: string): string {
   return `كتم ${name}`;
+}
+
+/** Row label for a muted member; names are never stored, so the row is numbered. */
+export function mutedMemberLabel(n: number): string {
+  return `عضو مكتوم ${toArabicDigits(n)}`;
 }

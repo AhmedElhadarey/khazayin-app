@@ -1,11 +1,19 @@
 import { InlineHeader, ListRowCard } from '@/components/khazain';
 import { HeaderArt } from '@/components/khazain/patterns';
-import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
+import { SettingsSection, SettingsToggleRow, SettingsValueRow } from '@/components/khazain/settings';
+import { COMMUNITY_COPY, mutedMemberLabel, nextAttemptCopy } from '@/constants/communityCopy';
 import { toArabicDigits as toArNum } from '@/constants/progress';
+import { arabicCopyForCode } from '@/services/api/errors';
+import { COMMUNITY_MODE } from '@/services/community/config';
+import { runDeletionIfDue } from '@/services/community/deletionRunner';
+import { GUIDELINES_VERSION } from '@/services/community/gate';
+import { useCommunityLocalStore } from '@/store/communityLocalStore';
 import { PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
 import { useWirdStore } from '@/store/wirdStore';
 import { KhazainConfig } from '@/constants/config';
-import { KhazainColors } from '@/constants/theme';
+import { PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { clearAppCache } from '@/services/cacheFacade';
 import { shareNotes } from '@/services/notesExporter';
 import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
@@ -25,7 +33,7 @@ import type { FontSizeLevel } from '@/types/settings';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet } from 'react-native';
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
@@ -242,6 +250,7 @@ export default function SettingsScreen() {
             onPress={onExportNotes}
           />
         </SettingsSection>
+        {COMMUNITY_MODE !== 'off' ? <CommunitySettingsSection /> : null}
         <SettingsSection title="قانوني">
           <ListRowCard
             variant="more"
@@ -271,6 +280,160 @@ export default function SettingsScreen() {
         ) : null}
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+const COMMUNITY_HUB = '/(tabs)/more/community';
+
+/** «hh:mm» in Arabic-Indic digits, local time. */
+function clockLabel(ms: number): string {
+  const d = new Date(ms);
+  return `${toArNum(String(d.getHours()).padStart(2, '0'))}:${toArNum(String(d.getMinutes()).padStart(2, '0'))}`;
+}
+
+/**
+ * The «المجتمع» section (design §8.3). Rendered by the screen only when the
+ * community mode is not `off`, so a production build shows nothing new.
+ */
+function CommunitySettingsSection() {
+  const router = useRouter();
+  const profile = useCommunityLocalStore((s) => s.profile);
+  const optedIn = useCommunityLocalStore((s) => s.prefs.optedIn);
+  const guidelinesVersion = useCommunityLocalStore((s) => s.prefs.guidelinesVersion);
+  const acceptedAt = useCommunityLocalStore((s) => s.prefs.acceptedAt);
+  const deletion = useCommunityLocalStore((s) => s.deletion);
+  const muted = useCommunityLocalStore((s) => s.mutedMemberIds);
+  const [mutedOpen, setMutedOpen] = React.useState(false);
+
+  const onParticipate = (next: boolean) => {
+    const store = useCommunityLocalStore.getState();
+    if (!next) return store.pause();
+    // A stale acceptance goes back through the hub, where the member re-accepts.
+    // Safe to call optIn directly only because enrollMember records the
+    // acceptance (acceptedAt > 0) after the service has registered the member:
+    // a profile with a current acceptance is a registered one.
+    if (profile && acceptedAt > 0 && guidelinesVersion >= GUIDELINES_VERSION) store.optIn(profile.displayName);
+    else router.push(COMMUNITY_HUB as any);
+  };
+
+  const onDelete = () => {
+    Alert.alert(COMMUNITY_COPY.deleteMyData, COMMUNITY_COPY.deleteConfirmBody, [
+      { text: 'إلغاء', style: 'cancel' },
+      {
+        text: COMMUNITY_COPY.deleteMyData,
+        style: 'destructive',
+        onPress: () => {
+          const now = Date.now();
+          useCommunityLocalStore.getState().beginDeletion(now);
+          void runDeletionIfDue(now, { force: true });
+        },
+      },
+    ]);
+  };
+
+  if (deletion.state === 'pending') {
+    return (
+      <SettingsSection title={COMMUNITY_COPY.settingsSection}>
+        {/* A status, not a button: ListRowCard is always a pressable. */}
+        <StatusRow
+          title={COMMUNITY_COPY.deletionPending}
+          lines={[
+            nextAttemptCopy(
+              deletion.nextAttemptAt <= Date.now() ? COMMUNITY_COPY.dueNow : clockLabel(deletion.nextAttemptAt),
+            ),
+            ...(deletion.lastError ? [arabicCopyForCode(deletion.lastError)] : []),
+          ]}
+          icon={<TrashIcon />}
+        />
+        <ListRowCard
+          variant="more"
+          title={COMMUNITY_COPY.retryNow}
+          subtitle=""
+          icon={<CommunityIcon />}
+          onPress={() => void runDeletionIfDue(Date.now(), { force: true })}
+        />
+      </SettingsSection>
+    );
+  }
+
+  return (
+    <SettingsSection title={COMMUNITY_COPY.settingsSection}>
+      {profile ? (
+        <SettingsToggleRow
+          title={COMMUNITY_COPY.participate}
+          description={COMMUNITY_COPY.pauseNote}
+          icon={<CommunityIcon />}
+          value={optedIn && guidelinesVersion >= GUIDELINES_VERSION}
+          onValueChange={onParticipate}
+        />
+      ) : (
+        <ListRowCard
+          variant="more"
+          title={COMMUNITY_COPY.joinCommunity}
+          subtitle=""
+          icon={<CommunityIcon />}
+          onPress={() => router.push(COMMUNITY_HUB as any)}
+        />
+      )}
+      {muted.length > 0 ? (
+        <>
+          <SettingsValueRow
+            title={COMMUNITY_COPY.mutedMembers}
+            value={toArNum(muted.length)}
+            icon={<AboutIcon />}
+            expanded={mutedOpen}
+            onPress={() => setMutedOpen((v) => !v)}
+          />
+          {mutedOpen
+            ? muted.map((id, i) => (
+                <SettingsValueRow
+                  key={id}
+                  title={mutedMemberLabel(i + 1)}
+                  value={COMMUNITY_COPY.unmute}
+                  icon={<AboutIcon />}
+                  onPress={() => useCommunityLocalStore.getState().unmute(id)}
+                />
+              ))
+            : null}
+        </>
+      ) : null}
+      {profile ? (
+        <ListRowCard
+          variant="more"
+          title={COMMUNITY_COPY.deleteMyData}
+          subtitle=""
+          icon={<TrashIcon />}
+          onPress={onDelete}
+        />
+      ) : null}
+    </SettingsSection>
+  );
+}
+
+function StatusRow({ title, lines, icon }: { title: string; lines: string[]; icon: React.ReactNode }) {
+  return (
+    <View accessible accessibilityLabel={[title, ...lines].join('، ')} style={styles.statusCard}>
+      {/* Physical left → right: text, icon chip. The box pins the text to the physical right. */}
+      <View style={styles.statusText}>
+        <Text style={styles.statusTitle}>{title}</Text>
+        {lines.map((l) => (
+          <Text key={l} style={styles.statusLine}>
+            {l}
+          </Text>
+        ))}
+      </View>
+      <View style={styles.statusChip}>{icon}</View>
+    </View>
+  );
+}
+
+function CommunityIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path d="M9 11a3 3 0 100-6 3 3 0 000 6zM3 19a6 6 0 0112 0" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
+      <Path d="M16 6.5a2.5 2.5 0 010 5M17.5 14.5A5 5 0 0121 19" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
+    </Svg>
   );
 }
 
@@ -451,4 +614,27 @@ function ExportIcon() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
+  statusCard: {
+    ...PHYSICAL_ROW,
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: KhazainColors.cardBg,
+    borderWidth: 1,
+    borderColor: KhazainColors.cardBorder,
+    ...KhazainShadows.card,
+  },
+  statusText: { ...PHYSICAL_BOX, flex: 1, minWidth: 0, gap: 2 },
+  statusTitle: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }) },
+  statusLine: { ...RTL_TEXT, ...textStyle('caption', { color: KhazainColors.inkSubtle }) },
+  statusChip: {
+    width: 48,
+    aspectRatio: 1,
+    borderRadius: 24,
+    backgroundColor: KhazainColors.iconChipBg,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

@@ -10,6 +10,7 @@ import {
   cooldownCopy,
   daysMetLabel,
   khatmLabel,
+  mutedMemberLabel,
 } from '@/constants/communityCopy';
 import { COMMUNITY_GUIDELINES, GUIDELINES_TITLE } from '@/constants/communityGuidelines';
 import { GUIDELINES_VERSION } from '@/services/community/gate';
@@ -141,5 +142,18 @@ describe('guidelines', () => {
       'تُراجَع المشاركات وقد تُخفى المخالفة منها، ويُوقف من يتكرر منه ذلك.',
       'إن رأيت ما يخالف هذه الإرشادات فاستخدم «إبلاغ» بدلًا من الردّ.',
     ]);
+  });
+});
+
+describe('T7b copy', () => {
+  it('pins the strings the design review added', () => {
+    expect(COMMUNITY_COPY.deleteConfirmBody).toBe(
+      'سيُحذف اسمك ومشاركاتك وعضويتك في المجموعات من المجتمع نهائيًا، ولا يمكن التراجع عن ذلك.',
+    );
+    expect(COMMUNITY_COPY.myGroups).toBe('مجموعاتي');
+    expect(COMMUNITY_COPY.noGroupsYet).toBe('لم تنضمّ إلى أي مجموعة بعد');
+    expect(COMMUNITY_COPY.screenTitle).toBe('المجتمع');
+    expect(COMMUNITY_COPY.dueNow).toBe('الآن');
+    expect(mutedMemberLabel(3)).toBe('عضو مكتوم ٣');
   });
 });

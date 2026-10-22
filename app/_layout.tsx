@@ -22,6 +22,7 @@ import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
 import { shouldSuppressWirdNotification } from '@/services/wirdReminder';
 import { toLocalDay } from '@/constants/progress';
 import { startCommunityProgressSync } from '@/services/community/progressSync';
+import { startDeletionRunner } from '@/services/community/deletionRunner';
 import { registerCacheRoot } from '@/services/cacheFacade';
 import { registerPlaybackService, restoreLastLecture, setupPlayer } from '@/services/audioEngine';
 import { registerPlaybackListeners } from '@/services/audioEngine/syncBridge';
@@ -308,6 +309,9 @@ function RootLayout() {
         });
       },
     });
+    // Independent of the progress DB: a pending community deletion must still
+    // retry when that hydrate fails. Idempotent, and a no-op in `off` mode.
+    startDeletionRunner();
     Promise.all([
       useProgressStore.getState().hydrate(),
       useWirdStore.getState().hydrate(),
