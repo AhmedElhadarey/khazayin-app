@@ -374,3 +374,52 @@ export function railListGeometry(layout: Pick<ResponsiveLayout, 'isTablet' | 're
   if (!layout.isTablet) return { list: { flex: 1, ...padding }, inner: undefined, edge, railStyle };
   return { list: { flex: 1 }, inner: padding, edge, railStyle };
 }
+
+/**
+ * iPadOS 26 draws its window controls over the top leading corner of a windowed
+ * or tiled app (the system's leading side, not the app's: they mirror to the
+ * top-right only when the system language is right-to-left). They sit about
+ * 62pt in from the window edge; with a 16pt header gutter this clears them.
+ */
+export const WINDOW_CONTROLS_CLEARANCE = 60;
+/** iPadOS 17 and 18 have no corner window controls; their Split View keeps the full width. */
+export const WINDOW_CONTROLS_MIN_IOS = 26;
+
+const RTL_LANGUAGES = new Set(['ar', 'he', 'iw', 'fa', 'ur', 'ps', 'ug', 'yi', 'ckb', 'dv', 'sd']);
+
+/** Whether a BCP-47 tag's primary language is written right-to-left. */
+export function isRtlLanguage(tag: string | undefined): boolean {
+  return !!tag && RTL_LANGUAGES.has(tag.split(/[-_]/)[0].toLowerCase());
+}
+
+/** Whether the first of iOS's `AppleLanguages` (the system language) is right-to-left. */
+export function systemRtlFrom(appleLanguages: unknown): boolean {
+  return Array.isArray(appleLanguages) && isRtlLanguage(String(appleLanguages[0] ?? ''));
+}
+
+/**
+ * Extra physical padding a top header row needs so the window controls do not
+ * cover its controls. Zero unless an iPad app runs in a window smaller than
+ * the screen, on iPadOS 26 or later. (A Stage Manager window on an external
+ * display can also be smaller than the iPad's screen and gets the clearance
+ * too; harmless, it only adds space.) Asymmetric on purpose: apply it only inside a node pinned to
+ * `direction: 'ltr'` (`PHYSICAL_ROW`), where `paddingLeft` is the physical left.
+ */
+export function windowControlsInset(p: {
+  os: string;
+  /** `Platform.Version`: the iOS version string, e.g. '26.5'. */
+  osVersion: string | number;
+  isPad: boolean;
+  window: { width: number; height: number };
+  screen: { width: number; height: number };
+  systemRtl: boolean;
+}): HorizontalInsets {
+  const windowed = p.window.width < p.screen.width || p.window.height < p.screen.height;
+  const major = parseInt(String(p.osVersion), 10);
+  if (p.os !== 'ios' || !p.isPad || !windowed || !(major >= WINDOW_CONTROLS_MIN_IOS)) {
+    return { left: 0, right: 0 };
+  }
+  return p.systemRtl
+    ? { left: 0, right: WINDOW_CONTROLS_CLEARANCE }
+    : { left: WINDOW_CONTROLS_CLEARANCE, right: 0 };
+}
