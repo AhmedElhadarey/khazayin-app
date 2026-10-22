@@ -60,15 +60,10 @@ const IBN_BIN_RE = /(^|\s)ابن(\s|$)/g;
 const WHITESPACE_RE = /\s+/g;
 
 /**
- * Normalises a string for Arabic-aware substring search.
- * Empty input returns empty string. Idempotent (normalize(normalize(x)) === normalize(x)).
- *
- * @example
- * normalize('سُورَة الفَاتِحَة') // → 'سوره الفاتحه'
- * normalize('Quran ٢') // → 'quran 2'
- * normalize('  ابن   باز  ') // → 'بن باز'
+ * Steps 1-9 as a function. `ibnBin` toggles step 3.5; search keeps it on,
+ * other callers (the community adab filter) turn it off.
  */
-export function normalize(input: string): string {
+export function foldArabic(input: string, opts: { ibnBin: boolean }): string {
   if (!input) return '';
 
   let s = input;
@@ -83,7 +78,7 @@ export function normalize(input: string): string {
   s = s.replace(HAMZA_ALEF_RE, 'ا');
 
   // Step 3.5: ابن → بن (whole word)
-  s = s.replace(IBN_BIN_RE, '$1بن$2');
+  if (opts.ibnBin) s = s.replace(IBN_BIN_RE, '$1بن$2');
 
   // Step 4: other hamza carriers → bare hamza
   s = s.replace(HAMZA_CARRIER_RE, 'ء');
@@ -104,4 +99,17 @@ export function normalize(input: string): string {
   s = s.replace(WHITESPACE_RE, ' ').trim();
 
   return s;
+}
+
+/**
+ * Normalises a string for Arabic-aware substring search.
+ * Empty input returns empty string. Idempotent (normalize(normalize(x)) === normalize(x)).
+ *
+ * @example
+ * normalize('سُورَة الفَاتِحَة') // → 'سوره الفاتحه'
+ * normalize('Quran ٢') // → 'quran 2'
+ * normalize('  ابن   باز  ') // → 'بن باز'
+ */
+export function normalize(input: string): string {
+  return foldArabic(input, { ibnBin: true });
 }
