@@ -16,13 +16,19 @@ describe('topicsForTitle', () => {
   });
   it('maps the sunnah and worship-fiqh titles a first save can hit', () => {
     expect(topicsForTitle('الإعجاز العلمي في السنة النبوية', 'book')).toEqual(['hadith']);
-    expect(topicsForTitle('الأحاديث النبوية المختارة')).toEqual(['hadith']);
     expect(topicsForTitle('فقه العبادات')).toEqual(['fiqh']);
     expect(topicsForTitle('فقه العبادات', 'prophet')).toEqual(['fiqh']);
     expect(topicsForTitle('شرح الأربعين النووية', 'book')).toEqual(['hadith']);
     expect(topicsForTitle('شرح ثلاثة الأصول', 'book')).toEqual(['tawhid']);
     expect(topicsForTitle('تهذيب سيرة ابن هشام', 'general')).toEqual(['seerah']);
     expect(topicsForTitle('الرحيق المختوم', 'general')).toEqual(['seerah']);
+  });
+  it('matches the common spellings of the arba\'in and usul titles', () => {
+    expect(topicsForTitle('شرح الأربعون النووية', 'book')).toEqual(['hadith']);
+    expect(topicsForTitle('شرح الأصول الثلاثة', 'book')).toEqual(['tawhid']);
+  });
+  it('covers an API-only title keyword that no shipped catalogue row uses yet', () => {
+    expect(topicsForTitle('الأحاديث النبوية المختارة')).toEqual(['hadith']);
   });
   it('does not widen onto bare words', () => {
     expect(topicsForTitle('إضاءات على طريق العباد')).toEqual([]);

@@ -19,11 +19,14 @@ export const RECOMMENDATION_TOPICS = Object.freeze({
   sahihayn: topic('الصحيحين', ['صحيح البخاري', 'صحيح مسلم']),
   fatawa: topic('الفتاوى', ['فتاوى', 'نور على الدرب', 'لقاء الباب المفتوح']),
   fiqh: topic('الفقه', ['زاد المستقنع', 'آيات الأحكام', 'فقه العبادات']),
-  tawhid: topic('التوحيد والعقيدة', ['التوحيد', 'العقيدة', 'اقتضاء الصراط المستقيم', 'معارج القبول', 'ثلاثة الأصول']),
+  tawhid: topic('التوحيد والعقيدة', ['التوحيد', 'العقيدة', 'اقتضاء الصراط المستقيم', 'معارج القبول', 'ثلاثة الأصول', 'الأصول الثلاثة']),
   seerah: topic('السيرة النبوية', ['السيرة', 'زاد المعاد', 'سيرة ابن هشام', 'الرحيق المختوم']),
   // Added beyond the original eight so every topical archive-backed series
   // maps (coverage test). Phrases only, never a bare word.
-  hadith: topic('شروح السنن والحديث', ['شرح سنن', 'الأدب المفرد', 'السنة النبوية', 'الأحاديث النبوية', 'الأربعين النووية']),
+  // 'الأحاديث النبوية' is forward cover for API titles: no shipped catalogue row
+  // uses it today. 'الأربعين'/'الأربعون' and the two word orders of the usul
+  // title are the common spellings.
+  hadith: topic('شروح السنن والحديث', ['شرح سنن', 'الأدب المفرد', 'السنة النبوية', 'الأحاديث النبوية', 'الأربعين النووية', 'الأربعون النووية']),
   adhkar: topic('الأذكار والأدعية', ['فقه الأدعية والأذكار']),
 });
 
