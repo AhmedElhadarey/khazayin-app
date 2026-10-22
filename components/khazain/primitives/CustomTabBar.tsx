@@ -3,7 +3,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PHYSICAL_ROW, TAB_BAR, TAB_PHYSICAL_ORDER } from '@/constants/layout';
-import { centredColumn, miniPlayerMaxWidth, tabBarRow } from '@/constants/responsive';
+import { miniPlayerColumn, tabItemStyle, tabRowColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
 import {
@@ -57,7 +57,7 @@ const TAB_META: Record<
  */
 export function MiniPlayerDock() {
   const insets = useSafeAreaInsets();
-  const { width, isTablet } = useResponsiveLayout();
+  const { width, sideInsets } = useResponsiveLayout();
   const isVisible = usePlayerStoreLocal((s) => s.isVisible);
   const track = usePlayerStoreLocal((s) => s.track);
   if (!isVisible || !track) return null;
@@ -65,7 +65,7 @@ export function MiniPlayerDock() {
     <View
       style={[
         styles.miniPlayerWrap,
-        isTablet && centredColumn(miniPlayerMaxWidth(width) ?? width, insets),
+        miniPlayerColumn(width, sideInsets),
         { marginBottom: 8 + insets.bottom },
       ]}
     >
@@ -76,13 +76,12 @@ export function MiniPlayerDock() {
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
-  const { width, isTablet } = useResponsiveLayout();
-  const tabRow = tabBarRow(width);
-  // Tablets only. The bar itself stays full-bleed; the controls and the
-  // MiniPlayer centre in the area between the side insets (non-zero on Android
-  // landscape), so they sit under the content column rather than the cutout.
-  const rowColumn = isTablet && tabRow.maxWidth !== undefined ? centredColumn(tabRow.maxWidth, insets) : undefined;
-  const playerColumn = isTablet ? centredColumn(miniPlayerMaxWidth(width) ?? width, insets) : undefined;
+  const { width, sideInsets } = useResponsiveLayout();
+  // Tablets only. The bar stays full-bleed; the controls and the MiniPlayer
+  // centre between the side insets (non-zero on Android landscape).
+  const rowColumn = tabRowColumn(width, sideInsets);
+  const playerColumn = miniPlayerColumn(width, sideInsets);
+  const itemStyle = tabItemStyle(width);
 
   const routesByName = new Map(state.routes.map((r) => [r.name, r]));
   const activeRouteName = state.routes[state.index]?.name;
@@ -123,7 +122,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityRole="button"
                 accessibilityState={active ? { selected: true } : {}}
                 accessibilityLabel={label}
-                style={[styles.tabWrap, isTablet && { maxWidth: tabRow.itemWidth }]}
+                style={[styles.tabWrap, itemStyle]}
               >
                 <View style={[styles.item, active && styles.itemActive]}>
                   {active ? <View style={styles.indicator} /> : null}

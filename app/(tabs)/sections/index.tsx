@@ -51,7 +51,7 @@ export default function SectionsScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <HeaderArt />
+      <HeaderArt inset={insets.right + gutter} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}

@@ -38,6 +38,13 @@ describe('responsiveLayout', () => {
     expect(notched.reading.inset).toBe(10 + 16);
   });
 
+  it('echoes the side insets', () => {
+    expect(responsiveLayout(1076, 768, { left: 12, right: 44 }).sideInsets).toEqual({
+      left: 12,
+      right: 44,
+    });
+  });
+
   it('subtracts both insets from the width', () => {
     expect(responsiveLayout(700, 500, { left: 20, right: 30 }).width).toBe(650);
   });

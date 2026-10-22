@@ -1,7 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { centredColumn, sheetMaxWidth } from '@/constants/responsive';
+import { sheetColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { KhazainColors } from '@/constants/theme';
 
@@ -16,9 +16,9 @@ export function SheetShell({
   onClose: () => void;
   children: React.ReactNode;
 }) {
-  const { width, isTablet } = useResponsiveLayout();
+  const { width, sideInsets } = useResponsiveLayout();
   // Tablets: a centred 600pt card, still pinned to the bottom by `root`.
-  const column = isTablet ? centredColumn(sheetMaxWidth(width) ?? width) : undefined;
+  const column = sheetColumn(width, sideInsets);
   return (
     <View style={styles.root}>
       <Pressable

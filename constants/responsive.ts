@@ -166,6 +166,43 @@ export function sheetMaxWidth(w: number): number | undefined {
   return isTabletWidth(w) ? SHEET_MAX : undefined;
 }
 
+/*
+ * Tablet chrome styles. Each is `undefined` on phones, so a call site spreads
+ * it into a style array and a phone renders exactly what it did before.
+ * `w` is the available width (window minus side insets), `sideInsets` the
+ * insets the column centres between.
+ */
+function tabletColumn(
+  w: number,
+  maxWidth: number | undefined,
+  sideInsets: HorizontalInsets,
+): ViewStyle | undefined {
+  return isTabletWidth(w) && maxWidth !== undefined
+    ? centredColumn(maxWidth, sideInsets)
+    : undefined;
+}
+
+export function miniPlayerColumn(w: number, sideInsets: HorizontalInsets): ViewStyle | undefined {
+  return tabletColumn(w, miniPlayerMaxWidth(w), sideInsets);
+}
+
+export function tabRowColumn(w: number, sideInsets: HorizontalInsets): ViewStyle | undefined {
+  return tabletColumn(w, tabBarRow(w).maxWidth, sideInsets);
+}
+
+export function tabItemStyle(w: number): ViewStyle | undefined {
+  return isTabletWidth(w) ? { maxWidth: tabBarRow(w).itemWidth } : undefined;
+}
+
+export function sheetColumn(w: number, sideInsets: HorizontalInsets): ViewStyle | undefined {
+  return tabletColumn(w, sheetMaxWidth(w), sideInsets);
+}
+
+/** The note editor's tablet minimum height; a phone keeps its `'50%'`. */
+export function noteEditorSheetExtra(w: number, h: number): ViewStyle | undefined {
+  return isTabletWidth(w) ? { minHeight: Math.min(h * 0.5, 420) } : undefined;
+}
+
 /**
  * Column styles for the reading and Home columns. `{}` on phones: a phone
  * screen already pads its content, and a `maxWidth` on top would shrink it
@@ -193,6 +230,8 @@ export interface ResponsiveLayout {
   columnStyle: ViewStyle;
   homeColumnStyle: ViewStyle;
   splitPane: { side: number; gap: number } | null;
+  /** The safe-area insets the available width excludes. */
+  sideInsets: HorizontalInsets;
 }
 
 /** Everything `useResponsiveLayout` returns, as a pure function of the window. */
@@ -213,5 +252,6 @@ export function responsiveLayout(
     columnStyle,
     homeColumnStyle,
     splitPane: splitPane(width, height),
+    sideInsets: { left: insets.left, right: insets.right },
   };
 }
