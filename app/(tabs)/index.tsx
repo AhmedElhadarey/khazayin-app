@@ -34,8 +34,11 @@ import {
   useScholarsStore,
 } from '@/store';
 import { signalCountNow } from '@/services/recommendations/signalCount';
+import { watchSignals } from '@/services/recommendations/watchSignals';
 import { openSearch } from '@/services/searchNavigation';
+import { useNotesStore } from '@/store/notesStore';
 import { useRecommendationInputsStore } from '@/store/recommendationInputsStore';
+import { useSavedStore } from '@/store/savedStore';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef } from 'react';
@@ -108,9 +111,26 @@ export default function HomeScreen() {
     };
   }, [fetchScholars, fetchBooks, fetchDawah]);
 
+  // A save, note or activity change while Home stays focused re-attempts the
+  // load once the first-fetch gate is open (§7.4). The helper checks the gate;
+  // tryLoadCatalogue returns early after ready/aborted.
+  useEffect(() => {
+    if (!RECOMMENDATIONS_ENABLED) return;
+    return watchSignals(
+      [
+        (l) => useSavedStore.subscribe(l),
+        (l) => useNotesStore.subscribe(l),
+        (l) =>
+          useRecommendationInputsStore.subscribe((state, prev) => {
+            if (state.activity !== prev.activity) l();
+          }),
+      ],
+      () => catalogueGateOpen.current,
+      tryLoadCatalogue,
+    );
+  }, []);
+
   // Activity that happened elsewhere shows on the next focus (§7.4).
-  // A first signal created while Home stays focused shows on the next focus too
-  // (accepted in recommendations design §7.4).
   useFocusEffect(
     useCallback(() => {
       if (RECOMMENDATIONS_ENABLED) {

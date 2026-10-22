@@ -32,4 +32,13 @@ describe('Home recommended-for-you wiring', () => {
     );
     expect(src).toMatch(/refreshActivity\(\)[\s\S]{0,160}\.catch\(/);
   });
+
+  it('re-attempts the load when a signal source changes while Home stays focused', () => {
+    expect(src).toContain('useSavedStore.subscribe(');
+    expect(src).toContain('useNotesStore.subscribe(');
+    expect(src).toContain('useRecommendationInputsStore.subscribe(');
+    expect(src).toMatch(/watchSignals\(/);
+    expect(src).toMatch(/\(\) => catalogueGateOpen\.current,\s*tryLoadCatalogue/);
+    expect(src).not.toMatch(/shows on the next focus too/);
+  });
 });
