@@ -292,6 +292,12 @@ describe('recommend', () => {
     expect(out[0].reason).toBe(`لأنك حفظت «${'ا'.repeat(32)}…»`);
   });
 
+  it('never leaves a space before the ellipsis when the cut lands after one', () => {
+    const long = `${'ا'.repeat(31)} ${'ب'.repeat(10)}`;
+    const out = recommend([saved('sl5-2', long)], index, NOW, none, 3);
+    expect(out[0].reason).toBe(`لأنك حفظت «${'ا'.repeat(31)}…»`);
+  });
+
   it('collapses whitespace in reason labels before cutting', () => {
     const out = recommend([saved('sl5-2', '1-\tعنوان  الكتاب')], index, NOW, none, 3);
     expect(out[0].reason).toBe('لأنك حفظت «1- عنوان الكتاب»');

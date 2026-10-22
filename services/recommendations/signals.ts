@@ -9,6 +9,7 @@ import { isListened } from '@/db/helpers/lectureCompletion';
 import { surahName } from '@/constants/progress';
 import { LISTEN_LIMIT } from '@/constants/recommendations';
 import { archiveIdOfEpisode, isEpisodeId } from '@/services/noteRefs';
+import type { Lecture } from '@/types/content';
 import { cmp, surahsRead } from './recommend';
 import type {
   ActivityInput,
@@ -37,7 +38,7 @@ const surahNumber = (id: string): number | undefined => {
 };
 
 /** The catalogue lecture for an id, or its archive series for an episode id. */
-function resolveLecture(id: string, index: CatalogueIndex) {
+function resolveLecture(id: string, index: CatalogueIndex): Lecture | undefined {
   const archiveId = isEpisodeId(id) ? archiveIdOfEpisode(id) : undefined;
   return index.byLectureId.get(id) ?? (archiveId ? index.byArchiveId.get(archiveId) : undefined);
 }
@@ -103,8 +104,9 @@ function fromSession(s: SessionInput, index: CatalogueIndex): Signal | undefined
   const kind: SignalKind = s.completed ? 'completed' : 'listened';
   // The reason names what the user thinks they listened to: the catalogue
   // series title when the id resolves, else the session's own title.
-  const label = resolveLecture(s.lectureId, index)?.title || s.title;
-  return { kind, target: lectureTarget(s.lectureId, index, s.title), atMs: s.lastListenedAt, label };
+  const target = lectureTarget(s.lectureId, index, s.title);
+  const label = (target.type === 'lecture' && target.title) || s.title;
+  return { kind, target, atMs: s.lastListenedAt, label };
 }
 
 export function toSignals(

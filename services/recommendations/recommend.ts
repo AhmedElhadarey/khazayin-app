@@ -260,7 +260,7 @@ const byOrder = (a: Cand, b: Cand): number =>
 // label is measured, so a raw title cannot put a TAB into the reason.
 const cut = (raw: string): string => {
   const label = raw.replace(/\s+/g, ' ').trim();
-  return label.length > REASON_LABEL_MAX ? `${label.slice(0, REASON_LABEL_MAX)}…` : label;
+  return label.length > REASON_LABEL_MAX ? `${label.slice(0, REASON_LABEL_MAX).trimEnd()}…` : label;
 };
 
 function reasonFor(c: Cand, live: readonly Resolved[]): string {

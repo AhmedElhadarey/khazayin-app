@@ -2,7 +2,7 @@ import { toSignals } from '@/services/recommendations/signals';
 import { indexCatalogue, recommend, surahLastPage } from '@/services/recommendations/recommend';
 import { makeAyahRef, makeBookRef, makeLectureRef } from '@/services/noteRefs';
 import { SURAH_START_PAGES } from '@/constants/progress';
-import { LISTEN_LIMIT } from '@/constants/recommendations';
+import { LISTEN_LIMIT, RECOMMENDATION_COPY } from '@/constants/recommendations';
 import type { SavedItem, SavedSnapshot, SavedType } from '@/types/content';
 import type { Note } from '@/store/notesStore';
 import type { LectureSession } from '@/db/types';
@@ -118,6 +118,18 @@ describe('toSignals', () => {
     const [s] = toSignals([], [], { sessions: [raw], pageReads: [], failed: false }, index);
     expect(s.label).toBe(series.title);
     expect(s.label).not.toContain('\t');
+  });
+
+  it('names the catalogue series in the reason for a tab-titled listening session', () => {
+    const series = index.byArchiveId.get('485_20210705')!;
+    const raw = { ...session(60, false, NOW - 1000), title: '1-\tعنوان\tالكتاب ومحتواه' };
+    const signals = toSignals([], [], { sessions: [raw], pageReads: [], failed: false }, index);
+    const out = recommend(signals, index, NOW, new Set(), 20);
+    expect(out.length).toBeGreaterThan(0);
+    const expected = RECOMMENDATION_COPY.reasonListened(series.title);
+    expect(expected).toBe('لأنك استمعت إلى «تفسير القرآن الكريم»');
+    expect(out.find((r) => r.reason === expected)).toBeDefined();
+    for (const r of out) expect(r.reason).not.toContain('\t');
   });
 
   it('keeps the session title when nothing resolves', () => {
