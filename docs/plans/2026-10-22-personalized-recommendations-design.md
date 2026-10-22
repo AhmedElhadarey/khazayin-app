@@ -188,10 +188,10 @@ export const RECOMMENDATION_TOPICS = Object.freeze({
   bulugh:   { label: 'بلوغ المرام',      keywords: ['بلوغ المرام'] },
   sahihayn: { label: 'الصحيحين',         keywords: ['صحيح البخاري', 'صحيح مسلم'] },
   fatawa:   { label: 'الفتاوى',          keywords: ['فتاوى', 'نور على الدرب'] },
-  fiqh:     { label: 'الفقه',            keywords: ['زاد المستقنع', 'آيات الأحكام'] },
-  tawhid:   { label: 'التوحيد والعقيدة', keywords: ['التوحيد', 'العقيدة'] },
-  seerah:   { label: 'السيرة النبوية',   keywords: ['السيرة', 'زاد المعاد'] },
-  hadith:   { label: 'شروح السنن والحديث', keywords: ['شرح سنن', 'الأدب المفرد'] },
+  fiqh:     { label: 'الفقه',            keywords: ['زاد المستقنع', 'آيات الأحكام', 'فقه العبادات'] },
+  tawhid:   { label: 'التوحيد والعقيدة', keywords: ['التوحيد', 'العقيدة', 'ثلاثة الأصول'] },
+  seerah:   { label: 'السيرة النبوية',   keywords: ['السيرة', 'زاد المعاد', 'سيرة ابن هشام', 'الرحيق المختوم'] },
+  hadith:   { label: 'شروح السنن والحديث', keywords: ['شرح سنن', 'الأدب المفرد', 'السنة النبوية', 'الأحاديث النبوية', 'الأربعين النووية'] },
   adhkar:   { label: 'الأذكار والأدعية', keywords: ['فقه الأدعية والأذكار'] },
 } as const);
 export const SCHOLAR_ONLY_SERIES: ReadonlySet<string>; // read-only archiveIds, see §5.2
@@ -199,7 +199,7 @@ export const CATEGORY_FALLBACK_TOPIC: Partial<Record<Lecture['category'], TopicI
 export function topicsForTitle(title: string, category?: Lecture['category']): TopicId[];
 ```
 
-- `hadith` and `adhkar` were added to the original eight: the archive-backed catalogue has the four Sunan commentaries, الأدب المفرد and فقه الأدعية والأذكار, which fit no existing topic, and the coverage test (§5.2) requires every topical series to map. Existing topics also gained `لقاء الباب المفتوح` (fatawa) and `اقتضاء الصراط المستقيم` / `معارج القبول` (tawhid).
+- `hadith` and `adhkar` were added to the original eight: the archive-backed catalogue has the four Sunan commentaries, الأدب المفرد and فقه الأدعية والأذكار, which fit no existing topic, and the coverage test (§5.2) requires every topical series to map. Later additions, all full phrases, so a first save of a book or lecture titled by them yields a topic: `فقه العبادات` (fiqh), `ثلاثة الأصول` (tawhid), `سيرة ابن هشام` and `الرحيق المختوم` (seerah), `السنة النبوية`, `الأحاديث النبوية` and `الأربعين النووية` (hadith). Titles with no safe phrase stay unmapped (e.g. `إضاءات على طريق العباد`). Existing topics also gained `لقاء الباب المفتوح` (fatawa) and `اقتضاء الصراط المستقيم` / `معارج القبول` (tawhid).
 - The map, each topic object and each keyword array are deep-frozen.
 - Both sides go through `normalize()` (`services/search/normalize.ts:71`), and keywords match as substrings. Ambiguous single words are never keywords: `زاد` alone would merge fiqh and seerah. Results are de-duplicated, in map key order.
 - The category fallback applies only when no keyword matched. `prophet` is not reliably seerah: `p4 تفسير القرآن الكريم` is in that category (`data/content/lectures.ts:26`).

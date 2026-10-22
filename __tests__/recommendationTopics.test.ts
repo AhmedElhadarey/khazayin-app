@@ -14,6 +14,21 @@ describe('topicsForTitle', () => {
     expect(topicsForTitle('شرح زاد المستقنع')).toEqual(['fiqh']);
     expect(topicsForTitle('مختصر زاد المعاد')).toEqual(['seerah']);
   });
+  it('maps the sunnah and worship-fiqh titles a first save can hit', () => {
+    expect(topicsForTitle('الإعجاز العلمي في السنة النبوية', 'book')).toEqual(['hadith']);
+    expect(topicsForTitle('الأحاديث النبوية المختارة')).toEqual(['hadith']);
+    expect(topicsForTitle('فقه العبادات')).toEqual(['fiqh']);
+    expect(topicsForTitle('فقه العبادات', 'prophet')).toEqual(['fiqh']);
+    expect(topicsForTitle('شرح الأربعين النووية', 'book')).toEqual(['hadith']);
+    expect(topicsForTitle('شرح ثلاثة الأصول', 'book')).toEqual(['tawhid']);
+    expect(topicsForTitle('تهذيب سيرة ابن هشام', 'general')).toEqual(['seerah']);
+    expect(topicsForTitle('الرحيق المختوم', 'general')).toEqual(['seerah']);
+  });
+  it('does not widen onto bare words', () => {
+    expect(topicsForTitle('إضاءات على طريق العباد')).toEqual([]);
+    expect(topicsForTitle('فقه المعاملات')).toEqual([]);
+    expect(topicsForTitle('صفة الصفوة', 'general')).toEqual([]);
+  });
   it('uses the category only when no keyword matched', () => {
     expect(topicsForTitle('غزوة بدر', 'prophet')).toEqual(['seerah']);
     expect(topicsForTitle('تفسير القرآن الكريم', 'prophet')).toEqual(['tafsir']);
