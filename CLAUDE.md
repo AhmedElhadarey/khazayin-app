@@ -336,6 +336,7 @@ npx tsc --noEmit       # type-check — use this liberally, it's fast
 - On-device visual QA is the only way to verify RTL layout, font rendering, and the floating MiniPlayer. Typecheck and lint pass doesn't mean it renders correctly.
 - **An icon can be the right geometry and still be wrong.** The file uses one component in two orientations and puts the flip on the *instance* (`transform.m00: -1`), never on the SYMBOL master the generator copies. `FigmaIcon`'s `mirrored` prop carries it; `__tests__/figmaIcons.test.ts` pins which call sites set it.
 - **`alignItems: 'flex-end'` and `textAlign: 'right'` mean the physical LEFT** in a container whose direction is left to `forceRTL`, and `flexDirection: 'row-reverse'` on such a row renders left→right. Spread `PHYSICAL_BOX` / `PHYSICAL_ROW` from `constants/layout.ts`. Guarded by `__tests__/rtlPhysicalContract.test.ts`.
+- **Don't shrink-wrap Arabic titles on Android.** Android 15+ (targetSdk ≥ 35) breaks lines by glyph ink bounds while RN 0.81 measures by advances, so a shrink-wrapped Text can lose its last word with no ellipsis. Give titles full width (`alignItems: 'stretch'` / `alignSelf: 'stretch'`) and right-align via `textStyle`, not `flex-end`. Upstream fix is RN `matchLineBreakingToMeasurement` (not in 0.81–0.83). Pinned for RibbonCard by `__tests__/ribbonCardTitleWidth.test.ts`. Remaining known cases: the scholar-detail header name and the «كل الشرح» back header.
 
 ---
 
