@@ -46,6 +46,7 @@ describe('phone invariant: every helper returns what phones use today', () => {
     expect(sectionGridColumns(w)).toBe(1);
     expect(carouselVisibleCount(w, 'book', 10)).toBe(3);
     expect(carouselVisibleCount(w, 'scholar', 3)).toBe(3);
+    expect(carouselVisibleCount(w, 'scholar', 12)).toBe(12);
     expect(dawahStageWidth(w)).toBe(w);
     expect(mushafSheetWidth(w)).toBe(w - 2 * g);
     expect(homeColumnWidth(w)).toBe(w - 2 * g);

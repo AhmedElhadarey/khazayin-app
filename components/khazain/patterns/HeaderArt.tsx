@@ -3,6 +3,7 @@ import { KhazainColors } from '@/constants/theme';
 import { Image } from 'expo-image';
 import React from 'react';
 import { StyleSheet, View, type ImageStyle } from 'react-native';
+import { RAIL_EDGE_GUTTER } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 /** The frame the art was drawn on, and the gutter its title sits inside. */
@@ -39,6 +40,11 @@ const PHONE_GEOMETRY = Object.freeze({
  * (84, 96 wide) is 213 from the frame's right edge, the small one (356, 37
  * wide) is 0.
  */
+/** Content (title) edge from the physical right: the column's outer edge plus the screens' gutter. */
+export function headerArtInset(readingInset: number, inset?: number): number {
+  return inset ?? readingInset + RAIL_EDGE_GUTTER;
+}
+
 export function headerArtGeometry(
   isTablet: boolean,
   inset: number,
@@ -94,14 +100,15 @@ export function HeaderArt({
 }: {
   corners?: 'pair' | 'single' | 'none';
   /**
-   * The page column's inset from the window's physical right edge (tablets
-   * only; phones anchor left). Defaults to the reading column's, which suits
-   * every screen that pads by the gutter; a full-width grid screen passes its own.
+   * Where the page's content (its title) starts, measured from the window's
+   * physical right edge (tablets only; phones anchor left). Defaults to the
+   * reading column's outer edge plus the screens' own gutter, which suits every
+   * screen that pads by it; a full-width grid screen passes its own.
    */
   inset?: number;
 }) {
   const layout = useResponsiveLayout();
-  const geo = headerArtGeometry(layout.isTablet, inset ?? layout.reading.inset);
+  const geo = headerArtGeometry(layout.isTablet, headerArtInset(layout.reading.inset, inset));
   return (
     <View style={styles.layer} pointerEvents="none" accessible={false} accessibilityElementsHidden>
       <Image

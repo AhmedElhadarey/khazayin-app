@@ -121,7 +121,7 @@ describe('Mushaf screen tablet wiring', () => {
 
   it('centres the page and footer on a sheet column', () => {
     expect(src).toMatch(/mushafSheetWidth\(\s*width\s*\)/);
-    // Margins, not a centred narrower box: the page lives in a ScrollView
+    // Side borders, not a centred or margined narrower box (margins also fail on iOS): the page lives in a ScrollView
     // content container, which iOS anchors to the right under RTL.
     expect(src).toMatch(/insetColumn\(\s*width\s*,\s*sheetWidth\s*,\s*sideInsets\s*\)/);
     expect(src).not.toMatch(/centredColumn\(/);

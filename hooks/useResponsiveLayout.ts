@@ -17,7 +17,7 @@ export function useResponsiveLayout(): ResponsiveLayout {
 /**
  * For routes presented with `presentation: 'modal'`. On iOS that is a page
  * sheet, which iPadOS already narrows — and narrower than the window the
- * column is computed from, so the column's margins would squeeze it twice.
+ * column is computed from, so the column's side borders would squeeze it twice.
  * iOS therefore drops the column there; Android shows these full screen and
  * keeps it.
  */

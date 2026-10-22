@@ -196,6 +196,13 @@ function columnProblems(spec: ColumnSpec, src: string): string[] {
   return problems;
 }
 
+describe("content-search no-results state", () => {
+  it("carries columnStyle on noResultsWrap", () => {
+    const src = read("app/content-search.tsx");
+    expect(src).toMatch(/style=\{\[styles\.noResultsWrap,\s*columnStyle\]\}/);
+  });
+});
+
 describe("every list screen sits in the tablet reading column", () => {
   it.each(COLUMN_SCREENS.map((s) => [s.file, s] as const))(
     "%s",

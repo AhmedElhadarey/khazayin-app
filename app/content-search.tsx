@@ -319,6 +319,7 @@ function NoResults({
   query,
   onSections,
   onPickSuggestion,
+  columnStyle,
 }: {
   query: string;
   onSections: () => void;
@@ -326,7 +327,7 @@ function NoResults({
   columnStyle: StyleProp<ViewStyle>;
 }) {
   return (
-    <View style={styles.noResultsWrap}>
+    <View style={[styles.noResultsWrap, columnStyle]}>
       <Text style={styles.noResultsTitle}>لا توجد نتائج لـ &quot;{query}&quot;</Text>
       <Text style={styles.noResultsSubtitle}>جرّب كلمة أخرى أو تصفّح الأقسام</Text>
       <View style={styles.noResultsSuggestions}>

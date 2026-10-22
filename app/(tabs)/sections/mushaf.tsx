@@ -144,7 +144,7 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
   }, [fetchSurahs]);
 
   // `{}` on phones; on tablets the reading column. Applied to the content
-  // container, not a wrapper around the ScrollView, so the side margins still
+  // container, not a wrapper around the ScrollView, so the side insets still
   // scroll (design 2026-10-22 §3.3).
   const { columnStyle } = useResponsiveLayout();
 

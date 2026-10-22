@@ -46,10 +46,12 @@ export const GRID_GAP = 12;
 export const TABLET_TAB_ITEM = 96;
 export const TABLET_TAB_GAP = 24;
 export const MINI_PLAYER_MAX = 600;
+/** The MiniPlayer wrapper's side margin; a tablet's inset margins never go below it. */
+export const MINI_PLAYER_MARGIN = 10;
 export const SHEET_MAX = 600;
 
 /**
- * Side insets. Anything fed to `centredColumn` / `gutterPadding` must be
+ * Side insets. Anything fed to `centredColumn` / `insetColumn` / `gutterPadding` must be
  * symmetric (`left === right`): under `I18nManager.forceRTL` React Native
  * swaps `left`/`right` style keys to `start`/`end`, so in a node not pinned to
  * `direction: 'ltr'` a `marginLeft` lands on the PHYSICAL RIGHT. Equal values
@@ -164,13 +166,16 @@ export function homeColumnWidth(w: number): number {
   return isTabletWidth(w) ? Math.min(full, HOME_COLUMN_MAX) : full;
 }
 
-/** Phones show three cards (today's behaviour); tablets show what fits. */
+/**
+ * Phones show three book cards and every scholar (today's behaviour);
+ * tablets show what fits.
+ */
 export function carouselVisibleCount(
   w: number,
   kind: CarouselCardKind,
   itemCount: number,
 ): number {
-  if (!isTabletWidth(w)) return Math.min(3, itemCount);
+  if (!isTabletWidth(w)) return kind === 'scholar' ? itemCount : Math.min(3, itemCount);
   const card = FIGMA_CAROUSEL_CARD_WIDTH[kind];
   const fit = Math.max(
     1,
@@ -245,7 +250,15 @@ function tabletColumn(
 }
 
 export function miniPlayerColumn(w: number, sideInsets: HorizontalInsets): ViewStyle | undefined {
-  return tabletColumn(w, miniPlayerMaxWidth(w), sideInsets);
+  const column = tabletColumn(w, miniPlayerMaxWidth(w), sideInsets);
+  if (!column) return undefined;
+  // The column's margins replace the wrapper's own `marginHorizontal`, so
+  // keep that margin as a floor where the side insets are smaller.
+  return {
+    ...column,
+    marginLeft: Math.max(sideInsets.left, MINI_PLAYER_MARGIN),
+    marginRight: Math.max(sideInsets.right, MINI_PLAYER_MARGIN),
+  };
 }
 
 export function tabRowColumn(w: number, sideInsets: HorizontalInsets): ViewStyle | undefined {
@@ -267,8 +280,8 @@ export function noteEditorSheetExtra(w: number, h: number): ViewStyle | undefine
 
 /**
  * Column styles for the reading and Home columns. `{}` on phones: a phone
- * screen already pads its content, and a `maxWidth` on top would shrink it
- * again because Yoga counts padding inside `maxWidth`.
+ * screen already pads its content, and side borders would add to that 16pt
+ * padding (Yoga lays border out like padding) and squeeze the content.
  */
 export function columnStyles(
   available: number,

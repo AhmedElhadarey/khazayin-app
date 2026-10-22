@@ -2,13 +2,14 @@ import * as fs from "fs";
 import * as path from "path";
 
 import {
+  MINI_PLAYER_MARGIN,
   miniPlayerColumn,
   noteEditorSheetExtra,
   sheetColumn,
   tabItemStyle,
   tabRowColumn,
 } from "@/constants/responsive";
-import { headerArtGeometry } from "@/components/khazain/patterns/HeaderArt";
+import { headerArtGeometry, headerArtInset } from "@/components/khazain/patterns/HeaderArt";
 
 const src = (rel: string) =>
   fs.readFileSync(path.join(__dirname, "..", rel), "utf8");
@@ -63,6 +64,11 @@ describe("headerArtGeometry", () => {
     });
   });
 
+  it("defaults the inset to the content edge, 16pt inside the column", () => {
+    expect(headerArtInset(140)).toBe(156);
+    expect(headerArtInset(140, 99)).toBe(99);
+  });
+
   it("does not stretch the tablet tile", () => {
     const g = headerArtGeometry(true, 156);
     expect(g.tile).not.toHaveProperty("left");
@@ -88,10 +94,22 @@ describe("tablet chrome styles", () => {
   });
 
   it("size the tablet chrome", () => {
-    expect(miniPlayerColumn(834, SIDE)).toEqual(column(600));
+    expect(miniPlayerColumn(834, SIDE)).toEqual({
+      ...column(600),
+      marginLeft: MINI_PLAYER_MARGIN,
+    });
     expect(tabRowColumn(834, SIDE)).toEqual(column(4 * 96 + 3 * 24));
     expect(tabItemStyle(834)).toEqual({ maxWidth: 96 });
     expect(sheetColumn(834, SIDE)).toEqual(column(600));
+  });
+
+  it("keeps the MiniPlayer's own margin where the insets are smaller", () => {
+    const zero = { left: 0, right: 0 };
+    expect(miniPlayerColumn(600, zero)).toMatchObject({ marginLeft: 10, marginRight: 10 });
+    const wide = { left: 30, right: 30 };
+    expect(miniPlayerColumn(700, wide)).toMatchObject({ marginLeft: 30, marginRight: 30 });
+    expect(tabRowColumn(600, zero)).toMatchObject({ marginLeft: 0, marginRight: 0 });
+    expect(sheetColumn(600, zero)).toMatchObject({ marginLeft: 0, marginRight: 0 });
   });
 
   it("floors the note editor height at 420 on a tall tablet", () => {

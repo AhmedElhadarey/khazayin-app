@@ -3,7 +3,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PHYSICAL_ROW, TAB_BAR, TAB_PHYSICAL_ORDER } from '@/constants/layout';
-import { miniPlayerColumn, tabItemStyle, tabRowColumn } from '@/constants/responsive';
+import { MINI_PLAYER_MARGIN, miniPlayerColumn, tabItemStyle, tabRowColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
 import {
@@ -153,7 +153,7 @@ export { usePlayerStore } from '@/store/playerStore';
 
 const styles = StyleSheet.create({
   miniPlayerWrap: {
-    marginHorizontal: 10,
+    marginHorizontal: MINI_PLAYER_MARGIN,
     marginBottom: 8,
   },
   bar: {
