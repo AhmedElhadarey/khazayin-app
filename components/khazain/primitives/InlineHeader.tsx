@@ -7,6 +7,7 @@ import {
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -50,6 +51,9 @@ export function InlineHeader({
     back: <FigmaIcon name="Back" size={BACK_GLYPH} color={KhazainColors.navy800} />,
   };
 
+  // In an iPad window the system's window controls sit over a top corner; a margin
+  // (not padding) leaves the caller's row padding intact.
+  const controls = useWindowControlsInset();
   return (
     <View style={[styles.row, style]}>
       <Pressable
@@ -57,7 +61,10 @@ export function InlineHeader({
         hitSlop={10}
         accessibilityRole="button"
         accessibilityLabel={backAccessibilityLabel(title)}
-        style={({ pressed }) => [styles.touchArea, { opacity: pressed ? 0.7 : 1 }]}
+        style={({ pressed }) => [
+          styles.touchArea,
+          { marginLeft: controls.left, marginRight: controls.right, opacity: pressed ? 0.7 : 1 },
+        ]}
       >
         {INLINE_HEADER_ORDER.map((slot) => (
           <React.Fragment key={slot}>{slots[slot]}</React.Fragment>

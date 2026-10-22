@@ -1,8 +1,14 @@
 import { useMemo } from 'react';
-import { Platform, useWindowDimensions } from 'react-native';
+import { Dimensions, Platform, Settings, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { responsiveLayout, type ResponsiveLayout } from '@/constants/responsive';
+import {
+  responsiveLayout,
+  systemRtlFrom,
+  windowControlsInset,
+  type HorizontalInsets,
+  type ResponsiveLayout,
+} from '@/constants/responsive';
 
 export type { ResponsiveLayout };
 
@@ -26,5 +32,36 @@ export function usePageSheetLayout(): ResponsiveLayout {
   return useMemo(
     () => (Platform.OS === 'ios' ? { ...layout, columnStyle: {} } : layout),
     [layout],
+  );
+}
+
+/** The system's primary language (iOS only), read once: a language change relaunches the app. */
+function systemLanguageIsRtl(): boolean {
+  if (Platform.OS !== 'ios') return false;
+  try {
+    return systemRtlFrom(Settings.get('AppleLanguages'));
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Physical padding for a top header row so the iPadOS 26 window controls do not
+ * cover it when the app runs in a window (`windowControlsInset`). Apply it inside
+ * a `PHYSICAL_ROW` only.
+ */
+export function useWindowControlsInset(): HorizontalInsets {
+  const window = useWindowDimensions();
+  return useMemo(
+    () =>
+      windowControlsInset({
+        os: Platform.OS,
+        osVersion: Platform.Version,
+        isPad: Platform.OS === 'ios' && Platform.isPad,
+        window,
+        screen: Dimensions.get('screen'),
+        systemRtl: systemLanguageIsRtl(),
+      }),
+    [window],
   );
 }

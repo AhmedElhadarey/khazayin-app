@@ -16,7 +16,7 @@ import {
   sectionGridColumns,
   tabletGutterPadding,
 } from '@/constants/responsive';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useSectionsStore } from '@/store';
@@ -30,6 +30,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 export default function SectionsScreen() {
   const router = useRouter();
   const { width, isTablet, gutter, sideInsets } = useResponsiveLayout();
+  const controls = useWindowControlsInset();
   const { data, status, error, fetch, refresh } = useSectionsStore();
 
   useEffect(() => {
@@ -57,7 +58,7 @@ export default function SectionsScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.headerBlock, pad]}>
-          <Text style={styles.h1}>الأقسام</Text>
+          <Text style={[styles.h1, { marginLeft: controls.left, marginRight: controls.right }]}>الأقسام</Text>
         </View>
         <View style={[styles.searchBlock, pad]}>
           {/* `بحث..` is what the file sets, on all twelve frames that carry a
