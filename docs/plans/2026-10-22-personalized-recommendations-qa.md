@@ -83,10 +83,19 @@ Each fix has its own failing test first.
 
 - VoiceOver / TalkBack: the «تم إخفاء الاقتراح» announcement (case 3) is covered by the
   `useScreenReaderOn` + `dismissRecommendation({announce})` unit tests, not walked live.
-- iPad Split View (case 13): rotation was walked; Split View was not.
+- iPad Split View (case 13): walked afterwards on iPadOS 26 (see below).
 - Case 4 on tablets: the empty state uses the same `limit × slot` height rule as the grid.
 
 ## Pending Foundation review (copy)
 
 - Cold-start hint: «احفظ درسًا أو استمع إليه لتظهر هنا اقتراحات تناسبك».
 - Empty state: «لا توجد اقتراحات جديدة الآن».
+
+## iPad windowing (iPadOS 26)
+
+Home with «مقترح لك» rows was walked on the iPad Pro 13 sim, tiled with Safari and in free windows at
+about ⅓, ½ and full width, portrait and landscape: ✓. Below 600pt the section uses the phone list
+(3 rows), at 600pt and up the two-column grid. The bell hidden by the iPadOS window controls is a
+header issue, fixed on the tablet branch (`3222e49`, PR #17). Captures:
+`docs/audit/2026-10-22-community/splitview-p1-home-*` (untracked).
+
