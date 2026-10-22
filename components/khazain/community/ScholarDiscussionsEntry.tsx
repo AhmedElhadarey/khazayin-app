@@ -7,7 +7,7 @@
 import { useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import { COMMUNITY_COPY, discussionsLabel } from '@/constants/communityCopy';
+import { COMMUNITY_COPY, discussionThreadCount, discussionsLabel } from '@/constants/communityCopy';
 import { useCommunityAccess } from '@/hooks/useCommunityGuard';
 import { useThreadSummariesStore } from '@/store/communityStores';
 import { ListRowCard } from '../primitives/ListRowCard';
@@ -35,7 +35,8 @@ function EntryRow({ scholarId, style }: { scholarId: string; style?: StyleProp<V
   useEffect(() => {
     void fetch();
   }, [fetch]);
-  const total = useMemo(() => summaries.reduce((n, t) => n + t.postCount, 0), [summaries]);
+  // Threads (lectures with posts), not posts: the label counts discussions.
+  const total = useMemo(() => discussionThreadCount(summaries), [summaries]);
 
   return (
     <View style={style}>

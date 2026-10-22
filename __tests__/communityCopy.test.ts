@@ -14,6 +14,9 @@ import {
   codeA11y,
   daysMetApproxLabel,
   discussionsLabel,
+  discussionThreadCount,
+  postsLabel,
+  POSTS,
   memberDaysLabel,
   memberPagesLabel,
   mutedMemberLabel,
@@ -209,6 +212,29 @@ describe('discussion labels', () => {
     expect(discussionsLabel(7)).toBe('٧ نقاشات');
     expect(discussionsLabel(11)).toBe('١١ نقاشًا');
     expect(discussionsLabel(120)).toBe('١٢٠ نقاش');
+  });
+
+  it('words a thread\'s post count as posts, with Arabic number agreement', () => {
+    expect(postsLabel(0)).toBe('لا توجد نقاشات بعد');
+    expect(postsLabel(1)).toBe('مشاركة واحدة');
+    expect(postsLabel(2)).toBe('مشاركتان');
+    expect(postsLabel(3)).toBe('٣ مشاركات');
+    expect(postsLabel(10)).toBe('١٠ مشاركات');
+    expect(postsLabel(11)).toBe('١١ مشاركة');
+    expect(postsLabel(99)).toBe('٩٩ مشاركة');
+    expect(postsLabel(103)).toBe('١٠٣ مشاركات');
+    expect(postsLabel(120)).toBe('١٢٠ مشاركة');
+    expect(arabicCount(4, POSTS)).toBe('٤ مشاركات');
+  });
+
+  it('counts threads, not posts, for a scholar: one thread per lecture that has posts', () => {
+    const s = (postCount: number) => ({ lectureId: String(postCount), postCount, lastPostAt: null });
+    expect(discussionThreadCount([])).toBe(0);
+    expect(discussionThreadCount([s(0), s(0)])).toBe(0);
+    expect(discussionThreadCount([s(3)])).toBe(1);
+    expect(discussionThreadCount([s(3), s(0), s(7), s(1)])).toBe(3);
+    // One thread of three posts reads as one discussion, not «٣ نقاشات».
+    expect(discussionsLabel(discussionThreadCount([s(3)]))).toBe('نقاش واحد');
   });
 
   it('formats the remaining-characters counter', () => {

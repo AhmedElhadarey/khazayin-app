@@ -81,7 +81,8 @@ async function quietRefreshMyGroups(gen: number): Promise<void> {
   }
 }
 
-async function quietRefreshGroupDetail(id: string, gen: number): Promise<void> {
+/** Exported for the progress push: a group's totals change when this member's counts land. */
+export async function quietRefreshGroupDetail(id: string, gen: number): Promise<void> {
   const store = peekGroupDetailStore(id);
   if (!store) return;
   try {

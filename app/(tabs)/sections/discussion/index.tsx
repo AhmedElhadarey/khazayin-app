@@ -3,7 +3,7 @@ import { DiscussionGlyph, PreviewBanner } from '@/components/khazain/community';
 import { HeaderArt } from '@/components/khazain/patterns';
 import { ListRowCard } from '@/components/khazain/primitives';
 import { AsyncContent } from '@/components/khazain/state/AsyncContent';
-import { COMMUNITY_COPY, discussionsLabel } from '@/constants/communityCopy';
+import { COMMUNITY_COPY, postsLabel } from '@/constants/communityCopy';
 import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { useCommunityGuard } from '@/hooks/useCommunityGuard';
@@ -61,7 +61,7 @@ export default function DiscussionIndexScreen() {
           <ListRowCard
             variant="more"
             title={l.title}
-            subtitle={summariesStatus === 'success' || summariesStatus === 'empty' ? discussionsLabel(counts.get(l.id) ?? 0) : ''}
+            subtitle={summariesStatus === 'success' || summariesStatus === 'empty' ? postsLabel(counts.get(l.id) ?? 0) : ''}
             icon={<DiscussionGlyph />}
             onPress={() =>
               router.push({

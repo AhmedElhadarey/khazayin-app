@@ -161,7 +161,7 @@ export default function GroupDetailScreen() {
               <View style={styles.card}>
                 <Text style={styles.label}>{COMMUNITY_COPY.joinCodeLabel}</Text>
                 <View style={styles.codeBox} accessible accessibilityLabel={codeA11y(detail.group.joinCode)}>
-                  <Text style={styles.code}>{detail.group.joinCode}</Text>
+                  <Text style={styles.code} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>{detail.group.joinCode}</Text>
                 </View>
                 <PillButton label={COMMUNITY_COPY.shareCode} variant="cream" onPress={onShareCode} />
               </View>
@@ -298,12 +298,13 @@ const styles = StyleSheet.create({
   // The code is Latin and reads left to right; the box is pinned so it centres on every platform.
   codeBox: {
     ...PHYSICAL_BOX,
-    alignItems: 'center',
+    // Stretch, not centre: a shrink-wrapped Text drops its last glyphs on Android 15+.
+    alignItems: 'stretch',
     paddingVertical: 12,
     borderRadius: KhazainRadius.md,
     backgroundColor: KhazainColors.cream200,
   },
-  code: { ...textStyle('sectionTitle', { color: KhazainColors.navy900 }), letterSpacing: 6, writingDirection: 'ltr' },
+  code: { ...textStyle('sectionTitle', { color: KhazainColors.navy900 }), letterSpacing: 6, writingDirection: 'ltr', textAlign: 'center' },
   note: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.inkSubtle }) },
   headingBox: { ...PHYSICAL_BOX },
   heading: { ...RTL_TEXT, ...textStyle('sectionTitle', { color: KhazainColors.navy900 }) },

@@ -17,6 +17,7 @@ export const DAYS: CountForms = { one: 'يوم واحد', two: 'يومان', few
 export const SECONDS: CountForms = { one: 'ثانية واحدة', two: 'ثانيتان', few: 'ثوانٍ', many: 'ثانية' };
 export const PAGES: CountForms = { one: 'صفحة واحدة', two: 'صفحتان', few: 'صفحات', many: 'صفحة' };
 export const DISCUSSIONS: CountForms = { one: 'نقاش واحد', two: 'نقاشان', few: 'نقاشات', many: 'نقاشًا' };
+export const POSTS: CountForms = { one: 'مشاركة واحدة', two: 'مشاركتان', few: 'مشاركات', many: 'مشاركة' };
 
 export const COMMUNITY_COPY = Object.freeze({
   // Entry points and banner
@@ -216,6 +217,16 @@ export function memberDaysLabel(n: number): string {
 export function discussionsLabel(n: number): string {
   if (n <= 0) return COMMUNITY_COPY.noDiscussions;
   return n < 100 ? arabicCount(n, DISCUSSIONS) : `${toArabicDigits(n)} نقاش`;
+}
+
+/** A thread's post count: «مشاركة واحدة», «مشاركتان», «٣ مشاركات», «١١ مشاركة». Zero uses the empty copy. */
+export function postsLabel(n: number): string {
+  return n <= 0 ? COMMUNITY_COPY.noDiscussions : arabicCount(n, POSTS);
+}
+
+/** Each lecture has one thread, and a thread exists once it has a post. */
+export function discussionThreadCount(summaries: readonly { postCount: number }[]): number {
+  return summaries.reduce((n, t) => (t.postCount > 0 ? n + 1 : n), 0);
 }
 
 /** Counter text announced near the cap: «الحروف المتبقية: ١٠٠». */

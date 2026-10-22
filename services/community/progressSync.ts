@@ -19,7 +19,8 @@ import {
   ownDaysMet,
   ownKhatm,
 } from '@/services/community/progressMath';
-import { runMutation, resetMutations } from '@/store/communityMutations';
+import { runMutation, resetMutations, quietRefreshGroupDetail } from '@/store/communityMutations';
+import { communityGeneration } from '@/store/communityStores';
 import { useCommunityLocalStore } from '@/store/communityLocalStore';
 import type { Challenge } from '@/types/community';
 
@@ -64,6 +65,7 @@ export async function ownCounts(c: Challenge): Promise<OwnProgress> {
 async function push(c: Challenge, bypassThrottle: boolean): Promise<void> {
   const memberId = useCommunityLocalStore.getState().profile?.memberId;
   if (!memberId || !isOpen()) return;
+  const gen = communityGeneration();
   // The member may pause, wipe or delete while we await; re-check before each effect.
   const stillMine = () => isOpen() && useCommunityLocalStore.getState().profile?.memberId === memberId;
   const now = Date.now();
@@ -86,6 +88,9 @@ async function push(c: Challenge, bypassThrottle: boolean): Promise<void> {
       .then(() => ({ ...payload, at: now })),
   );
   if (stillMine()) useCommunityLocalStore.getState().setLastReported(c.id, sent);
+  // The group's totals and this member's own row moved: catch an open detail up.
+  // No-op when no detail store exists (left the group) or the stores were reset since `gen`.
+  await quietRefreshGroupDetail(c.groupId, gen);
 }
 
 /** Errors are swallowed; a duplicate send is shared by `runMutation`. */
