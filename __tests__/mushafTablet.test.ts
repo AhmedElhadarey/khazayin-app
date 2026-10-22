@@ -2,6 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 import {
+  ReadingPlaceController,
   RESTORE_TTL_MS,
   captureReadingAnchor,
   resolvePendingRestore,
@@ -26,6 +27,7 @@ describe('reading anchor', () => {
     expect(captureReadingAnchor(BODY_Y + 700, BODY_Y, layouts, pages)).toEqual({
       page: 2,
       fraction: 0.5,
+      y: 400,
       height: 600,
     });
   });
@@ -53,6 +55,7 @@ describe('reading anchor', () => {
     expect(captureReadingAnchor(BODY_Y + 10, BODY_Y, flat, [1, 2])).toEqual({
       page: 2,
       fraction: 10 / 300,
+      y: 0,
       height: 300,
     });
     expect(restoreOffset({ fraction: 7 }, 0, { y: 10, height: 100 })).toBe(110);
@@ -61,7 +64,7 @@ describe('reading anchor', () => {
 });
 
 describe('pending restore resolution', () => {
-  const pending = { anchor: { page: 2, fraction: 0.5, height: 600 }, deadline: 1000 };
+  const pending = { anchor: { page: 2, fraction: 0.5, y: 400, height: 600 }, deadline: 1000 };
   const reflowed = { y: 480, height: 720 };
 
   it('restores once the page has its reflowed layout', () => {
@@ -102,25 +105,147 @@ describe('Mushaf screen tablet wiring', () => {
     expect(src).toMatch(/centredColumn\(/);
   });
 
-  it('re-arms the ayah scroll when the sheet or font size changes', () => {
-    expect(src).toMatch(/\$\{sheetWidth\}:\$\{type\.fontSize\}/);
-    expect(src).toMatch(/prevTypeKeyRef/);
-    expect(src).toMatch(/captureReadingAnchor\(/);
-    expect(src).toMatch(/resolvePendingRestore\(/);
-    expect(src).toMatch(/pendingRestoreRef/);
+  it('forwards reflow events to the ReadingPlaceController', () => {
+    expect(src).toMatch(/new ReadingPlaceController\(/);
+    expect(src).toMatch(/place\.onKeyChange\(/);
+    expect(src).toMatch(/place\.onScroll\(/);
+    expect(src).toMatch(/place\.onSegmentLayout\(/);
+    expect(src).toMatch(/place\.onUserScrollBegin\(/);
+    expect(src).toMatch(/takeScrollRequest\(/);
   });
 
   it('gives the surah index the reading column', () => {
     expect(src).toMatch(/columnStyle/);
   });
+});
 
-  it('cancels a pending restore when the user drags', () => {
-    expect(src).toMatch(/onScrollBeginDrag=\{cancelPending\}/);
-    expect(src).toMatch(/onMomentumScrollBegin=\{cancelPending\}/);
+describe('ReadingPlaceController', () => {
+  const OLD = '361:22';
+  const NEW = '700:30';
+  const build = (isTablet = true) => {
+    const c = new ReadingPlaceController(OLD, isTablet);
+    c.setBodyY(BODY_Y);
+    c.setSegments(pages, true, 0);
+    for (const [p, box] of layouts) c.onSegmentLayout(p, box, 0);
+    return c;
+  };
+  const reflowed = { y: 480, height: 720 };
+
+  it('restores a place scrolled to before the key change', () => {
+    const c = build();
+    c.onScroll(BODY_Y + 700, 10, OLD);
+    expect(c.onKeyChange(NEW, true, 20)).toBe('restore');
+    expect(c.takeScrollRequest()).toBeNull();
+    c.onSegmentLayout(2, reflowed, 30);
+    expect(c.takeScrollRequest()).toBeCloseTo(BODY_Y + 480 + 0.5 * 720);
+    expect(c.takeScrollRequest()).toBeNull();
   });
 
-  it('keeps reflow handling to tablets so phones scroll exactly as before', () => {
-    expect(src).toMatch(/if \(!isTablet\) return;\s*if \(targetAyah != null\)/);
-    expect(src).toMatch(/if \(!isTablet\) return;\s*settlePending\(\)/);
+  it('keeps the old anchor when the reflow scroll lands before the effect', () => {
+    const c = build();
+    c.onScroll(BODY_Y + 700, 10, OLD);
+    c.onSegmentLayout(2, reflowed, 11);
+    c.onScroll(BODY_Y + 100, 12, NEW); // clamped scroll under the new key
+    c.onKeyChange(NEW, true, 13);
+    expect(c.takeScrollRequest()).toBeCloseTo(BODY_Y + 480 + 0.5 * 720);
+  });
+
+  it('restores immediately when the layout arrived before the effect', () => {
+    const c = build();
+    c.onScroll(BODY_Y + 700, 10, OLD);
+    c.onSegmentLayout(2, reflowed, 11);
+    c.onKeyChange(NEW, true, 12);
+    expect(c.takeScrollRequest()).not.toBeNull();
+  });
+
+  it('restores when only the page y changed', () => {
+    const c = build();
+    c.onScroll(BODY_Y + 700, 10, OLD);
+    c.onKeyChange(NEW, true, 20);
+    c.onSegmentLayout(2, { y: 450, height: 600 }, 21);
+    expect(c.takeScrollRequest()).toBeCloseTo(BODY_Y + 450 + 0.5 * 600);
+  });
+
+  it('uses the current body y', () => {
+    const c = build();
+    c.onScroll(BODY_Y + 700, 10, OLD);
+    c.onKeyChange(NEW, true, 20);
+    c.setBodyY(200);
+    c.onSegmentLayout(2, reflowed, 21);
+    expect(c.takeScrollRequest()).toBeCloseTo(200 + 480 + 0.5 * 720);
+  });
+
+  it('cancels the restore when the user drags', () => {
+    const c = build();
+    c.onScroll(BODY_Y + 700, 10, OLD);
+    c.onKeyChange(NEW, true, 20);
+    c.onUserScrollBegin();
+    c.onSegmentLayout(2, reflowed, 21);
+    expect(c.takeScrollRequest()).toBeNull();
+  });
+
+  it('cancels the restore on a programmatic scroll', () => {
+    const c = build();
+    c.onScroll(BODY_Y + 700, 10, OLD);
+    c.onKeyChange(NEW, true, 20);
+    c.onProgrammaticScroll();
+    c.onSegmentLayout(2, reflowed, 21);
+    expect(c.takeScrollRequest()).toBeNull();
+  });
+
+  it('drops the restore after the deadline and when the page is gone', () => {
+    const late = build();
+    late.onScroll(BODY_Y + 700, 10, OLD);
+    late.onKeyChange(NEW, true, 20);
+    late.onSegmentLayout(2, reflowed, 20 + RESTORE_TTL_MS + 1);
+    expect(late.takeScrollRequest()).toBeNull();
+
+    const gone = build();
+    gone.onScroll(BODY_Y + 700, 10, OLD);
+    gone.onKeyChange(NEW, true, 20);
+    gone.setSegments([1, 3], true, 21);
+    gone.onSegmentLayout(2, reflowed, 22);
+    expect(gone.takeScrollRequest()).toBeNull();
+
+    const loading = build();
+    loading.onScroll(BODY_Y + 700, 10, OLD);
+    loading.onKeyChange(NEW, true, 20);
+    loading.setSegments(pages, false, 21);
+    loading.onSegmentLayout(2, reflowed, 22);
+    expect(loading.takeScrollRequest()).toBeNull();
+  });
+
+  it('restores nothing stale across narrow -> scroll -> widen', () => {
+    const c = build();
+    c.onScroll(BODY_Y + 700, 10, OLD); // tablet anchor on page 2
+    expect(c.onKeyChange('300:22', false, 20)).toBe('none'); // Split View narrows
+    c.onScroll(BODY_Y + 50, 30, '300:22'); // reader moves on, as a phone
+    expect(c.onKeyChange(NEW, true, 40)).toBe('none'); // widens again
+    c.onSegmentLayout(2, reflowed, 41);
+    expect(c.takeScrollRequest()).toBeNull();
+  });
+
+  it('never requests a scroll on a phone', () => {
+    const c = build(false);
+    c.onScroll(BODY_Y + 700, 10, OLD);
+    expect(c.onKeyChange('361:30', false, 20)).toBe('none');
+    c.onSegmentLayout(2, reflowed, 21);
+    expect(c.takeScrollRequest()).toBeNull();
+  });
+
+  it('re-arms a deep-link ayah on reflow until the user scrolls away', () => {
+    const c = build();
+    c.setTargetAyah(255);
+    expect(c.onKeyChange(NEW, true, 20)).toBe('rearmAyah');
+
+    c.onUserScrollBegin();
+    c.onScroll(BODY_Y + 700, 30, NEW);
+    expect(c.onKeyChange('900:30', true, 40)).toBe('restore');
+
+    c.setTargetAyah(286); // a new target is live again
+    expect(c.onKeyChange('1000:30', true, 50)).toBe('rearmAyah');
+    c.onUserScrollBegin();
+    c.onAyahJump(); // tapping a note label for the same ayah
+    expect(c.onKeyChange('1100:30', true, 60)).toBe('rearmAyah');
   });
 });

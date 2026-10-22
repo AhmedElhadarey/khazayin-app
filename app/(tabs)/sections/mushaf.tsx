@@ -23,13 +23,7 @@ import {
   surahMetaLine,
   type TextLine,
 } from '@/services/mushafNavigation';
-import {
-  RESTORE_TTL_MS,
-  captureReadingAnchor,
-  resolvePendingRestore,
-  type PendingRestore,
-  type ReadingAnchor,
-} from '@/services/mushafAnchor';
+import { ReadingPlaceController } from '@/services/mushafAnchor';
 import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -272,11 +266,11 @@ function ReadingView({
   const linesRef = useRef(new Map<number, TextLine[]>());
   const scrolledAyahRef = useRef<number | null>(null);
   const scrolledPreciseRef = useRef(false);
-  // Reading place across a reflow: `anchorRef` follows the scroll, and the
-  // key change below turns it into `pendingRestoreRef` until the page it names
-  // reports its new layout.
-  const anchorRef = useRef<ReadingAnchor | null>(null);
-  const pendingRestoreRef = useRef<PendingRestore | null>(null);
+  const [place] = useState(() => new ReadingPlaceController(`${sheetWidth}:${type.fontSize}`, isTablet));
+  const flushPlace = useCallback(() => {
+    const y = place.takeScrollRequest();
+    if (y != null) scrollRef.current?.scrollTo({ y, animated: false });
+  }, [place]);
 
   const tryScroll = useCallback(() => {
     if (targetAyah == null) {
@@ -304,66 +298,42 @@ function ReadingView({
     scrollRef.current?.scrollTo({ y: Math.max(0, y - AYAH_SCROLL_HEADROOM), animated: false });
     scrolledAyahRef.current = targetAyah;
     scrolledPreciseRef.current = precise;
-  }, [targetAyah, segments]);
+    place.onProgrammaticScroll();
+  }, [targetAyah, segments, place]);
 
   useEffect(() => {
     tryScroll();
   }, [tryScroll]);
 
-  // Settles a pending place restore from whatever is known now. Runs from the
-  // key-change effect, every segment layout, every scroll and when the content
-  // changes, so it never waits on one particular event order.
-  const settlePending = useCallback(() => {
-    const pending = pendingRestoreRef.current;
-    if (!pending) return;
-    const res = resolvePendingRestore(
-      pending,
-      ayatStatus === 'success' && segments.some((s) => s.page === pending.anchor.page),
-      layoutsRef.current.get(pending.anchor.page),
-      bodyYRef.current,
+  // Rotation / Split View changes the sheet width or the scaled font, so the
+  // text reflows and the old offset points at other text. Keep the place; the
+  // rules live in `ReadingPlaceController` (tablets only, phones never scroll
+  // on a reflow):
+  //  - a linked ayah the user has not scrolled away from is re-armed and
+  //    scrolled to again once the new onLayout / onTextLayout arrive;
+  //  - otherwise the page + fraction captured while scrolling is restored from
+  //    the anchor page's new layout.
+  const typeKey = `${sheetWidth}:${type.fontSize}`;
+  useEffect(() => {
+    place.setTargetAyah(targetAyah);
+  }, [place, targetAyah]);
+  useEffect(() => {
+    place.setSegments(
+      segments.map((s) => s.page),
+      ayatStatus === 'success',
       Date.now(),
     );
-    if (res.action === 'wait') return;
-    pendingRestoreRef.current = null;
-    if (res.action === 'restore') scrollRef.current?.scrollTo({ y: res.offset, animated: false });
-  }, [ayatStatus, segments]);
-
-  // Page unmounted by a refresh / retry, or segments changed: drop a stale restore.
+    flushPlace();
+  }, [place, segments, ayatStatus, flushPlace]);
   useEffect(() => {
-    settlePending();
-  }, [settlePending]);
-
-  // The user took over: whatever was pending is no longer wanted.
-  const cancelPending = useCallback(() => {
-    pendingRestoreRef.current = null;
-  }, []);
-
-  // Rotation / Split View changes the sheet width or the scaled font, so the
-  // text reflows and the old offset points at other text. Keep the place:
-  //  - a linked ayah is re-armed and scrolled to again once the new
-  //    onLayout / onTextLayout arrive;
-  //  - otherwise the page + fraction captured while scrolling is restored from
-  //    the anchor page's new layout (see the segment onLayout).
-  const typeKey = `${sheetWidth}:${type.fontSize}`;
-  const prevTypeKeyRef = useRef(typeKey);
-  useEffect(() => {
-    if (prevTypeKeyRef.current === typeKey) return;
-    prevTypeKeyRef.current = typeKey;
-    // Phones keep today's scroll behaviour exactly.
-    if (!isTablet) return;
-    if (targetAyah != null) {
+    const outcome = place.onKeyChange(typeKey, isTablet, Date.now());
+    if (outcome === 'rearmAyah') {
       scrolledAyahRef.current = null;
       scrolledPreciseRef.current = false;
       tryScroll();
-    } else {
-      const anchor = anchorRef.current;
-      pendingRestoreRef.current = anchor
-        ? { anchor, deadline: Date.now() + RESTORE_TTL_MS }
-        : null;
-      // The reflow's onLayout can land before this passive effect: settle now.
-      settlePending();
     }
-  }, [typeKey, isTablet, targetAyah, tryScroll, settlePending]);
+    flushPlace();
+  }, [place, typeKey, isTablet, tryScroll, flushPlace]);
 
   // A note's label inside this screen re-targets the scroll. The same ayah
   // is re-armed explicitly because the param would not change.
@@ -371,6 +341,7 @@ function ReadingView({
     (n?: number) => {
       scrolledAyahRef.current = null;
       scrolledPreciseRef.current = false;
+      place.onAyahJump();
       if (n == null) {
         scrollRef.current?.scrollTo({ y: 0, animated: true });
         return;
@@ -378,7 +349,7 @@ function ReadingView({
       if (n === targetAyah) tryScroll();
       else router.setParams({ ayah: String(n) } as any);
     },
-    [router, targetAyah, tryScroll],
+    [router, targetAyah, tryScroll, place],
   );
 
   // Long-press an ayah (or the VoiceOver/TalkBack action, which has no ayah)
@@ -430,23 +401,12 @@ function ReadingView({
         showsVerticalScrollIndicator={false}
         scrollEventThrottle={250}
         onLayout={(e) => tracking.setViewportHeight(e.nativeEvent.layout.height)}
-        onScrollBeginDrag={cancelPending}
-        onMomentumScrollBegin={cancelPending}
+        onScrollBeginDrag={() => place.onUserScrollBegin()}
+        onMomentumScrollBegin={() => place.onUserScrollBegin()}
         onScroll={(e) => {
           tracking.onScroll(e.nativeEvent.contentOffset.y, Date.now());
-          const y = e.nativeEvent.contentOffset.y;
-          // Frozen while a restore is pending: the reflow itself emits scroll
-          // events that would overwrite the place with the clamped one.
-          if (!isTablet) return;
-          settlePending();
-          if (!pendingRestoreRef.current) {
-            anchorRef.current = captureReadingAnchor(
-              y,
-              bodyYRef.current,
-              layoutsRef.current,
-              segments.map((s) => s.page),
-            );
-          }
+          place.onScroll(e.nativeEvent.contentOffset.y, Date.now(), typeKey);
+          flushPlace();
         }}
       >
         <View style={styles.ornamentWrap}>
@@ -467,6 +427,7 @@ function ReadingView({
         <View
           onLayout={(e) => {
             bodyYRef.current = e.nativeEvent.layout.y;
+            place.setBodyY(e.nativeEvent.layout.y);
             tracking.setBodyY(e.nativeEvent.layout.y);
             tryScroll();
           }}
@@ -485,7 +446,8 @@ function ReadingView({
                   const { y, height } = e.nativeEvent.layout;
                   tracking.setSegmentLayout(segment.page, y, height);
                   layoutsRef.current.set(segment.page, { y, height });
-                  settlePending();
+                  place.onSegmentLayout(segment.page, { y, height }, Date.now());
+                  flushPlace();
                   tryScroll();
                 }}
                 onTextLayout={(e) => {
