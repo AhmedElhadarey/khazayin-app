@@ -92,7 +92,7 @@ export default function LectureDiscussionScreen() {
     () => visiblePosts(items, muted, hidden).filter((p) => p.moderation.status !== 'removed'),
     [items, muted, hidden],
   );
-  const plan = threadListPlan({ status, count: posts.length, hasMore });
+  const plan = threadListPlan({ status, count: posts.length, hasMore, fetchingMore });
   // No lecture id in the route: nothing will ever load, so say so instead of showing a skeleton.
   const missingParam = lectureId === '';
 
@@ -268,7 +268,7 @@ export default function LectureDiscussionScreen() {
           ListFooterComponent={
             plan.footerRetry ? (
               <PillButton label={COMMUNITY_COPY.retryNow} variant="cream" onPress={() => void fetchMore()} />
-            ) : fetchingMore ? (
+            ) : plan.footerSpinner ? (
               <ActivityIndicator color={KhazainColors.navy800} />
             ) : null
           }

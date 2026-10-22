@@ -349,6 +349,22 @@ describe('threadListPlan', () => {
     });
   });
 
+  it('shows the spinner, not the retry button, while the retry is in flight', () => {
+    expect(threadListPlan({ status: 'error', count: 20, hasMore: true, fetchingMore: true })).toMatchObject({
+      footerRetry: false,
+      footerSpinner: true,
+    });
+    expect(threadListPlan({ status: 'success', count: 20, hasMore: true, fetchingMore: true }).footerSpinner).toBe(true);
+    expect(threadListPlan({ status: 'success', count: 20, hasMore: true }).footerSpinner).toBe(false);
+  });
+
+  it('offers loading more again once the retry succeeded (status back to success)', () => {
+    expect(threadListPlan({ status: 'success', count: 40, hasMore: true })).toMatchObject({
+      footerRetry: false,
+      canLoadMore: true,
+    });
+  });
+
   it('reads an empty success as the empty thread, and loads more only when there is more', () => {
     expect(threadListPlan({ status: 'success', count: 0, hasMore: false }).emptyStatus).toBe('empty');
     expect(threadListPlan({ status: 'success', count: 5, hasMore: true }).canLoadMore).toBe(true);

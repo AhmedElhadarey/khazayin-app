@@ -230,15 +230,23 @@ export function closeOnce(latch: { closed: boolean }, nav: () => void): void {
  * screen when a later page fails; the failure becomes a retry footer, and
  * loading more pauses until the member retries.
  */
-export function threadListPlan(input: { status: LoadState; count: number; hasMore: boolean }): {
+export function threadListPlan(input: {
+  status: LoadState;
+  count: number;
+  hasMore: boolean;
+  fetchingMore?: boolean;
+}): {
   emptyStatus: LoadState;
   footerRetry: boolean;
+  footerSpinner: boolean;
   canLoadMore: boolean;
 } {
   const failed = input.status === 'error';
   return {
     emptyStatus: input.status === 'success' ? 'empty' : input.status,
-    footerRetry: failed && input.count > 0,
+    // A retry in flight shows the spinner, not the button.
+    footerRetry: failed && input.count > 0 && !input.fetchingMore,
+    footerSpinner: !!input.fetchingMore,
     canLoadMore: input.hasMore && !failed,
   };
 }
