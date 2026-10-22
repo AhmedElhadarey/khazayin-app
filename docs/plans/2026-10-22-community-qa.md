@@ -3,7 +3,7 @@
 **Date:** 2026-10-22
 **Branch:** `feat/community-2026-10-22`
 **SHA:** `b244ea19da16c3e0fedee7e08411ee85fe901a20` at the start and at the end of the first pass (no commits during QA)
-**Final HEAD (last code commit):** `0eff18c` (see "Final checks" for which SHA each check ran on)
+**Final HEAD (last code commit):** `c21ff98` (see "Final checks" for which SHA each check ran on)
 **Design:** `docs/plans/2026-10-22-community-design.md`. Cases: design §11.4.
 **Captures:** `docs/audit/2026-10-22-community/` (untracked; `docs/audit/` is in `.gitignore`).
 
@@ -208,7 +208,31 @@ Final HEAD: `0eff18c`.
 - F7 was not re-captured at `0eff18c`. Its chip props (`numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}`) are exactly those of `7b38f89`, which passed the re-check on the Realme at 1.3× and 1.0 (`recheck-realme-F7-code-one-line-1.3x`).
 - Final checks on the iPad and Pixel Tablet. Their JS was not reloaded at the final HEAD.
 - `e94b778` (group refresh skipped once the member has paused): no paused-member scenario was exercised.
-- The Android keyboard path of the report sheet: the Realme opens the Gboard stylus toolbar instead of a soft keyboard.
+- The Android keyboard path of the report sheet: the Realme opens the Gboard stylus toolbar instead of a soft keyboard. (Run in the final device pass below; it found F9.)
 
 End state: Realme font scale 1.0, Pixel Tablet in portrait (`user_rotation 1`), all apps running, no source
 modified and nothing committed by QA.
+
+## Final device pass
+
+Every device was cold-started against Metro serving the worktree. The join-code chip and smoke checks
+ran at `aa81487` (code identical to `0eff18c`); the report-sheet keyboard checks ran on the F9 fix,
+committed as `c21ff98`. Captures are prefixed `final2-` (first run), `final3-` (first F9 attempt) and
+`final4-` (F9 as committed). To get a soft keyboard on the emulators, Gboard's
+`stylus_handwriting_enabled` was set to 0 and `show_ime_with_hard_keyboard` to 1 during the run;
+both were restored afterwards.
+
+| Check | iPhone 16 | iPad Pro 13 | Realme 360dp | Pixel Tablet |
+|---|---|---|---|---|
+| Join code on one line, whole (`0eff18c`) | ✓ portrait | ✓ portrait + landscape | ✓ 1.0 and 1.3 (cold start each) | ✓ portrait + landscape |
+| Smoke: hub, guidelines, create, join, group, discussion index, thread, report sheet | ✓ | ✓ | ✓ | ✓, pill labels whole across rotations |
+| Report note field with the keyboard open, sheet back in place after dismiss | ✓ | not run | ✓ after F9 | ✓ portrait + landscape after F9 |
+| Live screen reader | not possible (no VoiceOver on the simulator) | not possible | ✓ TalkBack: focus covers the code chip (label «رمز المجموعة N U R 4 M 8») and «مشاركة الرمز» | not run |
+| iPad Split View | — | not run: neither argent nor `simctl` can open it; it needs a dock drag with a second app | — | — |
+
+| # | Severity | Finding | Fix |
+|---|---|---|---|
+| F9 | Medium (Android) | With «سبب آخر» picked, focusing the note field left it under the keyboard. The sheet is a `transparentModal` over an edge-to-edge window, so Android never resizes it, and `KeyboardAvoidingView` ran on iOS only. A first attempt (`behavior="padding"` on both platforms, `final3-`) lifted the sheet but left it ~56–92dp too high after the keyboard closed | `c21ff98`: on Android the wrapper pads by the tracked `keyboardHeight`, which `keyboardDidHide` resets to 0. On the Realme and on the Pixel in both orientations, the field and typed text sit ~16dp above the keyboard and the title returns to its exact y after BACK or the hide key. The iPhone is unchanged (`final4-*`) |
+
+Observed, out of scope: on Android the scholar list rows 2–3 and the scholar-detail header drop the last
+word «البدر». This is the known Android 15 line-breaking case listed in CLAUDE.md, and it needs an RN upgrade.
