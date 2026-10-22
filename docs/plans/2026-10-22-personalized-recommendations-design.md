@@ -346,7 +346,7 @@ Persist key `@khazain/recommendations`, through `createJSONStorage(() => AsyncSt
 
 **`loadCatalogue()` (C4/S9): idempotent and single-flight**
 - A module-level in-flight promise means concurrent callers (Home, Mushaf) share one run. After `ready` or `aborted`, the call is a no-op for the rest of the session.
-- **Gate (N1):** `loadCatalogue({ signalCount, contextSurah })` returns at once unless `shouldLoadCatalogue(signalCount, contextSurah)` holds, i.e. `signalCount > 0 || contextSurah != null`. Home passes no `contextSurah`, so a Home with no signals never fetches. The Mushaf block always passes one. On Home it is scheduled after `Promise.allSettled([fetchScholars(), fetchBooks(), fetchDawah()])`, the existing first fetches (`index.tsx:76-80`), inside `InteractionManager.runAfterInteractions`.
+- **Gate (N1):** `loadCatalogue({ signalCount, contextSurah })` returns at once unless `shouldLoadCatalogue(signalCount, contextSurah)` holds, i.e. `signalCount > 0 || contextSurah != null`. Home passes no `contextSurah`, so a Home with no signals never fetches. The Mushaf block always passes one. On Home it is scheduled after `Promise.allSettled([fetchScholars(), fetchBooks(), fetchDawah()])`, the existing first fetches (`index.tsx:76-80`), inside `InteractionManager.runAfterInteractions`. Home re-attempts `loadCatalogue` after each focus refresh once the first-fetch gate has opened.
 - **Explicit fetch list**, so the result does not depend on which screens were visited:
   - `useScholarsStore.fetch()`, then `useScholarLecturesStore(id).getState().fetch()` for every scholar (`store/scholarStore.ts:31-45`).
   - `useBooksStore.fetch()` and `useSurahsStore.fetch()`.

@@ -18,6 +18,7 @@ describe('Home section order', () => {
       'prophetHero',
       'scholars',
       'books',
+      'recommended',
       'queen',
       'quickChips',
       'dawah',

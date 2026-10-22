@@ -13,6 +13,7 @@ import {
   SkeletonPosterList,
 } from '@/components/khazain';
 import { RtlCarousel } from '@/components/khazain/primitives';
+import { RecommendedSection } from '@/components/khazain/recommendations/RecommendedSection';
 import {
   HOME_HERO_TOP_GAP,
   HOME_QUICK_CHIPS,
@@ -23,6 +24,7 @@ import {
   homeTabletRows,
 } from '@/constants/homePresentation';
 import { PHYSICAL_ROW, READING_ROW, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
+import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
 import { carouselVisibleCount, dawahStageWidth } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { KhazainColors } from '@/constants/theme';
@@ -31,11 +33,16 @@ import {
   useFeaturedDawahStore,
   useScholarsStore,
 } from '@/store';
+import { indexCatalogue } from '@/services/recommendations/recommend';
+import { toSignals } from '@/services/recommendations/signals';
 import { openSearch } from '@/services/searchNavigation';
-import { useRouter } from 'expo-router';
+import { useNotesStore } from '@/store/notesStore';
+import { useRecommendationInputsStore } from '@/store/recommendationInputsStore';
+import { useSavedStore } from '@/store/savedStore';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useRef } from 'react';
+import { InteractionManager, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path, Rect } from 'react-native-svg';
 
@@ -55,6 +62,27 @@ const NAME_ART_BY_ID: Record<string, number> = {
   's1': IBN_BAZ, // awaiting art: عبد المحسن العباد البدر
 };
 
+// Signals as they stand now, read at call time. The catalogue is not loaded
+// yet, so they resolve against an empty index and the count may run high;
+// only whether any signal exists matters (the gate is `signalCount > 0`).
+const EMPTY_INDEX = indexCatalogue({ scholars: [], lectures: [], books: [] });
+function currentSignalCount(): number {
+  return toSignals(
+    useSavedStore.getState().items,
+    useNotesStore.getState().notes,
+    useRecommendationInputsStore.getState().activity,
+    EMPTY_INDEX,
+  ).length;
+}
+
+// Idempotent and single-flight in the store; the early return skips the signal
+// count once the load has settled.
+function tryLoadCatalogue(): void {
+  const store = useRecommendationInputsStore.getState();
+  if (store.catalogueStatus === 'ready' || store.catalogueStatus === 'aborted') return;
+  void store.loadCatalogue({ signalCount: currentSignalCount() });
+}
+
 // The design's own book lockup. Figma draws every card in the "الكتب العلمية"
 // row with this one image — `إضاءات على زاد المعاد` — so the app does too, and
 // every card reads that title until the client supplies per-title art.
@@ -72,12 +100,48 @@ export default function HomeScreen() {
   const { items: bookLectures, status: booksStatus, error: booksError, fetch: fetchBooks, refresh: refreshBooks } = useBookLecturesStore();
   const { data: dawahData, status: dawahStatus, error: dawahError, fetch: fetchDawah, refresh: refreshDawah } = useFeaturedDawahStore();
 
-  // Single effect — fetch all three on mount (C6: one useEffect, deps = fetch refs)
+  // Single effect — fetch all three on mount (C6: one useEffect, deps = fetch refs).
+  // The recommendation catalogue loads after those first fetches (recommendations
+  // design §7.4). Promise.allSettled is the real ordering guard: it waits for
+  // them to finish, failed or not. runAfterInteractions only defers a tick on
+  // RN 0.81 (see services/search/afterDismissal.ts).
+  // True once the first-fetch gate has passed; later focus refreshes re-attempt the load.
+  const catalogueGateOpen = useRef(false);
+
   useEffect(() => {
-    fetchScholars();
-    fetchBooks();
-    fetchDawah();
+    let cancelled = false;
+    let handle: { cancel: () => void } | undefined;
+    void Promise.allSettled([fetchScholars(), fetchBooks(), fetchDawah()]).then(() => {
+      if (cancelled || !RECOMMENDATIONS_ENABLED) return;
+      handle = InteractionManager.runAfterInteractions(() => {
+        catalogueGateOpen.current = true;
+        tryLoadCatalogue();
+      });
+    });
+    return () => {
+      cancelled = true;
+      handle?.cancel();
+    };
   }, [fetchScholars, fetchBooks, fetchDawah]);
+
+  // Activity that happened elsewhere shows on the next focus (§7.4).
+  // A first signal created while Home stays focused shows on the next focus too
+  // (accepted in recommendations design §7.4).
+  useFocusEffect(
+    useCallback(() => {
+      if (RECOMMENDATIONS_ENABLED) {
+        void useRecommendationInputsStore
+          .getState()
+          .refreshActivity()
+          .then(() => {
+            if (catalogueGateOpen.current) tryLoadCatalogue();
+          })
+          .catch((err) => {
+            if (__DEV__) console.warn('[khazayin] recommendation focus refresh failed', err);
+          });
+      }
+    }, []),
+  );
 
   // Derive featured scholars — only those whose name art is bundled
   const featuredScholars = scholarsData.filter((s) => !!NAME_ART_BY_ID[s.id]);
@@ -147,6 +211,9 @@ export default function HomeScreen() {
       </View>
     ),
 
+    // Kill switch (§7.7): null nodes are skipped by both render loops below.
+    recommended: RECOMMENDATIONS_ENABLED ? <RecommendedSection /> : null,
+
     queen: (
       <View style={styles.heroPad}>{queen}</View>
     ),
@@ -203,30 +270,34 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
       >
         {isTablet
-          ? homeTabletRows(HOME_SECTION_ORDER).map((row, index) => (
-              <View
-                key={typeof row === 'string' ? row : row.join('+')}
-                style={index === 0 ? undefined : styles.sectionGap}
-              >
-                {typeof row === 'string' ? (
-                  sections[row]
-                ) : (
-                  // First section authored first → physical right.
-                  <View style={styles.pairRow}>
-                    {row.map((key) => (
-                      <View key={key} style={styles.pairCell}>
-                        {pairCells[key]}
-                      </View>
-                    ))}
-                  </View>
-                )}
-              </View>
-            ))
-          : HOME_SECTION_ORDER.map((key, index) => (
-              <View key={key} style={index === 0 ? undefined : styles.sectionGap}>
-                {sections[key]}
-              </View>
-            ))}
+          ? homeTabletRows(HOME_SECTION_ORDER).map((row, index) =>
+              typeof row === 'string' && sections[row] == null ? null : (
+                <View
+                  key={typeof row === 'string' ? row : row.join('+')}
+                  style={index === 0 ? undefined : styles.sectionGap}
+                >
+                  {typeof row === 'string' ? (
+                    sections[row]
+                  ) : (
+                    // First section authored first → physical right.
+                    <View style={styles.pairRow}>
+                      {row.map((key) => (
+                        <View key={key} style={styles.pairCell}>
+                          {pairCells[key]}
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              ),
+            )
+          : HOME_SECTION_ORDER.map((key, index) =>
+              sections[key] == null ? null : (
+                <View key={key} style={index === 0 ? undefined : styles.sectionGap}>
+                  {sections[key]}
+                </View>
+              ),
+            )}
       </ScrollView>
     </View>
   );

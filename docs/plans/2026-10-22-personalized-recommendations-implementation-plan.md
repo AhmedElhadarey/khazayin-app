@@ -622,6 +622,8 @@ it('loads the catalogue only after Home first fetches settle, after interactions
 - Confirm no other assertion in `homeTablet.test.ts` was edited: `git diff --stat __tests__/homeTablet.test.ts` shows only the one hunk.
 - Then the global checks.
 
+Note: Home re-attempts `loadCatalogue` after each focus refresh once the first-fetch gate has opened.
+
 **Commit:** `feat(home): add the recommended-for-you section`
 
 ## T9. Mushaf end block
