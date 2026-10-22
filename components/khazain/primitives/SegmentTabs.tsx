@@ -39,38 +39,42 @@ export function SegmentTabs<T extends string>({
   /** Outer strip style, e.g. the tablet reading column. */
   style?: StyleProp<ViewStyle>;
 }) {
+  // `style` goes on a wrapper: a column's side borders on the ScrollView
+  // itself would offset its content, which iOS applies twice.
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      style={[styles.strip, style]}
-      contentContainerStyle={styles.scroll}
-    >
-      <View style={styles.row}>
-        {physicalTabOrder(tabs).map((t) => {
-          const isActive = t.key === active;
-          return (
-            <Pressable
-              key={t.key}
-              onPress={() => onChange(t.key)}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-              accessibilityLabel={t.label}
-              style={({ pressed }) => [
-                styles.tab,
-                isActive ? styles.tabActive : null,
-                { opacity: pressed ? 0.8 : 1 },
-              ]}
-            >
-              {/* The file sets every label navy, selected or not — the bar is
-                  the whole of the selected state. */}
-              <Text style={styles.label}>{t.label}</Text>
-              {isActive ? <View style={styles.underline} /> : null}
-            </Pressable>
-          );
-        })}
-      </View>
-    </ScrollView>
+    <View style={style}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.strip}
+        contentContainerStyle={styles.scroll}
+      >
+        <View style={styles.row}>
+          {physicalTabOrder(tabs).map((t) => {
+            const isActive = t.key === active;
+            return (
+              <Pressable
+                key={t.key}
+                onPress={() => onChange(t.key)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+                accessibilityLabel={t.label}
+                style={({ pressed }) => [
+                  styles.tab,
+                  isActive ? styles.tabActive : null,
+                  { opacity: pressed ? 0.8 : 1 },
+                ]}
+              >
+                {/* The file sets every label navy, selected or not — the bar is
+                    the whole of the selected state. */}
+                <Text style={styles.label}>{t.label}</Text>
+                {isActive ? <View style={styles.underline} /> : null}
+              </Pressable>
+            );
+          })}
+        </View>
+      </ScrollView>
+    </View>
   );
 }
 

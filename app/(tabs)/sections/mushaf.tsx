@@ -9,7 +9,7 @@ import {
   surahNotesBlock,
 } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
-import { centredColumn, mushafSheetWidth, mushafType } from '@/constants/responsive';
+import { insetColumn, mushafSheetWidth, mushafType } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
 import {
@@ -43,7 +43,7 @@ import { openSearch } from '@/services/searchNavigation';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
 
 // Once per app session: when the user opens the Mushaf index with no surah
@@ -197,11 +197,10 @@ function ReadingView({
   const { fontSize: ayatFontSize, lineHeight: ayatLineHeight } = useFontScale();
   // Tablets read from a centred sheet with type scaled to it; phones get the
   // user's font values back unchanged (mushafType / mushafSheetWidth).
-  const { width, isTablet } = useResponsiveLayout();
-  const insets = useSafeAreaInsets();
+  const { width, isTablet, sideInsets } = useResponsiveLayout();
   const sheetWidth = mushafSheetWidth(width);
   const type = mushafType(width, ayatFontSize, ayatLineHeight);
-  const sheetColumn = isTablet ? centredColumn(sheetWidth, insets) : undefined;
+  const sheetColumn = isTablet ? insetColumn(width, sheetWidth, sideInsets) : undefined;
 
   // The meta line shows the surah's first page (frame 2349:982); reading is tracked per page below.
   const surahNumber = useMemo(() => Number(surahId), [surahId]);

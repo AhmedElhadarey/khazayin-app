@@ -13,6 +13,7 @@ import {
   MUSHAF_TABLET_MAX_FONT,
   carouselVisibleCount,
   centredColumn,
+  insetColumn,
   columnStyles,
   dawahStageWidth,
   gridColumns,
@@ -28,6 +29,7 @@ import {
   screenGutter,
   sectionGridColumns,
   sheetMaxWidth,
+  responsiveLayout,
   splitPane,
   tabBarRow,
 } from '@/constants/responsive';
@@ -162,19 +164,49 @@ describe('tablet behaviour', () => {
     expect(centredColumn(720).marginLeft).toBe(0);
   });
 
-  it('columnStyles centres the reading and Home columns on tablets', () => {
-    const s = columnStyles(1032, { left: 0, right: 0 });
-    expect(s.columnStyle).toEqual(centredColumn(720, { left: 0, right: 0 }));
-    expect(s.homeColumnStyle).toEqual(centredColumn(984, { left: 0, right: 0 }));
+  const inset = (n: number) => ({
+    borderLeftWidth: n,
+    borderRightWidth: n,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   });
 
-  it('columnStyles carries non-zero insets as margins', () => {
-    const insets = { left: 20, right: 44 };
-    const s = columnStyles(1012, insets);
-    expect(s.columnStyle).toEqual(centredColumn(720, insets));
-    expect(s.homeColumnStyle).toEqual(centredColumn(964, insets));
-    expect(s.columnStyle.marginLeft).toBe(20);
-    expect(s.columnStyle.marginRight).toBe(44);
+  it('columnStyles insets the reading and Home columns symmetrically', () => {
+    const s = columnStyles(1032, { left: 0, right: 0 });
+    expect(s.columnStyle).toEqual(insetColumn(1032, 720, { left: 0, right: 0 }));
+    expect(s.columnStyle).toEqual(inset(156));
+    expect(s.homeColumnStyle).toEqual(inset(24));
+  });
+
+  it('columnStyles adds the side insets', () => {
+    const s = columnStyles(1012, { left: 20, right: 20 });
+    expect(s.columnStyle).toEqual(inset(166));
+    expect(s.homeColumnStyle).toEqual(inset(44));
+  });
+
+  // iOS applies a ScrollView content container's x offset twice, so a centred
+  // or margined container sat against the right edge; a percentage width in
+  // an iPad page sheet shifted the whole screen. Side borders do neither.
+  it('columnStyles never narrows or offsets the view itself', () => {
+    for (const w of [600, 744, 1032, 1328]) {
+      for (const style of Object.values(columnStyles(w, { left: 0, right: 0 }))) {
+        expect(Object.keys(style).sort()).toEqual([
+          'borderLeftColor',
+          'borderLeftWidth',
+          'borderRightColor',
+          'borderRightWidth',
+        ]);
+        expect(style.borderLeftWidth).toBe(style.borderRightWidth);
+        expect(style).not.toHaveProperty('borderColor');
+      }
+    }
+  });
+
+  it('insetColumn puts the column where reading.inset says', () => {
+    const l = responsiveLayout(1376, 1032, { left: 0, right: 0 });
+    expect(l.columnStyle.borderRightWidth).toBe(l.reading.inset);
+    const n = responsiveLayout(1076, 800, { left: 0, right: 44 });
+    expect(n.columnStyle.borderRightWidth).toBe(n.reading.inset);
   });
 
   it('columnStyles stays empty on phones whatever the insets', () => {

@@ -228,6 +228,18 @@ describe("every list screen sits in the tablet reading column", () => {
   });
 });
 
+describe("the column never lands on a ScrollView's own style", () => {
+  // A side border on a ScrollView offsets its content container, and iOS
+  // applies that offset twice (RCTScrollViewComponentView takes the frame
+  // origin from the children's bounding rect).
+  it("SegmentTabs puts the caller's style on a wrapper, not the ScrollView", () => {
+    const src = read("components/khazain/primitives/SegmentTabs.tsx");
+    const [scroll] = openingTags(src, "ScrollView");
+    expect(propExpressions(scroll, "style")).toEqual(["{styles.strip}"]);
+    expect(src).toMatch(/<View style=\{style\}>\s*<ScrollView/);
+  });
+});
+
 describe("onboarding keeps its hero full width and its steps in the column", () => {
   it("puts the progress dots and footer in the column", () => {
     const src = read("app/onboarding.tsx");

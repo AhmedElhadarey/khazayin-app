@@ -20,10 +20,12 @@ describe('responsiveLayout', () => {
     expect(l.reading.width).toBe(720);
     // (988 - 720) / 2 = 134, plus the 44 side inset.
     expect(l.reading.inset).toBe(44 + 134);
-    expect(l.columnStyle.marginRight).toBe(44);
-    expect(l.columnStyle.marginLeft).toBe(44);
-    expect(l.homeColumnStyle.marginRight).toBe(44);
-    expect(l.homeColumnStyle.marginLeft).toBe(44);
+    // The column insets its content by side borders from the window edge.
+    expect(l.columnStyle.borderRightWidth).toBe(l.reading.inset);
+    expect(l.columnStyle.borderLeftWidth).toBe(l.reading.inset);
+    // Home: (988 - 940) / 2 = 24, plus the 44 side inset.
+    expect(l.homeColumnStyle.borderRightWidth).toBe(44 + 24);
+    expect(l.homeColumnStyle.borderLeftWidth).toBe(44 + 24);
     expect(l.splitPane).toEqual({ side: 340, gap: 24 });
   });
 
@@ -40,13 +42,13 @@ describe('responsiveLayout', () => {
     expect(notched.reading.inset).toBe(10 + 16);
   });
 
-  it('turns asymmetric insets into symmetric side insets and margins', () => {
+  it('turns asymmetric insets into symmetric side insets and column borders', () => {
     // RTL swaps left/right style keys, so both sides must carry the same value.
     const l = responsiveLayout(1076, 768, { left: 12, right: 44 });
     expect(l.sideInsets).toEqual({ left: 44, right: 44 });
-    expect(l.columnStyle.marginLeft).toBe(l.columnStyle.marginRight);
-    expect(l.columnStyle.marginLeft).toBe(44);
-    expect(l.homeColumnStyle.marginLeft).toBe(l.homeColumnStyle.marginRight);
+    expect(l.columnStyle.borderLeftWidth).toBe(l.columnStyle.borderRightWidth);
+    expect(l.columnStyle.borderLeftWidth).toBe(44 + 134);
+    expect(l.homeColumnStyle.borderLeftWidth).toBe(l.homeColumnStyle.borderRightWidth);
     const mirrored = responsiveLayout(1076, 768, { left: 44, right: 12 });
     expect(mirrored.sideInsets).toEqual(l.sideInsets);
     expect(mirrored.reading).toEqual(l.reading);

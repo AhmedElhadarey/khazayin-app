@@ -69,8 +69,10 @@ export function screenGutter(w: number): number {
 }
 
 /**
- * A column centred in the available area. The inset margins matter because
- * most screens span the whole window; Yoga then centres inside the safe area.
+ * A column centred in the available area, for the chrome (tab row,
+ * MiniPlayer, sheets): plain Views that never sit in a ScrollView content
+ * container or a page sheet (see `insetColumn`). The inset margins matter
+ * because they span the whole window; Yoga then centres inside the safe area.
  */
 export function centredColumn(
   maxWidth: number,
@@ -82,6 +84,33 @@ export function centredColumn(
     alignSelf: 'center',
     marginLeft: insets?.left ?? 0,
     marginRight: insets?.right ?? 0,
+  };
+}
+
+/**
+ * The reading and Home columns: the content is inset by equal transparent
+ * side borders on a view that keeps spanning its parent. Yoga lays border
+ * out like padding, but it adds to the view's own padding instead of
+ * replacing it.
+ *
+ * Not a narrower box: on iOS a ScrollView content container's x offset is
+ * applied twice (its frame takes the children's bounding-rect origin and the
+ * content view keeps its own x), so a centred or margined container landed
+ * against the right edge; and a percentage width inside an iPad page sheet
+ * shifted the whole screen. Only the side colours are set, so a style's own
+ * top/bottom rule survives. `available` is the window minus `insets`.
+ */
+export function insetColumn(
+  available: number,
+  columnWidth: number,
+  insets: HorizontalInsets,
+): ViewStyle {
+  const slack = Math.max(0, available - columnWidth) / 2;
+  return {
+    borderLeftWidth: insets.left + slack,
+    borderRightWidth: insets.right + slack,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   };
 }
 
@@ -247,8 +276,8 @@ export function columnStyles(
 ): { columnStyle: ViewStyle; homeColumnStyle: ViewStyle } {
   if (!isTabletWidth(available)) return { columnStyle: {}, homeColumnStyle: {} };
   return {
-    columnStyle: centredColumn(readingColumn(available).width, insets),
-    homeColumnStyle: centredColumn(homeColumnWidth(available), insets),
+    columnStyle: insetColumn(available, readingColumn(available).width, insets),
+    homeColumnStyle: insetColumn(available, homeColumnWidth(available), insets),
   };
 }
 
