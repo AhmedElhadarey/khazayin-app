@@ -128,6 +128,25 @@ export const PHYSICAL_ROW = Object.freeze({
 } as const);
 
 /**
+ * Row whose children are authored in READING order (first child = first thing
+ * read). The container is pinned `ltr`, so `row-reverse` puts the first child
+ * at the physical right, and a short last row packs to the physical right too.
+ * Screen-reader order is child order, which is reading order, so what is seen
+ * and what is announced agree. This constant is the sanctioned home of the
+ * literal `row-reverse` that `rtlPhysicalContract.test.ts` bans in screens.
+ */
+export const READING_ROW = Object.freeze({
+  flexDirection: 'row-reverse',
+  direction: 'ltr',
+} as const);
+
+/** Wrapping `READING_ROW`: a grid that fills from the physical right. */
+export const READING_GRID = Object.freeze({
+  ...READING_ROW,
+  flexWrap: 'wrap',
+} as const);
+
+/**
  * Bottom navigation, physical left → right. The bar is the `navigation`
  * instance (393 x 83, flush to the frame's bottom edge) and each tab is
  * Figma component 2001:17457.
@@ -146,7 +165,10 @@ export const TAB_PHYSICAL_ORDER = Object.freeze([
 /** The Figma frame width every geometry figure in the design spec refers to. */
 export const REFERENCE_WIDTH = 393;
 
-/** Widest content column. Beyond this, content centres instead of stretching. */
+/**
+ * Phone-profile content cap, used by `contentWidth()`. Tablet columns are
+ * sized in `constants/responsive.ts`, not by this value.
+ */
 export const CONTENT_MAX_WIDTH = 480;
 
 /** WCAG / platform minimum interactive size, independent of visual density. */
