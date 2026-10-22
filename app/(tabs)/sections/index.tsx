@@ -9,11 +9,13 @@ import {
 import { SECTION_ICONS, SectionIconKey } from '@/components/khazain/icons/sections';
 import { HeaderArt } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, READING_GRID } from '@/constants/layout';
-import { GRID_GAP, gridItemWidth, sectionGridColumns } from '@/constants/responsive';
 import {
+  GRID_GAP,
   SECTION_TILE_MIN_HEIGHT,
-  sectionsTabletPadding,
-} from '@/components/khazain/primitives/SectionTile';
+  gridItemWidth,
+  sectionGridColumns,
+  tabletGutterPadding,
+} from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -23,12 +25,11 @@ import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function SectionsScreen() {
   const router = useRouter();
-  const { width, isTablet, gutter } = useResponsiveLayout();
-  const insets = useSafeAreaInsets();
+  const { width, isTablet, gutter, sideInsets } = useResponsiveLayout();
   const { data, status, error, fetch, refresh } = useSectionsStore();
 
   useEffect(() => {
@@ -45,13 +46,12 @@ export default function SectionsScreen() {
 
   // Phones keep today's 16pt margin and ListRowCard column; tablets use the
   // tablet gutter and a reading-order tile grid.
-  const sidePad = sectionsTabletPadding(gutter, insets);
-  const pad = isTablet ? sidePad : null;
+  const pad = tabletGutterPadding(width, sideInsets);
   const tileWidth = gridItemWidth(width, sectionGridColumns(width));
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <HeaderArt inset={insets.right + gutter} />
+      <HeaderArt inset={sideInsets.right + gutter} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
@@ -75,7 +75,7 @@ export default function SectionsScreen() {
                 width={tileWidth}
                 minHeight={SECTION_TILE_MIN_HEIGHT}
                 gap={GRID_GAP}
-                gridStyle={{ ...READING_GRID, ...sidePad }}
+                gridStyle={[styles.grid, pad]}
               />
             ) : (
               <SkeletonRibbonList count={9} />
@@ -83,13 +83,7 @@ export default function SectionsScreen() {
           }
           emptyMessage="لا يوجد أقسام متاحة"
         >
-          <View
-            style={
-              isTablet
-                ? { ...READING_GRID, ...sidePad, gap: GRID_GAP }
-                : styles.list
-            }
-          >
+          <View style={isTablet ? [styles.grid, pad] : styles.list}>
             {data.map((s) => {
               const Icon = SECTION_ICONS[s.iconKey as SectionIconKey];
               return isTablet ? (
@@ -121,6 +115,8 @@ export default function SectionsScreen() {
 }
 
 const styles = StyleSheet.create({
+  // Tablet grid: reading order, first tile at the physical right.
+  grid: { ...READING_GRID, gap: GRID_GAP },
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   container: { paddingTop: 0 },
   // Figma node 2031:5675 anchors the page title at the physical right.

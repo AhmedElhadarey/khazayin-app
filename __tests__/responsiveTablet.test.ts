@@ -17,6 +17,8 @@ import {
   dawahStageWidth,
   gridColumns,
   gridItemWidth,
+  gutterPadding,
+  tabletGutterPadding,
   homeColumnWidth,
   isTabletWidth,
   miniPlayerMaxWidth,
@@ -78,9 +80,31 @@ describe('tablet behaviour', () => {
     }
   });
 
-  it('gridItemWidth fills the row exactly', () => {
-    const c = sectionGridColumns(1032);
-    expect(gridItemWidth(1032, c) * c + (c - 1) * GRID_GAP).toBeCloseTo(1032 - 48);
+  // Floored widths never overflow the row, so the last tile cannot wrap.
+  it.each([744, 800, 820, 834, 1032, 1194, 1280, 1376])(
+    'gridItemWidth fits the row at %i',
+    (w) => {
+      const c = sectionGridColumns(w);
+      const item = gridItemWidth(w, c);
+      expect(Number.isInteger(item)).toBe(true);
+      expect(c * item + (c - 1) * GRID_GAP).toBeLessThanOrEqual(w - 2 * screenGutter(w));
+    },
+  );
+
+  it('gutterPadding adds the side insets to the gutter', () => {
+    expect(gutterPadding(24, { left: 0, right: 0 })).toEqual({ paddingLeft: 24, paddingRight: 24 });
+    expect(gutterPadding(24, { left: 47, right: 12 })).toEqual({
+      paddingLeft: 71,
+      paddingRight: 36,
+    });
+  });
+
+  it('tabletGutterPadding is null on phones and inset-aware on tablets', () => {
+    expect(tabletGutterPadding(599, { left: 47, right: 12 })).toBeNull();
+    expect(tabletGutterPadding(800, { left: 47, right: 12 })).toEqual({
+      paddingLeft: 71,
+      paddingRight: 36,
+    });
   });
 
   it('readingColumn caps at 720 and centres', () => {

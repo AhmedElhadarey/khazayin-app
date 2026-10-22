@@ -38,6 +38,7 @@ export const SPLIT_MIN_WIDTH = 900;
 export const SPLIT_SIDE = 340;
 export const SPLIT_GAP = 24;
 export const SECTION_TILE_MIN = 220;
+export const SECTION_TILE_MIN_HEIGHT = 176;
 export const SECTION_GRID_MAX_COLUMNS = 4;
 export const GRID_GAP = 12;
 export const TABLET_TAB_ITEM = 96;
@@ -89,8 +90,31 @@ export function gridColumns(w: number, minColumn: number, maxColumns: number): n
   return Math.min(Math.max(fit, 1), maxColumns);
 }
 
+/**
+ * Floored: a fractional width can round up per item under Yoga's pixel
+ * snapping and push the last tile of a row onto the next line.
+ */
 export function gridItemWidth(w: number, columns: number): number {
-  return (w - 2 * screenGutter(w) - (columns - 1) * GRID_GAP) / columns;
+  return Math.floor((w - 2 * screenGutter(w) - (columns - 1) * GRID_GAP) / columns);
+}
+
+/**
+ * Side padding that puts content `gutter` inside the safe area. `w` and the
+ * grid maths exclude the side insets, so they are added back here.
+ */
+export function gutterPadding(
+  gutter: number,
+  insets: HorizontalInsets,
+): { paddingLeft: number; paddingRight: number } {
+  return { paddingLeft: gutter + insets.left, paddingRight: gutter + insets.right };
+}
+
+/** `null` on phones, whose screens keep their own fixed padding. */
+export function tabletGutterPadding(
+  w: number,
+  insets: HorizontalInsets,
+): { paddingLeft: number; paddingRight: number } | null {
+  return isTabletWidth(w) ? gutterPadding(screenGutter(w), insets) : null;
 }
 
 export function sectionGridColumns(w: number): number {

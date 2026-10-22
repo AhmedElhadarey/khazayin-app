@@ -10,7 +10,7 @@ import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect } from 'react';
-import { StyleSheet, View, type ViewStyle } from 'react-native';
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -96,7 +96,7 @@ export function SkeletonTileGrid({
   width: number;
   minHeight: number;
   gap: number;
-  gridStyle: ViewStyle;
+  gridStyle: StyleProp<ViewStyle>;
 }) {
   return (
     <View style={[gridStyle, { gap }]}>

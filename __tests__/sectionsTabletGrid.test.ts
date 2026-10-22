@@ -1,13 +1,13 @@
 /**
  * Tablets show the Sections root as a tile grid (acceptance A1); phones keep
- * the ListRowCard column untouched. Column counts are covered by
- * responsiveTablet.test.ts; this pins the wiring and the tile's contract.
+ * the ListRowCard column untouched. Column counts and padding maths are
+ * covered by responsiveTablet.test.ts; this pins the wiring and the tile.
  */
 import fs from 'fs';
 import path from 'path';
 import React from 'react';
 
-import { SectionTile, sectionsTabletPadding } from '../components/khazain/primitives/SectionTile';
+import { SectionTile } from '../components/khazain/primitives/SectionTile';
 import { listRowAccessibilityLabel } from '../constants/rtlContracts';
 
 const read = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
@@ -16,18 +16,24 @@ describe('Sections screen wiring', () => {
   const src = read('app/(tabs)/sections/index.tsx');
 
   it('builds the tablet grid from the shared reading grid and column maths', () => {
-    expect(src).toMatch(/READING_GRID/);
-    expect(src).toMatch(/sectionGridColumns/);
-    expect(src).toMatch(/gridItemWidth/);
-    expect(src).toMatch(/GRID_GAP/);
+    expect(src).toMatch(/grid: \{ \.\.\.READING_GRID, gap: GRID_GAP \}/);
+    expect(src).toMatch(/gridItemWidth\(width, sectionGridColumns\(width\)\)/);
   });
 
-  it('keeps the phone path and adds the tile path behind isTablet', () => {
-    expect(src).toMatch(/isTablet/);
+  it('pads the grid and the blocks above it with the inset-aware tablet padding', () => {
+    expect(src).toMatch(/tabletGutterPadding\(width, sideInsets\)/);
+    expect(src).toMatch(/\[styles\.headerBlock, pad\]/);
+    expect(src).toMatch(/\[styles\.searchBlock, pad\]/);
+    expect(src).toMatch(/\[styles\.grid, pad\]/);
+    expect(src).not.toMatch(/paddingHorizontal: gutter/);
+  });
+
+  it('keeps the phone column and skeleton and adds the tile path', () => {
     expect(src).toMatch(/<ListRowCard/);
-    expect(src).toMatch(/<SectionTile/);
     expect(src).toMatch(/<SkeletonRibbonList count=\{9\}/);
+    expect(src).toMatch(/<SectionTile/);
     expect(src).toMatch(/<SkeletonTileGrid/);
+    expect(src).toMatch(/isTablet \? \[styles\.grid, pad\] : styles\.list/);
   });
 });
 
@@ -35,15 +41,14 @@ describe('SectionTile', () => {
   const src = read('components/khazain/primitives/SectionTile.tsx');
 
   it('takes its geometry from CARD_DENSITY, not literals', () => {
-    expect(src).toMatch(/CARD_DENSITY\.sectionIconDisc/);
-    expect(src).toMatch(/CARD_DENSITY\.sectionCardRadius/);
-    expect(src).not.toMatch(/\b64\b/);
-    expect(src).not.toMatch(/borderRadius:\s*20\b/);
+    expect(src).toMatch(/width: CARD_DENSITY\.sectionIconDisc,/);
+    expect(src).toMatch(/borderRadius: CARD_DENSITY\.sectionCardRadius,/);
+    expect(src).toMatch(/borderRadius: CARD_DENSITY\.sectionIconDisc \/ 2,/);
   });
 
   it('centres its text in RTL', () => {
-    expect(src).toMatch(/textAlign:\s*'center'/);
-    expect(src).toMatch(/writingDirection:\s*'rtl'/);
+    expect(src).toMatch(/textAlign: 'center'/);
+    expect(src).toMatch(/writingDirection: 'rtl'/);
   });
 
   it('is a button labelled like the list row for the same entry', () => {
@@ -58,25 +63,5 @@ describe('SectionTile', () => {
     expect(el.props.accessibilityLabel).toBe(
       listRowAccessibilityLabel({ title: 'القرآن', subtitle: 'المصحف', count: '114 سورة' }),
     );
-  });
-});
-
-describe('tablet side padding', () => {
-  it('adds the side safe-area insets to the gutter', () => {
-    expect(sectionsTabletPadding(24, { left: 0, right: 0 })).toEqual({
-      paddingLeft: 24,
-      paddingRight: 24,
-    });
-    expect(sectionsTabletPadding(24, { left: 47, right: 12 })).toEqual({
-      paddingLeft: 71,
-      paddingRight: 36,
-    });
-  });
-
-  it('is applied to the grid, skeleton and header blocks, not a bare gutter', () => {
-    const src = read('app/(tabs)/sections/index.tsx');
-    expect(src).toMatch(/useSafeAreaInsets\(\)/);
-    expect(src).toMatch(/sectionsTabletPadding\(gutter, insets\)/);
-    expect(src).not.toMatch(/paddingHorizontal: gutter/);
   });
 });

@@ -1,4 +1,5 @@
 import { CARD_DENSITY } from '@/constants/layout';
+import { SECTION_TILE_MIN_HEIGHT } from '@/constants/responsive';
 import { listRowAccessibilityLabel } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -14,20 +15,6 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
  * The disc styles are repeated from `ListRowCard` rather than extracted, so
  * the phone row's output cannot change.
  */
-export const SECTION_TILE_MIN_HEIGHT = 176;
-
-/**
- * Side padding for the tablet grid and the blocks above it. The responsive
- * width already excludes the side safe-area insets, so the padding must add
- * them back or the first tile lands under a cutout.
- */
-export function sectionsTabletPadding(
-  gutter: number,
-  insets: { left: number; right: number },
-): { paddingLeft: number; paddingRight: number } {
-  return { paddingLeft: gutter + insets.left, paddingRight: gutter + insets.right };
-}
-
 export function SectionTile({
   icon,
   title,
@@ -51,7 +38,7 @@ export function SectionTile({
       style={({ pressed }) => [
         styles.tile,
         width !== undefined && { width },
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
+        pressed && styles.pressed,
       ]}
     >
       <View style={styles.disc}>{icon}</View>
@@ -71,6 +58,7 @@ export function SectionTile({
 const CENTRED = { textAlign: 'center', writingDirection: 'rtl' } as const;
 
 const styles = StyleSheet.create({
+  pressed: { transform: [{ scale: 0.98 }] },
   tile: {
     minHeight: SECTION_TILE_MIN_HEIGHT,
     padding: 16,
