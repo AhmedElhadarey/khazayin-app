@@ -112,6 +112,20 @@ describe('toSignals', () => {
     expect(s.target).toMatchObject({ type: 'lecture', id: 'sl5-1', archiveId: '485_20210705' });
   });
 
+  it('labels a resolved session with the series title, not the episode title', () => {
+    const series = index.byArchiveId.get('485_20210705')!;
+    const raw = { ...session(60), title: '1-\tعنوان الكتاب ومحتواه وأهميته' };
+    const [s] = toSignals([], [], { sessions: [raw], pageReads: [], failed: false }, index);
+    expect(s.label).toBe(series.title);
+    expect(s.label).not.toContain('\t');
+  });
+
+  it('keeps the session title when nothing resolves', () => {
+    const raw = { ...session(60, false, 9, 'zzz_unknown/01.mp3'), title: 'درس مجهول' };
+    const [s] = toSignals([], [], { sessions: [raw], pageReads: [], failed: false }, index);
+    expect(s.label).toBe('درس مجهول');
+  });
+
   it('keeps an unresolved session keyed by its own id', () => {
     const [s] = toSignals([], [], { sessions: [session(60, false, 9, 'zzz_unknown/01.mp3')], pageReads: [], failed: false }, index);
     expect(s.target).toMatchObject({ type: 'lecture', id: 'zzz_unknown/01.mp3', archiveId: 'zzz_unknown' });

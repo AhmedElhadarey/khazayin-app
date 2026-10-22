@@ -175,7 +175,7 @@ Lecture keys use `archiveId` when one exists. The Internet Archive id is real da
 | scholar candidate | `له دروس في {topicLabel}` |
 | Mushaf fallback (§6.4) | `للاستزادة في تفسير ما قرأت` |
 
-`{label}` is cut to 32 characters plus `…`.
+`{label}` is the series title for listening signals (the catalogue title when the lecture or its archive series resolves, else the session's own title). Whitespace runs are collapsed to one space and trimmed, then the label is cut to 32 characters plus `…`.
 
 ## 5. Topic map
 

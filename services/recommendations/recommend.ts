@@ -256,8 +256,12 @@ interface Cand {
 const byOrder = (a: Cand, b: Cand): number =>
   b.score - a.score || REC_KIND_RANK[a.kind] - REC_KIND_RANK[b.kind] || cmp(a.key, b.key);
 
-const cut = (label: string): string =>
-  label.length > REASON_LABEL_MAX ? `${label.slice(0, REASON_LABEL_MAX)}…` : label;
+// Whitespace runs (tabs, newlines, doubles) collapse to one space before the
+// label is measured, so a raw title cannot put a TAB into the reason.
+const cut = (raw: string): string => {
+  const label = raw.replace(/\s+/g, ' ').trim();
+  return label.length > REASON_LABEL_MAX ? `${label.slice(0, REASON_LABEL_MAX)}…` : label;
+};
 
 function reasonFor(c: Cand, live: readonly Resolved[]): string {
   if (c.kind === 'scholar') {

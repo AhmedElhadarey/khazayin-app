@@ -36,13 +36,19 @@ const surahNumber = (id: string): number | undefined => {
   return Number.isInteger(n) && n >= 1 && n <= 114 ? n : undefined;
 };
 
+/** The catalogue lecture for an id, or its archive series for an episode id. */
+function resolveLecture(id: string, index: CatalogueIndex) {
+  const archiveId = isEpisodeId(id) ? archiveIdOfEpisode(id) : undefined;
+  return index.byLectureId.get(id) ?? (archiveId ? index.byArchiveId.get(archiveId) : undefined);
+}
+
 /**
  * A lecture target keyed by the catalogue lecture when the id resolves (an
  * episode id falls back to its archive id), so episodes of one series dedupe.
  */
 function lectureTarget(id: string, index: CatalogueIndex, title?: string): SignalTarget {
   const archiveId = isEpisodeId(id) ? archiveIdOfEpisode(id) : undefined;
-  const l = index.byLectureId.get(id) ?? (archiveId ? index.byArchiveId.get(archiveId) : undefined);
+  const l = resolveLecture(id, index);
   if (l) return { type: 'lecture', id: l.id, archiveId: l.archiveId, title: l.title };
   return { type: 'lecture', id, ...(archiveId ? { archiveId } : {}), ...(title ? { title } : {}) };
 }
@@ -95,7 +101,10 @@ function fromNote(note: NoteInput, index: CatalogueIndex): Signal | undefined {
 function fromSession(s: SessionInput, index: CatalogueIndex): Signal | undefined {
   if (!isListened(s)) return undefined;
   const kind: SignalKind = s.completed ? 'completed' : 'listened';
-  return { kind, target: lectureTarget(s.lectureId, index, s.title), atMs: s.lastListenedAt, label: s.title };
+  // The reason names what the user thinks they listened to: the catalogue
+  // series title when the id resolves, else the session's own title.
+  const label = resolveLecture(s.lectureId, index)?.title || s.title;
+  return { kind, target: lectureTarget(s.lectureId, index, s.title), atMs: s.lastListenedAt, label };
 }
 
 export function toSignals(

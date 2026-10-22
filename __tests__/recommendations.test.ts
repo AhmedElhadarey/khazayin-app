@@ -292,6 +292,13 @@ describe('recommend', () => {
     expect(out[0].reason).toBe(`لأنك حفظت «${'ا'.repeat(32)}…»`);
   });
 
+  it('collapses whitespace in reason labels before cutting', () => {
+    const out = recommend([saved('sl5-2', '1-\tعنوان  الكتاب')], index, NOW, none, 3);
+    expect(out[0].reason).toBe('لأنك حفظت «1- عنوان الكتاب»');
+    const padded = recommend([saved('sl5-2', `  ${'ا'.repeat(30)}\n\t ب  `)], index, NOW, none, 3);
+    expect(padded[0].reason).toBe(`لأنك حفظت «${'ا'.repeat(30)} ب»`);
+  });
+
   it('does not throw on unknown items', () => {
     const sigs: Signal[] = [
       saved('nope', 'غير موجود'),
