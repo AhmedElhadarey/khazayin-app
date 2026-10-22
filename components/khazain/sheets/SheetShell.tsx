@@ -1,6 +1,8 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { centredColumn, sheetMaxWidth } from '@/constants/responsive';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { KhazainColors } from '@/constants/theme';
 
 // Bottom-sheet shell for transparent modal routes.
@@ -14,6 +16,9 @@ export function SheetShell({
   onClose: () => void;
   children: React.ReactNode;
 }) {
+  const { width, isTablet } = useResponsiveLayout();
+  // Tablets: a centred 600pt card, still pinned to the bottom by `root`.
+  const column = isTablet ? centredColumn(sheetMaxWidth(width) ?? width) : undefined;
   return (
     <View style={styles.root}>
       <Pressable
@@ -22,7 +27,7 @@ export function SheetShell({
         accessibilityRole="button"
         accessibilityLabel="إغلاق"
       />
-      <SafeAreaView edges={['bottom']} style={styles.sheetWrap}>
+      <SafeAreaView edges={['bottom']} style={[styles.sheetWrap, column]}>
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <Text style={styles.title}>{title}</Text>

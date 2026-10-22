@@ -3,6 +3,8 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PHYSICAL_ROW, TAB_BAR, TAB_PHYSICAL_ORDER } from '@/constants/layout';
+import { centredColumn, miniPlayerMaxWidth, tabBarRow } from '@/constants/responsive';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
 import {
   NavHomeIcon,
@@ -55,11 +57,18 @@ const TAB_META: Record<
  */
 export function MiniPlayerDock() {
   const insets = useSafeAreaInsets();
+  const { width, isTablet } = useResponsiveLayout();
   const isVisible = usePlayerStoreLocal((s) => s.isVisible);
   const track = usePlayerStoreLocal((s) => s.track);
   if (!isVisible || !track) return null;
   return (
-    <View style={[styles.miniPlayerWrap, { marginBottom: 8 + insets.bottom }]}>
+    <View
+      style={[
+        styles.miniPlayerWrap,
+        isTablet && centredColumn(miniPlayerMaxWidth(width) ?? width, insets),
+        { marginBottom: 8 + insets.bottom },
+      ]}
+    >
       <MiniPlayer />
     </View>
   );
@@ -67,13 +76,20 @@ export function MiniPlayerDock() {
 
 export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
+  const { width, isTablet } = useResponsiveLayout();
+  const tabRow = tabBarRow(width);
+  // Tablets only. The bar itself stays full-bleed; the controls and the
+  // MiniPlayer centre in the area between the side insets (non-zero on Android
+  // landscape), so they sit under the content column rather than the cutout.
+  const rowColumn = isTablet && tabRow.maxWidth !== undefined ? centredColumn(tabRow.maxWidth, insets) : undefined;
+  const playerColumn = isTablet ? centredColumn(miniPlayerMaxWidth(width) ?? width, insets) : undefined;
 
   const routesByName = new Map(state.routes.map((r) => [r.name, r]));
   const activeRouteName = state.routes[state.index]?.name;
 
   return (
     <View>
-      <View style={styles.miniPlayerWrap}>
+      <View style={[styles.miniPlayerWrap, playerColumn]}>
         <MiniPlayer />
       </View>
       <View
@@ -82,7 +98,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
           { paddingBottom: insets.bottom },
         ]}
       >
-        <View style={styles.row}>
+        <View style={[styles.row, rowColumn]}>
           {TAB_PHYSICAL_ORDER.map((key) => {
             const route = routesByName.get(key);
             if (!route) return null;
@@ -107,7 +123,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityRole="button"
                 accessibilityState={active ? { selected: true } : {}}
                 accessibilityLabel={label}
-                style={styles.tabWrap}
+                style={[styles.tabWrap, isTablet && { maxWidth: tabRow.itemWidth }]}
               >
                 <View style={[styles.item, active && styles.itemActive]}>
                   {active ? <View style={styles.indicator} /> : null}

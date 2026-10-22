@@ -2,7 +2,8 @@ import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { Image } from 'expo-image';
 import React from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, View, type ImageStyle } from 'react-native';
+import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 /**
  * The art every mobile frame lays over its page ground.
@@ -28,12 +29,69 @@ import { StyleSheet, View } from 'react-native';
  * writes an opaque asset that renders identically at full opacity on that
  * ground. Nothing here guesses an opacity.
  */
-export function HeaderArt({ corners = 'pair' }: { corners?: 'pair' | 'single' | 'none' }) {
+/** The frame the art was drawn on, and the gutter its title sits inside. */
+const ART_FRAME_WIDTH = 393;
+const ART_GUTTER = 16;
+
+/**
+ * Tile and corner placement. Phones keep the frame's left anchors, stretched
+ * across the screen. A tablet is wider than the frame and the tile is not
+ * seamless, so it cannot stretch or repeat: it stays at its drawn 393pt and
+ * anchors from the physical right, where the page title is anchored. `inset`
+ * is the page column's distance from the window's right edge; the art's own
+ * 16pt gutter is subtracted so the frame's right edge lines up with the column.
+ *
+ * Left anchors become right anchors as `393 - left - width`: the large corner
+ * (84, 96 wide) is 213 from the frame's right edge, the small one (356, 37
+ * wide) is 0.
+ */
+export function headerArtGeometry(
+  isTablet: boolean,
+  inset: number,
+): { tile: ImageStyle; cornerLarge: ImageStyle; cornerSmall: ImageStyle } {
+  if (!isTablet) {
+    return {
+      tile: { position: 'absolute', left: 0, top: 0, right: 0, height: 549 },
+      cornerLarge: { position: 'absolute', left: 84, top: -17, width: 96, height: 94 },
+      cornerSmall: { position: 'absolute', left: 356, top: 36, width: 37, height: 36 },
+    };
+  }
+  const right = inset - ART_GUTTER;
+  return {
+    tile: { position: 'absolute', top: 0, right, width: ART_FRAME_WIDTH, height: 549 },
+    cornerLarge: {
+      position: 'absolute',
+      right: right + (ART_FRAME_WIDTH - 84 - 96),
+      top: -17,
+      width: 96,
+      height: 94,
+    },
+    cornerSmall: {
+      position: 'absolute',
+      right: right + (ART_FRAME_WIDTH - 356 - 37),
+      top: 36,
+      width: 37,
+      height: 36,
+    },
+  };
+}
+
+export function HeaderArt({
+  corners = 'pair',
+  inset,
+}: {
+  corners?: 'pair' | 'single' | 'none';
+  /** The page column's inset from the window's physical right edge. */
+  inset?: number;
+}) {
+  const layout = useResponsiveLayout();
+  const geo = headerArtGeometry(layout.isTablet, inset ?? layout.reading.inset);
+  const tabletArt = layout.isTablet;
   return (
     <View style={styles.layer} pointerEvents="none" accessible={false} accessibilityElementsHidden>
       <Image
         source={require('@/assets/figma/pattern-geometric-on-page.png')}
-        style={styles.tile}
+        style={tabletArt ? geo.tile : styles.tile}
         contentFit="cover"
         contentPosition="top center"
         cachePolicy="memory-disk"
@@ -41,7 +99,10 @@ export function HeaderArt({ corners = 'pair' }: { corners?: 'pair' | 'single' | 
       {corners === 'none' ? null : (
         <Image
           source={require('@/assets/figma/ornament-corner-on-page.png')}
-          style={[styles.cornerLarge, corners === 'single' && styles.cornerLargeSingle]}
+          style={[
+            tabletArt ? geo.cornerLarge : styles.cornerLarge,
+            corners === 'single' && styles.cornerLargeSingle,
+          ]}
           contentFit="contain"
           cachePolicy="memory-disk"
         />
@@ -49,7 +110,7 @@ export function HeaderArt({ corners = 'pair' }: { corners?: 'pair' | 'single' | 
       {corners === 'pair' ? (
         <Image
           source={require('@/assets/figma/ornament-corner-on-page.png')}
-          style={styles.cornerSmall}
+          style={tabletArt ? geo.cornerSmall : styles.cornerSmall}
           contentFit="contain"
           cachePolicy="memory-disk"
         />
