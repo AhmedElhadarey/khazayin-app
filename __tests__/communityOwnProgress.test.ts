@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { keepIfSame, loadOwnProgress } from '@/services/community/ownProgress';
+import { keepIfSame, loadOwnProgress, makeIsCurrent } from '@/services/community/ownProgress';
 import type { Challenge } from '@/types/community';
 
 const challenge: Challenge = { id: 'c1', groupId: 'g1', title: 't', startsOn: '2026-10-20', createdBy: 'm', kind: 'khatm' };
@@ -47,10 +47,43 @@ describe('keepIfSame', () => {
   });
 });
 
+describe('makeIsCurrent', () => {
+  const base = { live: () => true, left: () => false, gen: 4, currentGen: () => 4 };
+
+  it('is current only while live, not left, and the generation has not moved', () => {
+    expect(makeIsCurrent(base)()).toBe(true);
+  });
+  it('is stale once the screen is no longer live', () => {
+    expect(makeIsCurrent({ ...base, live: () => false })()).toBe(false);
+  });
+  it('is stale once the member left the group', () => {
+    expect(makeIsCurrent({ ...base, left: () => true })()).toBe(false);
+  });
+  it('is stale once the community stores were reset', () => {
+    expect(makeIsCurrent({ ...base, currentGen: () => 5 })()).toBe(false);
+  });
+  it('reads every condition at call time, not at creation', () => {
+    let left = false;
+    const isCurrent = makeIsCurrent({ ...base, left: () => left });
+    expect(isCurrent()).toBe(true);
+    left = true;
+    expect(isCurrent()).toBe(false);
+  });
+});
+
 describe('group screen wiring', () => {
   const src = fs.readFileSync(path.join(__dirname, '..', 'app/(tabs)/more/community/group/[id].tsx'), 'utf8');
   it('re-reads own counts when the detail data changes, not only on focus', () => {
     expect(src).toMatch(/useEffect\(\(\) => \{[\s\S]*?loadOwnProgress\([\s\S]*?\}, \[[^\]]*\bdetail\b[^\]]*\]\)/);
-    expect(src).toMatch(/communityGeneration\(\)/);
+  });
+  it('builds both guards with makeIsCurrent from the live flag, the leave latch and the generation', () => {
+    const uses = src.match(/makeIsCurrent\(\{[^}]*\}\)/g) ?? [];
+    expect(uses).toHaveLength(2);
+    for (const u of uses) {
+      expect(u).toMatch(/live:/);
+      expect(u).toMatch(/left: \(\) => leaveGuard\.current\.left/);
+      expect(u).toMatch(/gen,/);
+      expect(u).toMatch(/currentGen: communityGeneration/);
+    }
   });
 });

@@ -29,3 +29,18 @@ export async function loadOwnProgress(c: Challenge, deps: OwnProgressDeps): Prom
 export function keepIfSame(prev: OwnProgress | null, next: OwnProgress): OwnProgress {
   return prev && prev.pagesCovered === next.pagesCovered && prev.daysMet === next.daysMet ? prev : next;
 }
+
+/**
+ * The screen's guard for an own-counts read. Every input is a getter or a value
+ * captured when the read starts, so the answer is evaluated when the read lands:
+ * stale after blur or unmount (`live`), after leaving the group (`left`), and
+ * after a community reset (`gen` no longer equals `currentGen()`).
+ */
+export function makeIsCurrent(g: {
+  live: () => boolean;
+  left: () => boolean;
+  gen: number;
+  currentGen: () => number;
+}): () => boolean {
+  return () => g.live() && !g.left() && g.gen === g.currentGen();
+}

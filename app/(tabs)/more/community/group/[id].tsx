@@ -27,7 +27,7 @@ import { arabicCopyForCode, isApiError } from '@/services/api/errors';
 import { communityService } from '@/services/community';
 import { runLeave, type LeaveGuard } from '@/services/community/groupActions';
 import { groupView, type OwnProgress } from '@/services/community/progressMath';
-import { keepIfSame, loadOwnProgress } from '@/services/community/ownProgress';
+import { keepIfSame, loadOwnProgress, makeIsCurrent } from '@/services/community/ownProgress';
 import { onGroupFocused, ownCounts } from '@/services/community/progressSync';
 import { arabicCount } from '@/services/libraryStats';
 import { runMutation } from '@/store/communityMutations';
@@ -80,7 +80,12 @@ export default function GroupDetailScreen() {
       void onGroupFocused(challenge);
       void loadOwnProgress(challenge, {
         read: ownCounts,
-        isCurrent: () => live && gen === communityGeneration() && !leaveGuard.current.left,
+        isCurrent: makeIsCurrent({
+          live: () => live,
+          left: () => leaveGuard.current.left,
+          gen,
+          currentGen: communityGeneration,
+        }),
         apply: (counts) => setOwn((prev) => keepIfSame(prev, counts)),
       });
       return () => {
@@ -100,7 +105,12 @@ export default function GroupDetailScreen() {
     const gen = communityGeneration();
     void loadOwnProgress(c, {
       read: ownCounts,
-      isCurrent: () => live && gen === communityGeneration() && !leaveGuard.current.left,
+      isCurrent: makeIsCurrent({
+          live: () => live,
+          left: () => leaveGuard.current.left,
+          gen,
+          currentGen: communityGeneration,
+        }),
       apply: (counts) => setOwn((prev) => keepIfSame(prev, counts)),
     });
     return () => {
