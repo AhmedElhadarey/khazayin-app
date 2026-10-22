@@ -551,9 +551,10 @@ Production builds render no community UI, so every Figma capture is unaffected. 
   - `useMyGroupsStore = createAsyncStore<Group[]>({ name:'community-groups', initialData: [], fetcher: () => communityService.groups.listMine(), isEmpty: (d) => d.length === 0 })`. `initialData` is required (`store/createAsyncStore.ts:88-89`).
   - Keyed factories modelled on `store/scholarStore.ts:21-47`: `useGroupDetailStore(id)`, `useThreadSummariesStore(scholarId)`, and `useThreadPostsStore(lectureId)` (`createPaginatedStore<Post>`). Confirm the paginated fetcher envelope at T6 start.
 - `store/communityMutations.ts`:
-  - `runMutation(intentKey, op, target, payload, perform)` applies §5.3, tracks `inFlight`, and dedupes concurrent calls.
+  - `runMutation(op, target, payload, perform)` applies §5.3 (the key is derived as `intentKey(op, target)`), tracks `inFlight`, and dedupes concurrent calls.
   - Patchers `prependPost`, `replacePost` and `removePost` use `setState`, because `refresh()` clears items (`store/paginated.ts:354-372`).
-  - Group mutations call `refresh()`.
+  - Group mutations re-fetch quietly (no `loading` status, existing state kept on failure) instead of calling `refresh()`.
+  - Known limitation: a quiet re-fetch and a normal `refresh` are last-write-wins, because the factories have no sequence guard. An earlier refresh can overwrite post-mutation data until the next fetch.
 - Selectors subscribe to raw arrays and filter in `useMemo`, per `store/notesStore.ts:116-123`.
 
 ## 10. Accessibility

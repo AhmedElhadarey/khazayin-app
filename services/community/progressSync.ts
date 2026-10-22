@@ -9,7 +9,6 @@
  */
 import { AppState } from 'react-native';
 import { progressRepo } from '@/db';
-import { isApiError } from '@/services/api/errors';
 import { communityService } from '@/services/community';
 import { COMMUNITY_MODE } from '@/services/community/config';
 import { communityAccess } from '@/services/community/gate';
@@ -20,27 +19,19 @@ import {
   ownDaysMet,
   ownKhatm,
 } from '@/services/community/progressMath';
-import {
-  hashPayload,
-  intentKey,
-  nextRequestId,
-  type IdempotencyEntry,
-} from '@/services/community/idempotency';
+import { runMutation, resetMutations } from '@/store/communityMutations';
 import { useCommunityLocalStore } from '@/store/communityLocalStore';
 import type { Challenge } from '@/types/community';
 
 const THROTTLE_MS = 3600e3;
 
 const attempts = new Map<string, number>();
-const entries = new Map<string, IdempotencyEntry>();
-const inFlight = new Map<string, Promise<void>>();
 let started: (() => void) | null = null;
 
 /** Test hook: forget throttle, idempotency and listener state. */
 export function __resetProgressSyncForTesting(): void {
   attempts.clear();
-  entries.clear();
-  inFlight.clear();
+  resetMutations();
   backgroundRun = null;
   started?.();
   started = null;
@@ -83,42 +74,22 @@ async function push(c: Challenge, bypassThrottle: boolean): Promise<void> {
   if (last && next.pagesCovered === last.pagesCovered && next.daysMet === last.daysMet) return;
   if (!stillMine()) return;
 
-  const key = intentKey('reportProgress', c.id);
   const payload = { pagesCovered: next.pagesCovered, daysMet: next.daysMet };
-  const requestId = nextRequestId(entries.get(key) ?? null, 'reportProgress', c.id, payload, now);
-  entries.set(key, { payloadHash: hashPayload(payload), requestId, lastError: null });
-  try {
-    await communityService.challenges.reportProgress({
-      requestId,
-      challengeId: c.id,
-      memberId,
-      computedAt: now,
-      ...payload,
-    });
-    entries.delete(key);
-    if (stillMine()) useCommunityLocalStore.getState().setLastReported(c.id, { ...payload, at: now });
-  } catch (e) {
-    entries.set(key, {
-      payloadHash: hashPayload(payload),
-      requestId,
-      lastError: isApiError(e) ? e.code : 'unknown',
-    });
-    throw e;
-  }
+  // runMutation owns the requestId reuse and the duplicate-in-flight share; it
+  // calls the send synchronously, so `stillMine()` above is the last check before it.
+  // A join that shares another caller's send gets that send's result back, so
+  // record what was actually sent, never this caller's own unsent counts.
+  const sent = await runMutation('reportProgress', c.id, payload, (requestId) =>
+    communityService.challenges
+      .reportProgress({ requestId, challengeId: c.id, memberId, computedAt: now, ...payload })
+      .then(() => ({ ...payload, at: now })),
+  );
+  if (stillMine()) useCommunityLocalStore.getState().setLastReported(c.id, sent);
 }
 
-/**
- * One push per challenge at a time; a duplicate gets the running promise.
- * A join that coincides with an in-flight push shares that push's outcome, until T6 `runMutation`.
- */
+/** Errors are swallowed; a duplicate send is shared by `runMutation`. */
 function run(c: Challenge, bypassThrottle: boolean): Promise<void> {
-  const running = inFlight.get(c.id);
-  if (running) return running;
-  const p = push(c, bypassThrottle)
-    .catch(warn)
-    .finally(() => inFlight.delete(c.id));
-  inFlight.set(c.id, p);
-  return p;
+  return push(c, bypassThrottle).catch(warn);
 }
 
 /** Trigger (b): a challenge was started or joined. Bypasses the throttle. */

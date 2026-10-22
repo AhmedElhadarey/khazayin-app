@@ -231,6 +231,23 @@ describe('progressSync', () => {
     expect(useCommunityLocalStore.getState().lastReported).toEqual({});
   });
 
+  it('records only what was sent when a join shares an in-flight send', async () => {
+    let release!: () => void;
+    mockSvc.challenges.reportProgress.mockImplementationOnce(() => new Promise<void>((r) => (release = r)));
+    const first = onGroupFocused(challenge); // sends 3
+    await flush();
+    mockRepo.distinctPagesSince.mockResolvedValue([1, 2, 3, 4, 5]);
+    const join = onChallengeJoined(challenge); // computes 5, shares the send of 3
+    await flush();
+    release();
+    await Promise.all([first, join]);
+    expect(mockSvc.challenges.reportProgress.mock.calls.map((c) => c[0].pagesCovered)).toEqual([3]);
+    expect(useCommunityLocalStore.getState().lastReported.c1.pagesCovered).toBe(3);
+    now += 61 * MIN;
+    await background();
+    expect(mockSvc.challenges.reportProgress.mock.calls.map((c) => c[0].pagesCovered)).toEqual([3, 5]);
+  });
+
   it('keeps syncing the other groups when one groups.get fails', async () => {
     const g2: Group = { ...group, id: 'g2', activeChallengeId: 'c2' };
     const c2: Challenge = { ...challenge, id: 'c2', groupId: 'g2' };
