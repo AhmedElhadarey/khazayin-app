@@ -4,6 +4,7 @@ import path from 'path';
 import {
   ReadingPlaceController,
   RESTORE_TTL_MS,
+  TARGET_CONSUME_DISTANCE,
   captureReadingAnchor,
   resolvePendingRestore,
   restoreOffset,
@@ -103,6 +104,14 @@ describe('Mushaf screen tablet wiring', () => {
   it('centres the page and footer on a sheet column', () => {
     expect(src).toMatch(/mushafSheetWidth\(\s*width\s*\)/);
     expect(src).toMatch(/centredColumn\(/);
+  });
+
+  it('drops pre-reflow measurements when re-arming the ayah scroll', () => {
+    expect(src).toMatch(/layoutsRef\.current\.clear\(\);\s*linesRef\.current\.clear\(\)/);
+  });
+
+  it('a surah-level note jump does not clear the scrolled-ayah marker', () => {
+    expect(src).toMatch(/if \(n == null\) \{\s*place\.onTargetLeft\(\);/);
   });
 
   it('forwards reflow events to the ReadingPlaceController', () => {
@@ -247,5 +256,45 @@ describe('ReadingPlaceController', () => {
     c.onUserScrollBegin();
     c.onAyahJump(); // tapping a note label for the same ayah
     expect(c.onKeyChange('1100:30', true, 60)).toBe('rearmAyah');
+  });
+
+  it('a surah-level note jump spends the target, so rotation does not pull back', () => {
+    const c = build();
+    c.setTargetAyah(255);
+    c.onTargetLeft();
+    c.onScroll(BODY_Y + 700, 10, OLD);
+    expect(c.onKeyChange(NEW, true, 20)).toBe('restore');
+  });
+
+  it('a second key change while a restore is pending keeps the place', () => {
+    const c = build();
+    c.onScroll(BODY_Y + 700, 10, OLD);
+    c.onKeyChange(NEW, true, 20);
+    expect(c.onKeyChange('900:34', true, 100)).toBe('restore');
+    c.onSegmentLayout(2, reflowed, 100 + RESTORE_TTL_MS - 1); // deadline was refreshed
+    expect(c.takeScrollRequest()).toBeCloseTo(BODY_Y + 480 + 0.5 * 720);
+  });
+
+  it('scrolling away without a drag (status bar, screen reader) spends the target', () => {
+    const c = build();
+    c.setTargetAyah(255);
+    c.onProgrammaticScroll();
+    c.onScroll(1000, 10, OLD); // baseline: where the scroll actually landed
+    c.onScroll(1000 + TARGET_CONSUME_DISTANCE - 1, 11, OLD);
+    expect(c.onKeyChange(NEW, true, 20)).toBe('rearmAyah');
+    c.onProgrammaticScroll();
+    c.onScroll(1000, 21, NEW);
+    c.onScroll(1000 + TARGET_CONSUME_DISTANCE + 1, 22, NEW);
+    expect(c.onKeyChange('900:30', true, 30)).toBe('restore');
+  });
+
+  it('ignores the reflow clamp scroll after a rearm when judging the user', () => {
+    const c = build();
+    c.setTargetAyah(255);
+    c.onProgrammaticScroll();
+    c.onScroll(1000, 10, OLD);
+    c.onKeyChange(NEW, true, 20);
+    c.onScroll(300, 21, NEW); // clamped by the reflow: a new baseline, not the user
+    expect(c.onKeyChange('900:30', true, 30)).toBe('rearmAyah');
   });
 });

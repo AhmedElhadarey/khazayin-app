@@ -328,26 +328,37 @@ function ReadingView({
   useEffect(() => {
     const outcome = place.onKeyChange(typeKey, isTablet, Date.now());
     if (outcome === 'rearmAyah') {
+      // Forget the pre-reflow measurements: tryScroll would otherwise scroll
+      // against them, mark the ayah precise and ignore the new ones. The text
+      // reflows, so onLayout / onTextLayout fire again and tryScroll runs then.
+      layoutsRef.current.clear();
+      linesRef.current.clear();
       scrolledAyahRef.current = null;
       scrolledPreciseRef.current = false;
-      tryScroll();
     }
     flushPlace();
-  }, [place, typeKey, isTablet, tryScroll, flushPlace]);
+  }, [place, typeKey, isTablet, flushPlace]);
 
   // A note's label inside this screen re-targets the scroll. The same ayah
-  // is re-armed explicitly because the param would not change.
+  // is re-armed explicitly because the param would not change. A surah-level
+  // note (no ayah) goes to the top and spends the deep-link target, WITHOUT
+  // clearing scrolledAyahRef: clearing it would let the next segment layout
+  // call tryScroll and pull the reader back to the old ?ayah.
   const jumpToAyah = useCallback(
     (n?: number) => {
-      scrolledAyahRef.current = null;
-      scrolledPreciseRef.current = false;
-      place.onAyahJump();
       if (n == null) {
+        place.onTargetLeft();
         scrollRef.current?.scrollTo({ y: 0, animated: true });
         return;
       }
-      if (n === targetAyah) tryScroll();
-      else router.setParams({ ayah: String(n) } as any);
+      if (n === targetAyah) {
+        scrolledAyahRef.current = null;
+        scrolledPreciseRef.current = false;
+        place.onAyahJump();
+        tryScroll();
+      } else {
+        router.setParams({ ayah: String(n) } as any);
+      }
     },
     [router, targetAyah, tryScroll, place],
   );

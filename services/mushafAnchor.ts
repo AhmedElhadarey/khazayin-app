@@ -17,6 +17,9 @@ export interface ReadingAnchor {
   height: number;
 }
 
+/** Distance from the post-scroll baseline that counts as the user moving. */
+export const TARGET_CONSUME_DISTANCE = 40;
+
 /** A restore waiting for the reflowed layout; abandoned after this long. */
 export const RESTORE_TTL_MS = 1500;
 
@@ -125,6 +128,14 @@ export class ReadingPlaceController {
   private target: number | null = null;
   /** The user has scrolled on since the deep-link target was applied. */
   private targetConsumed = false;
+  /**
+   * Where the reader sits after the screen's own scroll. The first scroll event
+   * after a programmatic scroll is the baseline (the content may have clamped
+   * the request); a later event further than this from it is the user scrolling
+   * by a route that has no drag (status-bar tap, VoiceOver / TalkBack).
+   */
+  private awaitingBaseline = false;
+  private baselineY: number | null = null;
 
   constructor(key: string, isTablet: boolean) {
     this.key = key;
@@ -162,6 +173,14 @@ export class ReadingPlaceController {
       this.pending = null;
       return;
     }
+    if (this.target != null && !this.targetConsumed) {
+      if (this.awaitingBaseline) {
+        this.baselineY = y;
+        this.awaitingBaseline = false;
+      } else if (this.baselineY != null && Math.abs(y - this.baselineY) > TARGET_CONSUME_DISTANCE) {
+        this.targetConsumed = true;
+      }
+    }
     this.settle(now);
     if (this.pending) return; // frozen until the restore lands or is dropped
     // A scroll under a new key that the key-change effect has not reported yet
@@ -181,6 +200,17 @@ export class ReadingPlaceController {
   onProgrammaticScroll(): void {
     this.pending = null;
     this.anchor = null;
+    this.awaitingBaseline = true;
+    this.baselineY = null;
+  }
+
+  /**
+   * The screen scrolled somewhere that is not the deep-link target (a surah
+   * level note goes to the top): the target must not pull the reader back.
+   */
+  onTargetLeft(): void {
+    this.onProgrammaticScroll();
+    if (this.target != null) this.targetConsumed = true;
   }
 
   /** An explicit jump to the (possibly same) ayah makes the target live again. */
@@ -202,9 +232,17 @@ export class ReadingPlaceController {
     if (this.target != null && !this.targetConsumed) {
       this.anchor = null;
       this.pending = null;
+      // The reflow's own clamped scroll must not read as the user moving.
+      this.awaitingBaseline = true;
+      this.baselineY = null;
       return 'rearmAyah';
     }
-    const from = this.anchor && this.anchor.key === prev ? this.anchor : null;
+    // A second key change while a restore is pending keeps that place.
+    const from = this.pending
+      ? this.pending.anchor
+      : this.anchor && this.anchor.key === prev
+        ? this.anchor
+        : null;
     this.anchor = null;
     this.pending = from ? { anchor: from, deadline: now + RESTORE_TTL_MS } : null;
     // The reflow's onLayout may already have landed.
