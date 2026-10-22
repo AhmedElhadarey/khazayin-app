@@ -2,7 +2,9 @@ import { InlineHeader, ListRowCard } from '@/components/khazain';
 import { HeaderArt } from '@/components/khazain/patterns';
 import { SettingsSection, SettingsValueRow } from '@/components/khazain/settings';
 import { toArabicDigits as toArNum } from '@/constants/progress';
+import { RECOMMENDATIONS_ENABLED, RECOMMENDATION_COPY } from '@/constants/recommendations';
 import { PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
+import { useRecommendationsStore } from '@/store/recommendationsStore';
 import { useWirdStore } from '@/store/wirdStore';
 import { KhazainConfig } from '@/constants/config';
 import { KhazainColors } from '@/constants/theme';
@@ -109,6 +111,11 @@ export default function SettingsScreen() {
         },
       ],
     );
+  };
+
+  const onResetRecommendations = () => {
+    useRecommendationsStore.getState().clearDismissed();
+    useToastStore.getState().show({ message: RECOMMENDATION_COPY.resetDone });
   };
 
   const onExportNotes = async () => {
@@ -241,6 +248,15 @@ export default function SettingsScreen() {
             icon={<ExportIcon />}
             onPress={onExportNotes}
           />
+          {RECOMMENDATIONS_ENABLED ? (
+            <ListRowCard
+              variant="more"
+              title={RECOMMENDATION_COPY.resetRow}
+              subtitle=""
+              icon={<RestoreIcon />}
+              onPress={onResetRecommendations}
+            />
+          ) : null}
         </SettingsSection>
         <SettingsSection title="قانوني">
           <ListRowCard
@@ -364,6 +380,22 @@ function PrivacyIcon() {
         fill="none"
       />
       <Path d="M8.5 12l2.5 2.5L15.5 10" stroke={c} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function RestoreIcon() {
+  const c = KhazainColors.navy800;
+  return (
+    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M4 12a8 8 0 108-8 8 8 0 00-5.7 2.4L4 8.5"
+        stroke={c}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path d="M4 4v4.5h4.5" stroke={c} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }

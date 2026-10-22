@@ -16,6 +16,8 @@ import { useHorizonReconcile } from '@/hooks/useHorizonReconcile';
 import { useDayRollover } from '@/hooks/useDayRollover';
 import { ToastOverlay } from '@/components/khazain';
 import { useProgressStore } from '@/store/progressStore';
+import { startActivityWatch } from '@/store/recommendationInputsStore';
+import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
 import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
@@ -307,6 +309,8 @@ function RootLayout() {
         });
       },
     });
+    // Subscribe before hydrating so the ready transition is not missed (design §7.4).
+    if (RECOMMENDATIONS_ENABLED) startActivityWatch();
     Promise.all([
       useProgressStore.getState().hydrate(),
       useWirdStore.getState().hydrate(),

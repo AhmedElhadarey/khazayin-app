@@ -8,8 +8,10 @@ import {
   fromArabicDigits,
   toArabicDigits,
 } from '@/constants/progress';
+import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
 import { resetFacade } from '@/db';
 import { useProgressStore } from '@/store/progressStore';
+import { useRecommendationInputsStore } from '@/store/recommendationInputsStore';
 import { useToastStore } from '@/store/toastStore';
 import { useWirdStore } from '@/store/wirdStore';
 import { useRouter } from 'expo-router';
@@ -71,7 +73,13 @@ export default function SettingsProgressScreen() {
           onPress: async () => {
             try {
               await resetFacade.resetAll(Date.now());
-              await Promise.all([refreshAll(), hydrateWird()]);
+              await Promise.all([
+                refreshAll(),
+                hydrateWird(),
+                RECOMMENDATIONS_ENABLED
+                  ? useRecommendationInputsStore.getState().refreshActivity()
+                  : undefined,
+              ]);
               Alert.alert('تم', 'تمت إعادة تعيين التقدّم');
             } catch (err) {
               Alert.alert('تعذّر إعادة التعيين', String(err));

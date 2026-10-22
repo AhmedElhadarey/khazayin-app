@@ -142,3 +142,31 @@ describe('long-press rule', () => {
     expect(doc).toMatch(/Long-press.*NOTE/);
   });
 });
+
+describe('mushaf recommendations', () => {
+  const mushaf = read('app/(tabs)/sections/mushaf.tsx');
+  const block = read('components/khazain/recommendations/SurahEndSuggestions.tsx');
+  it('the end block follows the notes footer (S3)', () => {
+    expect(mushaf.indexOf('<SurahEndSuggestions')).toBeGreaterThan(mushaf.indexOf('<SurahNotesFooter'));
+    expect(mushaf.indexOf('<SurahNotesFooter')).toBeGreaterThan(-1);
+  });
+  it('the end block takes no save gesture (NOTE surface)', () => {
+    expect(block).not.toMatch(/\bsave=|useSaveGesture|saveGestureProps|onLongPress/);
+  });
+  it('next surah replaces params instead of pushing (C1)', () => {
+    expect(block).toMatch(/router\.setParams\(\{ surah: [^}]*ayah: undefined/);
+    expect(block).not.toMatch(/router\.push\(/);
+  });
+  it('routes through the Mushaf target, which never plays', () => {
+    expect(block).toContain("recommendationTarget(rec, 'mushaf')");
+    expect(block).not.toMatch(/startLecturePlayback/);
+  });
+  it('the Mushaf gates the catalogue with its surah context (N1)', () => {
+    expect(mushaf).toMatch(/loadCatalogue\(\{ signalCount[^}]*contextSurah: surahNumber/);
+  });
+  it('the MiniPlayer is hidden on focus and released through the overlay-aware helper', () => {
+    expect(mushaf).toMatch(/useFocusEffect\(\s*useCallback\(\(\) => \{\s*setVisible\(false\);/);
+    expect(mushaf).toContain('releaseMiniPlayerOnBlur(');
+    expect(mushaf).not.toMatch(/return \(\) => setVisible\(true\)/);
+  });
+});

@@ -7,6 +7,7 @@ import {
   LIST_ROW_ORDER,
   MUSHAF_FOOTER_ORDER,
   RECITER_ROW_ORDER,
+  RECOMMENDATION_ROW_ORDER,
   SEARCH_PILL_ORDER,
   SELECTABLE_ROW_ORDER,
   backAccessibilityLabel,
@@ -98,5 +99,12 @@ describe('onboarding selectable row contract (no Figma frame)', () => {
   it('onboarding selectable row: preview on the physical left, select (tick → text) leading at the right', () => {
     expect(SELECTABLE_ROW_ORDER).toEqual(['preview', 'select']);
     expect(Object.isFrozen(SELECTABLE_ROW_ORDER)).toBe(true);
+  });
+});
+
+describe('recommendation row contract', () => {
+  it('pins the recommendation row order', () => {
+    expect(RECOMMENDATION_ROW_ORDER).toEqual(['dismiss', 'card']);
+    expect(Object.isFrozen(RECOMMENDATION_ROW_ORDER)).toBe(true);
   });
 });

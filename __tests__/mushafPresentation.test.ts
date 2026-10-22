@@ -173,3 +173,17 @@ describe('ayah deep link', () => {
     ).toBe(100 + 0.25 * 200);
   });
 });
+
+describe('next surah params (C1)', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const nav = require('@/services/mushafNavigation');
+  it('pads the surah param and clears the ayah', () => {
+    expect(nav.toSurahParam(2)).toBe('002');
+    expect(nav.nextSurahParams(1)).toEqual({ surah: '002', ayah: undefined });
+    expect(nav.nextSurahParams(113)).toEqual({ surah: '114', ayah: undefined });
+  });
+  it('has no next surah after the last', () => {
+    expect(nav.LAST_SURAH).toBe(114);
+    expect(nav.nextSurahParams(114)).toBeNull();
+  });
+});

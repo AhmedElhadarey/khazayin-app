@@ -13,6 +13,7 @@ describe('homeTabletRows', () => {
       ['quranHero', 'prophetHero'],
       'scholars',
       'books',
+      'recommended',
       ['queen', 'quickChips'],
       'dawah',
     ]);

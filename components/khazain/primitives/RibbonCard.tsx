@@ -131,7 +131,10 @@ const styles = StyleSheet.create({
   titleBlock: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'flex-end',
+    // Stretch, don't shrink-wrap: Android 15+ breaks lines by ink bounds while
+    // RN 0.81 measures by advances, so a Text boxed to its advance width loses
+    // its last word. Each Text right-aligns itself via textStyle (RTL_TEXT).
+    alignItems: 'stretch',
     gap: 2,
   },
   pretitle: textStyle('caption', { color: KhazainColors.ink500 }),

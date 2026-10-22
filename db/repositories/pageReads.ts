@@ -175,5 +175,16 @@ export function createPageReadsRepository(db: SQLite.SQLiteDatabase): PageReadsR
     async dayCompletionsInRange(fromLocalDay, toLocalDay) {
       return dayRowsInRange(db, fromLocalDay, toLocalDay);
     },
+
+    async recentPageReads(sinceMs, limit) {
+      const rows = await db.getAllAsync<{ page_number: number; at: number }>(
+        `SELECT page_number, MAX(recorded_at) AS at FROM khz_page_reads
+           WHERE recorded_at >= ?
+           GROUP BY page_number ORDER BY at DESC, page_number ASC LIMIT ?`,
+        sinceMs,
+        limit,
+      );
+      return rows.map((r) => ({ page: r.page_number, atMs: r.at }));
+    },
   };
 }
