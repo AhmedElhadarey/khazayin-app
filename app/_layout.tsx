@@ -21,6 +21,7 @@ import { useSettingsStore } from '@/store/settingsStore';
 import { bootstrapNotificationHandler } from '@/services/notificationScheduler';
 import { shouldSuppressWirdNotification } from '@/services/wirdReminder';
 import { toLocalDay } from '@/constants/progress';
+import { startCommunityProgressSync } from '@/services/community/progressSync';
 import { registerCacheRoot } from '@/services/cacheFacade';
 import { registerPlaybackService, restoreLastLecture, setupPlayer } from '@/services/audioEngine';
 import { registerPlaybackListeners } from '@/services/audioEngine/syncBridge';
@@ -313,6 +314,7 @@ function RootLayout() {
     ])
       .then(() => {
         restoreLastLecture();
+        startCommunityProgressSync();
       })
       .catch((err) => {
         console.warn('[khazayin] progress hydration failed', err);

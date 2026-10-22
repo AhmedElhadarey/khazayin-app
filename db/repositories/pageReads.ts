@@ -119,6 +119,14 @@ export function createPageReadsRepository(db: SQLite.SQLiteDatabase): PageReadsR
       return countCompletedJuz(rows.map((r) => r.page_number));
     },
 
+    async distinctPagesSince(fromLocalDay) {
+      const rows = await db.getAllAsync<{ page_number: number }>(
+        'SELECT DISTINCT page_number FROM khz_page_reads WHERE local_day >= ? ORDER BY page_number',
+        fromLocalDay,
+      );
+      return rows.map((r) => r.page_number);
+    },
+
     async longestStreakEver() {
       return longestStreakEver(db);
     },

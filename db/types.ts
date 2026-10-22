@@ -63,6 +63,8 @@ export interface PageReadsRepository {
   totalPagesRead(): Promise<number>;
   currentStreak(): Promise<number>;
   completedJuzCount(): Promise<number>;
+  /** Distinct pages read on or after a local day, ascending (community progress, design §6). */
+  distinctPagesSince(fromLocalDay: string): Promise<number[]>;
   longestStreakEver(): Promise<number>;
   bestWirdDay(): Promise<DaySummary | null>;
   trendLastNDays(n: number): Promise<TrendPoint[]>;
