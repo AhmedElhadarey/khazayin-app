@@ -1,6 +1,7 @@
 import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import { todayHijriArabic } from '@/lib/hijriDate';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -25,9 +26,11 @@ export function HomeHeader({
   onBellPress?: () => void;
   onSearchOpen?: () => void;
 }) {
+  // In an iPad window the system's window controls sit over the header's top corner.
+  const controls = useWindowControlsInset();
   return (
     <View style={styles.wrap}>
-      <View style={styles.row}>
+      <View style={[styles.row, { paddingLeft: controls.left, paddingRight: controls.right }]}>
         <Pressable
           onPress={onBellPress}
           hitSlop={10}

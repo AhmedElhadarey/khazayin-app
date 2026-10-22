@@ -66,6 +66,7 @@ Screens checked, all pass after the fixes below:
 | 2 | **iOS:** every reading column sat against the right edge on iPad (More: 0.318–0.985 of the width). `RCTScrollViewComponentView` applies a content container's x offset twice; margins fail the same way | Columns inset by equal transparent side borders (`insetColumn`); `SegmentTabs` keeps the style off its ScrollView. Tests: `responsiveTablet`, `responsiveLayoutMaths`, `mushafTablet`, `tabletReadingColumn` | `a9727b9` |
 | 3 | **iOS, pre-existing (on main):** iPad page-sheet modals drawn ~97pt right, right side clipped (RTL origin from react-native-screens) | `patches/react-native-screens+4.16.0.patch` zeroes a native modal's origin; `usePageSheetLayout` drops the column on iOS sheets. Verified after an iOS rebuild | `bfd3469`, `1de745f` |
 | 4 | Final review: HeaderArt defaulted to the phone inset on tablets; search "no results" outside the column; phone Home capped scholars; MiniPlayer lost its 10pt side margin on asymmetric insets; stale "centred by margins" comments | `headerArtInset` defaults to the reading inset + 16; `noResultsWrap` takes the column; scholars uncapped on phones; `MINI_PLAYER_MARGIN` floor; comments reworded | `8b07e96` |
+| 5 | **iPadOS 26 windowed / tiled (Split View pass):** the system window controls sit over the system's leading top corner. On an English system they covered the Home «الإشعارات» bell (a tap opened the window menu); on an Arabic system they covered the back chevron and title of every `InlineHeader` screen (back could not be tapped) and the Sections / More / Library titles | `windowControlsInset` (`constants/responsive.ts`): 60pt physical clearance on the system's leading side, iPadOS 26+ only, when the window is smaller than the screen. Applied to the Home header row, `InlineHeader` and the three tab titles. Verified on the iPad Pro 13 sim in English and Arabic at ⅓ and ½ width; full screen unchanged. Test: `windowControlsInset` | `3222e49` |
 
 ## Web (RtlCarousel — CLAUDE.md requires a paired capture)
 
@@ -86,6 +87,16 @@ Expo web does not start on this branch or on `main` without local changes: `shak
 - **Android clips the last word of some Arabic names** ("عبد المحسن العباد البدر" shows as
   "عبد المحسن العباد", "…بن باز" without "باز") on phones and tablets: the Text node is measured
   narrower than it draws. Reproduced on `origin/main` on the same device. Separate ticket.
+
+## iPad Split View / windowing (iPadOS 26)
+
+Walked on the iPad Pro 13 simulator, tiled with Safari and in free windows at about ⅓ (375pt), ½
+(516pt portrait, 682pt landscape) and full width. Below `TABLET_MIN_WIDTH` (600) a window gets the
+phone layout and at 600+ the tablet layout, reflowing both ways as the window is resized; the
+scholar two-pane view appears from 900pt. Home with «مقترح لك», Sections, the scholar list and
+detail, and (on the community branch) every community screen laid out without overlap. The one
+defect is finding 5. Captures: `docs/audit/2026-10-22-community/splitview-*` and `wincontrols-*`
+(untracked).
 
 ## Not run on device in this pass
 
