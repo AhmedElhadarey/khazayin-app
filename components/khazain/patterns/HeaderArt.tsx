@@ -9,6 +9,24 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 const ART_FRAME_WIDTH = 393;
 const ART_GUTTER = 16;
 
+const PHONE_GEOMETRY = Object.freeze({
+  tile: Object.freeze<ImageStyle>({ position: 'absolute', left: 0, top: 0, right: 0, height: 549 }),
+  cornerLarge: Object.freeze<ImageStyle>({
+    position: 'absolute',
+    left: 84,
+    top: -17,
+    width: 96,
+    height: 94,
+  }),
+  cornerSmall: Object.freeze<ImageStyle>({
+    position: 'absolute',
+    left: 356,
+    top: 36,
+    width: 37,
+    height: 36,
+  }),
+});
+
 /**
  * Tile and corner placement. Phones keep the frame's left anchors, stretched
  * across the screen. A tablet is wider than the frame and the tile is not
@@ -25,13 +43,7 @@ export function headerArtGeometry(
   isTablet: boolean,
   inset: number,
 ): { tile: ImageStyle; cornerLarge: ImageStyle; cornerSmall: ImageStyle } {
-  if (!isTablet) {
-    return {
-      tile: { position: 'absolute', left: 0, top: 0, right: 0, height: 549 },
-      cornerLarge: { position: 'absolute', left: 84, top: -17, width: 96, height: 94 },
-      cornerSmall: { position: 'absolute', left: 356, top: 36, width: 37, height: 36 },
-    };
-  }
+  if (!isTablet) return PHONE_GEOMETRY;
   const right = inset - ART_GUTTER;
   return {
     tile: { position: 'absolute', top: 0, right, width: ART_FRAME_WIDTH, height: 549 },
@@ -124,9 +136,10 @@ export function HeaderArt({
 
 const styles = StyleSheet.create({
   layer: {
-    // The two corner motifs are placed by physical `left`, and the file places
-    // them asymmetrically — 84 and 356 across a 393 frame. Without a pinned
-    // direction, forceRTL maps `left` to `start` and mirrors both.
+    // The corner motifs are placed by physical offsets (`left` on phones,
+    // `right` on tablets), and the file places them asymmetrically — 84 and
+    // 356 across a 393 frame. Without a pinned direction, forceRTL maps
+    // `left`/`right` to `start`/`end` and mirrors both.
     ...PHYSICAL_BOX,
     ...StyleSheet.absoluteFillObject,
     backgroundColor: KhazainColors.pageBg,

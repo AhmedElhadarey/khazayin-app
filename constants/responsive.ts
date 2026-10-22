@@ -46,6 +46,13 @@ export const TABLET_TAB_GAP = 24;
 export const MINI_PLAYER_MAX = 600;
 export const SHEET_MAX = 600;
 
+/**
+ * Side insets. Anything fed to `centredColumn` / `gutterPadding` must be
+ * symmetric (`left === right`): under `I18nManager.forceRTL` React Native
+ * swaps `left`/`right` style keys to `start`/`end`, so in a node not pinned to
+ * `direction: 'ltr'` a `marginLeft` lands on the PHYSICAL RIGHT. Equal values
+ * make the swap harmless. `responsiveLayout` produces such insets.
+ */
 export interface HorizontalInsets {
   left: number;
   right: number;
@@ -244,38 +251,49 @@ export function columnStyles(
 }
 
 export interface ResponsiveLayout {
-  /** Window width minus the left/right safe-area insets. */
+  /** Window width minus both (symmetric) side insets. */
   width: number;
   height: number;
   isTablet: boolean;
   gutter: number;
-  /** `inset` is measured from the window's physical right edge on every width. */
+  /** `inset` is measured from the window's physical right edge on every width (symmetric, so the left matches). */
   reading: { width: number; inset: number };
   columnStyle: ViewStyle;
   homeColumnStyle: ViewStyle;
   splitPane: { side: number; gap: number } | null;
-  /** The safe-area insets the available width excludes. */
+  /** Symmetric safe-area insets (the larger of the two) the width excludes. */
   sideInsets: HorizontalInsets;
 }
 
-/** Everything `useResponsiveLayout` returns, as a pure function of the window. */
+/**
+ * Everything `useResponsiveLayout` returns, as a pure function of the window.
+ *
+ * The side insets are made symmetric: `side = max(insets.left, insets.right)`.
+ * RTL swaps left/right style keys (see `HorizontalInsets`), so asymmetric
+ * margins/paddings would land on the wrong physical edge in unpinned nodes.
+ * Symmetric values are correct either way, at the cost of up to one inset of
+ * extra margin on the side that did not need it. Phones (insets 0) are
+ * unchanged.
+ */
 export function responsiveLayout(
   windowWidth: number,
   height: number,
   insets: HorizontalInsets,
 ): ResponsiveLayout {
-  const width = windowWidth - insets.left - insets.right;
+  const side = Math.max(insets.left, insets.right);
+  const sideInsets: HorizontalInsets = { left: side, right: side };
+  const width = windowWidth - 2 * side;
   const column = readingColumn(width);
-  const { columnStyle, homeColumnStyle } = columnStyles(width, insets);
+  const { columnStyle, homeColumnStyle } = columnStyles(width, sideInsets);
   return {
     width,
     height,
     isTablet: isTabletWidth(width),
     gutter: screenGutter(width),
-    reading: { width: column.width, inset: insets.right + column.inset },
+    reading: { width: column.width, inset: side + column.inset },
     columnStyle,
     homeColumnStyle,
     splitPane: splitPane(width, height),
-    sideInsets: { left: insets.left, right: insets.right },
+    sideInsets,
   };
 }
