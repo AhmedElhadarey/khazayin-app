@@ -46,7 +46,7 @@ const SCHOLAR_TERM = 0.5;
 const SCHOLAR_CANDIDATE_TERM = 0.8;
 const CONTEXT_TOP_K = 3;
 
-const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
+export const cmp = (a: string, b: string): number => (a < b ? -1 : a > b ? 1 : 0);
 const round6 = (x: number): number => Math.round(x * 1e6) / 1e6;
 const byTopicOrder = (a: TopicId, b: TopicId): number => TOPIC_ORDER.indexOf(a) - TOPIC_ORDER.indexOf(b);
 

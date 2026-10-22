@@ -107,3 +107,36 @@ export interface ScholarRecommendation extends RecommendationBase {
 
 /** Narrow on `kind`; `lecture` and `scholarId` are then typed without `!`. */
 export type Recommendation = LectureRecommendation | BookRecommendation | ScholarRecommendation;
+
+/**
+ * Minimal structural inputs for services/recommendations/signals.ts. They
+ * mirror SavedItem (types/content.ts), Note (store/notesStore.ts) and
+ * LectureSession (db/types.ts), redeclared so the engine stays free of
+ * store and db imports. The real shapes are assignable to these.
+ */
+export interface SavedInput {
+  readonly type: string;
+  readonly entityId: string;
+  readonly savedAt: number;
+  readonly snapshot: { readonly name?: string; readonly title?: string };
+}
+
+export interface NoteInput {
+  readonly updatedAt: number;
+  readonly ref?: { readonly type: string; readonly id: string; readonly label: string; readonly title?: string };
+}
+
+export interface SessionInput {
+  readonly lectureId: string;
+  readonly title: string;
+  readonly durationSec: number;
+  readonly forwardListenedSec: number;
+  readonly completed: boolean;
+  readonly lastListenedAt: number;
+}
+
+export interface ActivityInput {
+  readonly sessions: readonly SessionInput[];
+  readonly pageReads: readonly PageRead[];
+  readonly failed: boolean;
+}
