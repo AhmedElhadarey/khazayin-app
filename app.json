@@ -46,6 +46,7 @@
     "plugins": [
       "expo-router",
       "./plugins/withSplashWindowBackground",
+      "./plugins/withTabletRotation",
       [
         "expo-splash-screen",
         {
