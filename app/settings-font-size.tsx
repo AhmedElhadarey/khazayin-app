@@ -58,15 +58,18 @@ export default function SettingsFontSizeScreen() {
         </View>
       </ScrollView>
       <View style={styles.footer}>
-        <Pressable
-          onPress={apply}
-          style={({ pressed }) => [
-            styles.applyBtn,
-            { opacity: pressed ? 0.85 : 1 },
-          ]}
-        >
-          <Text style={styles.applyBtnLabel}>تطبيق</Text>
-        </Pressable>
+        {/* The rule spans the sheet; the button sits in the reading column. */}
+        <View style={[styles.footerInner, columnStyle]}>
+          <Pressable
+            onPress={apply}
+            style={({ pressed }) => [
+              styles.applyBtn,
+              { opacity: pressed ? 0.85 : 1 },
+            ]}
+          >
+            <Text style={styles.applyBtnLabel}>تطبيق</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -157,13 +160,13 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   footer: {
-    paddingHorizontal: 16,
     paddingBottom: 24,
     paddingTop: 8,
     borderTopWidth: 1,
     borderTopColor: 'rgba(141,107,52,0.12)',
     backgroundColor: KhazainColors.pageBg,
   },
+  footerInner: { paddingHorizontal: 16 },
   applyBtn: {
     backgroundColor: KhazainColors.navy800,
     borderRadius: 999,

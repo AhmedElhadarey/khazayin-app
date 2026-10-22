@@ -12,7 +12,9 @@ const read = (rel: string) =>
  * means for it. `scroll` is how many content containers carry `columnStyle`;
  * `header` that every InlineHeader (or SegmentTabs) gets it; `blocks` that the
  * fixed search/input/state blocks outside the scroll get it; `rail` that the
- * alphabet rail is positioned by `railListGeometry`.
+ * alphabet rail is positioned by `railListGeometry`; `footer` that a pinned
+ * apply bar keeps its rule full width but puts its button in the column (the
+ * outer bar drops its side padding, the inner wrapper carries it).
  *
  * archive and settings-progress render their search/input block inside the
  * scroll content, which already carries the column, so they omit `blocks`.
@@ -23,6 +25,7 @@ interface ColumnSpec {
   header?: boolean;
   blocks?: boolean;
   rail?: boolean;
+  footer?: boolean;
 }
 
 const S = "app/(tabs)/sections";
@@ -66,13 +69,13 @@ const COLUMN_SCREENS: ColumnSpec[] = [
   { file: `${M}/settings.tsx`, scroll: 1 },
   { file: `${M}/settings-progress.tsx`, scroll: 1, header: true },
   { file: "app/settings-about.tsx", scroll: 1 },
-  { file: "app/settings-font-size.tsx", scroll: 1 },
+  { file: "app/settings-font-size.tsx", scroll: 1, footer: true },
   { file: "app/settings-notifications.tsx", scroll: 1 },
   { file: "app/settings-prayer.tsx", scroll: 1 },
   { file: "app/settings-qiraa.tsx", scroll: 1 },
   { file: "app/settings-reciter.tsx", scroll: 1 },
-  { file: "app/settings-wird-goal.tsx", scroll: 1 },
-  { file: "app/settings-wird-reminder.tsx", scroll: 1 },
+  { file: "app/settings-wird-goal.tsx", scroll: 1, footer: true },
+  { file: "app/settings-wird-reminder.tsx", scroll: 1, footer: true },
   { file: "app/content-search.tsx", scroll: 2, header: true, blocks: true },
 ];
 
@@ -168,6 +171,18 @@ function columnProblems(spec: ColumnSpec, src: string): string[] {
         }
       }
     }
+  }
+
+  if (spec.footer) {
+    const inner = openingTags(src, "View").some((tag) =>
+      propExpressions(tag, "style").some(
+        (expr) => /styles\.footerInner\b/.test(expr) && usesColumn(expr),
+      ),
+    );
+    if (!inner) problems.push("footer button is not wrapped in the column");
+    const outer = src.match(/^ {2}footer: \{[^}]*\}/m)?.[0] ?? "";
+    if (/paddingHorizontal/.test(outer))
+      problems.push("footer keeps its own side padding");
   }
 
   if (spec.rail) {
