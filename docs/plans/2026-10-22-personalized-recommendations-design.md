@@ -10,6 +10,8 @@
 
 | Ref | Change | Section |
 |---|---|---|
+| T1 topics | `hadith` and `adhkar` are added to the §5.1 map so every topical archive-backed series maps; the topic map is deep-frozen. | §5.1 |
+| T1 scholar-only | Five name-only scholar series are listed in the read-only `SCHOLAR_ONLY_SERIES` and feed scholar affinity only; the coverage test excludes them and a second test guards the list. | §5.2 |
 | N1 | The catalogue gate is now `signals.length > 0 \|\| contextSurah != null`, through the pure `shouldLoadCatalogue`. On a fresh install the Mushaf loads the catalogue, so the cold-start tafsir fallback can run. Tested in T6. | §6.4, §7.4, §13 |
 | QA #8 | Back returns to wherever the reader was opened from (the Mushaf index when opened from there). The MiniPlayer stays hidden while any Mushaf is on screen. | §6.4, §10.4 |
 | T7 split | T7 becomes T7a (hook + `target.ts`, pure tests) and T7b (row and section components). | §13 |
@@ -189,17 +191,22 @@ export const RECOMMENDATION_TOPICS = Object.freeze({
   fiqh:     { label: 'الفقه',            keywords: ['زاد المستقنع', 'آيات الأحكام'] },
   tawhid:   { label: 'التوحيد والعقيدة', keywords: ['التوحيد', 'العقيدة'] },
   seerah:   { label: 'السيرة النبوية',   keywords: ['السيرة', 'زاد المعاد'] },
+  hadith:   { label: 'شروح السنن والحديث', keywords: ['شرح سنن', 'الأدب المفرد'] },
+  adhkar:   { label: 'الأذكار والأدعية', keywords: ['فقه الأدعية والأذكار'] },
 } as const);
+export const SCHOLAR_ONLY_SERIES: ReadonlySet<string>; // read-only archiveIds, see §5.2
 export const CATEGORY_FALLBACK_TOPIC: Partial<Record<Lecture['category'], TopicId>> = { prophet: 'seerah' };
 export function topicsForTitle(title: string, category?: Lecture['category']): TopicId[];
 ```
 
+- `hadith` and `adhkar` were added to the original eight: the archive-backed catalogue has the four Sunan commentaries, الأدب المفرد and فقه الأدعية والأذكار, which fit no existing topic, and the coverage test (§5.2) requires every topical series to map. Existing topics also gained `لقاء الباب المفتوح` (fatawa) and `اقتضاء الصراط المستقيم` / `معارج القبول` (tawhid).
+- The map, each topic object and each keyword array are deep-frozen.
 - Both sides go through `normalize()` (`services/search/normalize.ts:71`), and keywords match as substrings. Ambiguous single words are never keywords: `زاد` alone would merge fiqh and seerah. Results are de-duplicated, in map key order.
 - The category fallback applies only when no keyword matched. `prophet` is not reliably seerah: `p4 تفسير القرآن الكريم` is in that category (`data/content/lectures.ts:26`).
 
 ### 5.2 Unknown items
 
-An item with no topic and no scholar produces no affinity. It is skipped and never throws. An item with no topic but a known `scholarId` still feeds `scholarAff`. A coverage test asserts that every archive-backed lecture in `data/content/scholars.ts` maps to at least one topic.
+An item with no topic and no scholar produces no affinity. It is skipped and never throws. An item with no topic but a known `scholarId` still feeds `scholarAff`. A coverage test asserts that every archive-backed lecture in `data/content/scholars.ts` maps to at least one topic, except the **scholar-only series**. Five series are titled only by the scholar's name (`محاضرات ابن باز`, `محاضرات ابن عثيمين`, `محاضرات الألباني`, `فوائد الألباني`, `محاضرات عبد الرزاق البدر`). A name is not a topic, and mapping it would double-count scholar affinity. Their archiveIds are listed in the read-only `SCHOLAR_ONLY_SERIES` set (`0006_20231225`, `361_20250211`, `169_20210628`, `0001_20230715`, `012_20230905`) and feed `scholarAff` only. A second test asserts that each listed id exists, has a `scholarId`, and maps to no topic, so the list cannot go stale.
 
 ### 5.3 Surah "read" derivation (static tables, S7)
 
