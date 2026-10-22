@@ -172,8 +172,12 @@ export const useRecommendationInputsStore = create<RecommendationInputsState>((s
     if (!shouldLoadCatalogue(signalCount, contextSurah)) return Promise.resolve();
     if (catalogueStatus === 'ready' || catalogueStatus === 'aborted') return Promise.resolve();
     if (inFlight) return inFlight;
-    set({ catalogueStatus: 'loading' });
+    // `inFlight` must be assigned before the first `set`: a subscriber that
+    // calls loadCatalogue on every change would otherwise re-enter with
+    // `inFlight` still null. The leading await also keeps the loader's own
+    // synchronous store writes behind that assignment.
     inFlight = (async () => {
+      await Promise.resolve();
       let status: CatalogueStatus = 'aborted';
       try {
         status = await runCatalogueLoad();
@@ -191,7 +195,9 @@ export const useRecommendationInputsStore = create<RecommendationInputsState>((s
         inFlight = null;
       }
     })();
-    return inFlight;
+    const running = inFlight;
+    set({ catalogueStatus: 'loading' });
+    return running;
   },
 }));
 

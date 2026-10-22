@@ -135,6 +135,22 @@ describe('catalogue loader (T6)', () => {
     expect(mockCalls.total).toBe(n);
   });
 
+  it('survives an unfiltered subscriber that reloads on every state change', async () => {
+    const { useRecommendationInputsStore: s } = m;
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { useScholarsStore } = require('@/store/scholarStore');
+    const reload = () => void s.getState().loadCatalogue({ signalCount: 1 });
+    const unsubs = [s.subscribe(reload), useScholarsStore.subscribe(reload)];
+    try {
+      expect(() => reload()).not.toThrow();
+      expect(s.getState().catalogueStatus).toBe('loading');
+      await waitFor(() => s.getState().catalogueStatus === 'ready');
+    } finally {
+      unsubs.forEach((u) => u());
+    }
+    expect(mockCalls.scholarsList).toBe(1);
+  });
+
   it('fetches page 1 of all four lecture stores without any screen mounted', async () => {
     await m.useRecommendationInputsStore.getState().loadCatalogue({ signalCount: 1 });
     for (const c of ['prophet', 'book', 'queen', 'radio']) {
