@@ -10,6 +10,7 @@ export { CustomTabBar, MiniPlayerDock } from './CustomTabBar';
 export { DetailHeader } from './DetailHeader';
 export { CornerOrnament } from './CornerOrnament';
 export { ListRowCard } from './ListRowCard';
+export { SectionTile } from './SectionTile';
 export { LetterIndex } from './LetterIndex';
 export { InlineHeader } from './InlineHeader';
 export { SurahStar } from './SurahStar';
