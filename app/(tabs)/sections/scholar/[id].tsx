@@ -1,3 +1,4 @@
+import { ScholarDiscussionsEntry } from '@/components/khazain/community';
 import {
   AsyncContent,
   InlineHeader,
@@ -86,6 +87,11 @@ export default function ScholarDetailScreen() {
       />
     ) : null;
 
+  // Renders nothing unless the community is open. A phone pads it like the search block; the split panel pads itself.
+  const discussionEntry = (
+    <ScholarDiscussionsEntry scholarId={id ?? ''} style={splitPane ? undefined : styles.entryPad} />
+  );
+
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={splitPadding ?? undefined}>
@@ -120,6 +126,7 @@ export default function ScholarDetailScreen() {
                 <SearchPill placeholder="بحث.." onPress={openSearch} />
               </View>
               {notesPlacement === 'panel' ? notesSection : null}
+              {discussionEntry}
             </ScrollView>
           ) : (
             <>
@@ -130,6 +137,7 @@ export default function ScholarDetailScreen() {
               <View style={styles.searchBlock}>
                 <SearchPill placeholder="بحث.." onPress={openSearch} />
               </View>
+              {discussionEntry}
             </>
           )}
         </View>
@@ -195,6 +203,7 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  entryPad: { paddingHorizontal: 16, paddingBottom: 8 },
   splitBody: { ...READING_ROW, flex: 1 },
   panel: { width: SPLIT_SIDE },
   panelContent: { paddingBottom: 24 },

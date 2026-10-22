@@ -460,6 +460,14 @@ function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="community-report-sheet"
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            animation: 'fade',
+          }}
+        />
+        <Stack.Screen
           name="content-search"
           options={{
             headerShown: false,

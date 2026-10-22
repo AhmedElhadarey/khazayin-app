@@ -10,6 +10,7 @@ import {
   useMutationStatusStore,
 } from '@/store/communityMutations';
 import {
+  findThreadPost,
   resetCommunityStores,
   groupDetailStore,
   useMyGroupsStore,
@@ -324,5 +325,23 @@ describe('resetCommunityStores', () => {
     expect(useThreadPostsStore('L1')).not.toBe(posts);
     expect(useThreadSummariesStore('s1')).not.toBe(summaries);
     expect(useMyGroupsStore.getState()).toMatchObject({ data: [], status: 'idle' });
+  });
+});
+
+describe('findThreadPost', () => {
+  it('finds a loaded post by id across threads, and nothing for an unknown id', async () => {
+    const store = useThreadPostsStore(LECTURE);
+    await store.getState().fetch();
+    const first = store.getState().items[0];
+    expect(findThreadPost(first.id)).toBe(first);
+    expect(findThreadPost('nope')).toBeUndefined();
+  });
+
+  it('forgets posts after a reset', async () => {
+    const store = useThreadPostsStore(LECTURE);
+    await store.getState().fetch();
+    const id = store.getState().items[0].id;
+    resetCommunityStores();
+    expect(findThreadPost(id)).toBeUndefined();
   });
 });

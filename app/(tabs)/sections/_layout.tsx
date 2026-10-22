@@ -12,6 +12,8 @@ export default function SectionsLayout() {
       <Stack.Screen name="qiraat" />
       <Stack.Screen name="scholar" />
       <Stack.Screen name="scholar/[id]" />
+      <Stack.Screen name="discussion/index" />
+      <Stack.Screen name="discussion/[lectureId]" />
       <Stack.Screen name="dawah" />
       <Stack.Screen name="dawah/[month]" />
       <Stack.Screen name="prophet" />

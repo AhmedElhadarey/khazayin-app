@@ -7,15 +7,18 @@ import {
   DISCUSSIONS,
   MEMBERS,
   SECONDS,
+  charsLeftLabel,
   cooldownCopy,
   daysMetLabel,
   khatmLabel,
   codeA11y,
   daysMetApproxLabel,
+  discussionsLabel,
   memberDaysLabel,
   memberPagesLabel,
   mutedMemberLabel,
   ownPagesLabel,
+  postA11y,
   rangeHint,
   shareCodeMessage,
   wirdSummary,
@@ -195,5 +198,27 @@ describe('group detail labels', () => {
   it('hedges the rounded group days and never exceeds the total', () => {
     expect(daysMetApproxLabel(10, 40)).toBe('أيام الإنجاز: نحو ١٠ من ٤٠');
     expect(daysMetApproxLabel(10, 9)).toBe('أيام الإنجاز: نحو ٩ من ٩');
+  });
+});
+
+describe('discussion labels', () => {
+  it('counts discussions with agreeing nouns, and switches to label form at 100', () => {
+    expect(discussionsLabel(0)).toBe('لا توجد نقاشات بعد');
+    expect(discussionsLabel(1)).toBe('نقاش واحد');
+    expect(discussionsLabel(2)).toBe('نقاشان');
+    expect(discussionsLabel(7)).toBe('٧ نقاشات');
+    expect(discussionsLabel(11)).toBe('١١ نقاشًا');
+    expect(discussionsLabel(120)).toBe('١٢٠ نقاش');
+  });
+
+  it('formats the remaining-characters counter', () => {
+    expect(charsLeftLabel(100)).toBe('الحروف المتبقية: ١٠٠');
+  });
+
+  it('reads a post as name, time, status, body', () => {
+    expect(postA11y({ name: 'أحمد', time: 'الآن', status: 'pending', body: 'نص' })).toBe(
+      `أحمد، الآن، ${COMMUNITY_COPY.pendingBadge}، نص`,
+    );
+    expect(postA11y({ name: 'أحمد', time: 'الآن', status: 'visible', body: 'نص' })).toBe('أحمد، الآن، نص');
   });
 });

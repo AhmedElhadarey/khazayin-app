@@ -84,6 +84,15 @@ export function peekThreadPostsStore(lectureId: string): PostsStore | undefined 
   return threadPosts.get(lectureId);
 }
 
+/** A loaded post by id, across the threads already opened. Never creates a store. */
+export function findThreadPost(postId: string): Post | undefined {
+  for (const store of threadPosts.values()) {
+    const hit = store.getState().items.find((p) => p.id === postId);
+    if (hit) return hit;
+  }
+  return undefined;
+}
+
 /** Existing group detail store only. */
 export function peekGroupDetailStore(id: string): GroupDetailStore | undefined {
   return groupDetails.get(id);

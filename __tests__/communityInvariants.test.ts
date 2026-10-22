@@ -6,6 +6,15 @@
 import fs from 'fs';
 import path from 'path';
 
+import { guardRedirect } from '@/hooks/useCommunityGuard';
+import { REPORT_REASON_ORDER } from '@/services/community/threadActions';
+
+// The guard module imports the persisted store; the pure redirect table needs none of it.
+jest.mock('@react-native-async-storage/async-storage', () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+
 const ROOT = path.resolve(__dirname, '..');
 const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 
@@ -379,5 +388,238 @@ describe('deletion runner wiring', () => {
 describe('community name checks', () => {
   it('adab-checks the name in the enrollment flow', () => {
     expect(read('services/community/enrollment.ts')).toMatch(/checkText\([^)]*'name'\)/);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// T9: lecture discussions, report sheet, mute
+// ---------------------------------------------------------------------------
+
+const DISCUSSION_SCREENS = [
+  'app/(tabs)/sections/discussion/index.tsx',
+  'app/(tabs)/sections/discussion/[lectureId].tsx',
+];
+const REPORT_SHEET = 'app/community-report-sheet.tsx';
+const T9_SCREENS = [...DISCUSSION_SCREENS, REPORT_SHEET];
+const COMMUNITY_COMPONENTS = walk('components/khazain/community').filter((f) => f.endsWith('.tsx'));
+const styleOf = (src: string, key: string) => src.match(new RegExp(`\\n  ${key}: \\{[^}]*\\}`))?.[0] ?? '';
+
+describe('discussion screens and the report sheet', () => {
+  it.each(T9_SCREENS)("%s needs an open community, renders the banner and has no long-press", (file) => {
+    const src = read(file);
+    expect(src).toContain("useCommunityGuard('open'");
+    expect(src).toContain('<PreviewBanner');
+    expect(src).not.toMatch(/onLongPress|row-reverse/);
+  });
+
+  it.each(DISCUSSION_SCREENS)('%s pins direction on the scroll content', (file) => {
+    expect(styleOf(read(file), 'content')).toContain('...PHYSICAL_BOX');
+  });
+
+  it('registers both discussion routes in the Sections stack', () => {
+    const layout = read('app/(tabs)/sections/_layout.tsx');
+    expect(layout).toContain('name="discussion/index"');
+    expect(layout).toContain('name="discussion/[lectureId]"');
+  });
+
+  it('declares the report sheet as a transparent fade modal at the root', () => {
+    expect(read('app/_layout.tsx')).toMatch(
+      /name="community-report-sheet"\s*options=\{\{[^}]*presentation: 'transparentModal',\s*animation: 'fade'/,
+    );
+  });
+
+  it('sends a discussion path in `hidden` to the Sections root', () => {
+    expect(guardRedirect('hidden', 'open', '/sections/discussion')).toBe('/(tabs)/sections');
+    expect(guardRedirect('hidden', 'open', '/sections/discussion/sl1-1')).toBe('/(tabs)/sections');
+  });
+
+  describe('the thread', () => {
+    const src = read('app/(tabs)/sections/discussion/[lectureId].tsx');
+
+    it('keys the thread on Lecture.id and reads posts through visiblePosts', () => {
+      expect(src).toContain('useThreadPostsStore(lectureId)');
+      expect(src).toContain('visiblePosts(');
+      expect(src).toContain('useScholarLecturesStore(scholarId)');
+      expect(src).not.toMatch(/usePlayerStore|PlayerTrack/);
+    });
+
+    it('plays through startLecturePlayback with the frozen label', () => {
+      expect(src).toContain('startLecturePlayback(');
+      expect(src).toContain('COMMUNITY_COPY.listenToLecture');
+    });
+
+    it('writes only through the pure runners and runMutation', () => {
+      for (const op of ["'createPost'", "'deletePost'"]) expect(src).toContain(`runMutation(${op}`);
+      for (const fn of ['runSubmitPost(', 'runDeletePost(', 'runMute(', 'openOnce(']) expect(src).toContain(fn);
+    });
+
+    it('confirms delete and mute with destructive Alerts', () => {
+      expect(src.match(/style: 'destructive'/g)).toHaveLength(2);
+      expect(src).toContain('COMMUNITY_COPY.muteConfirm');
+    });
+
+    it('keeps the composer in the fixed input row inside a KeyboardAvoidingView', () => {
+      expect(src).toContain('<KeyboardAvoidingView');
+      expect(src).toContain('styles.inputRow');
+    });
+
+    it('pushes the report sheet by postId only', () => {
+      expect(src).toContain("'/community-report-sheet'");
+      expect(src).toMatch(/params:\s*\{\s*postId:\s*post\.id\s*\}/);
+    });
+  });
+
+  describe('the composer', () => {
+    const src = read('components/khazain/community/Composer.tsx');
+    const thread = read('app/(tabs)/sections/discussion/[lectureId].tsx');
+
+    it('filters as a post and sanitizes before the cap, so there is no native maxLength', () => {
+      expect(read('services/community/threadActions.ts')).toMatch(/checkText\([^)]*'post'\)/);
+      expect(src).not.toContain('maxLength=');
+      expect(src).toContain('normalizePostInput(');
+    });
+
+    it('announces the counter at 90% and labels the input', () => {
+      expect(src).toContain('announceForAccessibility');
+      expect(src).toContain('counterAnnouncement(');
+      expect(src).toContain('accessibilityLabel={COMMUNITY_COPY.composerLabel}');
+    });
+
+    it('shows the cooldown and review copy from the frozen set', () => {
+      const actions = read('services/community/threadActions.ts');
+      expect(actions).toContain('cooldownCopy(');
+      expect(actions).toContain('COMMUNITY_COPY.hourlyLimit');
+      expect(thread).toContain('waitCopy(');
+      expect(thread).toContain('COMMUNITY_COPY.reviewNotice');
+    });
+  });
+
+  describe('the report sheet', () => {
+    const src = read(REPORT_SHEET);
+
+    it('is a SheetShell of SheetRow radios over the six frozen reasons', () => {
+      expect(src).toContain('<SheetShell');
+      expect(src).toContain('REPORT_REASON_ORDER.map(');
+      expect(src.match(/<SheetRow/g)).toHaveLength(1);
+      expect(REPORT_REASON_ORDER).toHaveLength(6);
+      expect(src).toContain('checked={');
+    });
+
+    it('resolves its target from the postId param and the store, and closes if it is gone', () => {
+      expect(src).toContain('findThreadPost(postId)');
+      expect(src).toMatch(/useLocalSearchParams<\{ postId\?: string \| string\[\] \}>/);
+      expect(src).not.toMatch(/params\.(body|name|displayName|lectureId)/);
+    });
+
+    it('reports through runMutation and the pure runner, then hides locally', () => {
+      expect(src).toContain("runMutation('report'");
+      expect(src).toContain('runSubmitReport(');
+      expect(src).toContain('hidePost');
+    });
+
+    it('uses the sheet shell for the tablet column, not columnStyle', () => {
+      expect(src).not.toContain('columnStyle');
+    });
+  });
+});
+
+describe('T9 review fixes', () => {
+  it('the index shows the zero-discussion subtitle for an empty summaries store too', () => {
+    const src = read('app/(tabs)/sections/discussion/index.tsx');
+    expect(src).toMatch(/summariesStatus === 'success' \|\| summariesStatus === 'empty'/);
+  });
+
+  it('the report note announces its counter at 90% like the composer', () => {
+    const sheet = read(REPORT_SHEET);
+    expect(sheet).toContain('counterAnnouncement(');
+    expect(sheet).toContain('announceForAccessibility');
+    expect(read('components/khazain/community/Composer.tsx')).toContain('counterAnnouncement(');
+  });
+});
+
+describe('T9 quality fixes', () => {
+  const thread = read('app/(tabs)/sections/discussion/[lectureId].tsx');
+  const index = read('app/(tabs)/sections/discussion/index.tsx');
+
+  it('the thread keeps loaded posts on screen whatever the store status says', () => {
+    expect(thread).toContain('data={posts}');
+    expect(thread).not.toMatch(/status === 'success' \? posts/);
+    expect(thread).toContain('threadListPlan(');
+  });
+
+  it('both screens show the empty state, not a skeleton, when the route param is missing', () => {
+    expect(thread).toMatch(/lectureId === ''/);
+    expect(index).toMatch(/scholarId === ''/);
+  });
+
+  it('the report sheet latches close() and releases the latch on mount', () => {
+    const sheet = read(REPORT_SHEET);
+    expect(sheet).toContain('closeOnce(');
+    expect(sheet).toMatch(/state\.closed = false;\s*return \(\) => \{\s*state\.closed = true;/);
+  });
+});
+
+describe('community components', () => {
+  it('finds the three new components', () => {
+    expect(COMMUNITY_COMPONENTS).toEqual(
+      expect.arrayContaining([
+        'components/khazain/community/ScholarDiscussionsEntry.tsx',
+        'components/khazain/community/PostRow.tsx',
+        'components/khazain/community/Composer.tsx',
+      ]),
+    );
+  });
+
+  it.each(COMMUNITY_COMPONENTS)('%s has no long-press, row-reverse, or logging of a body or name', (file) => {
+    const src = read(file);
+    expect(src).not.toMatch(/onLongPress|row-reverse/);
+    expect(src).not.toMatch(/console\.[^;]*(body|displayName|name)/);
+  });
+
+  it('PostRow spreads PHYSICAL_ROW in COMMUNITY_POST_ORDER', () => {
+    const src = read('components/khazain/community/PostRow.tsx');
+    expect(src).toContain('...PHYSICAL_ROW');
+    expect(src).toContain('COMMUNITY_POST_ORDER');
+  });
+
+  it('exports them from the community barrel', () => {
+    const barrel = read('components/khazain/community/index.ts');
+    for (const name of ['ScholarDiscussionsEntry', 'PostRow', 'Composer']) expect(barrel).toContain(name);
+  });
+});
+
+describe('community code never logs a post body or a name', () => {
+  const files = [...walk('services/community'), ...walk('components/khazain/community'), ...T9_SCREENS, 'store/communityMutations.ts', 'store/communityStores.ts'];
+  it.each(files)('%s', (file) => {
+    expect(read(file)).not.toMatch(/console\.[a-z]+\([^)]*\b(body|displayName|authorName|text|note)\b/);
+  });
+});
+
+describe('scholar detail entry', () => {
+  const src = read('app/(tabs)/sections/scholar/[id].tsx');
+  const entry = read('components/khazain/community/ScholarDiscussionsEntry.tsx');
+
+  it('holds the entry in `discussionEntry` and places it exactly twice', () => {
+    expect(src.match(/discussionEntry/g)).toHaveLength(3);
+    expect(src).toMatch(/const discussionEntry = \(?\s*<ScholarDiscussionsEntry/);
+    expect(src).toMatch(/\{notesPlacement === 'panel' \? notesSection : null\}\s*\{discussionEntry\}/);
+  });
+
+  it('never puts it in the list footer, and leaves the notes pins alone', () => {
+    expect(src.match(/notesSection/g)).toHaveLength(3);
+    expect(src).toContain("ListFooterComponent={notesPlacement === 'footer' ? notesSection : null}");
+    expect(src).not.toMatch(/ListFooterComponent=\{[^}]*discussionEntry/);
+    expect(src).not.toMatch(/<RibbonCard[^>]*onLongPress/);
+  });
+
+  it('renders null unless the community is open, and names nothing notesSection', () => {
+    expect(entry).toContain("if (access !== 'open') return null;");
+    expect(entry).not.toContain('notesSection');
+  });
+
+  it('starts no fetch before the access check', () => {
+    const gate = entry.indexOf("if (access !== 'open') return null;");
+    expect(gate).toBeGreaterThan(-1);
+    expect(entry.indexOf('useThreadSummariesStore(')).toBeGreaterThan(gate);
   });
 });

@@ -85,3 +85,6 @@ export type ReportReason =
   | 'spam'
   | 'privacy'
   | 'other';
+
+/** The statuses a post row can show; `removed` posts are not rendered at all. */
+export type PostDisplayStatus = Exclude<ModerationStatus, 'removed'>;

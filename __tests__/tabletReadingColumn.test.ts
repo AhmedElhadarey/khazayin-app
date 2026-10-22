@@ -54,6 +54,8 @@ const COLUMN_SCREENS: ColumnSpec[] = [
   { file: `${S}/reciter/[id].tsx`, scroll: 1, header: true, blocks: true },
   { file: `${S}/dawah/[month].tsx`, scroll: 1, header: true, blocks: true },
   { file: `${S}/book/[id].tsx`, scroll: 1, header: true, blocks: true },
+  { file: `${S}/discussion/index.tsx`, scroll: 1, header: true },
+  { file: `${S}/discussion/[lectureId].tsx`, scroll: 1, header: true, blocks: true },
   {
     file: "components/khazain/sections/RailedLectureList.tsx",
     scroll: 1,

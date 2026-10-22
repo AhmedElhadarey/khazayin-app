@@ -10,6 +10,7 @@
 import { toArabicDigits } from '@/constants/progress';
 import type { AdabRejectReason } from '@/services/community/adabFilter';
 import { arabicCount, type CountForms } from '@/services/libraryStats';
+import type { PostDisplayStatus } from '@/types/community';
 
 export const MEMBERS: CountForms = { one: 'عضو واحد', two: 'عضوان', few: 'أعضاء', many: 'عضوًا' };
 export const DAYS: CountForms = { one: 'يوم واحد', two: 'يومان', few: 'أيام', many: 'يومًا' };
@@ -90,6 +91,20 @@ export const COMMUNITY_COPY = Object.freeze({
   report: 'إبلاغ',
   muteMember: 'كتم هذا العضو',
   listenToLecture: 'استمع للدرس',
+  // Discussion screens (T9; pending Foundation review)
+  composerLabel: 'اكتب مشاركتك',
+  sendPost: 'إرسال',
+  hourlyLimit: 'بلغت الحد الأقصى من المشاركات في الساعة. حاول لاحقًا.',
+  deletePostTitle: 'حذف المشاركة؟',
+  deletePostBody: 'ستُحذف مشاركتك نهائيًا.',
+  muteConfirmTitle: 'كتم هذا العضو؟',
+  muteButton: 'كتم',
+  muteDone: 'تم كتم العضو. يمكنك إلغاء الكتم من الإعدادات.',
+  // Report sheet (T9; pending Foundation review)
+  reportTitle: 'الإبلاغ عن مشاركة',
+  reportSubmit: 'إرسال البلاغ',
+  reportPickReason: 'اختر سببًا للإبلاغ',
+  reportNoteLabel: 'تفاصيل إضافية (اختياري)',
   // Report sheet
   reportReasons: Object.freeze({
     offensive: 'إساءة أو ألفاظ غير لائقة',
@@ -195,4 +210,27 @@ export function memberPagesLabel(n: number): string {
 /** A member's shared daily-wird figure: «الأيام: ٣». */
 export function memberDaysLabel(n: number): string {
   return `الأيام: ${toArabicDigits(n)}`;
+}
+
+/** Entry-row and index subtitle: «٧ نقاشات». Zero has its own copy; 100+ uses the label form. */
+export function discussionsLabel(n: number): string {
+  if (n <= 0) return COMMUNITY_COPY.noDiscussions;
+  return n < 100 ? arabicCount(n, DISCUSSIONS) : `${toArabicDigits(n)} نقاش`;
+}
+
+/** Counter text announced near the cap: «الحروف المتبقية: ١٠٠». */
+export function charsLeftLabel(n: number): string {
+  return `الحروف المتبقية: ${toArabicDigits(Math.max(0, n))}`;
+}
+
+/** A post read as one phrase (§10): «{name}، {time}، {status}، {body}». */
+export function postA11y(p: {
+  name: string;
+  time: string;
+  status: PostDisplayStatus;
+  body: string;
+}): string {
+  const status =
+    p.status === 'pending' ? COMMUNITY_COPY.pendingBadge : p.status === 'hidden' ? COMMUNITY_COPY.hiddenBadge : '';
+  return [p.name, p.time, status, p.body].filter(Boolean).join('، ');
 }

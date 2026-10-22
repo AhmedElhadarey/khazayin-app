@@ -12,16 +12,20 @@ export function SheetRow({
   title,
   sub,
   onPress,
+  checked,
 }: {
   icon: React.ReactNode;
   title: string;
   sub?: string;
   onPress?: () => void;
+  /** Present: the row is one option of a single choice and says whether it is chosen. */
+  checked?: boolean;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      accessibilityRole="button"
+      accessibilityRole={checked === undefined ? 'button' : 'radio'}
+      accessibilityState={checked === undefined ? undefined : { checked }}
       accessibilityLabel={sub ? `${title}، ${sub}` : title}
       style={({ pressed }) => [
         styles.row,

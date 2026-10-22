@@ -568,6 +568,11 @@ Production builds render no community UI, so every Figma capture is unaffected. 
     - detail: `shareCode` «مشاركة الرمز», `codeA11y(code)` (accessibility label of the code box, spelled letter by letter) «رمز المجموعة A B C 1 2 3», `shareCodeMessage(name, code)` «انضم إلى مجموعتي «{name}» في تطبيق خزائن الرحمن برمز: {code}», `noChallenge` «لا يوجد تحدٍّ نشط في هذه المجموعة», `ownProgress` «تقدّمي», `ownPagesLabel(n, 604)` «صفحاتك: {n} من ٦٠٤», `wirdSummary(pages, days)` «{n صفحات} يوميًا لمدة {n أيام}», `membersHeading` «الأعضاء», `ownerBadge` «المالك», `youBadge` «أنت», `memberPagesLabel(n)` «الصفحات: {n}», `memberDaysLabel(n)` «الأيام: {n}», `daysMetApproxLabel(done, total)` «أيام الإنجاز: نحو {done} من {total}» (the group daily-wird bar; the server rounds the sum to 10 but not the denominator, so the figure is hedged with «نحو» and clamped to the total. The own-progress bar keeps the exact `daysMetLabel`)
     - leave: `leaveGroup` «مغادرة المجموعة», `leaveConfirmTitle` «مغادرة المجموعة؟», `leaveConfirmBody` «ستفقد الوصول إلى تقدّم هذه المجموعة، ويمكنك الانضمام إليها مجددًا برمزها.», `cancel` «إلغاء»
     - `PAGES {صفحة واحدة، صفحتان، صفحات، صفحة}` joins the count forms above
+  - Added with the discussion screens (T9), also pending Foundation review:
+    - thread and composer: `composerLabel` «اكتب مشاركتك», `sendPost` «إرسال», `hourlyLimit` «بلغت الحد الأقصى من المشاركات في الساعة. حاول لاحقًا.», `charsLeftLabel(n)` «الحروف المتبقية: {n}» (label form; announced when the counter reaches 90%), `discussionsLabel(n)` («لا توجد نقاشات بعد» for 0, the `DISCUSSIONS` forms below 100, the label form «{n} نقاش» from 100), `postA11y` «{name}، {time}، {status}، {body}»
+    - delete and mute alerts: `deletePostTitle` «حذف المشاركة؟», `deletePostBody` «ستُحذف مشاركتك نهائيًا.», `muteConfirmTitle` «كتم هذا العضو؟», `muteButton` «كتم», `muteDone` «تم كتم العضو. يمكنك إلغاء الكتم من الإعدادات.»
+    - report sheet: `reportTitle` «الإبلاغ عن مشاركة», `reportSubmit` «إرسال البلاغ», `reportPickReason` «اختر سببًا للإبلاغ», `reportNoteLabel` «تفاصيل إضافية (اختياري)»
+    - The composer sets no native `maxLength`: input is cleaned (invisibles, controls, blank-line runs) and then capped at 1000 code points in `normalizePostInput`, so a paste is not cut before its invisibles go and emoji count once. The report note is capped the same way at 300.
 
 ### 8.7 Tablet
 - `columnStyle` goes on `contentContainerStyle` and on `InlineHeader`, and `inputRow` takes `columnStyle` where it is set.
@@ -591,7 +596,7 @@ Production builds render no community UI, so every Figma capture is unaffected. 
 - A post reads as «{name}، {time}، {status}، {body}».
 - Progress: `accessibilityRole="progressbar"` + `accessibilityValue`, plus a text equivalent.
 - Status is text, never colour alone.
-- Inputs: visible labels, `maxLength`, and a counter announced at 90%.
+- Inputs: visible labels, a cap applied in `normalizePostInput` by code points (1000 for a post, 300 for the report note; no native `maxLength`), and a counter announced at 90%.
 - Touch targets ≥44 pt.
 - System font scaling is kept; check at 1.3× on 360 dp.
 
@@ -674,6 +679,7 @@ Each item must be signed off by the named owner before the `http` track merges.
 11. **Appendix A implemented,** including idempotency and in-flight semantics and the A.2 differencing rule, and contract tests passing against staging. *Owner: backend.*
 12. **Release grep in CI.** The §3.2 production-export grep for `KHZ_COMMUNITY_SEED` and the seed join codes, plus the dev-export positive control, runs on every release build in CI. Until CI exists, it is a manual release step. *Owner: user / whoever owns the build pipeline.*
 13. **HTTP error detail.** `toApiError` does not yet fill `ApiError.detail` from the 409 body, so over `http` a join `conflict` would fall back to the generic conflict text. Map `detail: 'full' | 'groupCap'` (A.2) in the HTTP adapter and add a contract test. *Owner: backend + whoever builds the `http` adapter.*
+14. **Report cap.** The client-side limit of 20 reports a day (§7.5) is enforced only by the mock adapter. The server must enforce it, and the sheet needs a rate-limit message for it. *Owner: backend.*
 
 ---
 

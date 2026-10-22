@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-import { GROUP_ROW_ORDER } from '@/constants/rtlContracts';
+import { COMMUNITY_POST_ORDER, COMPOSER_ORDER, GROUP_ROW_ORDER } from '@/constants/rtlContracts';
 
 /**
  * The RTL contract, enforced on source text.
@@ -63,6 +63,11 @@ const PINNED_SCREENS = [
   'components/khazain/community/MemberRow.tsx',
   'components/khazain/community/ChallengeCard.tsx',
   'components/khazain/community/ProgressBar.tsx',
+  'components/khazain/community/PostRow.tsx',
+  'components/khazain/community/Composer.tsx',
+  'app/(tabs)/sections/discussion/index.tsx',
+  'app/(tabs)/sections/discussion/[lectureId].tsx',
+  'app/community-report-sheet.tsx',
   'components/khazain/settings/SettingsSection.tsx',
   // Onboarding. Not in the original sweep because it is the one flow the
   // captures never reached: the persisted `onboardingComplete` flag meant a
@@ -177,5 +182,29 @@ describe('GroupRow and MemberRow', () => {
 
   it('freezes the group row order left to right', () => {
     expect(GROUP_ROW_ORDER).toEqual(['disclosure', 'text', 'progress']);
+  });
+});
+
+describe('PostRow and Composer', () => {
+  const post = code('components/khazain/community/PostRow.tsx');
+  const composer = code('components/khazain/community/Composer.tsx');
+
+  it('PostRow authors its children in COMMUNITY_POST_ORDER inside a PHYSICAL_ROW', () => {
+    expect(post).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(post).toMatch(/COMMUNITY_POST_ORDER\.map\(/);
+    expect(post).toMatch(/\.\.\.RTL_TEXT/);
+  });
+
+  it('Composer authors its children in COMPOSER_ORDER inside a PHYSICAL_ROW', () => {
+    expect(composer).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(composer).toMatch(/COMPOSER_ORDER\.map\(/);
+    expect(composer).toMatch(/\.\.\.PHYSICAL_BOX/);
+  });
+
+  it('freezes the post and composer orders left to right', () => {
+    expect(COMMUNITY_POST_ORDER).toEqual(['actions', 'text', 'avatar']);
+    expect(COMPOSER_ORDER).toEqual(['send', 'field']);
+    expect(Object.isFrozen(COMMUNITY_POST_ORDER)).toBe(true);
+    expect(Object.isFrozen(COMPOSER_ORDER)).toBe(true);
   });
 });
