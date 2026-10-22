@@ -12,6 +12,7 @@ export const HOME_SECTION_ORDER = Object.freeze([
   'prophetHero',
   'scholars',
   'books',
+  'recommended',
   'queen',
   'quickChips',
   'dawah',

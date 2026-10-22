@@ -42,6 +42,14 @@ export type ComposerSlot = (typeof COMPOSER_ORDER)[number];
 export const LECTURE_CARD_ORDER = Object.freeze(['meta', 'text', 'badge'] as const);
 export type LectureCardSlot = (typeof LECTURE_CARD_ORDER)[number];
 
+/**
+ * Home recommendation row — contract-only, no Figma frame (design §6.3).
+ * `dismiss` is a sibling of the card, not inside it, so screen readers reach
+ * it as its own button after the card's texts.
+ */
+export const RECOMMENDATION_ROW_ORDER = Object.freeze(['dismiss', 'card'] as const);
+export type RecommendationRowSlot = (typeof RECOMMENDATION_ROW_ORDER)[number];
+
 /** Reciter and Qiraa row — nodes 2031:6193, 2457:954. */
 export const RECITER_ROW_ORDER = Object.freeze(['disclosure', 'text', 'quranBadge'] as const);
 export type ReciterRowSlot = (typeof RECITER_ROW_ORDER)[number];

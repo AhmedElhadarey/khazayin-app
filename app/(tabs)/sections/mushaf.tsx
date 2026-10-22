@@ -8,6 +8,11 @@ import {
   SurahRow,
   surahNotesBlock,
 } from '@/components/khazain';
+import { SurahEndSuggestions } from '@/components/khazain/recommendations';
+import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
+import { releaseMiniPlayerOnBlur } from '@/services/mushafPlayerVisibility';
+import { signalCountNow } from '@/services/recommendations/signalCount';
+import { useRecommendationInputsStore } from '@/store/recommendationInputsStore';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { insetColumn, mushafSheetWidth, mushafType } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -40,7 +45,7 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { takeAyahNoteParams } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
-import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AppState, type AppStateStatus, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -66,11 +71,27 @@ export default function MushafScreen() {
   const params = useLocalSearchParams<{ surah?: string; ayah?: string }>();
   const setVisible = usePlayerStore((s) => s.setVisible);
 
-  // Hide MiniPlayer while mushaf is mounted. Restore on unmount.
-  useEffect(() => {
-    setVisible(false);
-    return () => setVisible(true);
-  }, [setVisible]);
+  // Hide the MiniPlayer while the Mushaf is on screen. Focus-based, so a
+  // scholar or book screen pushed over it in this stack gets its player back;
+  // `releaseMiniPlayerOnBlur` keeps it hidden under root overlays (note editor,
+  // notes viewer, sheets), which blur the whole tab group while the Mushaf
+  // stays visible. Chain: this screen -> `sections` tab in Tabs -> `(tabs)` in
+  // the root Stack; the root modals flip that last one's focus.
+  const navigation = useNavigation();
+  useFocusEffect(
+    useCallback(() => {
+      setVisible(false);
+      return () => {
+        const tabGroup = navigation.getParent()?.getParent();
+        releaseMiniPlayerOnBlur({
+          tabGroupFocused: tabGroup?.isFocused(),
+          onTabGroupFocus: (cb) => tabGroup!.addListener('focus', cb),
+          selfFocused: () => navigation.isFocused(),
+          setVisible,
+        });
+      };
+    }, [navigation, setVisible]),
+  );
 
   // FR-009 — auto-resume to the surah that owns the saved last_read_page.
   // Only fires once per app session and only when no explicit surah was
@@ -207,6 +228,17 @@ function ReadingView({
   const currentPage = useMemo(() => surahStartPage(surahNumber), [surahNumber]);
   const displayName = useMemo(() => surahName(surahNumber), [surahNumber]);
   const segments = useMemo(() => groupAyatByPage(surahNumber, ayat), [surahNumber, ayat]);
+
+  // Recommendations (design §6.4): refresh activity and load the catalogue.
+  // `contextSurah` always opens the gate (N1); the load is idempotent once it
+  // has settled, so a later surah change needs nothing more.
+  useEffect(() => {
+    if (!RECOMMENDATIONS_ENABLED) return;
+    void useRecommendationInputsStore.getState().refreshActivity();
+    void useRecommendationInputsStore
+      .getState()
+      .loadCatalogue({ signalCount: signalCountNow(), contextSurah: surahNumber });
+  }, [surahNumber]);
 
   // Page-read tracking (design 2026-10-21 §4.3). Every gate lives in the
   // controller; this component only forwards events to it.
@@ -502,6 +534,7 @@ function ReadingView({
           }
           onJump={jumpToAyah}
         />
+        {ayatStatus === 'success' ? <SurahEndSuggestions surahNumber={surahNumber} /> : null}
       </ScrollView>
       {/* Physical left → right: الفهرس، الانتقال للعلامة، حفظ علامة
           (MUSHAF_FOOTER_ORDER, Figma node 2349:982). */}

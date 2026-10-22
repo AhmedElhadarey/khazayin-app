@@ -181,6 +181,8 @@ components/khazain/               ← all new UI lives here
                                      model + editorSeed + surahNotesBlock): notes linked to content
   community/                      ← PreviewBanner, GroupRow, ChallengeCard, ProgressBar, MemberRow,
                                      ScholarDiscussionsEntry, DiscussionGlyph, PostRow, Composer
+  recommendations/                ← RecommendedSection (Home), RecommendationRow, SurahEndSuggestions
+                                     (Mushaf end block), useScreenReaderOn
 
 services/                         ← non-store side-effect modules
   contactForm.ts                  ← contact validation, extracted so it is testable
@@ -194,6 +196,10 @@ services/                         ← non-store side-effect modules
   community/                      ← community client: gate/config (mode), communityService port +
                                      __DEV__ mock adapter, adab filter, enrollment, deletion runner,
                                      progress sync, pure group/thread/post orchestration
+  recommendations/                ← pure local recommender: recommend(), toSignals(), catalogue loader
+                                     helpers, sectionState, recommendationTarget, dismiss, signalCountNow,
+                                     useRecommendations hook
+  mushafPlayerVisibility.ts       ← when the Mushaf gives the MiniPlayer back on blur (root overlays)
 
 store/                            ← Zustand stores
   useAppStore.ts                  ← legacy store (used by legacy tabs)
@@ -270,6 +276,8 @@ Expo-router's typed-routes index (`.expo/types/router.d.ts`) regenerates on `exp
 - **`playerStore`** (`store/playerStore.ts`) — UI state only. `{ track, isPlaying, progress, isVisible, togglePlay, setProgress, setVisible, setTrack }`. Seeded with a mock Fatiha track. The file has a JSDoc block at the top documenting the **audio integration boundary** — read it before wiring a real player (expo-av / react-native-track-player).
 - **`notesStore`** (`store/notesStore.ts`) — persisted via `zustand/middleware` + AsyncStorage at `@khazain/notes`. API: `addNote / updateNote / deleteNote`. Also exports `formatRelativeAr(ts)` helper for Arabic relative time strings. **Linked notes:** `addNote(title, body, ref?)` takes an optional `NoteRef` (`type` ayah/lecture/book, `id`, `position`, frozen Arabic `label`, ...). Persist uses `merge` + `coerceNotes` and deliberately has **no `version`/`migrate`**: bumping the persist version makes an older build discard the record on downgrade, losing every note. Unknown ref types and keys are kept so a newer build's refs survive. Selectors: `notesFor`, `notesForLectureSeries`, `useLinkedNotes(type, id)` (filter in a memo, never inside the zustand selector). Pure logic lives in `services/noteRefs.ts` (types, labels, route params), `services/noteActions.ts` (params each take-note action pushes) and `services/noteNavigation.ts` (ref -> route or playback; never dismisses).
 - **Community** (`store/communityLocalStore.ts`, `store/communityStores.ts`, `store/communityMutations.ts`) — the local store is persisted under `@khazain/community` with **no `version`/`migrate`** (same reason as `notesStore`) and carries a **mode tag**: a record written under another mode is discarded on hydrate. `services/community/config.ts` derives the mode (`gate.ts` holds the pure rule): dev builds run in `mock` mode against an in-memory adapter and seed, required only inside the `if (__DEV__)` block in `services/community/index.ts` so production bundles drop it; production is `off`, so **community UI exists only in `__DEV__` until design §13 (go-live checklist) is complete**. Every community screen calls `useCommunityGuard(...)` and renders `<PreviewBanner/>`; every write goes through `runMutation` (single-flight, idempotent request ids) and async catches check `communityGeneration()` so nothing lands after a reset or deletion. Release builds must not contain the seed: grep the production `expo export` for `KHZ_COMMUNITY_SEED` and the seed join codes (design §3.2). Design: `docs/plans/2026-10-22-community-design.md`.
+- **`recommendationsStore`** (`store/recommendationsStore.ts`) — dismissed recommendations, persisted under `@khazain/recommendations` (capped at 300). Like `notesStore`, it deliberately has **no `version`/`migrate`**: bumping the version makes an older build discard the record on downgrade. `merge` + `coerceDismissed` instead.
+- **`recommendationInputsStore`** (`store/recommendationInputsStore.ts`) — NOT persisted. Holds the activity snapshot (`refreshActivity`, via `@/db` repos) and the catalogue (`loadCatalogue`: single-flight, gated by signals or a Mushaf `contextSurah`, a no-op after `ready`/`aborted`). Home loads it only after its first fetches settle; `RECOMMENDATIONS_ENABLED` in `constants/recommendations.ts` is the kill switch. Design: `docs/plans/2026-10-22-personalized-recommendations-design.md`.
 - **`useAppStore`** (`store/useAppStore.ts`) — legacy, used by legacy tabs. Don't extend it; new features use `notesStore` / new dedicated stores.
 - **`progressStore`** + **`wirdStore`** (`store/progressStore.ts`, `store/wirdStore.ts`) — SQLite-backed Quran + lecture progress. NOT persisted via zustand middleware: the DB is the source of truth. Hydrated once in `app/_layout.tsx` after fonts load. Library tab subscribes for `pagesToday`, `currentStreak`, `trendLast28`, `inProgressLecture`, etc. New code reads via `progressRepo` / `lectureRepo` / `wirdRepo` / `achievementsRepo` / `resetFacade` re-exports from `@/db` — NEVER write raw SQL outside `db/`. Web build uses an AsyncStorage-backed shim at `db/web-shim.ts` (same interface, in-memory cache + throttle-flush).
 
@@ -280,7 +288,7 @@ Expo-router's typed-routes index (`.expo/types/router.d.ts`) regenerates on `exp
 
 ## Mushaf-specific
 
-`app/(tabs)/sections/mushaf.tsx` hides the MiniPlayer on mount via `usePlayerStore.setVisible(false)` and restores on unmount. The TabBar stays visible. If the user asks for fully immersive mushaf, move the screen to a root-level stack entry outside `(tabs)`.
+`app/(tabs)/sections/mushaf.tsx` hides the MiniPlayer while it is the focused screen (`useFocusEffect` → `usePlayerStore.setVisible(false)`). A scholar or book screen pushed over it gets its player back; root overlays (note editor, notes viewer, sheets) blur the tab group but leave the Mushaf visible, so `services/mushafPlayerVisibility.ts` keeps the player hidden until focus lands elsewhere. The TabBar stays visible. If the user asks for fully immersive mushaf, move the screen to a root-level stack entry outside `(tabs)`.
 
 ---
 
@@ -337,6 +345,7 @@ npx tsc --noEmit       # type-check — use this liberally, it's fast
 - On-device visual QA is the only way to verify RTL layout, font rendering, and the floating MiniPlayer. Typecheck and lint pass doesn't mean it renders correctly.
 - **An icon can be the right geometry and still be wrong.** The file uses one component in two orientations and puts the flip on the *instance* (`transform.m00: -1`), never on the SYMBOL master the generator copies. `FigmaIcon`'s `mirrored` prop carries it; `__tests__/figmaIcons.test.ts` pins which call sites set it.
 - **`alignItems: 'flex-end'` and `textAlign: 'right'` mean the physical LEFT** in a container whose direction is left to `forceRTL`, and `flexDirection: 'row-reverse'` on such a row renders left→right. Spread `PHYSICAL_BOX` / `PHYSICAL_ROW` from `constants/layout.ts`. Guarded by `__tests__/rtlPhysicalContract.test.ts`.
+- **Don't shrink-wrap Arabic titles on Android.** Android 15+ (targetSdk ≥ 35) breaks lines by glyph ink bounds while RN 0.81 measures by advances, so a shrink-wrapped Text can lose its last word with no ellipsis. Give titles full width (`alignItems: 'stretch'` / `alignSelf: 'stretch'`) and right-align via `textStyle`, not `flex-end`. Upstream fix is RN `matchLineBreakingToMeasurement` (not in 0.81–0.83). Pinned for RibbonCard by `__tests__/ribbonCardTitleWidth.test.ts`. Remaining known cases: the scholar-detail header name and the «كل الشرح» back header.
 
 ---
 
@@ -358,7 +367,7 @@ npx tsc --noEmit       # type-check — use this liberally, it's fast
 - When adding an external URL or share target: use `Linking.openURL` with a `canOpenURL` check + Arabic Alert fallback (pattern in `app/share-sheet.tsx`).
 - When touching progress data: go through `progressRepo` / `lectureRepo` / `wirdRepo` / `achievementsRepo` / `resetFacade` (re-exports from `@/db`). Never write raw SQL outside `db/`; never persist progress fields via zustand middleware.
 
-- **Long-press means** (app-wide): long-press on a lecture row (`LectureCard`, `RibbonCard`) is **SAVE** to المحفوظات; long-press on an ayah in the Mushaf reader, or on the MiniPlayer, is **NOTE**. The two never share a surface. Community surfaces (groups, posts, the discussion entry) take **no** long-press. `__tests__/contextualNotesInvariants.test.ts` and `__tests__/communityInvariants.test.ts` pin this.
+- **Long-press means** (app-wide): long-press on a lecture row (`LectureCard`, `RibbonCard`) is **SAVE** to المحفوظات; long-press on an ayah in the Mushaf reader, or on the MiniPlayer, is **NOTE**. The two never share a surface. Recommendation rows (Home and the Mushaf end block) take **no** long-press, and the Mushaf end block never saves. Community surfaces (groups, posts, the discussion entry) take **no** long-press. `__tests__/contextualNotesInvariants.test.ts` and `__tests__/communityInvariants.test.ts` pin this.
 
 ## Active Technologies
 - TypeScript 5.9, React 19.1, React Native 0.81.5 (Expo SDK 54) (001-progress-tracking)
