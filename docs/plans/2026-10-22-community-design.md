@@ -365,6 +365,7 @@ Specified by Appendix A only. It is not built in v1.
   - Throttle: at most once per hour per challenge. Trigger (b) bypasses the throttle for that challenge's first report.
   - What is pushed: `monotonic(lastReported[challengeId], current)`, and only when it changed.
   - It does nothing unless access is `open`.
+  - After a send that carried new counts, an already-open group detail is re-fetched quietly (`quietRefreshGroupDetail`), so its totals and the member's own row catch up. This is skipped if access stopped being `open` meanwhile, the stores were reset, or the group was left.
   - Errors are swallowed (dev `console.warn` without content).
   - `progressStore.ts` is **not** touched and there is no subscription. `startCommunityProgressSync()` is called once in `app/_layout.tsx` after the progress hydrate, and returns immediately in `off` mode.
 - **Reset (C7).** `resetFacade.resetAll` lowers local counts, but pushed values never go down within a challenge. The reset Alert's copy in `settings-progress.tsx` stays unchanged. The rule is documented here and in the group-detail help text «لا ينقص التقدّم المُرسَل بعد إعادة تعيين القراءة».

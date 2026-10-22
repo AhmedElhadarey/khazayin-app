@@ -90,7 +90,7 @@ async function push(c: Challenge, bypassThrottle: boolean): Promise<void> {
   if (stillMine()) useCommunityLocalStore.getState().setLastReported(c.id, sent);
   // The group's totals and this member's own row moved: catch an open detail up.
   // No-op when no detail store exists (left the group) or the stores were reset since `gen`.
-  await quietRefreshGroupDetail(c.groupId, gen);
+  if (stillMine()) await quietRefreshGroupDetail(c.groupId, gen);
 }
 
 /** Errors are swallowed; a duplicate send is shared by `runMutation`. */

@@ -3,6 +3,7 @@
  * re-fetched quietly so its totals and the member's own row catch up.
  */
 import { onChallengeJoined, onGroupFocused, __resetProgressSyncForTesting } from '@/services/community/progressSync';
+import { resetMutations } from '@/store/communityMutations';
 import { useCommunityLocalStore } from '@/store/communityLocalStore';
 import { dropGroupDetailStore, groupDetailStore, resetCommunityStores } from '@/store/communityStores';
 import type { Challenge, Group } from '@/types/community';
@@ -123,5 +124,49 @@ describe('progress push refreshes the open group detail', () => {
     await onGroupFocused(challenge);
     expect((store.getState().data as any).progress.totals.pagesCovered).toBe(200);
     expect(store.getState().status).toBe('success');
+  });
+
+  it('does not refetch once the member paused while the push was in flight', async () => {
+    const store = seed(200);
+    let release!: () => void;
+    mockSvc.challenges.reportProgress.mockReturnValue(new Promise<void>((r) => (release = r)));
+    const pending = onGroupFocused(challenge);
+    await new Promise<void>((r) => setImmediate(r));
+    // pause(): access leaves `open` without any generation bump
+    useCommunityLocalStore.setState({
+      prefs: { optedIn: false, guidelinesVersion: 1, acceptedAt: 1, shareMyProgress: false },
+    });
+    release();
+    await pending;
+    expect(mockSvc.groups.get).not.toHaveBeenCalled();
+    expect((store.getState().data as any).progress.totals.pagesCovered).toBe(200);
+  });
+
+  it('writes nothing when only the mutation state was reset (generation bumped, store kept)', async () => {
+    const store = seed(200);
+    let release!: () => void;
+    mockSvc.challenges.reportProgress.mockReturnValue(new Promise<void>((r) => (release = r)));
+    const pending = onGroupFocused(challenge);
+    await new Promise<void>((r) => setImmediate(r));
+    resetMutations();
+    release();
+    await pending;
+    expect((store.getState().data as any).progress.totals.pagesCovered).toBe(200);
+  });
+
+  it('writes into neither the dropped nor a new store when the group is left while groups.get is pending', async () => {
+    const old = seed(200);
+    let resolveGet!: (v: unknown) => void;
+    mockSvc.groups.get.mockReturnValue(new Promise((r) => (resolveGet = r)));
+    const pending = onGroupFocused(challenge);
+    await new Promise<void>((r) => setImmediate(r));
+    await new Promise<void>((r) => setImmediate(r));
+    expect(mockSvc.groups.get).toHaveBeenCalledTimes(1);
+    dropGroupDetailStore('g1');
+    const fresh = groupDetailStore('g1'); // a rejoin opens a new store
+    resolveGet(detail(210));
+    await pending;
+    expect((old.getState().data as any).progress.totals.pagesCovered).toBe(200);
+    expect(fresh.getState().data).toBeNull();
   });
 });
