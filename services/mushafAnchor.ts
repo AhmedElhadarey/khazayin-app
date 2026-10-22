@@ -19,6 +19,8 @@ export interface ReadingAnchor {
 
 /** Distance from the post-scroll baseline that counts as the user moving. */
 export const TARGET_CONSUME_DISTANCE = 40;
+/** How long after a programmatic scroll its first scroll event may set the baseline. */
+export const BASELINE_WINDOW_MS = 300;
 
 /** A restore waiting for the reflowed layout; abandoned after this long. */
 export const RESTORE_TTL_MS = 1500;
@@ -136,6 +138,7 @@ export class ReadingPlaceController {
    */
   private awaitingBaseline = false;
   private baselineY: number | null = null;
+  private baselineDeadline = Infinity;
 
   constructor(key: string, isTablet: boolean) {
     this.key = key;
@@ -174,7 +177,8 @@ export class ReadingPlaceController {
       return;
     }
     if (this.target != null && !this.targetConsumed) {
-      if (this.awaitingBaseline) {
+      if (this.awaitingBaseline && now <= this.baselineDeadline) {
+        // Soon after the scroll: where it really landed (it may have clamped).
         this.baselineY = y;
         this.awaitingBaseline = false;
       } else if (this.baselineY != null && Math.abs(y - this.baselineY) > TARGET_CONSUME_DISTANCE) {
@@ -197,19 +201,23 @@ export class ReadingPlaceController {
   }
 
   /** The screen scrolled itself (ayah link): any restore or old anchor is moot. */
-  onProgrammaticScroll(): void {
+  onProgrammaticScroll(requestedY?: number, now = 0): void {
     this.pending = null;
     this.anchor = null;
+    // The requested y is the baseline until the first scroll event inside
+    // BASELINE_WINDOW_MS says where it landed; a scroll that was a no-op or is
+    // throttled therefore cannot make the user's own first scroll the baseline.
     this.awaitingBaseline = true;
-    this.baselineY = null;
+    this.baselineY = requestedY ?? null;
+    this.baselineDeadline = requestedY == null ? Infinity : now + BASELINE_WINDOW_MS;
   }
 
   /**
    * The screen scrolled somewhere that is not the deep-link target (a surah
    * level note goes to the top): the target must not pull the reader back.
    */
-  onTargetLeft(): void {
-    this.onProgrammaticScroll();
+  onTargetLeft(now = 0): void {
+    this.onProgrammaticScroll(0, now);
     if (this.target != null) this.targetConsumed = true;
   }
 
@@ -235,6 +243,7 @@ export class ReadingPlaceController {
       // The reflow's own clamped scroll must not read as the user moving.
       this.awaitingBaseline = true;
       this.baselineY = null;
+      this.baselineDeadline = Infinity;
       return 'rearmAyah';
     }
     // A second key change while a restore is pending keeps that place.
@@ -270,4 +279,17 @@ export class ReadingPlaceController {
     this.pending = null;
     if (res.action === 'restore') this.request = res.offset;
   }
+}
+
+/**
+ * A measurement tagged with the layout key it was taken under. After a reflow
+ * the screen keeps old and new entries side by side and reads only the current
+ * key's, so it never has to clear them (which could wipe a fresh entry that
+ * landed before the key-change effect ran).
+ */
+export function currentKeyEntry<E extends { key: string }>(
+  entry: E | undefined,
+  key: string,
+): E | undefined {
+  return entry && entry.key === key ? entry : undefined;
 }

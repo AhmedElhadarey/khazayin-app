@@ -2,7 +2,9 @@ import fs from 'fs';
 import path from 'path';
 
 import {
+  BASELINE_WINDOW_MS,
   ReadingPlaceController,
+  currentKeyEntry,
   RESTORE_TTL_MS,
   TARGET_CONSUME_DISTANCE,
   captureReadingAnchor,
@@ -64,6 +66,22 @@ describe('reading anchor', () => {
   });
 });
 
+describe('currentKeyEntry', () => {
+  const stale = { key: 'old', v: 1 };
+  const fresh = { key: 'new', v: 2 };
+  it('ignores entries measured under another key', () => {
+    expect(currentKeyEntry(stale, 'new')).toBeUndefined();
+    expect(currentKeyEntry(undefined, 'new')).toBeUndefined();
+  });
+  it('uses current-key entries whatever order they arrived in', () => {
+    const map = new Map<number, { key: string; v: number }>();
+    map.set(1, fresh); // reflow layout landed first
+    expect(currentKeyEntry(map.get(1), 'new')).toBe(fresh);
+    map.set(1, stale); // a late old-key callback does not win for the new key
+    expect(currentKeyEntry(map.get(1), 'new')).toBeUndefined();
+  });
+});
+
 describe('pending restore resolution', () => {
   const pending = { anchor: { page: 2, fraction: 0.5, y: 400, height: 600 }, deadline: 1000 };
   const reflowed = { y: 480, height: 720 };
@@ -106,12 +124,18 @@ describe('Mushaf screen tablet wiring', () => {
     expect(src).toMatch(/centredColumn\(/);
   });
 
-  it('drops pre-reflow measurements when re-arming the ayah scroll', () => {
-    expect(src).toMatch(/layoutsRef\.current\.clear\(\);\s*linesRef\.current\.clear\(\)/);
+  it('reads ayah measurements by layout key instead of clearing them', () => {
+    expect(src).toMatch(/currentKeyEntry\(layoutsRef/);
+    expect(src).toMatch(/currentKeyEntry\(linesRef/);
+    expect(src).not.toMatch(/\.clear\(\)/);
+  });
+
+  it('a surah-level note jump marks the target precise so it is not refined back', () => {
+    expect(src).toMatch(/onTargetLeft\(Date\.now\(\)\);\s*scrolledPreciseRef\.current = true/);
   });
 
   it('a surah-level note jump does not clear the scrolled-ayah marker', () => {
-    expect(src).toMatch(/if \(n == null\) \{\s*place\.onTargetLeft\(\);/);
+    expect(src).toMatch(/if \(n == null\) \{\s*place\.onTargetLeft\(/);
   });
 
   it('forwards reflow events to the ReadingPlaceController', () => {
@@ -296,5 +320,23 @@ describe('ReadingPlaceController', () => {
     c.onKeyChange(NEW, true, 20);
     c.onScroll(300, 21, NEW); // clamped by the reflow: a new baseline, not the user
     expect(c.onKeyChange('900:30', true, 30)).toBe('rearmAyah');
+  });
+
+  it('a programmatic scroll that never moved leaves the requested y as baseline', () => {
+    const c = build();
+    c.setTargetAyah(255);
+    c.onProgrammaticScroll(1000, 0);
+    // First event arrives late (throttled / no-op scroll): the user's own.
+    c.onScroll(1000 + TARGET_CONSUME_DISTANCE + 10, BASELINE_WINDOW_MS + 50, OLD);
+    expect(c.onKeyChange(NEW, true, 1000)).toBe('restore');
+  });
+
+  it('a first event inside the window overrides the requested y (clamped scroll)', () => {
+    const c = build();
+    c.setTargetAyah(255);
+    c.onProgrammaticScroll(1000, 0);
+    c.onScroll(700, 50, OLD); // landed at 700 because content is short
+    c.onScroll(700 + TARGET_CONSUME_DISTANCE - 1, 400, OLD);
+    expect(c.onKeyChange(NEW, true, 500)).toBe('rearmAyah');
   });
 });

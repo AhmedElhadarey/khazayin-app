@@ -23,7 +23,7 @@ import {
   surahMetaLine,
   type TextLine,
 } from '@/services/mushafNavigation';
-import { ReadingPlaceController } from '@/services/mushafAnchor';
+import { ReadingPlaceController, currentKeyEntry } from '@/services/mushafAnchor';
 import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -262,8 +262,10 @@ function ReadingView({
   const targetAyah = normalizeAyahParam(rawAyah, ayat.length || undefined);
   const scrollRef = useRef<ScrollView>(null);
   const bodyYRef = useRef(0);
-  const layoutsRef = useRef(new Map<number, { y: number; height: number }>());
-  const linesRef = useRef(new Map<number, TextLine[]>());
+  // Entries carry the layout key they were measured under; see currentKeyEntry.
+  const typeKey = `${sheetWidth}:${type.fontSize}`;
+  const layoutsRef = useRef(new Map<number, { key: string; y: number; height: number }>());
+  const linesRef = useRef(new Map<number, { key: string; lines: TextLine[] }>());
   const scrolledAyahRef = useRef<number | null>(null);
   const scrolledPreciseRef = useRef(false);
   const [place] = useState(() => new ReadingPlaceController(`${sheetWidth}:${type.fontSize}`, isTablet));
@@ -281,9 +283,9 @@ function ReadingView({
     const i = segmentForAyah(segments, targetAyah);
     if (i < 0) return;
     const segment = segments[i];
-    const layout = layoutsRef.current.get(segment.page);
+    const layout = currentKeyEntry(layoutsRef.current.get(segment.page), typeKey);
     if (!layout) return; // a later layout callback retries
-    const lines = linesRef.current.get(segment.page);
+    const lines = currentKeyEntry(linesRef.current.get(segment.page), typeKey)?.lines;
     const precise = !!lines && lines.length > 0;
     // Already there; only a first scroll made without line data may refine.
     if (targetAyah === scrolledAyahRef.current && (scrolledPreciseRef.current || !precise)) return;
@@ -295,11 +297,12 @@ function ReadingView({
       offset: ayahCharOffset(segment.ayat, targetAyah),
       expectedLength: segmentCharLength(segment.ayat),
     });
-    scrollRef.current?.scrollTo({ y: Math.max(0, y - AYAH_SCROLL_HEADROOM), animated: false });
+    const toY = Math.max(0, y - AYAH_SCROLL_HEADROOM);
+    scrollRef.current?.scrollTo({ y: toY, animated: false });
     scrolledAyahRef.current = targetAyah;
     scrolledPreciseRef.current = precise;
-    place.onProgrammaticScroll();
-  }, [targetAyah, segments, place]);
+    place.onProgrammaticScroll(toY, Date.now());
+  }, [targetAyah, segments, place, typeKey]);
 
   useEffect(() => {
     tryScroll();
@@ -313,7 +316,6 @@ function ReadingView({
   //    scrolled to again once the new onLayout / onTextLayout arrive;
   //  - otherwise the page + fraction captured while scrolling is restored from
   //    the anchor page's new layout.
-  const typeKey = `${sheetWidth}:${type.fontSize}`;
   useEffect(() => {
     place.setTargetAyah(targetAyah);
   }, [place, targetAyah]);
@@ -328,16 +330,15 @@ function ReadingView({
   useEffect(() => {
     const outcome = place.onKeyChange(typeKey, isTablet, Date.now());
     if (outcome === 'rearmAyah') {
-      // Forget the pre-reflow measurements: tryScroll would otherwise scroll
-      // against them, mark the ayah precise and ignore the new ones. The text
-      // reflows, so onLayout / onTextLayout fire again and tryScroll runs then.
-      layoutsRef.current.clear();
-      linesRef.current.clear();
+      // Old-key measurements are ignored by tryScroll, so nothing is cleared
+      // here (the reflow's layout may already have landed): tryScroll runs on
+      // whatever current-key entries exist and otherwise waits for them.
       scrolledAyahRef.current = null;
       scrolledPreciseRef.current = false;
+      tryScroll();
     }
     flushPlace();
-  }, [place, typeKey, isTablet, flushPlace]);
+  }, [place, typeKey, isTablet, tryScroll, flushPlace]);
 
   // A note's label inside this screen re-targets the scroll. The same ayah
   // is re-armed explicitly because the param would not change. A surah-level
@@ -347,7 +348,9 @@ function ReadingView({
   const jumpToAyah = useCallback(
     (n?: number) => {
       if (n == null) {
-        place.onTargetLeft();
+        place.onTargetLeft(Date.now());
+        // Spent for good: a later onTextLayout must not refine back to the old ?ayah.
+        scrolledPreciseRef.current = true;
         scrollRef.current?.scrollTo({ y: 0, animated: true });
         return;
       }
@@ -456,13 +459,13 @@ function ReadingView({
                 onLayout={(e) => {
                   const { y, height } = e.nativeEvent.layout;
                   tracking.setSegmentLayout(segment.page, y, height);
-                  layoutsRef.current.set(segment.page, { y, height });
+                  layoutsRef.current.set(segment.page, { key: typeKey, y, height });
                   place.onSegmentLayout(segment.page, { y, height }, Date.now());
                   flushPlace();
                   tryScroll();
                 }}
                 onTextLayout={(e) => {
-                  linesRef.current.set(segment.page, e.nativeEvent.lines);
+                  linesRef.current.set(segment.page, { key: typeKey, lines: e.nativeEvent.lines });
                   tryScroll();
                 }}
                 style={[
