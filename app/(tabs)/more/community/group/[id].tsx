@@ -106,11 +106,11 @@ export default function GroupDetailScreen() {
     void loadOwnProgress(c, {
       read: ownCounts,
       isCurrent: makeIsCurrent({
-          live: () => live,
-          left: () => leaveGuard.current.left,
-          gen,
-          currentGen: communityGeneration,
-        }),
+        live: () => live,
+        left: () => leaveGuard.current.left,
+        gen,
+        currentGen: communityGeneration,
+      }),
       apply: (counts) => setOwn((prev) => keepIfSame(prev, counts)),
     });
     return () => {
@@ -188,8 +188,8 @@ export default function GroupDetailScreen() {
               <View style={styles.card}>
                 <Text style={styles.label}>{COMMUNITY_COPY.joinCodeLabel}</Text>
                 <View style={styles.codeBox} accessible accessibilityLabel={codeA11y(detail.group.joinCode)}>
-                  {/* Shrink floor is RN's default (a 6-character code does not shrink in practice); a real one needs an RN patch, as minimumFontSize is not a Fabric Text attribute. */}
-                  <Text style={styles.code} numberOfLines={1} adjustsFontSizeToFit>
+                  {/* One line, shrinking to at most 60% before it would wrap (a 6-character code does not shrink in practice). */}
+                  <Text style={styles.code} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.6}>
                     {detail.group.joinCode}
                   </Text>
                 </View>

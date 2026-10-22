@@ -33,8 +33,9 @@ export function keepIfSame(prev: OwnProgress | null, next: OwnProgress): OwnProg
 /**
  * The screen's guard for an own-counts read. Every input is a getter or a value
  * captured when the read starts, so the answer is evaluated when the read lands:
- * stale after blur or unmount (`live`), after leaving the group (`left`), and
- * after a community reset (`gen` no longer equals `currentGen()`).
+ * stale once the caller's effect is torn down (`live`: blur for the focus
+ * effect, unmount or new data for the detail effect), after leaving the group
+ * (`left`), and after a community reset (`gen` no longer equals `currentGen()`).
  */
 export function makeIsCurrent(g: {
   live: () => boolean;

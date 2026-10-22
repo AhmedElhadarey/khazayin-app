@@ -80,10 +80,13 @@ describe('group screen wiring', () => {
     const uses = src.match(/makeIsCurrent\(\{[^}]*\}\)/g) ?? [];
     expect(uses).toHaveLength(2);
     for (const u of uses) {
-      expect(u).toMatch(/live:/);
+      expect(u).toMatch(/live: \(\) => live,/);
       expect(u).toMatch(/left: \(\) => leaveGuard\.current\.left/);
       expect(u).toMatch(/gen,/);
       expect(u).toMatch(/currentGen: communityGeneration/);
     }
+    // `gen` is captured when each effect starts, right before its read.
+    const captured = src.match(/const gen = communityGeneration\(\);(?:(?!const gen)[\s\S]){0,300}?makeIsCurrent\(/g) ?? [];
+    expect(captured).toHaveLength(2);
   });
 });
