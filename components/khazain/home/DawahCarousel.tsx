@@ -90,14 +90,26 @@ export function DawahCarousel({
   const measuredStage = useRef(stageWidth);
   // The real slot that was last in focus, so a stage change re-centres on it.
   const focused = useRef(FIRST_REAL);
+  // The frame the pending anchor is scheduled on, or null. Anchoring waits one
+  // frame so every slot of the same layout pass has reported first.
+  const pendingAnchor = useRef<number | null>(null);
+  const cancelAnchor = useCallback(() => {
+    if (pendingAnchor.current !== null) {
+      cancelAnimationFrame(pendingAnchor.current);
+      pendingAnchor.current = null;
+    }
+  }, []);
   useEffect(() => {
-    // A slot's centre depends only on its index and the stage, so the
-    // survivors of a length change stay valid and will not report again —
-    // trim rather than wipe, and keep focus on a real slot.
+    // Not every kept slot is guaranteed to hold its centre across a length
+    // change (under RTL the slots may lay out from the right edge), but any
+    // that moved will report again. Trim the dropped tail, keep focus on a
+    // real slot, and re-anchor once the new pass has landed.
     centres.current.length = Math.min(centres.current.length, wrapped.length);
     focused.current = clampFocus(focused.current, FIRST_REAL, LAST_REAL);
     anchored.current = false;
-  }, [wrapped.length, LAST_REAL]);
+    cancelAnchor();
+  }, [wrapped.length, LAST_REAL, cancelAnchor]);
+  useEffect(() => cancelAnchor, [cancelAnchor]);
   const scrollToSlot = useCallback((index: number, animated: boolean) => {
     const centre = centres.current[index];
     if (centre === undefined) return;
@@ -109,15 +121,23 @@ export function DawahCarousel({
       measuredStage.current = stageWidth;
       centres.current = [];
       anchored.current = false;
+      cancelAnchor();
     }
     centres.current[index] = centre;
-    // Anchor on the focused poster (the first real one initially) as soon as
-    // it has been measured.
-    if (!anchored.current && centres.current[focused.current] !== undefined) {
-      anchored.current = true;
-      scrollToSlot(focused.current, false);
+    // Anchor on the focused poster (the first real one initially) once it has
+    // been measured — one frame later, so the centres are the final ones.
+    if (
+      !anchored.current &&
+      pendingAnchor.current === null &&
+      centres.current[focused.current] !== undefined
+    ) {
+      pendingAnchor.current = requestAnimationFrame(() => {
+        pendingAnchor.current = null;
+        anchored.current = true;
+        scrollToSlot(focused.current, false);
+      });
     }
-  }, [scrollToSlot, stageWidth]);
+  }, [scrollToSlot, stageWidth, cancelAnchor]);
 
   // Guard: with 0 items render nothing; with 1 item the wrap-around clones
   // would overlap the only real card and onMomentumEnd math breaks (G10).

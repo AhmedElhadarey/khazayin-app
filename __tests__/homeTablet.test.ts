@@ -30,7 +30,12 @@ describe('homeTabletRows', () => {
 
 describe('RtlCarousel', () => {
   it('sets flexGrow on its content container (wiring scan)', () => {
-    expect(read('components/khazain/primitives/RtlCarousel.tsx')).toContain('flexGrow');
+    expect(read('components/khazain/primitives/RtlCarousel.tsx')).toMatch(/flexGrow:\s*1/);
+  });
+
+  it('keys no DawahCarousel effect on the window width', () => {
+    const src = read('components/khazain/home/DawahCarousel.tsx');
+    expect(src).not.toMatch(/\[[^\]]*windowWidth[^\]]*\]\s*\)/);
   });
 });
 
