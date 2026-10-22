@@ -10,7 +10,6 @@ import {
   RESERVED_COLUMNS,
   SCREEN_BOTTOM_BREATHING,
 } from '@/constants/layout';
-import { LETTER_INDEX_EDGE } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import type { Lecture } from '@/types/content';
 import { openSearch } from '@/services/searchNavigation';
@@ -19,7 +18,7 @@ import React from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { railListGeometry } from '@/constants/railList';
+import { railListGeometry } from '@/constants/responsive';
 
 /**
  * Header → search → compact lecture rows → alphabet rail, the shape shared by
@@ -45,7 +44,7 @@ export function RailedLectureList({
 }) {
   const router = useRouter();
   const { columnStyle, isTablet, reading } = useResponsiveLayout();
-  const rail = railListGeometry(isTablet, reading.inset);
+  const rail = railListGeometry({ isTablet, reading });
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
@@ -73,7 +72,7 @@ export function RailedLectureList({
           )}
           showsVerticalScrollIndicator={false}
         />
-        <View style={[styles.rail, { [LETTER_INDEX_EDGE]: rail.edge }]} pointerEvents="box-none">
+        <View style={[styles.rail, rail.railStyle]} pointerEvents="box-none">
           <LetterIndex active={activeLetter} />
         </View>
       </View>

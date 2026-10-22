@@ -8,7 +8,6 @@ import {
   SkeletonRibbonList,
 } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
-import { LETTER_INDEX_EDGE } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { useScholarsStore } from '@/store';
 import { openSearch } from '@/services/searchNavigation';
@@ -17,7 +16,7 @@ import React, { useEffect } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { railListGeometry } from '@/constants/railList';
+import { railListGeometry } from '@/constants/responsive';
 
 // Page 26: العلماء والمشايخ list of scholars with right-rail letter index.
 // Each scholar = RibbonCard (gold-bar on right edge) with pretitle "فضيلة الشيخ"
@@ -27,7 +26,7 @@ import { railListGeometry } from '@/constants/railList';
 export default function ScholarScreen() {
   const router = useRouter();
   const { columnStyle, isTablet, reading } = useResponsiveLayout();
-  const rail = railListGeometry(isTablet, reading.inset);
+  const rail = railListGeometry({ isTablet, reading });
   const { data, status, error, fetch, refresh } = useScholarsStore();
 
   useEffect(() => {
@@ -71,7 +70,7 @@ export default function ScholarScreen() {
             </AsyncContent>
           </View>
         )}
-        <View style={[styles.rail, { [LETTER_INDEX_EDGE]: rail.edge }]} pointerEvents="box-none">
+        <View style={[styles.rail, rail.railStyle]} pointerEvents="box-none">
           <LetterIndex active="م" />
         </View>
       </View>

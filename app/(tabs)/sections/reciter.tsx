@@ -9,7 +9,6 @@ import {
   SkeletonRibbonList,
 } from '@/components/khazain';
 import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
-import { LETTER_INDEX_EDGE } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
@@ -23,7 +22,7 @@ import React, { useEffect, useState } from 'react';
 import { FlatList, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { railListGeometry } from '@/constants/railList';
+import { railListGeometry } from '@/constants/responsive';
 
 // Page 13/14: reciter tabs + reciter list with right-rail letter index.
 // Tabs sit between the InlineHeader+SearchPill and the list.
@@ -31,7 +30,7 @@ import { railListGeometry } from '@/constants/railList';
 export default function ReciterScreen() {
   const router = useRouter();
   const { columnStyle, isTablet, reading } = useResponsiveLayout();
-  const rail = railListGeometry(isTablet, reading.inset);
+  const rail = railListGeometry({ isTablet, reading });
   const { tab } = useLocalSearchParams<{ tab?: string | string[] }>();
   const requestedTab = reciterTabFromParam(tab);
   const [active, setActive] = useState<string>(requestedTab);
@@ -75,9 +74,12 @@ export default function ReciterScreen() {
       <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
       </View>
-      <View style={columnStyle}>
-        <SegmentTabs<string> tabs={RECITER_TABS} active={active} onChange={setActive} />
-      </View>
+      <SegmentTabs<string>
+        tabs={RECITER_TABS}
+        active={active}
+        onChange={setActive}
+        style={columnStyle}
+      />
       {/* Body: scrollable list + absolute-positioned right-rail letter index. */}
       <View style={styles.body}>
         {/* Three bodies: the virtualized list when the active tab has
@@ -120,7 +122,7 @@ export default function ReciterScreen() {
             </AsyncContent>
           </View>
         )}
-        <View style={[styles.rail, { [LETTER_INDEX_EDGE]: rail.edge }]} pointerEvents="box-none">
+        <View style={[styles.rail, rail.railStyle]} pointerEvents="box-none">
           <LetterIndex active="م" />
         </View>
       </View>

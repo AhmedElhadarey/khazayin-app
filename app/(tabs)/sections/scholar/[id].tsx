@@ -94,7 +94,7 @@ export default function ScholarDetailScreen() {
       {/* The body always has two children, the side panel then the list area, so
           rotating across the split width only restyles them and never remounts
           the FlatList. Split: panel on the physical right (READING_ROW), the
-          safe-area side insets as margins because the screen's own edges stop at
+          safe-area side insets as padding (`tabletGutterPadding`) because the screen's own edges stop at
           top/bottom. Single: the panel stacks above the list, centred on tablets. */}
       <View
         style={

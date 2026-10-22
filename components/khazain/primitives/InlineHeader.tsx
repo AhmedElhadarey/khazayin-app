@@ -34,7 +34,7 @@ export function InlineHeader({
 }: {
   title: string;
   onBack?: () => void;
-  /** Tablet reading column (`columnStyle`); `{}` on phones. */
+  /** Outer row style, e.g. the tablet reading column. */
   style?: StyleProp<ViewStyle>;
 }) {
   const slots: Record<InlineHeaderSlot, React.ReactNode> = {

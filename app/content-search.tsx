@@ -38,6 +38,8 @@ import {
   StyleSheet,
   Text,
   View,
+  type StyleProp,
+  type ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -190,9 +192,10 @@ export default function SearchModalScreen() {
           onRemoveRecent={removeRecent}
           onClearAllRecents={handleConfirmClearRecents}
           onPickSuggestion={(q) => setQuery(q)}
+          columnStyle={columnStyle}
         />
       ) : body === 'results' ? (
-        <ResultsList results={results} onPress={handleResultPress} />
+        <ResultsList results={results} onPress={handleResultPress} columnStyle={columnStyle} />
       ) : body === 'loading' ? (
         <View
           style={styles.loadingWrap}
@@ -207,6 +210,7 @@ export default function SearchModalScreen() {
           query={query}
           onSections={goToSections}
           onPickSuggestion={(q) => setQuery(q)}
+          columnStyle={columnStyle}
         />
       ) : null}
     </View>
@@ -221,14 +225,15 @@ function EmptyState({
   onRemoveRecent,
   onClearAllRecents,
   onPickSuggestion,
+  columnStyle,
 }: {
   recents: string[];
   onPickRecent: (q: string) => void;
   onRemoveRecent: (q: string) => void;
   onClearAllRecents: () => void;
   onPickSuggestion: (q: string) => void;
+  columnStyle: StyleProp<ViewStyle>;
 }) {
-  const { columnStyle } = useResponsiveLayout();
   return (
     <FlatList
       style={styles.scroll}
@@ -272,11 +277,12 @@ type ResultGroup = ReturnType<typeof useSearchStore.getState>['results'][number]
 function ResultsList({
   results,
   onPress,
+  columnStyle,
 }: {
   results: ResultGroup[];
   onPress: (target: SearchTarget) => void;
+  columnStyle: StyleProp<ViewStyle>;
 }) {
-  const { columnStyle } = useResponsiveLayout();
   return (
     <FlatList
       style={styles.scroll}
@@ -317,6 +323,7 @@ function NoResults({
   query: string;
   onSections: () => void;
   onPickSuggestion: (q: string) => void;
+  columnStyle: StyleProp<ViewStyle>;
 }) {
   return (
     <View style={styles.noResultsWrap}>

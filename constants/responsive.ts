@@ -14,9 +14,11 @@ import {
   FIGMA_CAROUSEL_CARD_WIDTH,
   TAB_BAR,
   TAB_PHYSICAL_ORDER,
+  RESERVED_COLUMNS,
   horizontalGutter,
   type CarouselCardKind,
 } from '@/constants/layout';
+import { LETTER_INDEX_EDGE } from '@/constants/rtlContracts';
 import { FONT_SIZE_SCALE } from '@/constants/settings';
 
 export const TABLET_MIN_WIDTH = 600;
@@ -296,4 +298,37 @@ export function responsiveLayout(
     splitPane: splitPane(width, height),
     sideInsets,
   };
+}
+
+/** The page margin a phone's rail sits inside, and the column's own gutter. */
+export const RAIL_EDGE_GUTTER = 16;
+
+/**
+ * Geometry for a list that shares its row with the alphabet rail.
+ *
+ * Phones keep the Figma values exactly: the list carries 16 on its left and
+ * `letterRailInset` on its right, the rail sits 16 from the right edge.
+ *
+ * On a tablet the list is centred in the reading column, so the list view
+ * itself bleeds (no padding) and the padding moves inside the column
+ * (`inner`); the rail then sits `RAIL_EDGE_GUTTER` inside the column's right
+ * edge, which is `reading.inset` from the window's physical right edge.
+ * `railStyle` is the rail's physical edge offset, ready to spread into its style.
+ *
+ * `PHYSICAL_BOX` on the screen's body is what makes these physical offsets.
+ */
+export function railListGeometry(layout: Pick<ResponsiveLayout, 'isTablet' | 'reading'>): {
+  list: ViewStyle;
+  inner: ViewStyle | undefined;
+  edge: number;
+  railStyle: ViewStyle;
+} {
+  const padding: ViewStyle = {
+    paddingLeft: RAIL_EDGE_GUTTER,
+    paddingRight: RESERVED_COLUMNS.letterRailInset,
+  };
+  const edge = layout.isTablet ? layout.reading.inset + RAIL_EDGE_GUTTER : RAIL_EDGE_GUTTER;
+  const railStyle = { [LETTER_INDEX_EDGE]: edge } as ViewStyle;
+  if (!layout.isTablet) return { list: { flex: 1, ...padding }, inner: undefined, edge, railStyle };
+  return { list: { flex: 1 }, inner: padding, edge, railStyle };
 }

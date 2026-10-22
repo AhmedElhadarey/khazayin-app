@@ -2,7 +2,15 @@ import { PHYSICAL_ROW, SEGMENT_TABS, physicalTabOrder } from '@/constants/layout
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 // The reciter tab strip — node "\u0661" on 2031:6193. Four 84 x 45 tabs 8
 // apart on `#EDE0D1`, each labelled in the display face at 10 in navy, with a
@@ -23,16 +31,19 @@ export function SegmentTabs<T extends string>({
   tabs,
   active,
   onChange,
+  style,
 }: {
   tabs: { key: T; label: string }[];
   active: T;
   onChange: (k: T) => void;
+  /** Outer strip style, e.g. the tablet reading column. */
+  style?: StyleProp<ViewStyle>;
 }) {
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      style={styles.strip}
+      style={[styles.strip, style]}
       contentContainerStyle={styles.scroll}
     >
       <View style={styles.row}>

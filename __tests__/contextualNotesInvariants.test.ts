@@ -106,8 +106,8 @@ describe('scholar detail', () => {
     expect(card).not.toContain('onLongPress');
   });
   it('footer uses the guarded section', () => {
-    // The section is built once and placed by scholarNotesPlacement (panel in
-    // the tablet split, footer otherwise); see scholarSplitPane.test.ts.
+    // The section is built once and placed inline by `splitPane ? 'panel' : 'footer'`
+    // (panel in the tablet split, footer otherwise); see scholarSplitPane.test.ts.
     expect(src).toMatch(/notesSection =[\s\S]{0,40}<LinkedNotesSection/);
     expect(src).toMatch(/ListFooterComponent=\{[\s\S]{0,60}notesSection/);
   });
