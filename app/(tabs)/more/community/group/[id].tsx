@@ -27,6 +27,7 @@ import { arabicCopyForCode, isApiError } from '@/services/api/errors';
 import { communityService } from '@/services/community';
 import { runLeave, type LeaveGuard } from '@/services/community/groupActions';
 import { groupView, type OwnProgress } from '@/services/community/progressMath';
+import { keepIfSame, loadOwnProgress } from '@/services/community/ownProgress';
 import { onGroupFocused, ownCounts } from '@/services/community/progressSync';
 import { arabicCount } from '@/services/libraryStats';
 import { runMutation } from '@/store/communityMutations';
@@ -75,14 +76,13 @@ export default function GroupDetailScreen() {
     useCallback(() => {
       if (!challenge) return;
       let live = true;
+      const gen = communityGeneration();
       void onGroupFocused(challenge);
-      ownCounts(challenge)
-        .then((counts) => {
-          if (live) setOwn(counts);
-        })
-        .catch(() => {
-          /* the bar just stays hidden */
-        });
+      void loadOwnProgress(challenge, {
+        read: ownCounts,
+        isCurrent: () => live && gen === communityGeneration() && !leaveGuard.current.left,
+        apply: (counts) => setOwn((prev) => keepIfSame(prev, counts)),
+      });
       return () => {
         live = false;
       };
@@ -90,6 +90,23 @@ export default function GroupDetailScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [challenge?.id]),
   );
+
+  // Own counts follow the data, not only focus: a background push refreshes `detail`
+  // quietly while the screen stays mounted, and the card must catch up with it.
+  useEffect(() => {
+    if (!allowed || !detail?.challenge) return;
+    const c = detail.challenge;
+    let live = true;
+    const gen = communityGeneration();
+    void loadOwnProgress(c, {
+      read: ownCounts,
+      isCurrent: () => live && gen === communityGeneration() && !leaveGuard.current.left,
+      apply: (counts) => setOwn((prev) => keepIfSame(prev, counts)),
+    });
+    return () => {
+      live = false;
+    };
+  }, [allowed, detail]);
 
   const onShareCode = () => {
     if (!detail) return;
