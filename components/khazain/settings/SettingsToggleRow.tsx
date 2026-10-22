@@ -29,7 +29,7 @@ export function SettingsToggleRow({
       {/* Physical left → right: toggle, text, icon chip. */}
       <Toggle on={value} onChange={onValueChange} disabled={disabled} label={title} />
       <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={2}>
           {title}
         </Text>
         {description ? (
