@@ -510,3 +510,9 @@ Three commits during execution. Each is independently revertable; bisects cleanl
 **1 follow-up track named:** pull-to-refresh.
 
 Ready for `writing-plans` skill to convert into a bite-sized implementation plan.
+
+## Proposed: bulk scholar lectures endpoint
+
+Added 2026-10-22 from the personalized recommendations design (`docs/plans/2026-10-22-personalized-recommendations-design.md` §7.5).
+
+`GET /scholars/lectures?cursor=` returns `Paged<Lecture>` (the shape in §4.1 of this doc) with `scholarId` and `archiveId` always populated, under the manifest hash key `scholar-lectures`. `ContentService.scholars.listAllLectures(cursor)` becomes the recommender's only lecture source. It replaces the N per-scholar calls and the 4 page-1 calls. Until it ships, the client keeps the guarded fan-out in §7.4 of the recommendations design.
