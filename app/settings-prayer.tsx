@@ -16,7 +16,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
@@ -86,7 +86,7 @@ function promptLocationPermission() {
 }
 
 export default function SettingsPrayerScreen() {
-  const { columnStyle } = useResponsiveLayout();
+  const { columnStyle } = usePageSheetLayout();
   const config = useSettingsStore((s) => s.prayer);
   const setPrayerMethod = useSettingsStore((s) => s.setPrayerMethod);
   const setPrayerMadhab = useSettingsStore((s) => s.setPrayerMadhab);

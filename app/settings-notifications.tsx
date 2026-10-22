@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Circle, Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { textStyle } from '@/constants/typography';
@@ -45,7 +45,7 @@ function promptOpenOsSettings() {
 }
 
 export default function SettingsNotificationsScreen() {
-  const { columnStyle } = useResponsiveLayout();
+  const { columnStyle } = usePageSheetLayout();
   const router = useRouter();
   const notifications = useSettingsStore((s) => s.notifications);
   const setNotificationEnabled = useSettingsStore((s) => s.setNotificationEnabled);

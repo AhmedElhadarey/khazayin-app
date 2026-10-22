@@ -9,7 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
@@ -40,7 +40,7 @@ const PRESETS: readonly { id: JuzPreset; label: string }[] = [
 ];
 
 export default function SettingsWirdGoalScreen() {
-  const { columnStyle } = useResponsiveLayout();
+  const { columnStyle } = usePageSheetLayout();
   const router = useRouter();
   const currentTarget = useWirdStore((s) => s.target);
   const setTarget = useWirdStore((s) => s.setTarget);

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { PHYSICAL_ROW } from '@/constants/layout';
@@ -46,7 +46,7 @@ function build(hour12: number, minute: number, period: Period): TimeOfDay {
 }
 
 export default function SettingsWirdReminderScreen() {
-  const { columnStyle } = useResponsiveLayout();
+  const { columnStyle } = usePageSheetLayout();
   const router = useRouter();
   const current = useSettingsStore((s) => s.wirdReminderTime);
 

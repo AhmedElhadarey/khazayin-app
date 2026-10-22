@@ -240,6 +240,30 @@ describe("the column never lands on a ScrollView's own style", () => {
   });
 });
 
+describe("iOS page-sheet modals take the column from the sheet, not the window", () => {
+  // `presentation: 'modal'` is a page sheet on iPad, narrower than the window
+  // the column is computed from. iPadOS already narrows it, so iOS drops the
+  // column there (`usePageSheetLayout`); Android shows these full screen.
+  const layout = read("app/_layout.tsx");
+  const sheets = [
+    ...layout.matchAll(
+      /name="([^"]+)"\s*options=\{\{[^}]*presentation: 'modal'/g,
+    ),
+  ]
+    .map((m) => m[1])
+    .filter((name) => name !== "modal");
+
+  it("finds the page-sheet routes", () => {
+    expect(sheets.length).toBeGreaterThanOrEqual(8);
+  });
+
+  it.each(sheets)("%s uses usePageSheetLayout", (name) => {
+    const src = read(`app/${name}.tsx`);
+    expect(src).toMatch(/usePageSheetLayout\(\)/);
+    expect(src).not.toMatch(/useResponsiveLayout\(\)/);
+  });
+});
+
 describe("onboarding keeps its hero full width and its steps in the column", () => {
   it("puts the progress dots and footer in the column", () => {
     const src = read("app/onboarding.tsx");

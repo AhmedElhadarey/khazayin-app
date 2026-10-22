@@ -1,7 +1,7 @@
 import React from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
@@ -37,7 +37,7 @@ function openFoundationWebsite() {
 }
 
 export default function SettingsAboutScreen() {
-  const { columnStyle } = useResponsiveLayout();
+  const { columnStyle } = usePageSheetLayout();
   const version = resolveVersion();
   const build = resolveBuildNumber({
     executionEnvironment: Constants.executionEnvironment,
