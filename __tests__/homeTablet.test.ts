@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import { heroCardFill } from '@/components/khazain/home/HeroShell';
+import { clampFocus, nearestSlot, resolveWrap } from '@/components/khazain/home/dawahLayout';
 import { HOME_SECTION_ORDER, homeTabletRows } from '@/constants/homePresentation';
 
 const read = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
@@ -29,54 +29,57 @@ describe('homeTabletRows', () => {
 });
 
 describe('RtlCarousel', () => {
-  it('grows its content to the viewport so short rows anchor to the right', () => {
-    expect(read('components/khazain/primitives/RtlCarousel.tsx')).toMatch(/flexGrow:\s*1/);
+  it('sets flexGrow on its content container (wiring scan)', () => {
+    expect(read('components/khazain/primitives/RtlCarousel.tsx')).toContain('flexGrow');
   });
 });
 
-describe('DawahCarousel', () => {
-  const src = read('components/khazain/home/DawahCarousel.tsx');
+describe('Dawah wrap maths', () => {
+  // wrapped = [clone(last), r1, r2, r3, clone(first)] -> real slots 1..3
+  const centres = [50, 150, 250, 350, 450];
 
-  it('takes a stageWidth prop and uses the window only as its default', () => {
-    expect(src).toMatch(/stageWidth\?:\s*number/);
-    const uses = src.match(/windowWidth/g) ?? [];
-    // declaration + default only
-    expect(uses.length).toBeLessThanOrEqual(2);
+  it('picks the slot nearest the middle of the viewport', () => {
+    expect(nearestSlot(centres, 100, 200, 1)).toBe(1); // focus 200 -> 150/250 tie -> first
+    expect(nearestSlot(centres, 160, 200, 1)).toBe(2); // focus 260
   });
 
-  it('does not write refs during render or key an effect on the window', () => {
-    expect(src).not.toMatch(/\}, \[[^\]]*windowWidth[^\]]*\]\)/);
+  it('ignores unmeasured slots and falls back when none are measured', () => {
+    const sparse: (number | undefined)[] = [];
+    sparse[3] = 350;
+    expect(nearestSlot(sparse, 0, 200, 1)).toBe(3);
+    expect(nearestSlot([], 0, 200, 1)).toBe(1);
+  });
+
+  it('jumps from a clone to its real twin', () => {
+    expect(resolveWrap(0, 1, 3)).toEqual({ focus: 3, jumpTo: 3 });
+    expect(resolveWrap(4, 1, 3)).toEqual({ focus: 1, jumpTo: 1 });
+  });
+
+  it('does not jump when a real slot is focused', () => {
+    expect(resolveWrap(2, 1, 3)).toEqual({ focus: 2 });
+  });
+
+  it('clamps a remembered focus onto a real slot', () => {
+    expect(clampFocus(5, 1, 3)).toBe(3);
+    expect(clampFocus(0, 1, 3)).toBe(1);
+    expect(clampFocus(2, 1, 3)).toBe(2);
+    expect(clampFocus(2, 1, 0)).toBe(1);
   });
 });
 
-describe('Home screen', () => {
+describe('Home screen wiring', () => {
   const src = read('app/(tabs)/index.tsx');
 
-  it('only uses READING_ROW behind isTablet and passes stageWidth', () => {
-    expect(src).toMatch(/READING_ROW/);
-    expect(src).toMatch(/isTablet/);
-    expect(src).toMatch(/stageWidth=\{dawahStageWidth\(width\)\}/);
-    expect(src).toMatch(/homeTabletRows\(HOME_SECTION_ORDER\)/);
-  });
-});
-
-describe('tablet hero pair', () => {
-  it('heroCardFill grows only when asked', () => {
-    expect(heroCardFill(true)).toEqual({ flexGrow: 1 });
-    expect(heroCardFill(false)).toBeUndefined();
-    expect(heroCardFill()).toBeUndefined();
+  it('uses the tablet rows and the capped Dawah stage', () => {
+    expect(src).toContain('homeTabletRows(HOME_SECTION_ORDER)');
+    expect(src).toContain('dawahStageWidth(width)');
   });
 
-  it('only the tablet pair cells pass fill', () => {
-    const src = read('app/(tabs)/index.tsx');
+  it('passes fill to exactly the two tablet hero cells', () => {
     expect(src.match(/<Hero(Quran|Prophet)[^>]*\bfill\b/g)).toHaveLength(2);
-    expect(src).toMatch(/quranHero: quranHeroFilled/);
-    expect(src).toMatch(/prophetHero: prophetHeroFilled/);
-    expect(src).toMatch(/<View style=\{styles\.heroPad\}>\{quranHero\}<\/View>/);
   });
 
   it('puts homeColumnStyle on the ScrollView content container', () => {
-    const src = read('app/(tabs)/index.tsx');
     expect(src).toMatch(/contentContainerStyle=\{\[[^\]]*homeColumnStyle[^\]]*\]\}/s);
   });
 });

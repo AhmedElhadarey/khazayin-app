@@ -35,14 +35,6 @@ export type HeroLayer = {
   bottom?: number;
 };
 
-/**
- * Grows the card to the height of the row it shares; `minHeight` stays the
- * floor. Only the tablet hero pair asks for it, so phones are unchanged.
- */
-export function heroCardFill(fill?: boolean): { flexGrow: 1 } | undefined {
-  return fill ? { flexGrow: 1 } : undefined;
-}
-
 export type HeroShellProps = {
   /** Fills the card at any height, so it must be the patterned ground alone. */
   background: ImageSource;
@@ -56,7 +48,7 @@ export type HeroShellProps = {
   designWidth: number;
   /** The card's minimum height; text is free to push it past this. */
   designHeight: number;
-  /** Grow to the row's height (tablet pair). See `heroCardFill`. */
+  /** Grow to the row's height (tablet pair); `minHeight` stays the floor. */
   fill?: boolean;
   /** Text column, in design units, from the card's physical left edge. */
   column: { left: number; width: number; top: number; bottom: number };
@@ -112,7 +104,7 @@ export function HeroShell({
         styles.card,
         PHYSICAL_BOX,
         KhazainShadows.hero,
-        heroCardFill(fill),
+        fill && styles.fill,
         {
           backgroundColor,
           // Before the first layout there is no width to scale by, so the card
@@ -155,5 +147,8 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: KhazainRadius.lg,
     overflow: 'hidden',
+  },
+  fill: {
+    flexGrow: 1,
   },
 });

@@ -82,13 +82,6 @@ export default function HomeScreen() {
   // Derive featured scholars — only those whose name art is bundled
   const featuredScholars = scholarsData.filter((s) => !!NAME_ART_BY_ID[s.id]);
 
-  // Rendered from HOME_SECTION_ORDER so the running order lives in one place
-  // and is asserted by __tests__/homePresentation.test.ts.
-  const quranHero = <HeroQuran onMore={goToSections} />;
-  const prophetHero = <HeroProphet onMore={goToSections} />;
-  // In the tablet pair the cards grow to the taller one's height.
-  const quranHeroFilled = <HeroQuran onMore={goToSections} fill />;
-  const prophetHeroFilled = <HeroProphet onMore={goToSections} fill />;
   const queen = <QueenCard onMore={goToSections} />;
   // Physical left → right, authored in HOME_QUICK_CHIPS.
   const quickChips = HOME_QUICK_CHIPS.map((chip) => (
@@ -97,15 +90,21 @@ export default function HomeScreen() {
     </QuickChip>
   ));
 
+  // Rendered from HOME_SECTION_ORDER so the running order lives in one place
+  // and is asserted by __tests__/homePresentation.test.ts.
   const sections: Record<HomeSectionKey, React.ReactNode> = {
     header: <HomeHeader onSearchOpen={openSearch} />,
 
     quranHero: (
-      <View style={styles.heroPad}>{quranHero}</View>
+      <View style={styles.heroPad}>
+        <HeroQuran onMore={goToSections} />
+      </View>
     ),
 
     prophetHero: (
-      <View style={styles.heroPad}>{prophetHero}</View>
+      <View style={styles.heroPad}>
+        <HeroProphet onMore={goToSections} />
+      </View>
     ),
 
     scholars: (
@@ -182,8 +181,9 @@ export default function HomeScreen() {
   // The same content as the phone sections, minus the horizontal padding the
   // shared row already carries.
   const pairCells: Partial<Record<HomeSectionKey, React.ReactNode>> = {
-    quranHero: quranHeroFilled,
-    prophetHero: prophetHeroFilled,
+    // In the pair the cards grow to the taller one's height.
+    quranHero: <HeroQuran onMore={goToSections} fill />,
+    prophetHero: <HeroProphet onMore={goToSections} fill />,
     queen,
     quickChips: <View style={styles.quickChipsCell}>{quickChips}</View>,
   };

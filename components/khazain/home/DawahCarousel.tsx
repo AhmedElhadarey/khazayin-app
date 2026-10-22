@@ -18,7 +18,7 @@ import Animated, {
 import { KhazainSpacing } from '@/constants/theme';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import { DawahPoster } from './DawahPoster';
-import { SCALE_STEPS, dawahLayout } from './dawahLayout';
+import { SCALE_STEPS, clampFocus, dawahLayout, nearestSlot, resolveWrap } from './dawahLayout';
 
 // The fan's proportions come from Figma node 2001:940 rather than from
 // hand-picked numbers — see `dawahLayout`. The design overlaps these posters
@@ -80,8 +80,8 @@ export function DawahCarousel({
   const ref = useRef<ScrollView>(null);
 
   // Measured centre of each slot within the content, filled in by layout.
-  // Cleared whenever the slots change, so a shorter list cannot be matched
-  // against centres left behind by a longer one.
+  // The centres are measured rather than computed on purpose (see the note at
+  // the top: which way the scroll axis runs is not predictable under RTL).
   const centres = useRef<number[]>([]);
   const anchored = useRef(false);
   // The stage the centres were measured at. A new stage re-lays every slot, so
@@ -91,9 +91,13 @@ export function DawahCarousel({
   // The real slot that was last in focus, so a stage change re-centres on it.
   const focused = useRef(FIRST_REAL);
   useEffect(() => {
-    centres.current = [];
+    // A slot's centre depends only on its index and the stage, so the
+    // survivors of a length change stay valid and will not report again —
+    // trim rather than wipe, and keep focus on a real slot.
+    centres.current.length = Math.min(centres.current.length, wrapped.length);
+    focused.current = clampFocus(focused.current, FIRST_REAL, LAST_REAL);
     anchored.current = false;
-  }, [wrapped.length]);
+  }, [wrapped.length, LAST_REAL]);
   const scrollToSlot = useCallback((index: number, animated: boolean) => {
     const centre = centres.current[index];
     if (centre === undefined) return;
@@ -141,27 +145,15 @@ export function DawahCarousel({
   // When momentum lands on a clone, silently jump to its real twin so the
   // carousel feels infinite without seams.
   const handleMomentumEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const focus = e.nativeEvent.contentOffset.x + stageWidth / 2;
-    let nearest = FIRST_REAL;
-    let best = Infinity;
-    for (let i = 0; i < wrapped.length; i++) {
-      const centre = centres.current[i];
-      if (centre === undefined) continue;
-      const gap = Math.abs(centre - focus);
-      if (gap < best) {
-        best = gap;
-        nearest = i;
-      }
-    }
-    if (nearest < FIRST_REAL) {
-      focused.current = LAST_REAL;
-      scrollToSlot(LAST_REAL, false);
-    } else if (nearest > LAST_REAL) {
-      focused.current = FIRST_REAL;
-      scrollToSlot(FIRST_REAL, false);
-    } else {
-      focused.current = nearest;
-    }
+    const nearest = nearestSlot(
+      centres.current,
+      e.nativeEvent.contentOffset.x,
+      stageWidth,
+      FIRST_REAL,
+    );
+    const { focus, jumpTo } = resolveWrap(nearest, FIRST_REAL, LAST_REAL);
+    focused.current = focus;
+    if (jumpTo !== undefined) scrollToSlot(jumpTo, false);
   };
 
   return (
