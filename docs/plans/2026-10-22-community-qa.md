@@ -28,7 +28,7 @@ The content mock has ayat only for surah 002, a single Mushaf page (page 2), whi
 
 | # | Case | iPhone | Realme 360dp | iPad | Pixel Tablet | Capture |
 |---|---|---|---|---|---|---|
-| 1 | Release build: community absent | not run | not run | not run | not run | Export greps passed before this pass; no release binary was built |
+| 1 | Release build: community absent | ✓ (iPhone 17, Release) | ✓ (Pixel 7 AVD, release APK) | — | — | Run after the first pass, at `07b483e`: see "Release builds" |
 | 2 | First open: More row, intro, guidelines, opt-in, empty hub | ✓ | ✓ | ✓ | ✓ | `ios-02-more-row`, `ios-02-intro`, `ios-02-guidelines`, `ios-02-hub-empty`, `realme-02-*`, `ipad-02-*`, `pixeltab-02-*` |
 | 3 | Join `KHZ7Q2` (totals hidden + «…بعد مشاركة مزيد من الأعضاء…»), `NUR4M8` (rounded «نحو ٢٠٠ صفحة»), wrong code, Arabic-Indic digits, pasted `NUR-4M8` | ✓ | ✓ (F6) | ✓ | — | `ios-03-*`, `realme-03-*`, `ipad-03-*` |
 | 4 | Create group + khatm; Mushaf +3 pages; push on background; share toggle; «مشاركة الرمز» | ✓ with F2 | — | — | — | `ios-04-created-group`, `ios-04-share-code-sheet`, `ios-04-own-progress-plus3`, `ios-04-nur4m8-stale-total-after-push` |
@@ -142,7 +142,7 @@ clipping already recorded as pre-existing in `2026-10-22-personalized-recommenda
 
 ## Not run in this pass
 
-- **Case 1:** no release binary was built. The export greps had already passed.
+- **Case 1:** not in this pass; run later, see "Release builds".
 - **Live screen readers:** VoiceOver and TalkBack were not walked live. Labels, roles and states were read with `describe`. The composer's 90% announcement, the «ستُراجَع…» live notice and toast announcements were not heard.
 - **Three real Mushaf pages:** the mock content has one page, so two of the three page reads in case 4 were recorded through `notePageRead` rather than by reading.
 - **Case 4 on other devices:** progress push and own-progress were not repeated on the Realme or the tablets.
@@ -236,3 +236,30 @@ both were restored afterwards.
 
 Observed, out of scope: on Android the scholar list rows 2–3 and the scholar-detail header drop the last
 word «البدر». This is the known Android 15 line-breaking case listed in CLAUDE.md, and it needs an RN upgrade.
+
+## Release builds
+
+Built from the worktree at `07b483e` after `expo prebuild` (native folders are gitignored):
+`./gradlew assembleRelease` (JDK 17; the bundled JDK 25 fails the React Native settings plugin) and
+`xcodebuild -configuration Release -sdk iphonesimulator` with the JS bundle embedded and no Metro.
+Installed on spare devices (Pixel 7 AVD, iPhone 17 sim).
+
+| Check | Android release | iOS Release |
+|---|---|---|
+| Launches to Home, no red box, dev menu or LogBox | ✓ | ✓ |
+| More has no «المجتمع» row; other rows present | ✓ | ✓ |
+| Scholar page has no «نقاشات دروس الشيخ» entry | ✓ | ✓ |
+| `khazayinapp:///more/community` | ✓ redirects to More | ✓ redirects to More |
+| `khazayinapp:///sections/discussion` | ✓ redirects to Sections | ✓ redirects to Sections |
+| Home, Mushaf, Library smoke | ✓ | ✓ |
+
+The community screens are compiled into the release bundle but unreachable. The mock adapter
+and seed are not in it (the §3.2 grep). Captures: `release-android-*`, `release-ios-*`.
+
+## iPad windowing (iPadOS 26)
+
+Every community screen (hub, group, discussion index, thread, report sheet) was walked on the iPad
+Pro 13 sim at about ⅓ and ½ width, portrait and landscape: ✓, no overlap. The window controls
+covering the top headers were fixed on the tablet branch (`3222e49`, PR #17), which this branch
+inherits on merge. Captures: `splitview-p2-*`.
+
