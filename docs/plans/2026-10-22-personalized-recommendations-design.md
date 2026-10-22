@@ -392,8 +392,8 @@ export function useRecommendations(limit: number, contextSurah?: number) {
 
 ### 7.8 New repo methods (read-only, no schema change)
 
-- `LectureSessionsRepository.listRecent(limit)`: `SELECT * FROM khz_lecture_sessions ORDER BY last_listened_at DESC LIMIT ?`.
-- `PageReadsRepository.recentPageReads(sinceMs, limit)`: `SELECT page_number, MAX(recorded_at) AS at FROM khz_page_reads WHERE recorded_at >= ? GROUP BY page_number ORDER BY at DESC LIMIT ?`, with the caller passing 604. The GROUP BY makes 604 the true maximum.
+- `LectureSessionsRepository.listRecent(limit)`: `SELECT * FROM khz_lecture_sessions ORDER BY last_listened_at DESC, lecture_id ASC LIMIT ?` (ties by lecture id ascending).
+- `PageReadsRepository.recentPageReads(sinceMs, limit)`: `SELECT page_number, MAX(recorded_at) AS at FROM khz_page_reads WHERE recorded_at >= ? GROUP BY page_number ORDER BY at DESC, page_number ASC LIMIT ?` (ties by page ascending), with the caller passing 604. The GROUP BY makes 604 the true maximum.
 - `db/web-shim.ts` gets the same semantics over its arrays (`:40,150,304-331`).
 - No migration is needed, and raw SQL stays in `db/`.
 

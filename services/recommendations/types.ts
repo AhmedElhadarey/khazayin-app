@@ -25,6 +25,15 @@ export interface Signal {
 }
 
 /** Everything the engine may recommend, as plain arrays (order irrelevant). */
+/**
+ * One page with the time it was last read. Mirrors `RecentPageRead` in
+ * db/types.ts, redeclared so the engine stays free of db imports.
+ */
+export interface PageRead {
+  readonly page: number;
+  readonly atMs: number;
+}
+
 export interface CatalogueSnapshot {
   scholars: readonly Scholar[];
   /** Every known lecture/series, including each scholar's series. */

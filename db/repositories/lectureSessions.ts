@@ -127,5 +127,13 @@ export function createLectureSessionsRepository(
       );
       return row?.total ?? 0;
     },
+
+    async listRecent(limit) {
+      const rows = await db.getAllAsync<Row>(
+        'SELECT * FROM khz_lecture_sessions ORDER BY last_listened_at DESC, lecture_id ASC LIMIT ?',
+        limit,
+      );
+      return rows.map(rowToSession);
+    },
   };
 }

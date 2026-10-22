@@ -263,10 +263,10 @@ it('native: issues the documented read-only SQL', async () => {
   const getAllAsync = jest.fn(async () => []);
   const db = { getAllAsync } as unknown as SQLite.SQLiteDatabase;
   await createPageReadsRepository(db).recentPageReads(123, 604);
-  expect(getAllAsync.mock.calls[0][0]).toMatch(/GROUP BY page_number ORDER BY at DESC LIMIT \?/);
+  expect(getAllAsync.mock.calls[0][0]).toMatch(/GROUP BY page_number ORDER BY at DESC, page_number ASC LIMIT \?/);
   expect(getAllAsync.mock.calls[0].slice(1)).toEqual([123, 604]);
   await createLectureSessionsRepository(db).listRecent(50);
-  expect(getAllAsync.mock.calls[1][0]).toMatch(/ORDER BY last_listened_at DESC LIMIT \?/);
+  expect(getAllAsync.mock.calls[1][0]).toMatch(/ORDER BY last_listened_at DESC, lecture_id ASC LIMIT \?/);
 });
 ```
 

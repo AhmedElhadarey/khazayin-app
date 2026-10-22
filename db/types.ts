@@ -55,6 +55,9 @@ export type SuggestionDecision = {
   reason: 'eligible' | 'cooldown' | 'insufficient_history' | 'below_threshold';
 };
 
+/** One page with the time of its latest read. */
+export type RecentPageRead = { page: number; atMs: number };
+
 export interface PageReadsRepository {
   recordPageRead(pageNumber: number): Promise<boolean>;
   pagesReadToday(): Promise<number>;
@@ -85,6 +88,11 @@ export interface PageReadsRepository {
     fromLocalDay: string,
     toLocalDay: string,
   ): Promise<DayCompletionRow[]>;
+  /**
+   * Read-only, for the recommender: one entry per page (latest read time),
+   * newest first, ties by page ascending, only reads at or after `sinceMs`.
+   */
+  recentPageReads(sinceMs: number, limit: number): Promise<RecentPageRead[]>;
 }
 
 export interface LectureSessionsRepository {
@@ -102,6 +110,8 @@ export interface LectureSessionsRepository {
   /** Sessions that are completed or have ≥ LECTURE_LISTENED_MIN_SEC (or the whole clip) of forward listening. */
   listenedCount(): Promise<number>;
   totalListenedSec(): Promise<number>;
+  /** Read-only, for the recommender: newest sessions first by `lastListenedAt`, ties by lectureId ascending. */
+  listRecent(limit: number): Promise<LectureSession[]>;
 }
 
 export interface WirdRepository {

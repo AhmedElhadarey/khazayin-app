@@ -299,6 +299,20 @@ export function createWebRepos(): Repos {
           wird_completed: v.wirdCompleted,
         }));
     },
+
+    async recentPageReads(sinceMs, limit) {
+      await load();
+      const latest = new Map<number, number>();
+      for (const r of ensure().pageReads) {
+        if (r.recordedAt < sinceMs) continue;
+        const prev = latest.get(r.pageNumber);
+        if (prev === undefined || r.recordedAt > prev) latest.set(r.pageNumber, r.recordedAt);
+      }
+      return [...latest.entries()]
+        .map(([page, atMs]) => ({ page, atMs }))
+        .sort((a, b) => b.atMs - a.atMs || a.page - b.page)
+        .slice(0, limit);
+    },
   };
 
   const lectureSessions: LectureSessionsRepository = {
@@ -354,6 +368,17 @@ export function createWebRepos(): Repos {
         (acc, l) => acc + l.forwardListenedSec,
         0,
       );
+    },
+
+    async listRecent(limit) {
+      await load();
+      return Object.values(ensure().lectures)
+        .sort(
+          (a, b) =>
+            b.lastListenedAt - a.lastListenedAt ||
+            (a.lectureId < b.lectureId ? -1 : a.lectureId > b.lectureId ? 1 : 0),
+        )
+        .slice(0, limit);
     },
   };
 

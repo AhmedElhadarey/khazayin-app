@@ -33,6 +33,7 @@ import type {
   CatalogueIndex,
   CatalogueSnapshot,
   LectureCandidate,
+  PageRead,
   Recommendation,
   Signal,
   SignalKind,
@@ -148,7 +149,7 @@ export function surahLastPage(n: number): number {
  * Juz 'Amma page marks several surahs.
  */
 export function surahsRead(
-  pageReads: readonly { page: number; atMs: number }[],
+  pageReads: readonly PageRead[],
 ): { number: number; atMs: number }[] {
   const at = new Map<number, number>();
   for (const r of pageReads) at.set(r.page, Math.max(at.get(r.page) ?? 0, r.atMs));
