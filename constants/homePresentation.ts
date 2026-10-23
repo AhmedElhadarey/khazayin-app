@@ -69,9 +69,12 @@ export type HomeQuickChip = {
   route: string;
 };
 
-/** Physical left → right, matching the reference frame. */
+/**
+ * Physical left → right, matching the reference frame: the chips' transforms in
+ * frame 2092:1613 put حصريات at x=16, برامج إذاعية at 141 and كتب صوتية at 265.
+ */
 export const HOME_QUICK_CHIPS: readonly HomeQuickChip[] = Object.freeze([
-  { id: 'audiobooks', label: 'كتب صوتية', route: '/sections/audiobooks' },
-  { id: 'radio', label: 'برامج إذاعية', route: '/sections/radio' },
   { id: 'exclusive', label: 'حصريات خزائن الرحمن', route: '/sections/exclusive' },
+  { id: 'radio', label: 'برامج إذاعية', route: '/sections/radio' },
+  { id: 'audiobooks', label: 'كتب صوتية', route: '/sections/audiobooks' },
 ]);

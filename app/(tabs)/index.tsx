@@ -380,7 +380,7 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     gap: 12,
     paddingTop: 11,
-    paddingBottom: 4,
+    paddingBottom: 2,
   },
   scrollerPad: {
     paddingHorizontal: 16,
@@ -394,6 +394,6 @@ const styles = StyleSheet.create({
     // Owns the breathing room for QuickChip's floating badge (top:-11)
     // and bottom navy stripe (bottom:-2) so siblings can't clip them (G8).
     paddingTop: 11,
-    paddingBottom: 4,
+    paddingBottom: 2,
   },
 });

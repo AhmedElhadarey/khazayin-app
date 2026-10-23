@@ -1,12 +1,15 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Image } from 'expo-image';
-import { LinearGradient } from 'expo-linear-gradient';
-import { KhazainRadius } from '@/constants/theme';
+import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import { BookmarkButton } from '../primitives';
 
-// 3D dawah poster card — full-bleed Figma poster image with layered depth.
+// Dawah poster — on the Home carousel a poster is a bare image (no fill, radius
+// 0, opacity 1): the PNGs carry their own rounded border with transparent
+// corners, so any fill, clip, sheen or bevel of ours would show as a box around
+// them. The file gives the centre poster (2132:2193) a DROP_SHADOW of (0, 1.22),
+// blur 1.22, #000 at 25%, which is all the depth there is.
 // Width/height are configurable so the focused carousel can render larger
 // poster art while other surfaces (e.g. a row primitive) keep the default.
 export function DawahPoster({
@@ -20,6 +23,11 @@ export function DawahPoster({
   width?: number;
   height?: number;
 }) {
+  const hasArt = !!quote.imageSource;
+  // A neutral page-colour placeholder while the art decodes; afterwards nothing
+  // is painted behind it. A poster with no art keeps its tone.
+  const [decoded, setDecoded] = useState(false);
+  const fill = !hasArt ? quote.tone ?? '#1A3F62' : decoded ? 'transparent' : KhazainColors.pageBg;
   return (
     <Pressable
       onPress={onPress}
@@ -28,29 +36,18 @@ export function DawahPoster({
         {
           width,
           height,
-          backgroundColor: quote.tone ?? '#1A3F62',
+          backgroundColor: fill,
+          borderRadius: hasArt ? 0 : KhazainRadius.md,
           transform: [
             { perspective: 1200 },
             { scale: pressed ? 0.96 : 1 },
           ],
-          shadowOpacity: pressed ? 0.18 : 0.32,
         },
       ]}
     >
       {quote.imageSource ? (
-        <Image source={quote.imageSource} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={0} />
+        <Image source={quote.imageSource} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={0} onLoad={() => setDecoded(true)} />
       ) : null}
-
-      {/* Top edge sheen — simulates a raised bevel catching light */}
-      <LinearGradient
-        colors={['rgba(255,255,255,0.22)', 'rgba(255,255,255,0)']}
-        locations={[0, 0.45]}
-        style={styles.sheen}
-        pointerEvents="none"
-      />
-
-      {/* Hairline highlight stroke around the perimeter for depth */}
-      <View style={styles.bevel} pointerEvents="none" />
 
       <View style={styles.bookmarkSlot} pointerEvents="box-none">
         <BookmarkButton
@@ -72,36 +69,18 @@ export function DawahPoster({
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: KhazainRadius.md,
-    overflow: 'hidden',
     position: 'relative',
-    // Soft anchored shadow with slight horizontal offset = lifted-tile feel.
+    // The file's DROP_SHADOW on the centre poster. Not clipped, so the bare
+    // art's own edge is what shows.
     shadowColor: '#000',
-    shadowOffset: { width: 3, height: 8 },
-    shadowOpacity: 0.32,
-    shadowRadius: 14,
-    elevation: 10,
+    shadowOffset: { width: 0, height: 1.22 },
+    shadowOpacity: 0.25,
+    shadowRadius: 1.22,
+    elevation: 1,
   },
   image: {
     width: '100%',
     height: '100%',
-  },
-  sheen: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 28,
-  },
-  bevel: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    borderRadius: KhazainRadius.md,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
   },
   bookmarkSlot: {
     position: 'absolute',

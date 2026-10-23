@@ -1,5 +1,6 @@
 import {
   CENTRE_WIDTH_RATIO,
+  POSTER_OPACITY_STEPS,
   SCALE_STEPS,
   dawahLayout,
 } from '@/components/khazain/home/dawahLayout';
@@ -49,5 +50,11 @@ describe('dawah coverflow layout', () => {
   it('centres the focused poster in the window', () => {
     const { slot, sidePadding } = dawahLayout(REF);
     expect(sidePadding + slot / 2).toBeCloseTo(REF / 2, 6);
+  });
+});
+
+describe('dawah poster dimming', () => {
+  it('keeps every poster fully opaque at every step (HOME-16)', () => {
+    expect([...POSTER_OPACITY_STEPS]).toEqual([1, 1, 1, 1, 1]);
   });
 });

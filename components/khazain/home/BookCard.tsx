@@ -49,7 +49,7 @@ export function BookCard({
         },
       ]}
     >
-      <View style={[styles.stripe, l.stripe]} />
+      <View style={[styles.stripe, l.stripe, { borderRadius: l.stripeRadius }]} />
       {titleArt ? (
         <Image
           source={titleArt}

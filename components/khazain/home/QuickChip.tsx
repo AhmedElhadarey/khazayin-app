@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   chip: {
     flex: 1,
     minHeight: 48,
-    borderRadius: 8,
+    borderRadius: 7.5,
     backgroundColor: KhazainColors.heroCream,
     alignItems: 'center',
     justifyContent: 'center',
@@ -69,6 +69,8 @@ const styles = StyleSheet.create({
     bottom: -2,
     width: 80,
     height: 4,
+    // The file rounds its pill stripes to 0.75 of a half-height radius.
+    borderRadius: 1,
     backgroundColor: KhazainColors.navy,
   },
 });

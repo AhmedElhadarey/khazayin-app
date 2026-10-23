@@ -49,7 +49,7 @@ export function ScholarCard({
         },
       ]}
     >
-      <View style={[styles.stripe, l.stripe]} />
+      <View style={[styles.stripe, l.stripe, { borderRadius: l.stripeRadius }]} />
       <Image
         source={HONORIFIC}
         style={[styles.layer, l.honorific]}

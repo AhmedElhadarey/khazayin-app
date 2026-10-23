@@ -52,9 +52,9 @@ describe('Home section order', () => {
 describe('Home quick chips', () => {
   it('lists the three Figma chips in physical left-to-right order', () => {
     expect(HOME_QUICK_CHIPS.map((chip) => chip.label)).toEqual([
-      'كتب صوتية',
-      'برامج إذاعية',
       'حصريات خزائن الرحمن',
+      'برامج إذاعية',
+      'كتب صوتية',
     ]);
   });
 
@@ -66,9 +66,9 @@ describe('Home quick chips', () => {
   it('routes every chip at a real section screen', () => {
     // The audit found chips that rendered but went nowhere.
     expect(HOME_QUICK_CHIPS.map((chip) => [chip.id, chip.route])).toEqual([
-      ['audiobooks', '/sections/audiobooks'],
-      ['radio', '/sections/radio'],
       ['exclusive', '/sections/exclusive'],
+      ['radio', '/sections/radio'],
+      ['audiobooks', '/sections/audiobooks'],
     ]);
   });
 });
@@ -89,5 +89,20 @@ describe('Home carousel width', () => {
     expect(responsiveCarouselCardWidth(CONTENT_MAX_WIDTH, 'scholar')).toBe(
       responsiveCarouselCardWidth(1024, 'scholar'),
     );
+  });
+});
+
+describe('Featured dawah posters', () => {
+  // The scroll axis runs right-to-left, so the poster after the focused one
+  // sits on its LEFT. The file shows «هدايات» left of centre and
+  // «موعظة الصباح» right of it (HOME-17).
+  it('orders the home posters so the next one lands on the left', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { FEATURED_DAWAH } = require('@/data/content/dawah');
+    expect(FEATURED_DAWAH.map((p: { id: string }) => p.id)).toEqual([
+      'home-laylat',
+      'home-helal',
+      'home-mawiza',
+    ]);
   });
 });

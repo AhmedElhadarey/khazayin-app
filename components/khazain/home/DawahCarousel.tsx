@@ -18,7 +18,7 @@ import Animated, {
 import { KhazainSpacing } from '@/constants/theme';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import { DawahPoster } from './DawahPoster';
-import { SCALE_STEPS, clampFocus, dawahLayout, nearestSlot, resolveWrap } from './dawahLayout';
+import { POSTER_OPACITY_STEPS, SCALE_STEPS, clampFocus, dawahLayout, nearestSlot, resolveWrap } from './dawahLayout';
 
 // The fan's proportions come from Figma node 2001:940 rather than from
 // hand-picked numbers — see `dawahLayout`. The design overlaps these posters
@@ -35,6 +35,12 @@ import { SCALE_STEPS, clampFocus, dawahLayout, nearestSlot, resolveWrap } from '
 // to the middle of the viewport.
 
 type WrappedEntry = { item: DawahPosterModel; realIndex: number };
+
+/**
+ * Room under the posters. With the shadow down to the file's 1.22 blur there is
+ * nothing to leave space for, and the posters end the page 24 above the edge.
+ */
+const DAWAH_PAD_BOTTOM = 2;
 
 /** Distances from the focused slot that the fan interpolates between. */
 const STEPS = [-2, -1, 0, 1, 2];
@@ -148,7 +154,7 @@ export function DawahCarousel({
       <View
         style={{
           paddingTop: KhazainSpacing.x3,
-          paddingBottom: KhazainSpacing.x6,
+          paddingBottom: DAWAH_PAD_BOTTOM,
           alignItems: 'center',
         }}
       >
@@ -189,7 +195,7 @@ export function DawahCarousel({
       scrollEventThrottle={16}
       contentContainerStyle={{
         paddingTop: KhazainSpacing.x3,
-        paddingBottom: KhazainSpacing.x6,
+        paddingBottom: DAWAH_PAD_BOTTOM,
         paddingHorizontal: sidePadding,
         alignItems: 'center',
       }}
@@ -261,7 +267,7 @@ function Slot({
           ),
         },
       ],
-      opacity: interpolate(d, STEPS, [0.45, 0.7, 1, 0.7, 0.45], Extrapolation.CLAMP),
+      opacity: interpolate(d, STEPS, [...POSTER_OPACITY_STEPS], Extrapolation.CLAMP),
       zIndex: Math.round(interpolate(d, STEPS, [0, 5, 100, 5, 0], Extrapolation.CLAMP)),
     };
   });

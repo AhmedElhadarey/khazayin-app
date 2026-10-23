@@ -8,6 +8,11 @@ import {
 const REF = SCHOLAR_CARD_DESIGN.width;
 
 describe('scholar card layout', () => {
+  it('rounds the stripe to three quarters of half its height (HOME-21)', () => {
+    expect(scholarCardLayout(REF).stripeRadius).toBeCloseTo(1.9, 1);
+    expect(scholarCardLayout(REF * 2).stripeRadius).toBeCloseTo(3.8, 1);
+  });
+
   it('reproduces the design card at the reference width', () => {
     const l = scholarCardLayout(REF);
     expect(l.cardHeight).toBeCloseTo(88.37, 2);
