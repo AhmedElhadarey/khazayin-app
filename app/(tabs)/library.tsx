@@ -27,7 +27,15 @@ import {
   type LibrarySummaryCardKey,
   visibleLibrarySections,
 } from '@/constants/libraryPresentation';
-import { juzCompletedSubtitle, lecturesListenedSubtitle, pagesReadSubtitle } from '@/services/libraryStats';
+import {
+  juzCompletedSubtitle,
+  lecturesListenedSubtitle,
+  notesSubtitle,
+  pagesReadSubtitle,
+  remindersSubtitle,
+  streakSubtitle,
+  wirdHighlightLabel,
+} from '@/services/libraryStats';
 import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
@@ -233,6 +241,9 @@ export default function LibraryScreen() {
   }, [filter, historyWeeks, dbFailed, todayPct, bestDayPages]);
 
   const lastSurah = surahNameForPage(lastReadPage);
+  // The data model holds a page, not an ayah, so the page stays; with no
+  // reading history the line is hidden rather than repeating the line above.
+  const wirdHighlight = wirdHighlightLabel(lastSurah?.name ?? null, lastReadPage);
   const monthDeltaPct =
     pagesLastMonth > 0
       ? ((pagesThisMonth - pagesLastMonth) / pagesLastMonth) * 100
@@ -274,32 +285,22 @@ export default function LibraryScreen() {
     reminders: (
       <StatCard
         title="تذكيراتي"
-        subtitle={
-          activeReminders.length === 0
-            ? 'لا تذكيرات نشطة'
-            : `${toArNum(activeReminders.length)} تذكيرات نشطة`
-        }
-        icon={<FigmaIcon name="LibraryReminders" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+        subtitle={remindersSubtitle(activeReminders.length)}
+        icon={<FigmaIcon name="LibraryReminders" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
     quranWird: (
       <StatCard
         title="ورد القرآن"
-        subtitle={
-          currentStreak === 0
-            ? 'لم تبدأ بعد'
-            : currentStreak === 1
-              ? 'يوم واحد متتالي'
-              : `${toArNum(currentStreak)} يوم متتالي`
-        }
-        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+        subtitle={streakSubtitle(currentStreak)}
+        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
     notes: (
       <StatCard
         title="ملاحظاتي"
-        subtitle={`${toArNum(notes.length)} ملاحظة`}
-        icon={<FigmaIcon name="LibraryNotes" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+        subtitle={notesSubtitle(notes.length)}
+        icon={<FigmaIcon name="LibraryNotes" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
   };
@@ -318,14 +319,14 @@ export default function LibraryScreen() {
       <StatCard
         title="الأجزاء"
         subtitle={juzCompletedSubtitle(completedJuzCount)}
-        icon={<FigmaIcon name="SectionQuran" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+        icon={<FigmaIcon name="SectionQuran" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
     pages: (
       <StatCard
         title="الصفحات"
         subtitle={pagesReadSubtitle(totalPagesRead)}
-        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
   };
@@ -450,11 +451,7 @@ export default function LibraryScreen() {
             <View style={{ flex: 1 }} />
             <View>
               <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
-              <Text style={styles.wirdHighlight}>
-                {lastSurah
-                  ? `سورة ${lastSurah.name} — صفحة ${toArNum(lastReadPage)}`
-                  : 'لم تبدأ القراءة بعد'}
-              </Text>
+              {wirdHighlight ? <Text style={styles.wirdHighlight}>{wirdHighlight}</Text> : null}
             </View>
           </View>
           {/* Physical left → right: the toggle, then its label. */}
@@ -496,13 +493,13 @@ export default function LibraryScreen() {
             </Pressable>
             <View style={{ flex: 1 }} />
             <FormatBtn>
-              <FigmaIcon name="NoteListFormat" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+              <FigmaIcon name="NoteListFormat" size={FORMAT_GLYPH} color={KhazainColors.ink500} />
             </FormatBtn>
             <FormatBtn>
-              <FigmaIcon name="NoteItalic" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+              <FigmaIcon name="NoteItalic" size={FORMAT_GLYPH} color={KhazainColors.ink500} />
             </FormatBtn>
             <FormatBtn>
-              <FigmaIcon name="NoteBold" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+              <FigmaIcon name="NoteBold" size={FORMAT_GLYPH} color={KhazainColors.ink500} />
             </FormatBtn>
           </View>
           <View style={styles.recentBlock}>
@@ -710,7 +707,7 @@ function HeadphonesGlyph({ size = 16 }: { size?: number }) {
     <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
       <Path
         d="M4 10V8a6 6 0 0112 0v2M4 10v3a2 2 0 002 2h1v-5H4zm12 0v3a2 2 0 01-2 2h-1v-5h3z"
-        stroke={KhazainColors.navy800}
+        stroke={KhazainColors.goldAccent}
         strokeWidth={1.5}
       />
     </Svg>
@@ -858,7 +855,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 12,
   },
-  noteBodyPlaceholder: textStyle('cardTitle', { color: KhazainColors.ink400 }),
+  noteBodyPlaceholder: textStyle('cardTitle', { color: KhazainColors.placeholder }),
   // Physical left → right: حفظ, spacer, then the format buttons at the right.
   noteToolbar: {
     ...PHYSICAL_ROW,

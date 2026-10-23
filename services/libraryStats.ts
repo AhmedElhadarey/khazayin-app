@@ -42,3 +42,47 @@ export function lecturesListenedSubtitle(listened: number, completed: number): s
   const head = arabicCount(listened, LECTURE_FORMS);
   return completed > 0 ? `${head} • المكتملة ${toArabicDigits(completed)}` : head;
 }
+
+/**
+ * Summary-card captions with full number agreement (LIBRARY-15). The 11+ forms
+ * take the accusative singular with tanwin, as the file's copy does.
+ */
+export function streakSubtitle(days: number): string {
+  if (days <= 0) return 'لم تبدأ بعد';
+  if (days === 1) return 'يوم واحد متتالٍ';
+  if (days === 2) return 'يومان متتاليان';
+  const lastTwo = days % 100;
+  return lastTwo >= 3 && lastTwo <= 10
+    ? `${toArabicDigits(days)} أيام متتالية`
+    : `${toArabicDigits(days)} يومًا متتاليًا`;
+}
+
+export function remindersSubtitle(count: number): string {
+  if (count <= 0) return 'لا تذكيرات نشطة';
+  if (count === 1) return 'تذكير واحد نشط';
+  if (count === 2) return 'تذكيران نشطان';
+  const lastTwo = count % 100;
+  return lastTwo >= 3 && lastTwo <= 10
+    ? `${toArabicDigits(count)} تذكيرات نشطة`
+    : `${toArabicDigits(count)} تذكيرًا نشطًا`;
+}
+
+export function notesSubtitle(count: number): string {
+  if (count <= 0) return 'لا ملاحظات';
+  return arabicCount(count, {
+    one: 'ملاحظة واحدة',
+    two: 'ملاحظتان',
+    few: 'ملاحظات',
+    many: 'ملاحظة',
+  });
+}
+
+/**
+ * The wird card's second line: where the reader stopped. The data model holds a
+ * page, not an ayah, so the page number stays (deviation from the file's ayah).
+ * Null hides the line when there is no reading history to describe.
+ */
+export function wirdHighlightLabel(surahName: string | null, page: number): string | null {
+  if (!surahName || page <= 0) return null;
+  return `سورة ${surahName} - صفحة ${toArabicDigits(page)}`;
+}

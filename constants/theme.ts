@@ -221,6 +221,8 @@ export const KhazainColors = {
   ink500: '#5F5345',
   inkPlaceholder: '#988671',
   ink400: '#988671',
+  /** Input placeholder grey — the Library quick-note field (node 2031:4659). */
+  placeholder: '#9CA3AF',
   inkCount: '#184B76',
   /** Prophet hero body copy (node 2007:479 family), a warm brown rather than the navy. */
   inkBrown: '#5F482D',

@@ -36,3 +36,50 @@ describe('Library progress subtitles (design §4.4)', () => {
     expect(lecturesListenedSubtitle(12, 4)).not.toContain('·');
   });
 });
+
+import {
+  notesSubtitle,
+  remindersSubtitle,
+  streakSubtitle,
+  wirdHighlightLabel,
+} from '@/services/libraryStats';
+
+describe('Library summary-card number agreement (LIBRARY-15)', () => {
+  it('streak: zero, 1, 2, 3-10, 11+', () => {
+    expect(streakSubtitle(0)).toBe('لم تبدأ بعد');
+    expect(streakSubtitle(1)).toBe('يوم واحد متتالٍ');
+    expect(streakSubtitle(2)).toBe('يومان متتاليان');
+    expect(streakSubtitle(3)).toBe('٣ أيام متتالية');
+    expect(streakSubtitle(10)).toBe('١٠ أيام متتالية');
+    expect(streakSubtitle(11)).toBe('١١ يومًا متتاليًا');
+    expect(streakSubtitle(30)).toBe('٣٠ يومًا متتاليًا');
+    expect(streakSubtitle(103)).toBe('١٠٣ أيام متتالية');
+  });
+
+  it('reminders: zero, 1, 2, 3-10, 11+', () => {
+    expect(remindersSubtitle(0)).toBe('لا تذكيرات نشطة');
+    expect(remindersSubtitle(1)).toBe('تذكير واحد نشط');
+    expect(remindersSubtitle(2)).toBe('تذكيران نشطان');
+    expect(remindersSubtitle(3)).toBe('٣ تذكيرات نشطة');
+    expect(remindersSubtitle(10)).toBe('١٠ تذكيرات نشطة');
+    expect(remindersSubtitle(11)).toBe('١١ تذكيرًا نشطًا');
+  });
+
+  it('notes: zero, 1, 2, 3-10, 11+', () => {
+    expect(notesSubtitle(0)).toBe('لا ملاحظات');
+    expect(notesSubtitle(1)).toBe('ملاحظة واحدة');
+    expect(notesSubtitle(2)).toBe('ملاحظتان');
+    expect(notesSubtitle(3)).toBe('٣ ملاحظات');
+    expect(notesSubtitle(10)).toBe('١٠ ملاحظات');
+    expect(notesSubtitle(11)).toBe('١١ ملاحظة');
+  });
+});
+
+describe('wird card highlight line (LIBRARY-16)', () => {
+  it('joins surah and page with a spaced hyphen and keeps the page number', () => {
+    expect(wirdHighlightLabel('البقرة', 12)).toBe('سورة البقرة - صفحة ١٢');
+  });
+  it('is null when there is no reading history so the line is hidden', () => {
+    expect(wirdHighlightLabel(null, 0)).toBeNull();
+  });
+});
