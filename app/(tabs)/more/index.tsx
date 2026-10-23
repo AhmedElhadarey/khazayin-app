@@ -1,6 +1,6 @@
 import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
-import { HeaderArt } from '@/components/khazain/patterns';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -11,7 +11,7 @@ import type { MoreRow as MoreRowData } from '@/types/content';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
 import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import Svg, { Circle, Path } from 'react-native-svg';
 
@@ -19,6 +19,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 const MORE_GLYPH = 20;
 
 export default function MoreScreen() {
+  const insets = useSafeAreaInsets();
   const { columnStyle } = useResponsiveLayout();
   const controls = useWindowControlsInset();
   const router = useRouter();
@@ -57,7 +58,7 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <HeaderArt />
+      <HeaderArt bandHeight={headerBandHeight(insets.top, 'more')} />
       <ScrollView
         // React Navigation already reserves the measured tab-bar height.
         contentContainerStyle={[{ paddingBottom: SCREEN_BOTTOM_BREATHING }, columnStyle]}

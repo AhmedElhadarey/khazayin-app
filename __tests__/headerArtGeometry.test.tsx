@@ -10,7 +10,7 @@
  */
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { HeaderArt, headerArtGeometry } from '@/components/khazain/patterns/HeaderArt';
+import { HeaderArt, headerArtGeometry, headerBandHeight } from '@/components/khazain/patterns/HeaderArt';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { act, create } = require('react-test-renderer') as {
@@ -158,5 +158,17 @@ describe('HeaderArt render order', () => {
     expect(kids[2].props.source).toBeDefined();
     expect(kids[3].props.source).toBeDefined();
     act(() => r.unmount());
+  });
+});
+
+describe('header band heights (frame total less the 45pt status bar, plus the inset)', () => {
+  it.each([
+    ['more', 80],
+    ['inline', 81],
+    ['root', 136],
+    ['search', 137],
+    ['home', 155],
+  ] as const)('%s = %i at the frame inset', (kind, total) => {
+    expect(headerBandHeight(45, kind)).toBe(total);
   });
 });

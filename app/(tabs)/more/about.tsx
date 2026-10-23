@@ -1,5 +1,5 @@
 import { InlineHeader } from '@/components/khazain';
-import { HeaderArt } from '@/components/khazain/patterns';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -7,7 +7,7 @@ import { ABOUT_CARDS, ABOUT_PARAGRAPHS } from '@/data/content/about';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Node 2106:2712. Three paragraphs, then two cards — رؤيتنا and رسالتنا.
@@ -18,12 +18,13 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 // the headings in Amiri Bold 18 gold, which made a page of prose read like a
 // page of titles.
 export default function AboutScreen() {
+  const insets = useSafeAreaInsets();
   const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt corners="single" />
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline')} />
       <InlineHeader title="مؤسسة خزائن الرحمن" onBack={() => router.back()} style={columnStyle} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }, columnStyle]}

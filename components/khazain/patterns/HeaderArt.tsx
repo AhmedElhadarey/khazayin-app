@@ -85,6 +85,27 @@ export type HeaderArtSmallCorner = keyof typeof SMALL_CORNERS;
 const TILE_SIDE = 392;
 const TILE_TOP = -42.5;
 
+/**
+ * Height of each frame family's opaque Header below the 45pt StatusBar (node
+ * `Frame 4header`: 80 / 81 / 136 / 137 / 155 in total). Add the safe-area top inset.
+ */
+export const HEADER_BAND = Object.freeze({
+  /** More root 2102:2711 (80). */
+  more: 35,
+  /** Inline-header pushes: Contact, About, Dawah (81). */
+  inline: 36,
+  /** Library and Sections roots, 2031:4659 / 2031:5675 (136). */
+  root: 91,
+  /** Sub-screens with a search or tab row: lists, scholars, Archive 2558:1334 (137). */
+  search: 92,
+  /** Home 2001:940 (155). */
+  home: 110,
+});
+
+export function headerBandHeight(insetTop: number, kind: keyof typeof HEADER_BAND): number {
+  return insetTop + HEADER_BAND[kind];
+}
+
 type Geometry = { tile: ImageStyle; cornerLarge: ImageStyle; cornerSmall: ImageStyle };
 type Placed = ReturnType<typeof fromFigma>;
 

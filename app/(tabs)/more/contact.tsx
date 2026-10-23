@@ -1,7 +1,7 @@
 import { InlineHeader, ListRowCard } from '@/components/khazain';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
-import { HeaderArt } from '@/components/khazain/patterns';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import {
@@ -23,7 +23,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 
@@ -76,9 +76,10 @@ export default function ContactScreen() {
     ]);
   };
 
+  const insets = useSafeAreaInsets();
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt corners="single" />
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline')} />
       <InlineHeader title="تواصل معنا" onBack={() => router.back()} style={columnStyle} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
