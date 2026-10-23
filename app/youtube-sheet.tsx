@@ -4,7 +4,7 @@ import { textStyle } from '@/constants/typography';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 
 // Featured channels per Figma page-38. Real YouTube URLs to be supplied by the
 // foundation; falls back to a friendly Arabic alert if a link cannot be opened.
@@ -49,13 +49,9 @@ export default function YouTubeSheet() {
 }
 
 function PlayGlyph() {
-  // YouTube-style "play in rounded rect" badge in white inside the navy disc.
-  return (
-    <Svg width={14} height={14} viewBox="0 0 20 20" fill="none">
-      <Rect x={2} y={5} width={16} height={10} rx={2} fill="#FF3B30" />
-      <Path d="M9 8l3.5 2-3.5 2V8z" fill="#fff" />
-    </Svg>
-  );
+  // `MoreYoutube` (node 2106:2237), the mark the More row draws; cream50 on the
+  // navy disc. The sheet has no frame of its own.
+  return <FigmaIcon name="MoreYoutube" size={18} color={KhazainColors.cream50} />;
 }
 
 const styles = StyleSheet.create({
