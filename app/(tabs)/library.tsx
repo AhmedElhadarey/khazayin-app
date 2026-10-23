@@ -309,21 +309,21 @@ export default function LibraryScreen() {
   const progressStatCards: Record<LibraryProgressStatKey, React.ReactNode> = {
     lectures: (
       <StatCard
-        title="محاضرات مسموعة"
+        title="المحاضرات"
         subtitle={lecturesListenedSubtitle(listenedLectureCount, completedLectureCount)}
         icon={<HeadphonesGlyph size={STAT_GLYPH} />}
       />
     ),
     juz: (
       <StatCard
-        title="الأجزاء المكتملة"
+        title="الأجزاء"
         subtitle={juzCompletedSubtitle(completedJuzCount)}
         icon={<FigmaIcon name="SectionQuran" size={STAT_GLYPH} color={KhazainColors.navy800} />}
       />
     ),
     pages: (
       <StatCard
-        title="صفحات مقروءة"
+        title="الصفحات"
         subtitle={pagesReadSubtitle(totalPagesRead)}
         icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.navy800} />}
       />
@@ -510,13 +510,13 @@ export default function LibraryScreen() {
             {notes.length === 0 ? (
               <Text style={styles.recentEmpty}>لا توجد ملاحظات بعد</Text>
             ) : (
-              notes.slice(0, 3).map((n) => (
+              notes.slice(0, 3).map((n, i) => (
                 <Pressable
                   key={n.id}
                   accessibilityRole="button"
                   accessibilityLabel={n.title}
                   onPress={() => openExistingNote(n.id)}
-                  style={styles.recentRow}
+                  style={[styles.recentRow, i > 0 && styles.recentRowGap]}
                 >
                   <Text style={styles.recentTime}>{formatRelativeAr(n.updatedAt)}</Text>
                   <Text style={styles.recentTitle} numberOfLines={1}>
@@ -575,14 +575,14 @@ export default function LibraryScreen() {
 
     audiobookProgress: (
       <>
-        <Text style={styles.sectionTitle}>تقدم الكتب المسموعة</Text>
-        <View style={styles.block}>{audiobookProgressCard}</View>
+        <SectionTitle>تقدم الكتب المسموعة</SectionTitle>
+        <View style={styles.blockAfterTitle}>{audiobookProgressCard}</View>
       </>
     ),
 
     smartReminders: (
       <>
-        <Text style={styles.sectionTitle}>التذكيرات الذكية</Text>
+        <SectionTitle paddingBottom={12}>التذكيرات الذكية</SectionTitle>
         <View style={styles.block}>
           <ReminderList
             reminders={activeReminders.map((c) => ({
@@ -686,6 +686,25 @@ function FormatBtn({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * A block heading. The wrapper is pinned so the title's right alignment is the
+ * physical right: a bare right-aligned Text in an unpinned RTL container lands
+ * on the physical left.
+ */
+function SectionTitle({
+  children,
+  paddingBottom = 8,
+}: {
+  children: string;
+  paddingBottom?: number;
+}) {
+  return (
+    <View style={[styles.sectionTitleBox, { paddingBottom }]}>
+      <Text style={styles.sectionTitle}>{children}</Text>
+    </View>
+  );
+}
+
 function HeadphonesGlyph({ size = 16 }: { size?: number }) {
   return (
     <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
@@ -751,6 +770,9 @@ const styles = StyleSheet.create({
     marginBottom: LIBRARY_SECTION_GAP,
   },
   block: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, marginBottom: LIBRARY_SECTION_GAP },
+  // The audiobook block sits 16 above the next block title (LIBRARY-20), not
+  // the 40 that separates two top-level sections.
+  blockAfterTitle: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, marginBottom: 16 },
   sparklineBlock: {
     marginTop: 12,
     alignItems: 'stretch',
@@ -758,6 +780,7 @@ const styles = StyleSheet.create({
   // Every card in the frame is a flat fill with a 1pt hairline. None of them
   // casts a shadow, so none is drawn with one.
   card: {
+    ...PHYSICAL_BOX,
     padding: 16,
     borderRadius: LIBRARY_CARD_RADIUS,
     backgroundColor: KhazainColors.cardBg,
@@ -769,6 +792,7 @@ const styles = StyleSheet.create({
   // The frame's vertical rhythm inside the card: 16 above the 48pt ring, 14
   // to the 36pt button row, 14 to the toggle, 12 below.
   wirdCard: {
+    ...PHYSICAL_BOX,
     paddingHorizontal: WIRD_CARD.padding,
     paddingTop: 16,
     paddingBottom: 12,
@@ -815,6 +839,7 @@ const styles = StyleSheet.create({
   // The frame inverts the usual pairing here: the card takes the page colour
   // and the field inside it is the lighter surface.
   quickNoteCard: {
+    ...PHYSICAL_BOX,
     padding: QUICK_NOTE_CARD.padding,
     paddingTop: 17,
     paddingBottom: QUICK_NOTE_CARD.paddingBottom,
@@ -824,6 +849,7 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.hairline,
   },
   noteBody: {
+    ...PHYSICAL_BOX,
     backgroundColor: KhazainColors.cardBg,
     borderRadius: NOTE_FIELD.radius,
     borderWidth: 1,
@@ -849,10 +875,15 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   noteSaveLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
-  // DIV-122 carries no rule; the design separates the block with space.
+  // The recent-notes block opens with a 1pt hairline rule, 12 below the
+  // toolbar and 13 above its heading. The last row ends flush with the card's
+  // 24pt bottom padding, so the block carries no bottom padding of its own.
   recentBlock: {
+    ...PHYSICAL_BOX,
     marginTop: 12,
-    paddingBottom: 16,
+    paddingTop: 13,
+    borderTopWidth: 1,
+    borderTopColor: KhazainColors.hairlineFaint,
   },
   recentHeader: {
     ...textStyle('cardTitle', { color: KhazainColors.ink500 }),
@@ -865,16 +896,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     height: 36,
-    marginBottom: RECENT_NOTE_ROW.gap,
     paddingHorizontal: 8,
     borderRadius: RECENT_NOTE_ROW.radius,
     backgroundColor: KhazainColors.cardBg,
   },
+  // Between rows only, so the last row ends on the card's bottom padding.
+  recentRowGap: { marginTop: RECENT_NOTE_ROW.gap },
   recentTitle: textStyle('cardTitle', { color: KhazainColors.ink500 }),
   recentTime: textStyle('label', { color: KhazainColors.ink500 }),
   recentEmpty: {
     ...textStyle('caption', { color: KhazainColors.ink400 }),
-    paddingVertical: 6,
+    paddingTop: 6,
   },
   filtersRow: {
     gap: FILTER_CHIP.gap,
@@ -897,11 +929,11 @@ const styles = StyleSheet.create({
   filterLabel: textStyle('cardTitle', { color: KhazainColors.ink500 }),
   filterCount: textStyle('label', { color: KhazainColors.ink500 }),
   filterLabelActive: { color: KhazainColors.pageBg },
-  sectionTitle: {
-    ...textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
+  sectionTitleBox: {
+    ...PHYSICAL_BOX,
     paddingHorizontal: LIBRARY_DESIGN.sideMargin,
-    paddingBottom: 8,
   },
+  sectionTitle: textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
   historyLoading: {
     fontFamily: 'TheMixArab',
     fontSize: 13,

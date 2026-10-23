@@ -208,3 +208,48 @@ describe('PostRow and Composer', () => {
     expect(Object.isFrozen(COMPOSER_ORDER)).toBe(true);
   });
 });
+
+describe('Library blocks keep their text on the physical right', () => {
+  const lib = code('app/(tabs)/library.tsx');
+  /** The body of `name: { ... }` in a StyleSheet literal. */
+  const block = (src: string, name: string) => {
+    const at = src.search(new RegExp(`\\n  ${name}: \\{`));
+    expect(at).toBeGreaterThan(-1);
+    return src.slice(at, src.indexOf('\n  },', at));
+  };
+
+  it.each(['quickNoteCard', 'recentBlock', 'card', 'noteBody', 'wirdCard', 'sectionTitleBox'])(
+    'library.tsx styles.%s pins its direction',
+    (name) => {
+      expect(block(lib, name)).toMatch(/\.\.\.PHYSICAL_BOX/);
+    },
+  );
+
+  it('does not pin the whole ScrollView content', () => {
+    const scroll = lib.slice(lib.indexOf('<ScrollView'), lib.indexOf('</ScrollView>'));
+    expect(scroll).not.toMatch(/PHYSICAL_BOX/);
+  });
+
+  it('AudioProgressCard pins the card and authors its rows physically', () => {
+    const src = code('components/khazain/library/AudioProgressCard.tsx');
+    expect(block(src, 'card')).toMatch(/\.\.\.PHYSICAL_BOX/);
+    expect(block(src, 'topRow')).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(block(src, 'actions')).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(src).not.toMatch(/flexDirection:\s*'row'/);
+  });
+
+  it('EmptyInProgressCard is a PHYSICAL_ROW', () => {
+    const src = code('components/khazain/library/EmptyInProgressCard.tsx');
+    expect(block(src, 'card')).toMatch(/\.\.\.PHYSICAL_ROW/);
+  });
+
+  it('SearchGroupHeader pins its wrapper (shared with Search and Library)', () => {
+    const src = code('components/khazain/search/SearchGroupHeader.tsx');
+    expect(block(src, 'wrap')).toMatch(/\.\.\.PHYSICAL_BOX/);
+  });
+
+  it('MySavedSection authors its header row physically', () => {
+    const src = code('components/khazain/library/MySavedSection.tsx');
+    expect(block(src, 'headerRow')).toMatch(/\.\.\.PHYSICAL_ROW/);
+  });
+});

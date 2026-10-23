@@ -1,3 +1,4 @@
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { LIST_CARD } from './libraryLayout';
@@ -16,6 +17,21 @@ export function EmptyInProgressCard({
 }) {
   return (
     <View style={styles.card}>
+      {/* Physical left → right: action, text, cover. */}
+      {onBrowse ? (
+        <Pressable
+          onPress={onBrowse}
+          style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.85 : 1 }]}
+        >
+          <Text style={styles.ctaLabel}>تصفّح المحاضرات</Text>
+        </Pressable>
+      ) : null}
+      <View style={{ flex: 1 }}>
+        <Text style={styles.title}>لا توجد محاضرة قيد الاستماع</Text>
+        <Text style={styles.subtitle}>
+          ابدأ بمحاضرة من قسم العلماء وستظهر هنا للمتابعة لاحقًا.
+        </Text>
+      </View>
       <View style={styles.cover}>
         <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
           <Path
@@ -27,20 +43,6 @@ export function EmptyInProgressCard({
           />
         </Svg>
       </View>
-      <View style={{ flex: 1 }}>
-        <Text style={styles.title}>لا توجد محاضرة قيد الاستماع</Text>
-        <Text style={styles.subtitle}>
-          ابدأ بمحاضرة من قسم العلماء وستظهر هنا للمتابعة لاحقًا.
-        </Text>
-      </View>
-      {onBrowse ? (
-        <Pressable
-          onPress={onBrowse}
-          style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.85 : 1 }]}
-        >
-          <Text style={styles.ctaLabel}>تصفّح المحاضرات</Text>
-        </Pressable>
-      ) : null}
     </View>
   );
 }
@@ -52,7 +54,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: KhazainColors.hairlineFaint,
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
   },

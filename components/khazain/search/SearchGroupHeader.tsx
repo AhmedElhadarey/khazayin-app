@@ -1,4 +1,5 @@
 import { toArabicDigits } from '@/constants/progress';
+import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
@@ -27,6 +28,9 @@ export function SearchGroupHeader({ title, count }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
+    // Pinned so the right-aligned title is the physical right, in Search and
+    // in the Library's saved list alike.
+    ...PHYSICAL_BOX,
     paddingTop: 8,
     paddingBottom: 8,
   },

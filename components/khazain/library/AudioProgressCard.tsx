@@ -1,3 +1,4 @@
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { LIST_CARD } from './libraryLayout';
@@ -28,10 +29,8 @@ export function AudioProgressCard({
   const clamped = Math.max(0, Math.min(100, pct));
   return (
     <View style={styles.card}>
+      {/* Physical left → right: text column, then the cover at the right. */}
       <View style={styles.topRow}>
-        <View style={styles.cover}>
-          <Text style={styles.coverText}>﷽</Text>
-        </View>
         <View style={{ flex: 1 }}>
           <Text style={styles.title} numberOfLines={1}>
             {title}
@@ -39,6 +38,9 @@ export function AudioProgressCard({
           <Text style={styles.author} numberOfLines={1}>
             {author}
           </Text>
+        </View>
+        <View style={styles.cover}>
+          <Text style={styles.coverText}>﷽</Text>
         </View>
       </View>
       <View style={styles.track}>
@@ -54,6 +56,13 @@ export function AudioProgressCard({
       </View>
       <Text style={styles.sub}>{subtitle}</Text>
       <View style={styles.actions}>
+        {/* Physical left → right: secondary, then primary at the right. */}
+        <Pressable
+          onPress={onSecondary}
+          style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.85 : 1 }]}
+        >
+          <Text style={styles.secondaryLabel}>{secondaryLabel}</Text>
+        </Pressable>
         <Pressable
           onPress={onPrimary}
           style={({ pressed }) => [
@@ -66,12 +75,6 @@ export function AudioProgressCard({
         >
           <Text style={styles.primaryLabel}>{primaryLabel}</Text>
         </Pressable>
-        <Pressable
-          onPress={onSecondary}
-          style={({ pressed }) => [styles.secondaryBtn, { opacity: pressed ? 0.85 : 1 }]}
-        >
-          <Text style={styles.secondaryLabel}>{secondaryLabel}</Text>
-        </Pressable>
       </View>
     </View>
   );
@@ -81,6 +84,7 @@ const styles = StyleSheet.create({
   // Figma node 2031:4659: 361 x 156 at radius 20, a flat fill with a faint
   // hairline and no shadow.
   card: {
+    ...PHYSICAL_BOX,
     padding: 16,
     borderRadius: LIST_CARD.radius,
     backgroundColor: KhazainColors.cardBg,
@@ -88,7 +92,7 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.hairlineFaint,
   },
   topRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
     marginBottom: 10,
@@ -126,7 +130,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   actions: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     gap: 8,
   },
   primaryBtn: {
