@@ -1,5 +1,7 @@
 import { InlineHeader, ListRowCard } from '@/components/khazain';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { WhatsappRingGlyph } from '@/components/khazain/icons/WhatsappRingGlyph';
+import { WHATSAPP_RING } from '@/components/khazain/icons/whatsappRing';
 import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { KhazainColors } from '@/constants/theme';
@@ -25,7 +27,6 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import Svg, { Path } from 'react-native-svg';
 
 // Real phone / email values to be supplied by the foundation. Defaults match
 // the Figma mock.
@@ -98,7 +99,7 @@ export default function ContactScreen() {
             chevron={false}
             title="إرسال رسالة"
             subtitle={CONTACT_PHONE_AR}
-            icon={<WhatsappGlyph />}
+            icon={<WhatsappRingGlyph spec={WHATSAPP_RING.contact} />}
             onPress={onWhatsApp}
           />
           <ListRowCard
@@ -189,24 +190,6 @@ function Field({
         ]}
       />
     </View>
-  );
-}
-
-/**
- * The whatsapp row's chip. Node 2106:2598 `DIV-52` holds an INSTANCE named
- * `Yu` — a 28pt disc filled `#9F9178` behind a navy hairline, with nothing
- * inside it — the same unfinished placeholder the More root carries, so the
- * app keeps its own mark. The email row beside it does have a real glyph, and
- * that one comes from the file.
- */
-function WhatsappGlyph() {
-  return (
-    <Svg width={CONTACT_GLYPH} height={CONTACT_GLYPH} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M10 2.5a7.5 7.5 0 00-6.5 11.2L2.5 17.5l3.9-1a7.5 7.5 0 103.6-14zm-2.7 4.7c.3 0 .6.3.9.7l.4 1.4-.8.8c.4 1 1.4 2 2.4 2.4l.8-.8 1.4.4c.4.3.7.6.7 1 0 .9-.9 1.7-1.8 1.7-2.7 0-5.4-2.7-5.4-5.4 0-1 .8-1.8 1.7-1.8z"
-        fill={KhazainColors.navy800}
-      />
-    </Svg>
   );
 }
 

@@ -372,3 +372,149 @@ describe('the consumers draw each mark the way the file instances it', () => {
     expect(src).toMatch(/<G transform=\{mirrored \? `translate\(\$\{icon\.width\},0\) scale\(-1,1\)`/);
   });
 });
+
+/**
+ * T07 — the marks the Home chips, header bell, dawah badge, exclusive seal,
+ * audiobooks ticks and the WhatsApp rings used to approximate.
+ */
+describe('the icon set carries the marks the 2026-10-23 audit found missing', () => {
+  const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+  const exists = (rel: string) => fs.existsSync(path.join(ROOT, rel));
+
+  it('has the chip badges and the header bell', () => {
+    for (const name of ['HomeAudio', 'HomeBadgeAudiobooks', 'HomeBadgeExclusive', 'Notification'] as const) {
+      expect([name, name in FIGMA_ICONS]).toEqual([name, true]);
+    }
+    // The chip badge is 24.94 x 24 (2093:1760 / 1768 / 1775); the bell is 24.
+    for (const name of ['HomeAudio', 'HomeBadgeAudiobooks', 'HomeBadgeExclusive'] as const) {
+      expect(FIGMA_ICONS[name].width).toBeCloseTo(24.94, 1);
+      expect(FIGMA_ICONS[name].height).toBe(24);
+    }
+    expect(FIGMA_ICONS.Notification.width).toBe(24);
+    // Body at 40%, then the clapper and the stem at full strength.
+    const dims: Array<number | undefined> = FIGMA_ICONS.Notification.paths
+      .map((p) => (p as { fillOpacity?: number }).fillOpacity);
+    expect(dims[0]).toBeCloseTo(0.4, 2);
+    expect(dims.slice(1).every((o) => o === undefined)).toBe(true);
+  });
+
+  it('draws the white mic WITH its foot and the book WITH its speaker, as the chips do', () => {
+    // disc + glyph + hairline ring: three paths, the glyph the only white one.
+    for (const name of ['HomeAudio', 'HomeBadgeAudiobooks'] as const) {
+      const fills = FIGMA_ICONS[name].paths.map((p) => p.fill);
+      expect([name, fills]).toEqual([name, ['#184B75', '#FFFFFF', '#184B75']]);
+    }
+    // The exclusive badge is disc + ring only; the seal and the word are rasters.
+    expect(FIGMA_ICONS.HomeBadgeExclusive.paths.map((p) => p.fill)).toEqual(['#184B75', '#184B75']);
+  });
+
+  it('ships the navy حصري word next to the seal it is written over', () => {
+    expect(exists('assets/figma/seal-khazain.png')).toBe(true);
+    expect(exists('assets/figma/seal-word-hasri.png')).toBe(true);
+    const { WANTED } = require('../scripts/figma/extract-images.js');
+    const entry = WANTED.find((w: { name: string }) => w.name === 'seal-word-hasri.png');
+    expect(entry.hash).toMatch(/^9beec0fa/);
+    expect(entry.from).toContain('2093:1763');
+  });
+
+  it('adds the two audiobook side ticks to the book, without the disc', () => {
+    const icon: FigmaIcon = FIGMA_ICONS.SectionAudiobooks;
+    expect(icon.node).toBe('2365:1605'); // the DIV-58, not just quran-03
+    // The book and ticks only: the 16% tinted disc is drawn by the card.
+    expect(icon.paths.some((p) => p.fill === '#D7B995')).toBe(false);
+    expect(icon.paths).toHaveLength(5); // three book paths + two ticks
+    // Symmetric about the disc centre (32): the book (13..51) keeps its place.
+    expect(icon.width).toBe(44);
+    expect(icon.height).toBe(38);
+    // The ticks sit at disc x 12 and 49-50 => 2..4 and 38..40 in the crop.
+    const xs = icon.paths.slice(3).map((p) => Number(p.d.match(/^M([-\d.]+)/)![1]));
+    expect(xs.some((x) => x > 1.5 && x < 4.5)).toBe(true);
+    expect(xs.some((x) => x > 37.5 && x < 40.5)).toBe(true);
+  });
+
+  it('splits the exclusive badge into disc and letters so the seal can sit between', () => {
+    expect(FIGMA_ICONS.BadgeExclusive.paths).toHaveLength(2); // tinted disc + #A88051 disc
+    expect(FIGMA_ICONS.BadgeExclusiveLetters.paths).toHaveLength(4);
+    expect(FIGMA_ICONS.BadgeExclusiveLetters.node).toBe('2869:2452');
+    expect(FIGMA_ICONS.BadgeExclusiveLetters.width).toBeCloseTo(8.77, 2);
+    expect(FIGMA_ICONS.BadgeExclusiveLetters.monochrome).toBe(true);
+  });
+
+  it('paints the exclusive badge disc, then the seal raster, then the letters on top', () => {
+    const src = read('components/khazain/primitives/LectureBadges.tsx');
+    const disc = src.indexOf('name="BadgeExclusive"');
+    const seal = src.indexOf('seal-khazain.png');
+    const letters = src.indexOf('name="BadgeExclusiveLetters"');
+    expect(disc).toBeGreaterThan(-1);
+    expect(seal).toBeGreaterThan(disc);
+    expect(letters).toBeGreaterThan(seal);
+    // The raster is 26.3 x 30 at (5,5) of a 40 badge and stretches to it.
+    expect(src).toMatch(/\(size \* 26\.3\) \/ 40/);
+    expect(src).toMatch(/\(size \* 30\) \/ 40/);
+    expect(src).toMatch(/contentFit="fill"/);
+  });
+
+  it('exports the framed dawah badge, not the hand-drawn one that shadowed it', () => {
+    const index = read('components/khazain/primitives/index.ts');
+    expect(index).toMatch(/MoonMountainBadge,?[\s\S]*from '\.\/LectureBadges'/);
+    expect(index).not.toContain("from './MoonMountainBadge'");
+    expect(exists('components/khazain/primitives/MoonMountainBadge.tsx')).toBe(false);
+  });
+
+  it('stretches the section حصرى seal to its 42 x 47 box', () => {
+    const src = read('components/khazain/icons/sections.tsx');
+    expect(src).toMatch(/contentFit="fill"/);
+    expect(src).not.toMatch(/contentFit="contain"/);
+  });
+
+  it('draws the Home المزيد pill with the stemmed arrow instance', () => {
+    const src = read('components/khazain/home/SmallMoreButton.tsx');
+    expect(src).toMatch(/<FigmaIcon[^>]*name="ArrowLeftStick"[^>]*size=\{8\}/);
+    expect(src).toContain('#FDF9F2');
+    expect(src).not.toMatch(/<Svg[\s>]/);
+    expect(src).not.toMatch(/bare chevron/i);
+  });
+
+  it('draws the Home header bell from the notification-bing instance at 24', () => {
+    const src = read('components/khazain/home/HomeHeader.tsx');
+    expect(src).toMatch(/<FigmaIcon[^>]*name="Notification"[^>]*size=\{24\}/);
+    expect(src).not.toMatch(/<Svg[\s>]/);
+    expect(src).not.toContain('BellGlyph');
+  });
+
+  it('draws the Home quick chips from the file\'s badges, with the seal on the exclusive one', () => {
+    const home = read('app/(tabs)/index.tsx');
+    for (const name of ['HomeBadgeAudiobooks', 'HomeAudio', 'HomeBadgeExclusive']) {
+      expect(home).toContain(`name="${name}"`);
+    }
+    expect(home).toContain('seal-khazain.png');
+    expect(home).toContain('seal-word-hasri.png');
+    for (const gone of ['StarGlyph', 'MicGlyph', 'HeadphonesGlyph']) {
+      expect(home).not.toContain(gone);
+    }
+    // The badge art carries its own disc and ring, so the chip adds no paint.
+    const chip = read('components/khazain/home/QuickChip.tsx');
+    expect(chip).not.toContain('iconBg');
+    expect(chip).not.toMatch(/borderWidth:\s*1/);
+  });
+
+  it('places the seal 21.6 x 24.6 at (0.3,-0.6) and the word 10.8 x 5.4 at (8.1,9) in the badge', () => {
+    const { QUICK_CHIP_SEAL } = require('../components/khazain/home/quickChipSeal');
+    expect(QUICK_CHIP_SEAL.seal).toEqual({ left: 0.3, top: -0.6, width: 21.6, height: 24.6 });
+    expect(QUICK_CHIP_SEAL.word).toEqual({ left: 8.1, top: 9, width: 10.8, height: 5.4 });
+  });
+
+  it('rings the WhatsApp glyph as the two Yu instances do', () => {
+    const { WHATSAPP_RING } = require('../components/khazain/icons/whatsappRing');
+    // More root: Yu 16 with a 1pt ring, glyph 18 x 0.4. Contact: Yu 28, 1.75pt, 18 x 0.7.
+    expect(WHATSAPP_RING.more).toEqual({ ring: 16, border: 1, glyph: 7.2 });
+    expect(WHATSAPP_RING.contact).toEqual({ ring: 28, border: 1.75, glyph: 12.6 });
+    const more = read('app/(tabs)/more/index.tsx');
+    expect(more).toContain('WhatsappRingGlyph');
+    expect(more).toContain('WHATSAPP_RING.more');
+    const contact = read('app/(tabs)/more/contact.tsx');
+    expect(contact).toContain('WHATSAPP_RING.contact');
+    expect(contact).not.toMatch(/react-native-svg/);
+    expect(contact).not.toMatch(/unfinished placeholder/i);
+  });
+});

@@ -1,5 +1,7 @@
 import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
+import { WhatsappRingGlyph } from '@/components/khazain/icons/WhatsappRingGlyph';
+import { WHATSAPP_RING } from '@/components/khazain/icons/whatsappRing';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
@@ -126,7 +128,8 @@ export default function MoreScreen() {
  * the file. The whatsapp one took two passes to find: it sits inside an
  * INSTANCE named `Yu` whose own paints are a disc, and the glyph under it is
  * addressed by `overrideKey` rather than by guid — so the first read found the
- * disc and nothing else, and looked like an unfinished placeholder.
+ * disc and nothing else, and looked like an unfinished placeholder. The instance
+ * also draws a navy ring around it, which `WhatsappRingGlyph` rebuilds.
  *
  * The rows below the frame's eight (settings, progress, community) have no frame at all,
  * so they keep their drawn glyphs.
@@ -135,7 +138,6 @@ const ROW_ICONS: Partial<Record<string, FigmaIconName>> = {
   web: 'MoreWeb',
   youtube: 'MoreYoutube',
   telegram: 'MoreTelegram',
-  whatsapp: 'MoreWhatsapp',
   soundcloud: 'MoreSoundcloud',
   archive: 'MoreArchive',
   contact: 'MoreContact',
@@ -143,6 +145,8 @@ const ROW_ICONS: Partial<Record<string, FigmaIconName>> = {
 };
 
 function RowGlyph({ id }: { id: string }) {
+  // The `Yu` instance 2548:1411: a 16pt, 1pt navy ring around the glyph at 0.4x.
+  if (id === 'whatsapp') return <WhatsappRingGlyph spec={WHATSAPP_RING.more} />;
   const fromFile = ROW_ICONS[id];
   if (fromFile) {
     return <FigmaIcon name={fromFile} size={MORE_GLYPH} color={KhazainColors.navy800} />;

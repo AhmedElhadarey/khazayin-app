@@ -381,7 +381,8 @@ New tests worth knowing about:
 ## 9. Deliberate, not missed
 
 - **The whatsapp chip's ring.** The file's `Yu` instance draws a thin navy ring
-  around the glyph. The app's 48pt squircle chip replaces it.
+  around the glyph. The app's 48pt squircle chip replaces it. *Superseded by the
+  2026-10-23 audit: the ring is drawn (16pt / 1pt here, 28pt / 1.75pt on Contact).*
 - **The two Mushaf bookmark buttons share one mark.** Node 2349:982 draws
   `DIV-130` twice, identically — the distinction between "go to" and "save" is
   the Arabic label. The app's old filled-vs-outline variant was invented.
