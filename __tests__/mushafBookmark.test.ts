@@ -162,6 +162,10 @@ describe('bookmark copy', () => {
     expect(BOOKMARK_COPY.noBookmark).toBe('لا توجد علامة محفوظة');
   });
 
+  it('explains a disabled Save bookmark', () => {
+    expect(BOOKMARK_COPY.notReady).toBe('يتاح بعد تحميل الآيات');
+  });
+
   it('announces the ayah a same-surah jump lands on, in Arabic-Indic digits', () => {
     expect(bookmarkJumpAnnouncement(255)).toBe('الآية ٢٥٥');
   });

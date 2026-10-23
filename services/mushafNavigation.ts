@@ -90,20 +90,6 @@ function metaPartsInReadingOrder(parts: MetaParts): { slot: MushafMetaSlot; text
 }
 
 /**
- * The reader's metadata strip — revelation type, ayah count, page — in the
- * order node 2349:982 shows them (reading order, right to left). Unknown parts
- * are omitted rather than printed as a placeholder, because a wrong ayah count
- * is worse than none.
- */
-export function surahMetaLine(parts: MetaParts): string {
-  // Node 2349:982 separates the parts with `•`. The middle dot this used
-  // before is easily read as a `٠` between two Arabic-Indic numerals.
-  return metaPartsInReadingOrder(parts)
-    .map((p) => p.text)
-    .join(' • ');
-}
-
-/**
  * The strip as one screen-reader label: the parts in reading order, joined by
  * the Arabic comma so the «•» glyph is not read out.
  */
@@ -117,12 +103,39 @@ export type MetaRowItem = { slot: MushafMetaSlot; text: string; leadingDot: bool
 
 /**
  * DIV-47 (2349:994) as separate children for a `READING_GRID`, in reading
- * order (`MUSHAF_META_READING_ORDER`). Every part after the first owns the
- * `•` that introduces it, so when a narrow screen or large type wraps the
- * strip, the dot moves with its part and no line ends on a dangling bullet.
+ * order (`MUSHAF_META_READING_ORDER`): revelation type, ayah count, page.
+ * Unknown parts are omitted rather than printed as a placeholder, because a
+ * wrong ayah count is worse than none. Every part after the first owns the
+ * `•` that introduces it, so line 1 never ends on a bullet; whether that dot
+ * is drawn once the strip wraps is `metaDotsVisible`'s call.
  */
 export function surahMetaRow(parts: MetaParts): MetaRowItem[] {
   return metaPartsInReadingOrder(parts).map((p, i) => ({ ...p, leadingDot: i > 0 }));
+}
+
+/** Two parts share a flex line when their boxes overlap by more than this. */
+const SAME_LINE_OVERLAP_PT = 1;
+
+/**
+ * Which parts of the wrapped meta strip draw their leading `•`, from each
+ * part's measured box (`undefined` until it is measured). A part draws its dot
+ * only on the same line as the part read before it, so no wrapped line starts
+ * with a bullet. Lines are compared by vertical overlap, not equal `y`: a
+ * centred line holding a taller part (its own text wrapped) puts the shorter
+ * part lower. Unmeasured pairs keep the dot, so the first frame is the
+ * unwrapped strip. The first part never has a dot.
+ */
+export function metaDotsVisible(
+  frames: readonly ({ y: number; height: number } | undefined)[],
+): boolean[] {
+  return frames.map((frame, i) => {
+    if (i === 0) return false;
+    const before = frames[i - 1];
+    if (!frame || !before) return true;
+    const overlap =
+      Math.min(frame.y + frame.height, before.y + before.height) - Math.max(frame.y, before.y);
+    return overlap > SAME_LINE_OVERLAP_PT;
+  });
 }
 
 // ---------------------------------------------------------------------------

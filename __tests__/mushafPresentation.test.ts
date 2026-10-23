@@ -12,6 +12,7 @@ import {
   indexExit,
   END_OF_AYAH,
   LINE_LENGTH_TOLERANCE,
+  metaDotsVisible,
   surahMetaA11yLabel,
   surahMetaRow,
   ayahScrollY,
@@ -21,7 +22,6 @@ import {
   normalizeSurahParam,
   segmentCharLength,
   segmentForAyah,
-  surahMetaLine,
 } from '@/services/mushafNavigation';
 
 /** Figma nodes 2207:17898 (index), 2349:829 (transition), 2349:982 (reader). */
@@ -64,22 +64,23 @@ describe('findSurahIdForPage', () => {
   });
 });
 
-describe('surahMetaLine', () => {
+describe('meta strip wording', () => {
   it('reads revelation type, ayah count, then page — as in the frame', () => {
-    expect(surahMetaLine({ revelationType: 'meccan', ayahCount: 7, page: 1 })).toBe(
-      'مكية • ٧ آيات • صفحة ١ من ٦٠٤',
-    );
+    expect(surahMetaRow({ revelationType: 'meccan', ayahCount: 7, page: 1 }).map((i) => i.text)).toEqual([
+      'مكية',
+      '٧ آيات',
+      'صفحة ١ من ٦٠٤',
+    ]);
   });
 
   it('labels a Medinan surah', () => {
-    expect(
-      surahMetaLine({ revelationType: 'medinan', ayahCount: 286, page: 2 }),
-    ).toContain('مدنية');
+    expect(surahMetaA11yLabel({ revelationType: 'medinan', ayahCount: 286, page: 2 })).toContain('مدنية');
   });
 
   it('drops the parts it does not know rather than printing a placeholder', () => {
-    expect(surahMetaLine({ page: 1 })).toBe('صفحة ١ من ٦٠٤');
-    expect(surahMetaLine({ ayahCount: 7, page: 1 })).toBe('٧ آيات • صفحة ١ من ٦٠٤');
+    expect(surahMetaA11yLabel({ page: 1 })).toBe('صفحة ١ من ٦٠٤');
+    expect(surahMetaA11yLabel({ ayahCount: 7, page: 1 })).toBe('٧ آيات، صفحة ١ من ٦٠٤');
+    expect(surahMetaA11yLabel({ revelationType: 'unknown', page: 1 })).toBe('صفحة ١ من ٦٠٤');
   });
 });
 
@@ -97,7 +98,7 @@ describe('ayahCountLabel', () => {
   });
 
   it('Al-Baqarah reads 286, never a fixture length', () => {
-    expect(surahMetaLine({ ayahCount: 286, page: 2 })).toBe('٢٨٦ آية • صفحة ٢ من ٦٠٤');
+    expect(surahMetaA11yLabel({ ayahCount: 286, page: 2 })).toBe('٢٨٦ آية، صفحة ٢ من ٦٠٤');
   });
 });
 
@@ -109,8 +110,9 @@ describe('surahMetaRow (DIV-47)', () => {
   });
 
   it('lists the parts in reading order for a READING_GRID, each later part owning its dot', () => {
-    // The dot leads the part it introduces, so a wrap moves it with that part
-    // and line 1 never ends on a dangling «•».
+    // The dot leads the part it introduces, so line 1 never ends on a dangling
+    // «•». Whether that dot is drawn once the strip wraps is metaDotsVisible's
+    // call, below.
     expect(surahMetaRow({ revelationType: 'meccan', ayahCount: 7, page: 1 })).toEqual([
       { slot: 'revelation', text: 'مكية', leadingDot: false },
       { slot: 'ayahs', text: '٧ آيات', leadingDot: true },
@@ -126,6 +128,41 @@ describe('surahMetaRow (DIV-47)', () => {
       { slot: 'ayahs', text: '٧ آيات', leadingDot: false },
       { slot: 'page', text: 'صفحة ١ من ٦٠٤', leadingDot: true },
     ]);
+  });
+});
+
+describe('metaDotsVisible', () => {
+  const f = (y: number, height = 21) => ({ y, height });
+
+  it('shows every leading dot while the parts share one line', () => {
+    expect(metaDotsVisible([f(0), f(0), f(0)])).toEqual([false, true, true]);
+  });
+
+  it('tolerates a sub-point difference in y on the same line', () => {
+    expect(metaDotsVisible([f(0), f(0.6), f(0.4)])).toEqual([false, true, true]);
+  });
+
+  it('hides the dot of the part that wrapped, so line 2 does not start with «•»', () => {
+    expect(metaDotsVisible([f(0), f(0), f(21)])).toEqual([false, true, false]);
+  });
+
+  it('hides both dots when all three parts wrap onto their own lines', () => {
+    expect(metaDotsVisible([f(0), f(21), f(42)])).toEqual([false, false, false]);
+  });
+
+  it('keeps a dot between two parts that wrapped together onto line 2', () => {
+    expect(metaDotsVisible([f(0), f(21), f(21)])).toEqual([false, false, true]);
+  });
+
+  it('counts a taller part (its own text wrapped) as on the line it overlaps', () => {
+    // A centred line: the two-line part spans 0-42, the one-line part sits at 10.5.
+    expect(metaDotsVisible([f(0, 42), f(10.5)])).toEqual([false, true]);
+  });
+
+  it('shows the dots before anything is measured, so the first frame is the unwrapped strip', () => {
+    expect(metaDotsVisible([undefined, undefined, undefined])).toEqual([false, true, true]);
+    expect(metaDotsVisible([f(0), undefined, f(21)])).toEqual([false, true, true]);
+    expect(metaDotsVisible([])).toEqual([]);
   });
 });
 

@@ -44,34 +44,53 @@ describe('footer buttons are live (MUSHAF-12)', () => {
 });
 
 describe('meta strip (MUSHAF-09)', () => {
-  const metaRowStyle = /metaRow: \{[^}]*\}/s.exec(screen)?.[0] ?? '';
-  const metaItemStyle = /metaItem: \{[^}]*\}/s.exec(screen)?.[0] ?? '';
+  const strip = read('components/khazain/mushaf/MushafMetaStrip.tsx');
+  const metaRowStyle = /metaRow: \{[^}]*\}/s.exec(strip)?.[0] ?? '';
+  const metaItemStyle = /metaItem: \{[^}]*\}/s.exec(strip)?.[0] ?? '';
+  const metaTextStyle = /metaText: \{[^}]*\}/s.exec(strip)?.[0] ?? '';
+
+  it('the screen hands the parts to MushafMetaStrip and keeps no strip markup of its own', () => {
+    expect(screen).toMatch(/<MushafMetaStrip\s+parts=\{metaParts\}/);
+    expect(screen).not.toMatch(/metaRow\.map\(/);
+    expect(screen).not.toMatch(/surahMetaLine/);
+  });
 
   it('is a READING_GRID of reading-order parts, so a wrap drops the page (read last), not the revelation', () => {
-    expect(screen).toMatch(/surahMetaRow\(/);
+    expect(strip).toMatch(/surahMetaRow\(/);
     expect(metaRowStyle).toMatch(/\.\.\.READING_GRID/);
     expect(metaRowStyle).not.toMatch(/PHYSICAL_ROW/);
     expect(metaRowStyle).not.toMatch(/flexWrap/);
+    // Centred on one line by design (DIV-47), so wrapped lines centre too.
+    expect(metaRowStyle).toMatch(/justifyContent: 'center'/);
   });
 
-  it('puts each dot inside the part it introduces, read before its text', () => {
+  it('each part is a READING_ROW that may shrink, so a long part wraps inside itself', () => {
     expect(metaItemStyle).toMatch(/\.\.\.READING_ROW/);
-    expect(screen).toMatch(
-      /metaRow\.map\(\(item\) => \(\s*<View key=\{item\.slot\} style=\{\[styles\.metaItem[^\]]*\]\}>\s*\{item\.leadingDot \? <Text style=\{styles\.metaText\}>•<\/Text> : null\}\s*<Text style=\{styles\.metaText\}>\{item\.text\}<\/Text>/,
-    );
-    // No free-standing dot child left between the parts.
-    expect(screen).not.toMatch(/item\.kind === 'dot'/);
+    expect(metaItemStyle).toMatch(/flexShrink: 1/);
+    expect(metaTextStyle).toMatch(/flexShrink: 1/);
+  });
+
+  it('decides dot visibility from the measured parts with metaDotsVisible', () => {
+    expect(strip).toMatch(/metaDotsVisible\(/);
+    expect(strip).toMatch(/onLayout=/);
   });
 
   it('is announced with Arabic commas, not the «•» string', () => {
-    expect(screen).toMatch(/accessibilityLabel=\{surahMetaA11yLabel\(metaParts\)\}/);
-    expect(screen).not.toMatch(/surahMetaLine\(/);
+    expect(strip).toMatch(/accessibilityLabel=\{surahMetaA11yLabel\(parts\)\}/);
+  });
+
+  it('surahMetaLine is gone: the bullet line was never shown as one string', () => {
+    expect(read('services/mushafNavigation.ts')).not.toMatch(/surahMetaLine/);
   });
 });
 
 describe('bookmark buttons before the ayat load (MUSHAF-12)', () => {
   it('disables Save bookmark while there is no text to take a position from', () => {
-    expect(screen).toMatch(/saveBookmark: \{ onPress: onSaveBookmark, disabled: segments\.length === 0 \}/);
+    expect(screen).toMatch(/saveBookmark: \{\s*onPress: onSaveBookmark,\s*disabled: segments\.length === 0,/);
+  });
+
+  it('gives a disabled Save bookmark a hint that says when it opens', () => {
+    expect(screen).toMatch(/hint: segments\.length === 0 \? BOOKMARK_COPY\.notReady : undefined/);
   });
 
   it('gives a disabled Go to bookmark a hint that says why', () => {

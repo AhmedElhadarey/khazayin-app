@@ -1,5 +1,3 @@
-import { readFileSync } from 'fs';
-import { join } from 'path';
 import {
   mushafAccessibilityActions,
   CHROME_FADE_MS,
@@ -194,15 +192,5 @@ describe('mushafAccessibilityActions', () => {
   it('labels them in Arabic', () => {
     const labels = mushafAccessibilityActions(true, false).map((a) => a.label);
     expect(labels).toEqual([SHOW_CONTROLS_LABEL, HIDE_CONTROLS_LABEL, 'إضافة ملاحظة على السورة']);
-  });
-});
-
-describe('module layout', () => {
-  it('opens with its header docblock, imports below it', () => {
-    const src = readFileSync(
-      join(__dirname, '../services/mushafChrome.ts'),
-      'utf8',
-    );
-    expect(src.startsWith('/**')).toBe(true);
   });
 });

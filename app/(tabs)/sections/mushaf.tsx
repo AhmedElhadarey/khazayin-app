@@ -13,6 +13,7 @@ import { inlineHeaderHeight } from '@/components/khazain/primitives/InlineHeader
 import {
   AyatSegments,
   MushafChrome,
+  MushafMetaStrip,
   SurahCartouche,
   useMushafChromeGate,
   useReduceMotion,
@@ -23,7 +24,7 @@ import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
 import { releaseMiniPlayerOnBlur } from '@/services/mushafPlayerVisibility';
 import { signalCountNow } from '@/services/recommendations/signalCount';
 import { useRecommendationInputsStore } from '@/store/recommendationInputsStore';
-import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_ROW, READING_GRID, READING_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_ROW } from '@/constants/layout';
 import { insetColumn, mushafSheetWidth, mushafType } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
@@ -36,14 +37,11 @@ import {
   normalizeSurahParam,
   segmentCharLength,
   segmentForAyah,
-  surahMetaA11yLabel,
-  surahMetaRow,
   type TextLine,
 } from '@/services/mushafNavigation';
 import { ReadingPlaceController, currentKeyEntry } from '@/services/mushafAnchor';
 import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
 import {
-  META_GAP,
   chromeBottomPad,
   metaTopPad,
   mushafAccessibilityActions,
@@ -550,7 +548,6 @@ function ReadingView({
   // loaded (a fixture holds 5 for Al-Baqarah), so it is the fallback (MUSHAF-08).
   const ayahCount = surahRecord?.ayahCount ?? (ayat.length > 0 ? ayat.length : undefined);
   const metaParts = { revelationType: surahRecord?.revelationType, ayahCount, page: currentPage };
-  const metaRow = surahMetaRow(metaParts);
   const { fontScale: windowFontScale } = useWindowDimensions();
 
   // ---- Footer: index, go to bookmark, save bookmark (MUSHAF-12) --------------
@@ -600,7 +597,11 @@ function ReadingView({
       hint: bookmark == null ? BOOKMARK_COPY.noBookmark : undefined,
     },
     // Before the ayat load there is no position to save (readingPosition is null).
-    saveBookmark: { onPress: onSaveBookmark, disabled: segments.length === 0 },
+    saveBookmark: {
+      onPress: onSaveBookmark,
+      disabled: segments.length === 0,
+      hint: segments.length === 0 ? BOOKMARK_COPY.notReady : undefined,
+    },
   };
 
   return (
@@ -696,26 +697,11 @@ function ReadingView({
           // page it names rather than over a different-width block.
           <View style={[styles.headerBlock, sheetColumn]}>
             <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
-            {/* DIV-47 (2349:994): the parts are separate children, 16 apart,
-                in reading order; each dot travels with the part it introduces. */}
-            <View
-              accessible
-              accessibilityLabel={surahMetaA11yLabel(metaParts)}
-              style={[
-                styles.metaRow,
-                {
-                  columnGap: META_GAP,
-                  paddingTop: metaTopPad(inlineHeaderHeight(windowFontScale)),
-                },
-              ]}
-            >
-              {metaRow.map((item) => (
-                <View key={item.slot} style={[styles.metaItem, { columnGap: META_GAP }]}>
-                  {item.leadingDot ? <Text style={styles.metaText}>•</Text> : null}
-                  <Text style={styles.metaText}>{item.text}</Text>
-                </View>
-              ))}
-            </View>
+            {/* DIV-47 (2349:994): see MushafMetaStrip for the wrap rules. */}
+            <MushafMetaStrip
+              parts={metaParts}
+              paddingTop={metaTopPad(inlineHeaderHeight(windowFontScale))}
+            />
           </View>
         }
         // 2349:982 carries the corner only (2349:919), no tile. It is laid from
@@ -835,24 +821,6 @@ const styles = StyleSheet.create({
   headerBlock: {
     paddingBottom: 8,
   },
-  // `DIV-47` (2349:994) — physically "صفحة ١ من ٦٠٤ • ٧ آيات • مكية": a centred
-  // READING_GRID authored مكية, ٧ آيات, صفحة, so the revelation type sits at
-  // the physical right and a wrap at 320dp / large type moves the page (read
-  // last) to line 2. Items are 16 apart (the gap is set at render from the
-  // window width). The top pad lands the line's centre 54 below the status
-  // bar inset.
-  metaRow: {
-    ...READING_GRID,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-  },
-  // One part and the «•» that introduces it, the dot read first (physical right).
-  metaItem: {
-    ...READING_ROW,
-    alignItems: 'center',
-  },
-  metaText: textStyle('bodyCompact', { color: KhazainColors.ink500, textAlign: 'center' }),
   // Full-bleed: the chrome floats over it, so nothing here moves when it fades.
   pageArea: { flex: 1 },
   pageContent: { flexGrow: 1 },

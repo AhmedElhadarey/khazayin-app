@@ -21,6 +21,8 @@ export const BOOKMARK_COPY = Object.freeze({
   undo: 'تراجع',
   /** Hint on Go to bookmark while it is disabled. */
   noBookmark: 'لا توجد علامة محفوظة',
+  /** Hint on Save bookmark until the ayat load (there is no position before). */
+  notReady: 'يتاح بعد تحميل الآيات',
 });
 
 /** Announced after a same-surah jump, which moves the page without a new screen. */
