@@ -102,11 +102,11 @@ describe('HeroProphet', () => {
 
 describe('hero accessibility', () => {
   it.each([
-    ['HeroQuran', <HeroQuran />],
-    ['HeroProphet', <HeroProphet />],
-    ['QueenCard', <QueenCard />],
-  ])('%s hides the nested المزيد pill from TalkBack (the card action covers it)', (_n, el) => {
-    const tree = mount(el);
+    ['HeroQuran', () => <HeroQuran />],
+    ['HeroProphet', () => <HeroProphet />],
+    ['QueenCard', () => <QueenCard />],
+  ])('%s hides the nested المزيد pill from TalkBack (the card action covers it)', (_n, make) => {
+    const tree = mount(make());
     const pill = tree.root.findAll(
       (n: any) => n.props.importantForAccessibility === 'no-hide-descendants',
     );
