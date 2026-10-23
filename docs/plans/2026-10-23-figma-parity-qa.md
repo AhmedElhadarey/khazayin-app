@@ -22,7 +22,7 @@ The audit raised **199 findings** (54 high, 90 medium, 55 low), all listed in `2
 
 ## 2. What was fixed
 
-Every ticket ran this loop: an implementer with a failing test first, a spec review, then a quality review, repeated until both passed. All 26 work tickets are closed on the board (T01 to T26). T27 is this record.
+Every ticket ran this loop: an implementer with a failing test first, a spec review, then a quality review, repeated until both passed. All 30 tickets are closed on the board. T01 to T26 came from the audit, T27 is this record and the defects found in device QA, and T28 to T30 came from the post-pass device review (§4).
 
 | Ticket | Findings | Commits |
 |---|---|---|
@@ -53,6 +53,11 @@ Every ticket ran this loop: an implementer with a failing test first, a spec rev
 | T25 File glyphs on screens without a frame | 5 | 3e86deb, c1be14a, 70a0975, 8b0816f, c86f3bd, 2bf5a91, 45f1d3a, dbe16bb |
 | T26 Tokens and sizes on screens without a frame | 16 | 0ff92c2, 063f1bb, 12c3a14, 4817a7f, 2a9dafe, f6c6328, bc6ab19, 139f4d5 |
 | T27 Found during device QA | — | d2221b3 (sheet backdrop) |
+| T28 Large text: rows wrap instead of clamping | — | 265061e, bf0f5d7, 68bcda8, b1cae16, 7b29476, f87eeef, e3c86ce (Mushaf footer), 212dbca (settings value rows), 55de5c8 (single-line inputs) |
+| T29 Home scholar and book cards | — | b62b865, fe38734, 82748e8 (ribbon rows, same defect) |
+| T30 Alerts in Arabic | — | c25d849 |
+| Library «تذكيراتي» chip (D7, half) | — | d8ca4c3, 5f11be0, c51cb9b (content cache version, so installs see the new chip set at once) |
+| Recent searches (VoiceOver) | — | 51397c0 |
 
 ### Defects found during device QA, not in the audit
 
@@ -63,16 +68,27 @@ Every ticket ran this loop: an implementer with a failing test first, a spec rev
 - **Reciter tabs (VoiceOver).** The tabs were announced as plain groups; they now sit in a tablist (ce0af29).
 - **Lecture rows (VoiceOver).** Rows on Books, Radio, Prophet and Queen were read duration first as a plain group. Each row is now one button: title, scholar, duration (90c75b4).
 - **Android 15 shrink-wrap.** The lecture and reciter text columns now stretch instead of shrink-wrapping (73ad9fd).
+- **Clamped text at large font scales (T28).** On Android 15 a clamped line that overflows loses letters with no ellipsis («…في السنة النب», «الشيخ صالح الف» on Books at 320dp × 1.7). `useLineClamp(n)` keeps the frame's clamp at font scale ≤ 1 and drops it above, so the row grows from its `minHeight`. It covers 49 sites. The 13 fixed-size chrome sites that keep a literal clamp are each listed in `lineClampGuard` with a reason.
+- **Mushaf footer at large font scales.** The three buttons ran off the screen. Two-word labels now wrap, and one-word buttons keep their width (e3c86ce).
+- **Settings value row at 320dp × 1.7.** The value column did not shrink, so «هدف الورد اليومي» was drawn one letter per line. When text is enlarged, the value now stacks under the title, as the `more` rows beside it do (212dbca).
+- **Single-line inputs at large font scales.** The search field cut off the top of its placeholder. A fixed `lineHeight` on an EditText scales less than its font, so the line box ends up shorter than the glyphs. `inputTextStyle()` drops it for single-line inputs, and a guard covers every `TextInput` (55de5c8).
+- **Home scholar and book cards (T29).** Scholar cards were announced as buttons but did nothing; book cards had no action at all. Both nested their bookmark inside the card, where VoiceOver could not reach it. A scholar card now opens the scholar's page and a book card plays it, as the Sections lists do. The bookmark is a sibling of the card, and on Android it is elevated so it still draws on top (b62b865, fe38734).
+- **Ribbon rows (VoiceOver).** Scholar list, «كل الشرح» and recommendation rows were read as a plain group starting with the duration. Each is now one button in reading order (82748e8).
+- **English «OK» in alerts (T30).** 28 alerts passed no buttons, so each showed the platform's English «OK». `showNotice()` gives them «حسناً», and a guard fails on any `Alert.alert` call without named buttons (c25d849).
+- **Recent searches (VoiceOver).** The query and «مسح» were plain groups, and every remove button said only «إزالة». Each is now a named button, and remove names its query (51397c0).
 
 ## 3. Evidence
 
-**Gates.** Unit suite: 243 suites and 3,291 tests pass. `tsc --noEmit` is clean, and eslint is clean on every touched file. These guard tests are new or extended:
+**Gates.** Unit suite: 254 suites and 3,441 tests pass. `tsc --noEmit` is clean, and eslint is clean on every touched file. These guard tests are new or extended:
 - `fontRegistry`, plus the weight guard (no bold `fontWeight` on a registered family)
 - `listRowCardLargeFont` and `wirdStartRow`
 - `figmaAssetLicensing` (no `.fig` source image under `assets/`)
 - `rtlPhysicalContract`, `listRowMetrics` and `pageCountAgreement`
 - `dawahPosterA11y`, `segmentTabsA11y` and `lectureCardA11y`
 - `welcomeStepBullets` and `contextualNotesInvariants` (tap case)
+- `lineClampGuard`, `lineClampRows`, `settingsValueRowLargeFont` and `inputLineHeightGuard` (large text)
+- `homeCardsA11y`, `ribbonCardA11y` and `recentSearchA11y`
+- `alertButtonsGuard` and `cacheVersionGuard`
 
 **Devices, checked by hand through argent on each ticket's screens.**
 
@@ -108,6 +124,10 @@ After the pass, every frame matches its reference in structure, type, icons, spa
 - Books rows: one button per row, read title → scholar → duration.
 - Dawah posters: named by title, with a separate save.
 - The Mushaf cartouche reads in order.
+- Home: the scholar card's bookmark is its own element, and book cards are buttons.
+- «كل الشرح»: series rows are buttons, for example «شرح صحيح البخاري، الشيخ عبد المحسن العباد».
+- Search: recent queries, «إزالة: …» and «مسح البحث الأخير» are buttons.
+- Settings › اللغة shows «حسناً» on both platforms.
 
 ## 4. Narrow phones and the low-end device
 
@@ -153,13 +173,24 @@ The first matrix (`docs/audit/screen-matrix/2026-10-23T15-15-54/`) found three d
 
 **Review.** A separate review of these commits passed on spec and on quality. Its token and test-name suggestions landed in f626207.
 
+**Second pass (T28–T30).** Run on the Pixel Tablet AVD with its display overridden to 720 × 1520 at 360dpi (320dp) and font scale 1.7. A sweep of Home, Books, Mushaf, Library, Settings, search and contact found the clamping, Settings value-row and input defects listed in §2. After the fixes:
+- Books rows wrap in full.
+- The Mushaf footer stays on screen.
+- The wird-goal row stacks its value.
+- The search placeholder and contact fields draw whole.
+- The Home bookmarks draw above their cards.
+
+The iPhone 16 at the default scale was checked after each fix and did not move.
+
+One tooling note: on this letterboxed tablet, argent's normalised taps land in the wrong place, so these checks used `adb shell input tap` in display pixels.
+
 ## 5. Open items
 
 ### Waiting on the client
 
 - **Licensed faces.** TheSansArabic, TheMixArab and a Uthmani Quran face. Until they arrive, typography parity stays provisional (`typographyParityResolved()` is false).
 - **Mushaf page art.** The page images inside the `.fig` are screenshots from a third-party Mushaf app and must not ship. A test enforces this.
-- **«المفضلة» and «تذكيراتي» filter chips.** There is no data model behind them (D7).
+- **«المفضلة» filter chip.** The file has only the chip label. There is no heart icon, favourite node or favourite action anywhere in `KHAZAYIN.fig`, and the app has no favourites model, only المحفوظات (saved). It needs a product decision on whether «المفضلة» is a new list or a renaming of المحفوظات (D7). «تذكيراتي» is done: it counts armed reminders and shows the reminder cards (d8ca4c3).
 
 ### Deliberate deviations
 
@@ -174,17 +205,18 @@ The first matrix (`docs/audit/screen-matrix/2026-10-23T15-15-54/`) found three d
 
 | Item | Detail |
 |---|---|
-| Gold on cream contrast | `goldAccent` is 3.22:1 on 14pt text; the gold buttons are close to the AA limit. A product call on whether to darken the token. |
+| Gold on cream contrast | `goldAccent` is 3.22:1 on 14pt text, and the gold buttons are close to the AA limit. It is the file's own colour, so it matches Figma. Whether to darken it for accessibility is a product decision. |
 | TalkBack order | The saved-row bookmark is read before its row, and «إزالة من المحفوظات» does not name the item. |
 | Wrapped Mushaf meta line | About 10pt off centre when it wraps. |
 | Meta text at 320dp × 2.0 | Needs `flexShrink` on the meta text. |
 | Empty in-progress CTA | May wrap at 320dp. |
 | Reciter tablist | iOS ax-service still reports AXGroup, so it is verified by unit test only. |
 | Saved LectureCard | The bookmark sits inside the row's Pressable, so VoiceOver reaches unsave only through the row's custom action, not as its own element. |
-| Home book cards | The book rail cards have no tap action (`app/(tabs)/index.tsx:221` passes no `onPress`), so VoiceOver reads them as plain groups. Where they should open is a product decision: the items are lecture ids, and `sections/book/[id]` may expect a book id. |
 | `shouldRasterizeIOS` | Dawah posters can look slightly soft on iOS. |
 | Notes and playback | Notes filtering, and re-render cost during playback, are worth a profiler pass. |
-| Descenders at large font scales | Android 14+ grows `lineHeight` less than `fontSize`; at 1.7 a 14pt role's line box is about 1.26× the size instead of 1.5×, so a TextView clips the descenders of its last line. ListRowCard now carries a layout-neutral `descenderRoom` (635dfd6). Every other role is exposed in the same way; the general fix belongs in `constants/typography.ts`. |
+| Descenders at large font scales | Android 14+ grows `lineHeight` less than `fontSize`. At 1.7 a 14pt role's line box is about 1.26× the size instead of 1.5×, so a TextView clips the descenders of its last line. Covered so far: ListRowCard (`descenderRoom`, 635dfd6) and single-line inputs (`inputTextStyle`, 55de5c8). Unclamped multi-line text looked fine in the 320dp × 1.7 sweep, but no other role is guarded yet. |
+| Android alert layout | `showNotice` labels the button «حسناً», but the native AlertDialog lays out by the system locale. On an English-language phone the title sits on the left. Fixing it means an in-app modal instead of `Alert`. |
+| Contact numbers at 320dp × 1.7 | The WhatsApp number wraps a single digit onto a second line. It is readable, but a bidi-isolated, non-breaking number would read better. |
 | Letter rail | Since 0dd7e38 the rail announces and emits ي (alef maqsura is the last letter, per MEDIA-18). Recorded under T11. |
 
 ## 6. Before any push
