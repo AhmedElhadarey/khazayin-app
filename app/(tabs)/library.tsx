@@ -929,7 +929,6 @@ const styles = StyleSheet.create({
   recentRow: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    justifyContent: 'space-between',
     minHeight: RECENT_NOTE_ROW.height,
     paddingHorizontal: 8,
     // Inside the 36 at the default scale (21 + 8); only a wrapped title uses it.

@@ -53,8 +53,10 @@ const styles = StyleSheet.create({
   },
   tap: {
     flex: 1,
-    minHeight: ROW_MIN_HEIGHT,
-    // Inside the 44 at the default scale; only a wrapped query uses it.
+    // Fills the row rather than repeating its floor: minHeight counts the
+    // row's hairline, so a 44 here made the row 45.
+    alignSelf: 'stretch',
+    // Inside the 43 at the default scale; only a wrapped query uses it.
     paddingVertical: 8,
     justifyContent: 'center',
   },

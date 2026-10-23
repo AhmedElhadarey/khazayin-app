@@ -16,6 +16,7 @@ import { ListRowCard } from '@/components/khazain/primitives/ListRowCard';
 import { ReciterRow } from '@/components/khazain/primitives/ReciterRow';
 import { RibbonCard } from '@/components/khazain/primitives/RibbonCard';
 import { RecentSearchRow } from '@/components/khazain/search/RecentSearchRow';
+import { TEXT_ROLES } from '@/constants/typography';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -156,7 +157,7 @@ describe('RecentSearchRow', () => {
     expect(clampsAt(1.7, row)[QUERY]).toBeUndefined();
   });
 
-  it('grows from a 44pt floor: row and tap target use minHeight, never a fixed height', () => {
+  it('grows from a 44pt floor: the row uses minHeight, the tap target fills it, neither has a fixed height', () => {
     mockFontScale = 1;
     let r!: ReturnType<typeof create>;
     act(() => {
@@ -169,8 +170,14 @@ describe('RecentSearchRow', () => {
     const tapHost = hosts.find((n) => flat(n).flex === 1)!;
     expect(flat(outer).minHeight).toBe(44);
     expect(flat(outer).height).toBeUndefined();
-    expect(flat(tapHost).minHeight).toBe(44);
+    // minHeight counts the row's border, so a 44 floor on the tap as well made
+    // the row 45. The tap stretches over the 43 inside the hairline instead,
+    // and its padding still fits there at the default scale.
+    expect(flat(tapHost).minHeight).toBeUndefined();
+    expect(flat(tapHost).alignSelf).toBe('stretch');
     expect(flat(tapHost).height).toBeUndefined();
+    const inside = flat(outer).minHeight - (flat(outer).borderBottomWidth ?? 0);
+    expect(TEXT_ROLES.bodyCompact.lineHeight + 2 * flat(tapHost).paddingVertical).toBeLessThanOrEqual(inside);
     act(() => r.unmount());
   });
 });

@@ -135,8 +135,10 @@ describe('numberOfLines guard (T28)', () => {
     expect(isLiteral('lines2')).toBe(false);
     expect(hookBindings('const lines2 = useLineClamp(2);').has('lines2')).toBe(true);
     // A ternary of literals is neither literal nor hook-bound, so it fails the guard.
-    expect(isLiteral('rail ? 1 : 2')).toBe(false);
-    expect(hookBindings('const x = useLineClamp(1);').has('rail ? 1 : 2')).toBe(false);
+    const ternary = 'const x = useLineClamp(1);\n<Text numberOfLines={rail ? 1 : 2}>';
+    const [site] = clampSites(ternary);
+    expect(site.expr).toBe('rail ? 1 : 2');
+    expect(isLiteral(site.expr) || hookBindings(ternary).has(site.expr)).toBe(false);
   });
 
   it.each(WITH_CLAMPS)('%s: every clamp is classified', (rel) => {
