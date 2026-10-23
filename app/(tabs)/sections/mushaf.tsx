@@ -788,6 +788,7 @@ function MushafBtn({
       onPress={onPress}
       style={({ pressed }) => [
         styles.footerBtn,
+        label.includes(' ') ? null : styles.footerBtnOneWord,
         { opacity: disabled ? 0.4 : pressed ? 0.7 : 1 },
       ]}
     >
@@ -842,17 +843,27 @@ const styles = StyleSheet.create({
   // Vertical auto-layout: padding [8,12], itemSpacing 4, radius 8, a 32x32
   // icon box and the label. The caption role is 12 on an 18 line (1.5 floor;
   // the file's 12/16 is unreachable): 8 + 32 + 4 + 18 + 8 = 70.
+  //
+  // The buttons are content-sized and the row has room to spare at the
+  // default scale; at 320dp x 1.7 they outgrew it and «حفظ علامة» ran off the
+  // screen. So a button may shrink, and its label wraps across the button's
+  // full width (stretched, not shrink-wrapped: Android 15). A one-word label
+  // has nowhere to wrap, so its button keeps its width (footerBtnOneWord);
+  // shrinking it broke «الفهرس» into «الفهر / س».
   footerBtn: {
     minHeight: 70,
+    flexShrink: 1,
+    minWidth: 0,
     alignItems: 'center',
     gap: 4,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
+  footerBtnOneWord: { flexShrink: 0 },
   footerIconBox: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
-  footerBtnLabel: textStyle('caption', {
-    color: KhazainColors.ink500,
-    textAlign: 'center',
-  }),
+  footerBtnLabel: {
+    ...textStyle('caption', { color: KhazainColors.ink500, textAlign: 'center' }),
+    alignSelf: 'stretch',
+  },
 });

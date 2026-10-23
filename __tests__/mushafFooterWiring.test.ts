@@ -15,6 +15,30 @@ describe('footer button (MUSHAF-10)', () => {
   });
 });
 
+describe('footer at large font scales', () => {
+  // At 320dp x 1.7 the three content-sized buttons outgrew the row and
+  // «حفظ علامة» was cut off at the screen edge. The buttons may shrink (they
+  // never do at the default scale, where the row has room to spare) and the
+  // label wraps across the button's full width instead.
+  it('lets a button shrink and its label wrap rather than run off the screen', () => {
+    const btn = /footerBtn: \{[^}]*\}/s.exec(screen)?.[0] ?? '';
+    expect(btn).toMatch(/flexShrink: 1/);
+    expect(btn).toMatch(/minWidth: 0/);
+    const at = screen.indexOf('footerBtnLabel:');
+    const label = screen.slice(at, screen.indexOf('\n  },', at));
+    expect(label).toMatch(/alignSelf: 'stretch'/);
+  });
+
+  // A one-word label («الفهرس») has nowhere to wrap, so shrinking its button
+  // broke the word itself («الفهر / س») at 1.7. Only a button whose label can
+  // wrap at a space may shrink.
+  it('keeps a one-word button at its own width', () => {
+    expect(screen).toMatch(/label\.includes\(' '\) \? null : styles\.footerBtnOneWord/);
+    const oneWord = /footerBtnOneWord: \{[^}]*\}/s.exec(screen)?.[0] ?? '';
+    expect(oneWord).toMatch(/flexShrink: 0/);
+  });
+});
+
 describe('footer position (MUSHAF-11)', () => {
   it('adds no padding of its own over the inset', () => {
     const footer = /footer: \{[^}]*\}/s.exec(screen)?.[0] ?? '';
