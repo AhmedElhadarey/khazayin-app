@@ -7,7 +7,7 @@ import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
 import { CARD_DENSITY, PHYSICAL_BOX, READING_GRID, RTL_TEXT } from '@/constants/layout';
 import { toLocalDay } from '@/constants/progress';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
-import { inputTextStyle, textStyle } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 import { useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { arabicCopyForCode, isApiError } from '@/services/api/errors';
@@ -32,6 +32,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useInputLineHeight } from '@/hooks/useLineClamp';
 
 const groupRoute = (id: string) => `/(tabs)/more/community/group/${encodeURIComponent(id)}`;
 
@@ -43,6 +44,7 @@ type Kind = ChallengeKind['kind'];
  * calls, so a failed start keeps the created group and retries only the start.
  */
 export default function CreateGroupScreen() {
+  const inputLine = useInputLineHeight();
   const allowed = useCommunityGuard('open');
   const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
@@ -135,7 +137,7 @@ export default function CreateGroupScreen() {
               maxLength={COMMUNITY_LIMITS.groupName.max}
               editable={!created}
               accessibilityLabel={COMMUNITY_COPY.groupNameLabel}
-              style={styles.input}
+              style={[styles.input, inputLine]}
             />
           </View>
 
@@ -209,6 +211,7 @@ function NumberField({
   onChange: (v: string) => void;
   range: { min: number; max: number };
 }) {
+  const inputLine = useInputLineHeight();
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -219,7 +222,7 @@ function NumberField({
         textAlign="right"
         maxLength={String(range.max).length}
         accessibilityLabel={label}
-        style={styles.input}
+        style={[styles.input, inputLine]}
       />
       <Text style={styles.note}>{rangeHint(range.min, range.max)}</Text>
     </View>
@@ -243,7 +246,7 @@ const styles = StyleSheet.create({
   label: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }) },
   note: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.inkSubtle }) },
   input: {
-    ...inputTextStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
     minHeight: 46,
     backgroundColor: KhazainColors.cardBg,
     borderRadius: CARD_DENSITY.lectureCardRadius,

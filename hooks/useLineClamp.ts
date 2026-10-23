@@ -22,12 +22,40 @@
 
 import { useWindowDimensions } from 'react-native';
 
+/** The user has enlarged text: the point where clamps drop and rows restack. */
+export function isTextEnlarged(fontScale: number): boolean {
+  return fontScale > 1;
+}
+
 /** The pure rule: `lines` at font scale <= 1, no clamp above it. */
 export function lineClampFor(lines: number, fontScale: number): number | undefined {
-  return fontScale <= 1 ? lines : undefined;
+  return isTextEnlarged(fontScale) ? undefined : lines;
 }
 
 export function useLineClamp(lines: number): number | undefined {
   const { fontScale } = useWindowDimensions();
   return lineClampFor(lines, fontScale);
+}
+
+export function useTextEnlarged(): boolean {
+  const { fontScale } = useWindowDimensions();
+  return isTextEnlarged(fontScale);
+}
+
+const NATURAL_LINE = Object.freeze({ lineHeight: undefined });
+
+/**
+ * For a single-line TextInput whose style fixes the role's line height: null
+ * at the default size, where the field's height depends on it, and a release
+ * once text is enlarged. Android 14+ scales `lineHeight` less than `fontSize`,
+ * so a fixed line box ends up shorter than the glyphs and the EditText clips
+ * their tops. Guarded by `__tests__/inputLineHeightGuard.test.ts`.
+ */
+export function inputLineHeightFor(fontScale: number): { lineHeight: undefined } | null {
+  return isTextEnlarged(fontScale) ? NATURAL_LINE : null;
+}
+
+export function useInputLineHeight(): { lineHeight: undefined } | null {
+  const { fontScale } = useWindowDimensions();
+  return inputLineHeightFor(fontScale);
 }

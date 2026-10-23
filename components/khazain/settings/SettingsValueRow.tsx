@@ -2,7 +2,7 @@ import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
-import { useLineClamp } from '@/hooks/useLineClamp';
+import { useLineClamp, useTextEnlarged } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -30,7 +30,7 @@ type Props = {
 
 export function SettingsValueRow({ title, value, icon, onPress, expanded }: Props) {
   const oneLine = useLineClamp(1);
-  const stacked = oneLine === undefined;
+  const stacked = useTextEnlarged();
   return (
     <Pressable
       onPress={onPress}

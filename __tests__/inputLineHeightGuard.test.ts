@@ -2,7 +2,6 @@ import { readdirSync, readFileSync, statSync } from 'fs';
 import path from 'path';
 import ts from 'typescript';
 
-import { TEXT_ROLES, inputTextStyle, textStyle } from '@/constants/typography';
 
 /**
  * WHY THIS EXISTS
@@ -11,9 +10,10 @@ import { TEXT_ROLES, inputTextStyle, textStyle } from '@/constants/typography';
  * large font scale on Android 14+: `fontSize` and `lineHeight` both go through
  * the non-linear scale curve, which grows the larger value less, so the line
  * box ends up shorter than the glyphs and the EditText cuts their tops (the
- * search placeholder at 320dp x 1.7). A single line needs no leading, so its
- * style comes from `inputTextStyle`, which is `textStyle` without the
- * `lineHeight`. Multiline inputs keep the role's leading.
+ * search placeholder at 320dp x 1.7). At the default size the role's line
+ * height must stay: the fields are sized by it. So every single-line input
+ * whose style fixes a line height also takes `useInputLineHeight()`, which
+ * releases it only once text is enlarged. Multiline inputs keep the leading.
  */
 
 const REPO_ROOT = path.resolve(__dirname, '..');
@@ -79,24 +79,38 @@ function styleEntries(src: ts.SourceFile): Map<string, string> {
   return out;
 }
 
-/** `file: styles.x` for every single-line TextInput style that fixes a line height. */
-function offenders(): string[] {
-  const found: string[] = [];
+/** Identifiers bound with `const x = useInputLineHeight()`. */
+const hookBindings = (text: string) =>
+  new Set([...text.matchAll(/const\s+(\w+)\s*=\s*useInputLineHeight\(\)/g)].map((m) => m[1]));
+
+/** The `style` prop's source text. */
+function styleText(el: ts.JsxOpeningLikeElement, src: ts.SourceFile): string {
+  const attr = el.attributes.properties.find((p) => ts.isJsxAttribute(p) && p.name.getText() === 'style');
+  return attr && ts.isJsxAttribute(attr) && attr.initializer ? attr.initializer.getText(src) : '';
+}
+
+/** Every single-line TextInput style that fixes a line height, and whether the hook releases it. */
+function scan(): { site: string; released: boolean }[] {
+  const found: { site: string; released: boolean }[] = [];
   for (const dir of SCAN_DIRS) {
     for (const full of sourceFiles(path.join(REPO_ROOT, dir))) {
       const rel = path.relative(REPO_ROOT, full).split(path.sep).join('/');
       if (isLegacy(rel)) continue;
       const src = ts.createSourceFile(rel, readFileSync(full, 'utf8'), ts.ScriptTarget.Latest, true);
       const entries = styleEntries(src);
+      const bound = hookBindings(src.getFullText());
       const visit = (n: ts.Node) => {
         if (
           (ts.isJsxSelfClosingElement(n) || ts.isJsxOpeningElement(n)) &&
           n.tagName.getText(src) === 'TextInput' &&
           !alwaysMultiline(n)
         ) {
+          const attr = styleText(n, src);
+          const released = [...bound].some((id) => new RegExp(`\\b${id}\\b`).test(attr));
           for (const name of styleNames(n, src)) {
             const body = entries.get(name) ?? '';
-            if (/\btextStyle\(/.test(body) || /\blineHeight\s*:/.test(body)) found.push(`${rel}: styles.${name}`);
+            const fixesLine = /\btextStyle\(/.test(body) || /\blineHeight\s*:/.test(body);
+            if (fixesLine) found.push({ site: `${rel}: styles.${name}`, released });
           }
         }
         ts.forEachChild(n, visit);
@@ -106,17 +120,8 @@ function offenders(): string[] {
   }
   return found;
 }
-
-describe('inputTextStyle', () => {
-  it('is the role without its line height', () => {
-    const input = inputTextStyle('bodyCompact', { color: '#000' });
-    const text = textStyle('bodyCompact', { color: '#000' });
-    expect('lineHeight' in input).toBe(false);
-    const { lineHeight, ...rest } = text;
-    expect(lineHeight).toBe(TEXT_ROLES.bodyCompact.lineHeight);
-    expect(input).toEqual(rest);
-  });
-});
+const guarded = () => scan();
+const offenders = () => scan().filter((x) => !x.released).map((x) => x.site);
 
 describe('single-line TextInputs do not fix a line height', () => {
   it('scans the inputs it should', () => {
@@ -128,9 +133,14 @@ describe('single-line TextInputs do not fix a line height', () => {
       true,
     );
     expect(styleEntries(src).get('a')).toContain('textStyle(');
+    expect(hookBindings('const line = useInputLineHeight();').has('line')).toBe(true);
   });
 
-  it('every single-line TextInput style comes from inputTextStyle', () => {
+  it('finds the inputs it guards', () => {
+    expect(guarded().length).toBeGreaterThanOrEqual(7);
+  });
+
+  it('every single-line TextInput that fixes a line height releases it when text is enlarged', () => {
     expect(offenders()).toEqual([]);
   });
 });

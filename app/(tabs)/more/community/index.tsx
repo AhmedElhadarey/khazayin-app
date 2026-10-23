@@ -6,7 +6,7 @@ import { AsyncContent } from '@/components/khazain/state/AsyncContent';
 import { COMMUNITY_COPY } from '@/constants/communityCopy';
 import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, READING_GRID, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
-import { inputTextStyle, textStyle } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 import { KhazainConfig } from '@/constants/config';
 import { useCommunityAccess, useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -32,6 +32,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
 import { showNotice } from '@/services/notice';
+import { useInputLineHeight } from '@/hooks/useLineClamp';
 
 const GUIDELINES_ROUTE = '/(tabs)/more/community/guidelines';
 const CREATE_ROUTE = '/(tabs)/more/community/create';
@@ -68,6 +69,7 @@ export default function CommunityHubScreen() {
 }
 
 function Intro() {
+  const inputLine = useInputLineHeight();
   const router = useRouter();
   const existingName = useCommunityLocalStore((s) => s.profile?.displayName ?? '');
   const [name, setName] = useState(existingName);
@@ -140,7 +142,7 @@ function Intro() {
           textAlign="right"
           maxLength={COMMUNITY_LIMITS.displayName.max}
           accessibilityLabel={COMMUNITY_COPY.nameLabel}
-          style={styles.input}
+          style={[styles.input, inputLine]}
         />
         {error ? (
           <Text style={styles.error} accessibilityRole="alert">
@@ -245,7 +247,7 @@ const styles = StyleSheet.create({
   heading: { ...RTL_TEXT, ...textStyle('sectionTitle', { color: KhazainColors.navy900 }) },
   label: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }) },
   input: {
-    ...inputTextStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
     minHeight: 46,
     backgroundColor: KhazainColors.cardBg,
     borderRadius: CARD_DENSITY.lectureCardRadius,

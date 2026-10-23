@@ -1,7 +1,7 @@
 import { PAGE_CHROME, PHYSICAL_ROW } from '@/constants/layout';
 import { SEARCH_PILL_ORDER, type SearchPillSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { inputTextStyle, textStyle } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import {
   Pressable,
@@ -14,6 +14,7 @@ import {
   ViewStyle,
 } from 'react-native';
 import { FigmaIcon } from '../icons/FigmaIcon';
+import { useInputLineHeight } from '@/hooks/useLineClamp';
 
 type Props = Omit<TextInputProps, 'style'> & {
   dark?: boolean;
@@ -72,6 +73,8 @@ export function SearchPill({
   // All 24 `search-normal` instances override both vectors to navy; the
   // circle's 40% rides on the generated path, not on this tint.
   const searchGlyphColor = dark ? KhazainColors.cream200 : KhazainColors.navy;
+  // The role's line height at the default size; released when text is enlarged.
+  const inputLine = useInputLineHeight();
 
   // ─── Button mode ─────────────────────────────────────────────────────────
   if (onPress) {
@@ -125,7 +128,7 @@ export function SearchPill({
             value={value}
             placeholder={placeholder}
             placeholderTextColor={placeholderColor}
-            style={[styles.input, { color: textColor }]}
+            style={[styles.input, { color: textColor }, inputLine]}
             textAlign="right"
           />
         ),
@@ -178,7 +181,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    ...inputTextStyle('bodyCompact'),
+    ...textStyle('bodyCompact'),
     paddingVertical: 0,
   },
   placeholderText: {

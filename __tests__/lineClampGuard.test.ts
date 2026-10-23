@@ -160,7 +160,7 @@ describe('numberOfLines guard (T28)', () => {
 
   it.each(GROWS)('%s: grows, so its clamps go through useLineClamp', (rel) => {
     const source = read(rel);
-    expect(source).toMatch(/import \{ useLineClamp \} from '@\/hooks\/useLineClamp';/);
+    expect(source).toMatch(/import \{[^}]*\buseLineClamp\b[^}]*\} from '@\/hooks\/useLineClamp';/);
     const bound = hookBindings(source);
     const viaHook = clampSites(source).filter((s) => bound.has(s.expr));
     expect(viaHook.length).toBeGreaterThan(0);

@@ -30,12 +30,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { inputTextStyle, textStyle } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 import { showNotice } from '@/services/notice';
+import { useInputLineHeight } from '@/hooks/useLineClamp';
 
 const toAr = toArabicDigits;
 
 export default function SettingsProgressScreen() {
+  const inputLine = useInputLineHeight();
   const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
   const currentTarget = useWirdStore((s) => s.target);
@@ -121,7 +123,7 @@ export default function SettingsProgressScreen() {
                 onChangeText={(t) => setDraft(fromArabicDigits(t).replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
                 maxLength={3}
-                style={[styles.input, !valid && styles.inputError]}
+                style={[styles.input, !valid && styles.inputError, inputLine]}
                 placeholder={toAr(currentTarget)}
                 placeholderTextColor={KhazainColors.ink400}
               />
@@ -200,7 +202,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   input: {
-    ...inputTextStyle('bodyLarge', { color: KhazainColors.navy800 }),
+    ...textStyle('bodyLarge', { color: KhazainColors.navy800 }),
     flex: 1,
     backgroundColor: KhazainColors.cream100,
     borderRadius: 12,

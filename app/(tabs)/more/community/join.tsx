@@ -6,7 +6,7 @@ import { COMMUNITY_COPY } from '@/constants/communityCopy';
 import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
 import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
-import { inputTextStyle, textStyle } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 import { useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { isApiError } from '@/services/api/errors';
@@ -27,6 +27,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useInputLineHeight } from '@/hooks/useLineClamp';
 
 const groupRoute = (id: string) => `/(tabs)/more/community/group/${encodeURIComponent(id)}`;
 
@@ -46,6 +47,7 @@ async function reportJoined(groupId: string): Promise<void> {
 
 /** Join a group by its 6-character code (design §8.2). The field stays above the keyboard. */
 export default function JoinGroupScreen() {
+  const inputLine = useInputLineHeight();
   const allowed = useCommunityGuard('open');
   const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
@@ -114,7 +116,7 @@ export default function JoinGroupScreen() {
             autoCorrect={false}
             textAlign="right"
             accessibilityLabel={COMMUNITY_COPY.joinCodeLabel}
-            style={styles.input}
+            style={[styles.input, inputLine]}
           />
         </View>
       </KeyboardAvoidingView>
@@ -136,7 +138,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   input: {
-    ...inputTextStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
     flex: 1,
     minHeight: 46,
     backgroundColor: KhazainColors.cardBg,

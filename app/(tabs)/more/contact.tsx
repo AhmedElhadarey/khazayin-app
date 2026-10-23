@@ -5,7 +5,7 @@ import { WHATSAPP_RING } from '@/components/khazain/icons/whatsappRing';
 import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { KhazainColors } from '@/constants/theme';
-import { inputTextStyle, TEXT_ROLES, textStyle } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 import {
   CONTACT_INCOMPLETE_ALERT,
   CONTACT_SENT_ALERT,
@@ -29,6 +29,7 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { showNotice } from '@/services/notice';
+import { useInputLineHeight } from '@/hooks/useLineClamp';
 
 // Real phone / email values to be supplied by the foundation. Defaults match
 // the Figma mock.
@@ -176,6 +177,7 @@ function Field({
   keyboardType?: 'default' | 'email-address' | 'numeric';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }) {
+  const inputLine = useInputLineHeight();
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -190,13 +192,14 @@ function Field({
         autoCapitalize={autoCapitalize}
         style={[
           styles.fieldInput,
+          // The message wraps and keeps its leading; one-line fields release it
+          // once text is enlarged.
+          !multi && inputLine,
           // `TEXTAREA` — 311 x 106 at the same radius.
           multi && {
             minHeight: 106,
             textAlignVertical: 'top',
             paddingTop: 12,
-            // The message wraps, so it keeps the role's leading.
-            lineHeight: TEXT_ROLES.bodyCompact.lineHeight,
           },
         ]}
       />
@@ -251,7 +254,7 @@ const styles = StyleSheet.create({
   // fill, so the field reads as a flat well rather than an outlined box; the
   // app had been drawing a visible warm border it does not have.
   fieldInput: {
-    ...inputTextStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
     minHeight: 46,
     backgroundColor: KhazainColors.cardBg,
     borderRadius: CARD_DENSITY.lectureCardRadius,
