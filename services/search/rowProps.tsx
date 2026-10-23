@@ -11,57 +11,35 @@
  * Track: khazain-saved_20260511  T9
  */
 
-import { MicBadge, OpenBookBadge, ProphetMedallionBadge, TulipBadge } from '@/components/khazain';
-import { KhazainColors } from '@/constants/theme';
+import { MicBadge, OpenBookBadge, ProphetMedallionBadge, QuillBadge, TulipBadge } from '@/components/khazain';
+import { SurahStar } from '@/components/khazain/primitives/SurahStar';
+import { CARD_DENSITY } from '@/constants/layout';
 import type { Book, Lecture, Scholar, Surah, SavedItem } from '@/types/content';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
 import type { SearchResultGroup } from './searchAll';
 import { searchTargetFor, type SearchTarget } from './searchTarget';
-import { fontFace, textStyle } from '@/constants/typography';
 
 // ---------------------------------------------------------------------------
-// Inline badges shared between search + library
+// Badges shared between search + library
 // ---------------------------------------------------------------------------
 
-/** Surah index circle: cream bg, gold border, gold Arabic-Indic numeral. */
+/**
+ * Surah index badge: the file's 36pt star (`SurahStar`, node 2207:5706) with
+ * the Arabic-Indic numeral over it, the same badge SurahRow / ReciterSurahRow
+ * draw. No frame covers search or the Library saved rows, so the contract is
+ * that glyph and `CARD_DENSITY.surahBadgeDisc`.
+ */
 export function SurahNumberBadge({ displayNumber }: { displayNumber: string }) {
-  return (
-    <View style={badgeStyles.surahBadge}>
-      <Text style={badgeStyles.surahBadgeText} numberOfLines={1}>
-        {displayNumber}
-      </Text>
-    </View>
-  );
+  return <SurahStar index={displayNumber} size={CARD_DENSITY.surahBadgeDisc} />;
 }
 
-/** Scholar medallion: 40px gold disc with the Arabic honorific 'ع'. */
+/**
+ * Scholar badge: `QuillBadge` (`BadgeQuill`, node 2869:2011), the glyph the scholars list
+ * (2102:2975) puts on each row.
+ */
 export function ScholarMedallion() {
-  return (
-    <View style={badgeStyles.scholarBadge}>
-      <Text style={badgeStyles.scholarBadgeText}>ع</Text>
-    </View>
-  );
+  return <QuillBadge size={40} />;
 }
-
-const badgeStyles = StyleSheet.create({
-  surahBadge: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: KhazainColors.cream100,
-    borderWidth: 1, borderColor: KhazainColors.gold200,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  surahBadgeText: textStyle('cardTitle', { color: KhazainColors.gold200 }),
-  scholarBadge: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: KhazainColors.gold200,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  scholarBadgeText: {
-    ...fontFace(700), fontSize: 18,
-    color: KhazainColors.cream50,
-  },
-});
 
 // ---------------------------------------------------------------------------
 // Row props builder
