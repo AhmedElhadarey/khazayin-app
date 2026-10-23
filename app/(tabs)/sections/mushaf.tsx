@@ -9,6 +9,7 @@ import {
   surahNotesBlock,
 } from '@/components/khazain';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
+import { inlineHeaderHeight } from '@/components/khazain/primitives/InlineHeader';
 import { MushafChrome, SurahCartouche, useReduceMotion } from '@/components/khazain/mushaf';
 import { SurahEndSuggestions } from '@/components/khazain/recommendations';
 import { useScreenReaderOn } from '@/components/khazain/recommendations/useScreenReaderOn';
@@ -22,6 +23,7 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
 import {
   ayahCharOffset,
+  ayahMarker,
   ayahScrollY,
   findSurahIdForPage,
   normalizeAyahParam,
@@ -29,6 +31,7 @@ import {
   segmentCharLength,
   segmentForAyah,
   surahMetaLine,
+  surahMetaRow,
   type TextLine,
 } from '@/services/mushafNavigation';
 import { ReadingPlaceController, currentKeyEntry } from '@/services/mushafAnchor';
@@ -38,7 +41,12 @@ import {
   HIDE_CONTROLS_LABEL,
   SHOW_CONTROLS_LABEL,
   chromeAfterTap,
+  chromeBottomPad,
+  metaGap,
+  metaTopPad,
 } from '@/services/mushafChrome';
+import { bookmarkTarget, readingPosition, saveMushafBookmark } from '@/services/mushafBookmark';
+import { useMushafBookmarkStore } from '@/store/mushafBookmarkStore';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { surahName, surahStartPage } from '@/constants/progress';
@@ -72,9 +80,9 @@ const MUSHAF_BG = KhazainColors.pageBg;
 const AYAH_SCROLL_HEADROOM = 80;
 /** Clearance between the header overlay and a linked ayah. */
 const AYAH_CHROME_CLEARANCE = 16;
-/** Chrome heights before the first layout: 44 header + 6 + 22 meta + 8 pad; 68 button + 8 pad. */
-const CHROME_TOP_ESTIMATE = 80;
-const CHROME_BOTTOM_ESTIMATE = 76;
+/** Chrome heights before the first layout: 44 header + 20 meta + 8 pad; the 68 button (the bottom inset is added). */
+const CHROME_TOP_ESTIMATE = 72;
+const CHROME_BOTTOM_ESTIMATE = 68;
 
 export default function MushafScreen() {
   const router = useRouter();
@@ -272,10 +280,11 @@ function ReadingView({
   );
   const [tap] = useState(() => new ChromeTapTracker());
   const scrollingRef = useRef(false);
+  const scrollYRef = useRef(0);
   // Measured heights include the safe areas; the estimate keeps the first
   // frame from jumping by the header's height.
   const [chromeTop, setChromeTop] = useState(insets.top + CHROME_TOP_ESTIMATE);
-  const [chromeBottom, setChromeBottom] = useState(insets.bottom + CHROME_BOTTOM_ESTIMATE);
+  const [chromeBottom, setChromeBottom] = useState(chromeBottomPad(insets.bottom) + CHROME_BOTTOM_ESTIMATE);
   const chromeTopRef = useRef(chromeTop);
   chromeTopRef.current = chromeTop;
   const [scrollViewH, setScrollViewH] = useState(0);
@@ -491,12 +500,47 @@ function ReadingView({
     fetchSurahs();
   }, [fetchSurahs]);
   const surahRecord = surahs.find((s) => s.id === surahId);
-  const metaLine = surahMetaLine({
-    revelationType: surahRecord?.revelationType,
-    ayahCount: ayat.length > 0 ? ayat.length : surahRecord?.ayahCount,
-    page: currentPage,
-  });
-  const cartoucheAyahCount = ayat.length > 0 ? ayat.length : surahRecord?.ayahCount;
+  // The catalogue's count is the surah's; `ayat.length` is only what the store
+  // loaded (a fixture holds 5 for Al-Baqarah), so it is the fallback (MUSHAF-08).
+  const ayahCount = surahRecord?.ayahCount ?? (ayat.length > 0 ? ayat.length : undefined);
+  const metaParts = { revelationType: surahRecord?.revelationType, ayahCount, page: currentPage };
+  const metaLine = surahMetaLine(metaParts);
+  const metaRow = surahMetaRow(metaParts);
+  const { width: windowWidth, fontScale: windowFontScale } = useWindowDimensions();
+  const cartoucheAyahCount = ayahCount;
+
+  // ---- Footer: index, go to bookmark, save bookmark (MUSHAF-12) --------------
+  // The footer lives in MushafChrome, a sibling of the page's touch gate, so a
+  // press here never reaches `onPageTouchEnd` and cannot toggle the chrome.
+  const bookmark = useMushafBookmarkStore((s) => s.bookmark);
+  const onGoToIndex = useCallback(() => router.replace('/sections/mushaf' as any), [router]);
+  const onSaveBookmark = useCallback(() => {
+    const layouts = new Map<number, { y: number; height: number }>();
+    for (const [page, entry] of layoutsRef.current) {
+      const current = currentKeyEntry(entry, typeKey);
+      if (current) layouts.set(page, current);
+    }
+    const at = readingPosition({
+      scrollY: scrollYRef.current,
+      topInset: chromeTopRef.current,
+      bodyY: bodyYRef.current,
+      segments,
+      layouts,
+      lines: (page) => currentKeyEntry(linesRef.current.get(page), typeKey)?.lines,
+    });
+    if (at) saveMushafBookmark({ surahId, ...at });
+  }, [segments, surahId, typeKey]);
+  const onGoToBookmark = useCallback(() => {
+    const target = bookmarkTarget(bookmark, surahId);
+    if (!target) return;
+    if (target.kind === 'jump') jumpToAyah(target.ayah);
+    else router.push(`/sections/mushaf?surah=${target.surah}&ayah=${target.ayah}` as any);
+  }, [bookmark, surahId, jumpToAyah, router]);
+  const footerActions: Record<MushafFooterSlot, { onPress: () => void; disabled?: boolean }> = {
+    index: { onPress: onGoToIndex },
+    goToBookmark: { onPress: onGoToBookmark, disabled: bookmark == null },
+    saveBookmark: { onPress: onSaveBookmark },
+  };
 
   const onPageTouchStart = (e: GestureResponderEvent) => {
     const t = e.nativeEvent;
@@ -556,6 +600,7 @@ function ReadingView({
             scrollingRef.current = false;
           }}
           onScroll={(e) => {
+            scrollYRef.current = e.nativeEvent.contentOffset.y;
             tracking.onScroll(e.nativeEvent.contentOffset.y + chromeTop, Date.now());
             place.onScroll(e.nativeEvent.contentOffset.y, Date.now(), typeKey);
             flushPlace();
@@ -632,7 +677,7 @@ function ReadingView({
                         >
                           {a.text}
                         </Text>
-                        <AyahNum n={String(a.number)} />
+                        <AyahNum n={a.number} />
                         {i < segment.ayat.length - 1 ? ' ' : ''}
                       </React.Fragment>
                     ))}
@@ -666,7 +711,24 @@ function ReadingView({
           // page it names rather than over a different-width block.
           <View style={[styles.headerBlock, sheetColumn]}>
             <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
-            <Text style={styles.subtitle}>{metaLine}</Text>
+            {/* DIV-47 (2349:994): the parts are separate children, 16 apart. */}
+            <View
+              accessible
+              accessibilityLabel={metaLine}
+              style={[
+                styles.metaRow,
+                {
+                  columnGap: metaGap(windowWidth),
+                  paddingTop: metaTopPad(inlineHeaderHeight(windowFontScale)),
+                },
+              ]}
+            >
+              {metaRow.map((item, i) => (
+                <Text key={i} style={styles.metaText}>
+                  {item.kind === 'dot' ? '•' : item.text}
+                </Text>
+              ))}
+            </View>
           </View>
         }
         // 2349:982 carries the corner only (2349:919), no tile. It is laid from
@@ -681,6 +743,8 @@ function ReadingView({
                 key={slot}
                 label={FOOTER_BUTTONS[slot].label}
                 icon={FOOTER_BUTTONS[slot].icon()}
+                onPress={footerActions[slot].onPress}
+                disabled={footerActions[slot].disabled}
               />
             ))}
           </View>
@@ -727,24 +791,42 @@ function SurahNotesFooter({
   );
 }
 
-function AyahNum({ n }: { n: string }) {
+/**
+ * The end-of-ayah medallion. The string is `ayahMarker(n)`, the same one
+ * `ayahCharOffset` / `segmentCharLength` count, so deep-link precision holds.
+ */
+function AyahNum({ n }: { n: number }) {
   return (
-    <Text style={styles.ayahNum}>
-      {'  '}
-      {n}
-      {'  '}
+    <Text style={styles.ayahNum} suppressHighlighting>
+      {ayahMarker(n)}
     </Text>
   );
 }
 
-function MushafBtn({ label, icon }: { label: string; icon: React.ReactNode }) {
+function MushafBtn({
+  label,
+  icon,
+  onPress,
+  disabled,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.footerBtn, { opacity: pressed ? 0.7 : 1 }]}
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.footerBtn,
+        { opacity: disabled ? 0.4 : pressed ? 0.7 : 1 },
+      ]}
     >
-      {icon}
+      <View style={styles.footerIconBox}>{icon}</View>
       <Text style={styles.footerBtnLabel}>{label}</Text>
     </Pressable>
   );
@@ -774,13 +856,18 @@ const styles = StyleSheet.create({
   headerBlock: {
     paddingBottom: 8,
   },
-  // `DIV-47` — "صفحة ١ من ٦٠٤ • ٧ آيات • مكية", TheMixArab Regular 14 in
-  // `#5F5345`, centred under the title rather than pinned to the right.
-  subtitle: {
-    ...textStyle('bodyCompact', { color: KhazainColors.ink500, textAlign: 'center' }),
+  // `DIV-47` (2349:994) — physically "صفحة ١ من ٦٠٤ • ٧ آيات • مكية": a centred
+  // row, items 16 apart (the gap is set at render from the window width),
+  // wrapping rather than clipping at large type. The top pad lands the line's
+  // centre 54 below the status bar inset.
+  metaRow: {
+    ...PHYSICAL_ROW,
+    justifyContent: 'center',
+    alignItems: 'center',
+    flexWrap: 'wrap',
     paddingHorizontal: 16,
-    paddingTop: 6,
   },
+  metaText: textStyle('bodyCompact', { color: KhazainColors.ink500, textAlign: 'center' }),
   // Full-bleed: the chrome floats over it, so nothing here moves when it fades.
   pageArea: { flex: 1 },
   pageContent: { flexGrow: 1 },
@@ -803,26 +890,30 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   ayahHighlight: { backgroundColor: KhazainColors.cream200 },
+  // Inherits the body size: Amiri draws the medallion round the digits at the
+  // size of the text beside it.
   ayahNum: {
-    fontSize: 14,
     color: KhazainColors.gold600,
     fontFamily: 'Amiri-Bold',
+    fontWeight: '400',
   },
   // `btn` — three radius-8 buttons on the page ground, no rule above them.
   footer: {
     ...PHYSICAL_ROW,
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 8,
   },
+  // Vertical auto-layout: padding [8,12], itemSpacing 4, radius 8, a 32x32
+  // icon box and the label. 8 + 32 + 4 + 16 + 8 = 68.
   footerBtn: {
-    height: 68,
+    minHeight: 68,
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 4,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
+  footerIconBox: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   footerBtnLabel: textStyle('caption', {
     color: KhazainColors.ink500,
     textAlign: 'center',

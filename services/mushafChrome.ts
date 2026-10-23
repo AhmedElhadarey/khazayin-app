@@ -135,3 +135,27 @@ export function basmalaShown(surahNumber: number): boolean {
 }
 
 export const BASMALA_TEXT = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
+
+/**
+ * The footer band sits straight on the home-indicator inset (2349:1010); the
+ * 8pt under the labels is the button's own padding. Devices without an inset
+ * keep 8 so the labels do not touch the screen edge.
+ */
+export function chromeBottomPad(insetBottom: number): number {
+  return Math.max(insetBottom, 8);
+}
+
+/** DIV-47 (2349:994): items 16 apart. A 320dp phone closes that to 8 so the strip stays on one line. */
+export function metaGap(windowWidth: number): number {
+  return windowWidth < 340 ? 8 : 16;
+}
+
+/** The meta text box (89-109) is centred 54 below the status bar inset. */
+export const META_CENTRE_BELOW_INSET = 54;
+/** DIV-47's text is TheMixArab 14 on a 20pt line. */
+export const META_LINE_HEIGHT = 20;
+
+/** Top padding that lands the meta line's centre on the frame, under a header of `headerHeight`. */
+export function metaTopPad(headerHeight: number): number {
+  return Math.max(0, META_CENTRE_BELOW_INSET - META_LINE_HEIGHT / 2 - headerHeight);
+}

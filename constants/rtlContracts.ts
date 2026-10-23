@@ -92,6 +92,14 @@ export type MushafFooterSlot = (typeof MUSHAF_FOOTER_ORDER)[number];
 export const CARTOUCHE_PHYSICAL_ORDER = Object.freeze(['ayahs', 'name', 'order'] as const);
 export type CartoucheSlot = (typeof CARTOUCHE_PHYSICAL_ORDER)[number];
 
+/**
+ * Mushaf reader meta strip (DIV-47, 2349:994), physical left -> right. The
+ * frame's children run مكية, ٧ آيات, صفحة ١ من ٦٠٤ in reading order, so the
+ * revelation type sits at the physical right.
+ */
+export const MUSHAF_META_PHYSICAL_ORDER = Object.freeze(['page', 'ayahs', 'revelation'] as const);
+export type MushafMetaSlot = (typeof MUSHAF_META_PHYSICAL_ORDER)[number];
+
 /** The alphabet rail is pinned to the physical right edge on every screen. */
 export const LETTER_INDEX_EDGE = 'right';
 

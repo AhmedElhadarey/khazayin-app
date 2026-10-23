@@ -6,6 +6,7 @@
  * on nothing, and the transition must never fall back to an unrelated screen.
  */
 import { SURAH_START_PAGES, toArabicDigits } from '@/constants/progress';
+import { MUSHAF_META_PHYSICAL_ORDER, type MushafMetaSlot } from '@/constants/rtlContracts';
 
 export const MUSHAF_PAGE_COUNT = 604;
 export const LAST_SURAH = 114;
@@ -51,29 +52,61 @@ const REVELATION_LABEL: Record<string, string> = {
 };
 
 /**
- * The reader's metadata strip — revelation type, ayah count, page — in the
- * order node 2349:982 shows them. Unknown parts are omitted rather than
- * printed as a placeholder, because a wrong ayah count is worse than none.
+ * «٧ آيات»: the file's plural. 3-10 (mod 100) takes the plural, 2 the dual and
+ * everything else the singular noun after the digits («١١ آية»).
  */
-export function surahMetaLine(parts: {
+export function ayahCountLabel(n: number): string {
+  if (n === 2) return 'آيتان';
+  const r = n % 100;
+  const noun = r >= 3 && r <= 10 ? 'آيات' : 'آية';
+  return `${toArabicDigits(n)} ${noun}`;
+}
+
+export type MetaParts = {
   revelationType?: string;
   ayahCount?: number;
   page: number;
-}): string {
-  const segments: string[] = [];
-  const revelation = parts.revelationType
-    ? REVELATION_LABEL[parts.revelationType]
-    : undefined;
-  if (revelation) segments.push(revelation);
-  if (parts.ayahCount && parts.ayahCount > 0) {
-    segments.push(`${toArabicDigits(parts.ayahCount)} آية`);
-  }
-  segments.push(
-    `صفحة ${toArabicDigits(parts.page)} من ${toArabicDigits(MUSHAF_PAGE_COUNT)}`,
-  );
+};
+
+/** The known parts of the metadata strip, keyed by slot. Unknown parts are absent. */
+function metaTexts(parts: MetaParts): Partial<Record<MushafMetaSlot, string>> {
+  const out: Partial<Record<MushafMetaSlot, string>> = {};
+  const revelation = parts.revelationType ? REVELATION_LABEL[parts.revelationType] : undefined;
+  if (revelation) out.revelation = revelation;
+  if (parts.ayahCount && parts.ayahCount > 0) out.ayahs = ayahCountLabel(parts.ayahCount);
+  out.page = `صفحة ${toArabicDigits(parts.page)} من ${toArabicDigits(MUSHAF_PAGE_COUNT)}`;
+  return out;
+}
+
+/**
+ * The reader's metadata strip — revelation type, ayah count, page — in the
+ * order node 2349:982 shows them (reading order, right to left). Unknown parts
+ * are omitted rather than printed as a placeholder, because a wrong ayah count
+ * is worse than none.
+ */
+export function surahMetaLine(parts: MetaParts): string {
+  const t = metaTexts(parts);
   // Node 2349:982 separates the parts with `•`. The middle dot this used
   // before is easily read as a `٠` between two Arabic-Indic numerals.
-  return segments.join(' • ');
+  return [t.revelation, t.ayahs, t.page].filter(Boolean).join(' • ');
+}
+
+export type MetaRowItem = { kind: 'text'; slot: MushafMetaSlot; text: string } | { kind: 'dot' };
+
+/**
+ * DIV-47 (2349:994) as separate children for a PHYSICAL_ROW, physical left ->
+ * right (`MUSHAF_META_PHYSICAL_ORDER`), a `•` between every two parts.
+ */
+export function surahMetaRow(parts: MetaParts): MetaRowItem[] {
+  const t = metaTexts(parts);
+  const items: MetaRowItem[] = [];
+  for (const slot of MUSHAF_META_PHYSICAL_ORDER) {
+    const text = t[slot];
+    if (!text) continue;
+    if (items.length > 0) items.push({ kind: 'dot' });
+    items.push({ kind: 'text', slot, text });
+  }
+  return items;
 }
 
 // ---------------------------------------------------------------------------
@@ -105,11 +138,17 @@ export function segmentForAyah(segments: readonly SegmentLike[], n: number): num
   return segments.findIndex((s) => s.ayat.some((a) => a.number === n));
 }
 
+/** U+06DD ARABIC END OF AYAH: Amiri draws the medallion round the digits that follow. */
+export const END_OF_AYAH = '\u06DD';
+
 /**
- * The marker rendered after each ayah's text. Must match `AyahNum` in
- * app/(tabs)/sections/mushaf.tsx (two spaces, the number, two spaces).
+ * The marker rendered after each ayah's text: the end-of-ayah sign and the
+ * Arabic-Indic digits, one space each side. `AyahNum` in
+ * app/(tabs)/sections/mushaf.tsx renders exactly this string, and the offsets
+ * below count it, so deep-link scroll precision depends on it staying the one
+ * source.
  */
-export const ayahMarker = (n: number): string => `  ${n}  `;
+export const ayahMarker = (n: number): string => ` ${END_OF_AYAH}${toArabicDigits(n)} `;
 
 /**
  * Characters before ayah `n` in a segment's rendered string: for every earlier

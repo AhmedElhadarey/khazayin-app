@@ -1,6 +1,7 @@
 import { KhazainColors } from '@/constants/theme';
 import {
   CHROME_SCRIM,
+  chromeBottomPad,
   chromeFadeMs,
   chromeIsUp,
 } from '@/services/mushafChrome';
@@ -88,7 +89,7 @@ export function MushafChrome({
         importantForAccessibility={a11yHidden ? 'no-hide-descendants' : 'auto'}
       >
         <View
-          style={[styles.block, { paddingBottom: insets.bottom }]}
+          style={[styles.block, { paddingBottom: chromeBottomPad(insets.bottom) }]}
           onLayout={(e) => onBottomHeight(e.nativeEvent.layout.height)}
         >
           {bottom}
