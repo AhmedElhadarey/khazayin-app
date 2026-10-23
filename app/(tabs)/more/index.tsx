@@ -12,10 +12,11 @@ import { useMoreRowsStore } from '@/store';
 import type { MoreRow as MoreRowData } from '@/types/content';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import Svg, { Circle, Path } from 'react-native-svg';
+import { showNotice } from '@/services/notice';
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();
@@ -47,7 +48,7 @@ export default function MoreScreen() {
           if (!can) throw new Error('cannot open');
           await Linking.openURL(url);
         } catch {
-          Alert.alert('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
+          showNotice('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
         }
         return;
       }

@@ -25,13 +25,14 @@ import { formatClockTime, isWirdReminderArmed } from '@/services/wirdReminder';
 import { setWirdReminderEnabled } from '@/services/wirdReminderToggle';
 import { useSettingsStore } from '@/store';
 import { useWirdStore } from '@/store/wirdStore';
+import { showNotice } from '@/services/notice';
 
 // Guarded open of OS settings — Linking.openSettings() can reject on some
 // platforms/OEMs; match the project's external-action convention (try/catch +
 // Arabic Alert fallback) instead of a floating rejection (T5.3).
 function openOsSettings() {
   Linking.openSettings().catch(() => {
-    Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+    showNotice('خطأ', 'تعذّر فتح الإعدادات.');
   });
 }
 

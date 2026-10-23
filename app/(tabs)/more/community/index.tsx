@@ -19,7 +19,6 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -32,6 +31,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
+import { showNotice } from '@/services/notice';
 
 const GUIDELINES_ROUTE = '/(tabs)/more/community/guidelines';
 const CREATE_ROUTE = '/(tabs)/more/community/create';
@@ -81,7 +81,7 @@ function Intro() {
     openPrivacyPolicy({
       url: KhazainConfig.privacyPolicyUrl,
       openBrowser: (url) => WebBrowser.openBrowserAsync(url),
-      alert: (title, body) => Alert.alert(title, body),
+      alert: (title, body) => showNotice(title, body),
     });
 
   const submit = async () => {

@@ -28,6 +28,7 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { showNotice } from '@/services/notice';
 
 // Real phone / email values to be supplied by the foundation. Defaults match
 // the Figma mock.
@@ -63,7 +64,7 @@ export default function ContactScreen() {
       if (!can) throw new Error('cannot open');
       await Linking.openURL(url);
     } catch {
-      Alert.alert(label, 'تعذّر فتح التطبيق على هذا الجهاز.');
+      showNotice(label, 'تعذّر فتح التطبيق على هذا الجهاز.');
     }
   };
 
@@ -72,7 +73,7 @@ export default function ContactScreen() {
 
   const submit = () => {
     if (!isContactFormComplete({ name, email, message })) {
-      Alert.alert(CONTACT_INCOMPLETE_ALERT.title, CONTACT_INCOMPLETE_ALERT.body);
+      showNotice(CONTACT_INCOMPLETE_ALERT.title, CONTACT_INCOMPLETE_ALERT.body);
       return;
     }
     // INTENTIONAL PLACEHOLDER (T7.8 / D3): the form does not yet transmit the

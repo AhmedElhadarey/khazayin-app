@@ -34,7 +34,7 @@ describe('CC BY 3.0 notice for the Tanzil page data', () => {
   it('opens links through canOpenURL with the Arabic fallback alert', () => {
     expect(about).toMatch(/async function openExternalUrl\(url: string\)/);
     expect(about).toMatch(/Linking\.canOpenURL\(url\)/);
-    expect(about).toMatch(/Alert\.alert\('الرابط غير متاح'/);
+    expect(about).toMatch(/showNotice\('الرابط غير متاح'/);
   });
 
   it('keeps the licence and source in the generated data header', () => {

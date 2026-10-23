@@ -1,9 +1,10 @@
 import React from 'react';
-import { Alert, Linking, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { KhazainColors } from '@/constants/theme';
 import { SheetRow, SheetShell } from '@/components/khazain/sheets';
+import { showNotice } from '@/services/notice';
 
 // Real channel URLs to be supplied by the foundation. Until then we fall back
 // to a generic Telegram URL and surface a friendly Arabic alert when the link
@@ -32,7 +33,7 @@ export default function TelegramSheet() {
       await Linking.openURL(url);
       close();
     } catch {
-      Alert.alert('تليجرام', 'تعذّر فتح الرابط على هذا الجهاز.');
+      showNotice('تليجرام', 'تعذّر فتح الرابط على هذا الجهاز.');
     }
   };
 

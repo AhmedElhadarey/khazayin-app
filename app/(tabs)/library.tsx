@@ -106,6 +106,7 @@ import { EmptyState } from '@/components/khazain/state';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
+import { showNotice } from '@/services/notice';
 
 function surahNameForPage(page: number): { name: string; surahNumber: number } | null {
   if (!Number.isInteger(page) || page < 1 || page > 604) return null;
@@ -189,7 +190,7 @@ export default function LibraryScreen() {
                   text: 'فتح الإعدادات',
                   onPress: () => {
                     Linking.openSettings().catch(() => {
-                      Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+                      showNotice('خطأ', 'تعذّر فتح الإعدادات.');
                     });
                   },
                 },

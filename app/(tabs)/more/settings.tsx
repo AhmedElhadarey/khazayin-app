@@ -55,6 +55,7 @@ import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { showNotice } from '@/services/notice';
 
 const FONT_LEVEL_LABELS: Record<FontSizeLevel, string> = {
   1: 'صغير جدًا',
@@ -116,7 +117,7 @@ export default function SettingsScreen() {
     openPrivacyPolicy({
       url: KhazainConfig.privacyPolicyUrl,
       openBrowser: (url) => WebBrowser.openBrowserAsync(url),
-      alert: (title, body) => Alert.alert(title, body),
+      alert: (title, body) => showNotice(title, body),
     });
 
   const onClearCache = () => {
@@ -145,7 +146,7 @@ export default function SettingsScreen() {
   const onExportNotes = async () => {
     const notes = useNotesStore.getState().notes;
     if (notes.length === 0) {
-      Alert.alert('لا توجد ملاحظات', 'لا يوجد شيء للتصدير حاليًا.');
+      showNotice('لا توجد ملاحظات', 'لا يوجد شيء للتصدير حاليًا.');
       return;
     }
     await shareNotes(notes);
@@ -162,7 +163,7 @@ export default function SettingsScreen() {
     const dsnConfigured = !!process.env.EXPO_PUBLIC_SENTRY_DSN;
     Sentry.captureException(new Error('Khazayin test event (dev settings)'));
     Sentry.captureMessage('Khazayin test message (dev settings)', 'info');
-    Alert.alert(
+    showNotice(
       'Sentry',
       dsnConfigured
         ? 'تم إرسال حدث تجريبي إلى Sentry. تحقّق من لوحة المشاريع خلال دقيقة.'
@@ -246,7 +247,7 @@ export default function SettingsScreen() {
             subtitle="العربية"
             icon={<LanguageGlyph />}
             onPress={() =>
-              Alert.alert('اللغة', 'هذا التطبيق متاح باللغة العربية فقط.')
+              showNotice('اللغة', 'هذا التطبيق متاح باللغة العربية فقط.')
             }
           />
           <ListRowCard

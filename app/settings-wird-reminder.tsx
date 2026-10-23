@@ -13,6 +13,7 @@ import { useSettingsStore } from '@/store';
 import { applyWirdReminderTime } from '@/services/wirdReminderToggle';
 import { formatClockTime } from '@/services/wirdReminder';
 import type { TimeOfDay } from '@/types/settings';
+import { showNotice } from '@/services/notice';
 
 type Period = 'ص' | 'م';
 
@@ -21,7 +22,7 @@ type Period = 'ص' | 'م';
 // out. (Third copy — worth hoisting into a shared helper next time one is added.)
 function openOsSettings() {
   Linking.openSettings().catch(() => {
-    Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+    showNotice('خطأ', 'تعذّر فتح الإعدادات.');
   });
 }
 

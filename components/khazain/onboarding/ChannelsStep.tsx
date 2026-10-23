@@ -1,11 +1,12 @@
 import React from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PillButton } from '@/components/khazain/primitives';
 import { ONBOARDING_CHANNELS } from '@/constants/settings';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { showNotice } from '@/services/notice';
 
 /**
  * Onboarding step 3 (track 003, US4): optional community-channel promotion.
@@ -21,7 +22,7 @@ export function ChannelsStep(): React.ReactElement {
       if (!can) throw new Error('cannot open');
       await Linking.openURL(url);
     } catch {
-      Alert.alert(channelName, 'تعذّر فتح الرابط على هذا الجهاز.');
+      showNotice(channelName, 'تعذّر فتح الرابط على هذا الجهاز.');
     }
   };
 

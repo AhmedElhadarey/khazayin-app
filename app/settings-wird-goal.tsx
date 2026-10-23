@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { PillButton } from '@/components/khazain/primitives';
 import { SheetHandle } from '@/components/khazain/sheets';
 import {
-  Alert,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,6 +25,7 @@ import {
 import { presetToPages } from '@/db/helpers/wirdPresets';
 import { pageCountLabel } from '@/services/libraryStats';
 import { useWirdStore } from '@/store/wirdStore';
+import { showNotice } from '@/services/notice';
 
 // Labels use the traditional ḥizb family (جزء → حزب = ½ juz → ربع الحزب = ⅛ juz),
 // NOT juz fractions.
@@ -62,7 +62,7 @@ export default function SettingsWirdGoalScreen() {
       await setTarget(draftPages);
       router.back();
     } catch {
-      Alert.alert(
+      showNotice(
         'قيمة غير صالحة',
         'الرجاء إدخال عدد صفحات بين ١ و ٦٠٤.',
       );

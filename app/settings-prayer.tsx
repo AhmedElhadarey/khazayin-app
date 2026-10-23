@@ -37,6 +37,7 @@ import type {
   NotificationCategoryId,
   PrayerId,
 } from '@/types/settings';
+import { showNotice } from '@/services/notice';
 
 // Prayer id → registry category id, so the five Arabic prayer names come from
 // the single source already used by the notifications screen (no new names).
@@ -72,7 +73,7 @@ function formatCoord(n: number): string {
 // (Linking.openSettings can reject on some OEMs; fall back to an Arabic Alert).
 function openOsSettings() {
   Linking.openSettings().catch(() => {
-    Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+    showNotice('خطأ', 'تعذّر فتح الإعدادات.');
   });
 }
 
@@ -114,7 +115,7 @@ export default function SettingsPrayerScreen() {
       if (outcome === 'permission-denied') {
         promptLocationPermission();
       } else if (outcome === 'unavailable') {
-        Alert.alert('تعذّر تحديد الموقع', 'تأكّد من تفعيل خدمة الموقع وحاول مرة أخرى.');
+        showNotice('تعذّر تحديد الموقع', 'تأكّد من تفعيل خدمة الموقع وحاول مرة أخرى.');
       }
       // 'updated' → nothing to alert; the store re-renders this screen.
     } finally {

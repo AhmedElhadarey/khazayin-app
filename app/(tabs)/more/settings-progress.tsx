@@ -31,6 +31,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { textStyle } from '@/constants/typography';
+import { showNotice } from '@/services/notice';
 
 const toAr = toArabicDigits;
 
@@ -57,7 +58,7 @@ export default function SettingsProgressScreen() {
       await setTarget(parsed);
       showToast({ message: `تم تحديث الهدف إلى ${pageCountLabel(parsed)}`, durationMs: 2500 });
     } catch (err) {
-      Alert.alert('تعذّر الحفظ', String(err));
+      showNotice('تعذّر الحفظ', String(err));
     } finally {
       setSaving(false);
     }
@@ -82,9 +83,9 @@ export default function SettingsProgressScreen() {
                   ? useRecommendationInputsStore.getState().refreshActivity()
                   : undefined,
               ]);
-              Alert.alert('تم', 'تمت إعادة تعيين التقدّم');
+              showNotice('تم', 'تمت إعادة تعيين التقدّم');
             } catch (err) {
-              Alert.alert('تعذّر إعادة التعيين', String(err));
+              showNotice('تعذّر إعادة التعيين', String(err));
             }
           },
         },

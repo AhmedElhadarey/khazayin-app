@@ -1,6 +1,6 @@
 import React from 'react';
 import { SheetHandle } from '@/components/khazain/sheets';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import * as Application from 'expo-application';
@@ -19,6 +19,7 @@ import {
   QURAN_PAGE_DATA_LICENSE_LABEL,
   QURAN_PAGE_DATA_LICENSE_URL,
 } from '@/constants/quranPages';
+import { showNotice } from '@/services/notice';
 
 /** Arabic-Indic digits kept in reading order inside RTL text, as formatClockTime does. */
 function isolatedDigits(value: string): string {
@@ -37,7 +38,7 @@ async function openExternalUrl(url: string) {
     if (!can) throw new Error('cannot open');
     await Linking.openURL(url);
   } catch {
-    Alert.alert('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
+    showNotice('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
   }
 }
 

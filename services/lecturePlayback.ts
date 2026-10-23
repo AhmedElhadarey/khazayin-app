@@ -5,9 +5,9 @@
  * `playLecture` with Arabic user feedback so screens can call it directly from
  * an onPress without their own try/catch. Never throws.
  */
-import { Alert } from 'react-native';
 import type { Lecture } from '@/types/content';
 import { playLecture, NoAudioError, type LectureStart } from '@/services/audioEngine';
+import { showNotice } from '@/services/notice';
 
 export async function startLecturePlayback(lecture: Lecture, start?: LectureStart): Promise<void> {
   try {
@@ -16,9 +16,9 @@ export async function startLecturePlayback(lecture: Lecture, start?: LectureStar
     await (start ? playLecture(lecture, start) : playLecture(lecture));
   } catch (err) {
     if (err instanceof NoAudioError) {
-      Alert.alert(lecture.title, 'لا يتوفر تسجيل صوتي لهذه المادة');
+      showNotice(lecture.title, 'لا يتوفر تسجيل صوتي لهذه المادة');
     } else {
-      Alert.alert('تعذّر التشغيل', 'حدث خطأ أثناء تحميل التسجيل. تحقق من اتصالك ثم حاول مجددًا.');
+      showNotice('تعذّر التشغيل', 'حدث خطأ أثناء تحميل التسجيل. تحقق من اتصالك ثم حاول مجددًا.');
     }
   }
 }

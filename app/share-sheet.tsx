@@ -2,9 +2,10 @@ import { SheetRow, SheetShell } from '@/components/khazain/sheets';
 import { KhazainColors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, Linking, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
+import { showNotice } from '@/services/notice';
 
 /** One tint for every mark in the navy disc. */
 const INK = KhazainColors.cream50;
@@ -36,7 +37,7 @@ export default function ShareSheet() {
       await Linking.openURL(url);
       close();
     } catch {
-      Alert.alert(platformName, 'تعذّر فتح التطبيق على هذا الجهاز.');
+      showNotice(platformName, 'تعذّر فتح التطبيق على هذا الجهاز.');
     }
   };
 

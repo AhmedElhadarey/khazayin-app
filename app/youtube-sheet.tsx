@@ -3,8 +3,9 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
+import { Linking, StyleSheet, Text, View } from 'react-native';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { showNotice } from '@/services/notice';
 
 // Featured channels (no Figma frame for this sheet). Real YouTube URLs to be supplied by the
 // foundation; falls back to a friendly Arabic alert if a link cannot be opened.
@@ -27,7 +28,7 @@ export default function YouTubeSheet() {
       await Linking.openURL(url);
       close();
     } catch {
-      Alert.alert('يوتيوب', 'تعذّر فتح الرابط على هذا الجهاز.');
+      showNotice('يوتيوب', 'تعذّر فتح الرابط على هذا الجهاز.');
     }
   };
 
