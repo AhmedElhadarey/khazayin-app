@@ -31,9 +31,9 @@ describe('reciterDestination', () => {
     expect(new Set(destinations).size).toBe(nonQiraa.length);
   });
 
-  it('keeps the Qiraa tab pointing at the qiraat screen', () => {
+  it('sends the Qiraa tab to the qiraat bottom sheet', () => {
     const qiraa = RECITERS.find((r) => r.style === 'qiraat')!;
-    expect(reciterDestination(qiraa)).toBe('/sections/qiraat');
+    expect(reciterDestination(qiraa)).toBe('/qiraat-sheet');
   });
 
   it('never routes to the general Mushaf', () => {

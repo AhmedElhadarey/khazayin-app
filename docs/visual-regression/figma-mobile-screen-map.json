@@ -98,6 +98,7 @@
     "state": {
       "tab": "murattal"
     },
+    "deviation": "modelled as tab state (D5)",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/10-2102-3187.png"
   },
@@ -171,7 +172,9 @@
     "name": "Qiraat — ten qiraa rows",
     "width": 393,
     "height": 844,
-    "appRoute": "/sections/qiraat",
+    "appRoute": "/qiraat-sheet",
+    "presentation": "sheet",
+    "note": "Bottom sheet over the reciter screen; /sections/qiraat redirects to it (replace reciter?tab=qiraat, then push the sheet).",
     "readyText": "اختر القراءة",
     "status": "implemented",
     "referenceImage": "docs/audit/2026-09-09/figma-reference/17-2457-954.png"

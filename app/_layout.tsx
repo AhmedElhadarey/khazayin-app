@@ -449,6 +449,14 @@ function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="qiraat-sheet"
+          options={{
+            headerShown: false,
+            presentation: 'transparentModal',
+            animation: 'fade',
+          }}
+        />
+        <Stack.Screen
           name="youtube-sheet"
           options={{
             headerShown: false,

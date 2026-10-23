@@ -8,9 +8,12 @@
  */
 import type { Lecture, Reciter, Surah } from '@/types/content';
 
-/** The Qiraa tab is a list of readings, not of reciters, and keeps its screen. */
+/** The Qiraa tab is a list of readings, not of reciters: it opens a bottom sheet. */
 const QIRAAT_STYLE = 'qiraat';
 const RECITER_TABS = new Set(['tajweed', 'murattal', 'muallam', 'qiraat']);
+
+/** Root-level `transparentModal` route (app/qiraat-sheet.tsx). */
+export const QIRAAT_SHEET_ROUTE = '/qiraat-sheet';
 
 export const DEFAULT_RECITER_TAB = 'tajweed';
 
@@ -21,8 +24,28 @@ export function reciterTabFromParam(value: string | string[] | undefined): strin
 }
 
 export function reciterDestination(reciter: Reciter): string {
-  if (reciter.style === QIRAAT_STYLE) return '/sections/qiraat';
+  if (reciter.style === QIRAAT_STYLE) return QIRAAT_SHEET_ROUTE;
   return `/sections/reciter/${reciter.id}`;
+}
+
+/**
+ * What the legacy `/sections/qiraat` route does: swap itself for the reciter
+ * screen on the Qiraa tab, then push the sheet over it. The replace is what
+ * guarantees a cold deep link lands over the reciter list rather than over
+ * Home (the root anchor) or an empty stack.
+ */
+export function qiraatRedirectPlan(): { replace: string; push: string } {
+  return { replace: '/sections/reciter?tab=qiraat', push: QIRAAT_SHEET_ROUTE };
+}
+
+/** A row tap: persist the reading first, and close even if persisting fails. */
+export function pickQiraa(id: string, setDefault: (id: string) => void, close: () => void): void {
+  try {
+    setDefault(id);
+  } catch {
+    // A failed write must not trap the user in the sheet.
+  }
+  close();
 }
 
 /**
