@@ -40,6 +40,12 @@ const CONTACT_PHONE = '01228888888';
 const CONTACT_PHONE_AR = '٠١٢٢٨٨٨٨٨٨٨٨٨٨';
 const CONTACT_EMAIL = 'khazayin@email.com';
 
+/**
+ * Node 2548:1650 (the form title) states a 21pt line box; the `bodyTitle` role
+ * is taller (1.5x floor, 30), and the surplus splits evenly above and below.
+ */
+const TITLE_BOX_EXCESS = (textStyle('bodyTitle').lineHeight - 21) / 2;
+
 /** `Icon` inside `DIV-66` is 21 x 20; both chips draw at that size. */
 const CONTACT_GLYPH = 20;
 
@@ -228,11 +234,10 @@ const styles = StyleSheet.create({
   formTitle: {
     ...textStyle('bodyTitle', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     // `DIV-126` starts at 293, the title at 309, and `FORM-127` at 342. The
-    // line box is 30 (the 1.5x floor over the stated 21), which adds 9 over the
-    // file's box: 4.5 above and 4.5 below. Each side is pulled back by that
-    // 4.5, and the below side keeps the original -4 as well.
-    marginTop: -4.5,
-    marginBottom: -8.5,
+    // role's line box exceeds the file's 21 by 2 x TITLE_BOX_EXCESS; the extra
+    // is pulled back on both sides, and below it keeps the original -4.
+    marginTop: -TITLE_BOX_EXCESS,
+    marginBottom: -4 - TITLE_BOX_EXCESS,
   },
   fieldGroup: {
     // `LABEL-129` ends at 362 and `INPUT` starts at 370.

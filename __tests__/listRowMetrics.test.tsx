@@ -65,9 +65,9 @@ describe('ReciterRow (SECTIONS-03, SECTIONS-11)', () => {
 });
 
 describe('LectureCard (MEDIA-11, SCHOLARS-12)', () => {
-  const mk = (compact: boolean) =>
+  const mk = (rail: boolean) =>
     render(
-      <LectureCard id="1" category={'tafsir' as any} iconNode={null} title="العنوان" scholar="الشيخ" variant={compact ? 'rail' : undefined} />,
+      <LectureCard id="1" category={'tafsir' as any} iconNode={null} title="العنوان" scholar="الشيخ" variant={rail ? 'rail' : undefined} />,
     );
   it('bordered card is 64: 1 + 7 + 48 + 7 + 1', () => {
     const r = mk(false);
@@ -80,7 +80,7 @@ describe('LectureCard (MEDIA-11, SCHOLARS-12)', () => {
   it('title line height is the bodyCompactLoose role', () => {
     expect(LIST_ROW_TEXT.titleLineHeight).toBe(TEXT_ROLES.bodyCompactLoose.lineHeight);
   });
-  it('compact rows keep minHeight 56 and padding 8 (not the bordered-card metrics)', () => {
+  it('rail rows keep minHeight 56 and padding 8 (not the bordered-card metrics)', () => {
     const r = mk(true);
     const card = flat(pressable(r));
     expect(card.minHeight).toBe(56);

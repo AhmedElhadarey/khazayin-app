@@ -59,7 +59,7 @@ export function LectureCard({
   // `rail` changes the card's shape and clamps the title to one line — the
   // rail lists are single-line in the file. It no longer forks the text
   // styles: both frames set the same faces and sizes.
-  const heightStyle = rail ? styles.cardCompact : styles.card;
+  const heightStyle = rail ? styles.cardRail : styles.card;
 
   const saveTarget = lectureSaveTarget({ id, title, scholar, duration, category });
   const { saved, gestureProps } = useSaveGesture(saveTarget);
@@ -84,13 +84,9 @@ export function LectureCard({
       ) : null,
     text: (
       <View
-        style={[
-          styles.textBlock,
-          rail ? null : styles.textBlockCard,
-          // Full width, not shrink-wrapped (Android 15 line-breaking), and
-          // centred on the row's cross axis.
-          rail ? styles.textBlockRail : null,
-        ]}
+        // Rail: full width, not shrink-wrapped (Android 15 line-breaking), and
+        // centred on the row's cross axis.
+        style={[styles.textBlock, rail ? styles.textBlockRail : styles.textBlockCard]}
       >
         {pretitleSmall && !rail ? (
           <Text style={styles.pretitle} numberOfLines={1}>
@@ -104,7 +100,7 @@ export function LectureCard({
           {title}
         </Text>
         {scholar && !rail ? (
-          <Text style={[styles.scholar, rail ? null : styles.scholarCard]} numberOfLines={1}>
+          <Text style={[styles.scholar, styles.scholarCard]} numberOfLines={1}>
             {scholar}
           </Text>
         ) : null}
@@ -153,7 +149,7 @@ const styles = StyleSheet.create({
     paddingVertical: 7,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal - 1,
   },
-  cardCompact: {
+  cardRail: {
     minHeight: CARD_DENSITY.reciterRowMinHeight,
     borderRadius: CARD_DENSITY.railRowRadius,
   },
