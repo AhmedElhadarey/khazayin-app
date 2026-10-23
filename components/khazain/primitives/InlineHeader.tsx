@@ -6,10 +6,18 @@ import {
 } from '@/constants/rtlContracts';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { KhazainColors } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
+import { CHROME_MAX_FONT_SCALE, TEXT_ROLES, textStyle } from '@/constants/typography';
 import { useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
 
 // Pages 13/14/15/21/25/26/28/29/34: an inline page header that does NOT use
 // the circular back-chip from DetailHeader. The title sits at the physical
@@ -27,19 +35,22 @@ import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } fro
 // Amiri Bold in navy, which read as a different screen family entirely.
 /** The size every frame instances the back control at. */
 const BACK_GLYPH = 20;
-/** `bodyLarge` leading (see constants/typography.ts). */
-const TITLE_LINE = 28;
-/** Centres one title line in the 44pt target: (44 - 28) / 2. */
+/** The title's unscaled line height: the `bodyLarge` role, not a copy of it. */
+const TITLE_LINE = TEXT_ROLES.bodyLarge.lineHeight;
+/** Centres one unscaled title line in the 44pt target: (44 - 28) / 2 = 8. */
 const TITLE_INSET = (MIN_TOUCH_TARGET - TITLE_LINE) / 2;
+
 /**
- * In the file the title and the 20x20 arrow share one 20pt row, so the glyph
- * centre is the title's optical centre. Centring the 20pt icon on the 28pt line
- * box put it 3.6pt below that on iOS (Arabic ink sits above the line-box
- * centre), so the icon box starts 2pt below the line top (span 10..30 in the
- * 44 row) instead of the 4pt a pure line-box centring would give. Anchored to
- * the first line, so a wrapped title at large font scale does not drag it.
+ * Offset that keeps the 20pt arrow where the file puts it against the title's
+ * first line. At font scale 1 the arrow box is top-aligned with the 28pt line
+ * (8..28 in the 44 row, offset 0). The title is capped at CHROME_MAX_FONT_SCALE
+ * and its line grows with the scale while its top stays at TITLE_INSET, so the
+ * arrow moves down by half the growth to follow the line's centre.
  */
-const BACK_TOP_OFFSET = 2;
+export function backGlyphOffset(fontScale: number): number {
+  const scaledLine = TITLE_LINE * Math.min(fontScale, CHROME_MAX_FONT_SCALE);
+  return (scaledLine - TITLE_LINE) / 2;
+}
 
 export function InlineHeader({
   title,
@@ -51,9 +62,10 @@ export function InlineHeader({
   /** Outer row style, e.g. the tablet reading column. */
   style?: StyleProp<ViewStyle>;
 }) {
+  const { fontScale } = useWindowDimensions();
   const slots: Record<InlineHeaderSlot, React.ReactNode> = {
     title: (
-      <Text style={styles.title} numberOfLines={1}>
+      <Text style={styles.title} numberOfLines={1} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>
         {title}
       </Text>
     ),
@@ -63,7 +75,7 @@ export function InlineHeader({
     // the set instances (65 times across the file), not a drawn chevron.
     // Colour: all 65 instances override both vectors to SOLID #281E13 (inkTitle).
     back: (
-      <View style={styles.backGlyph}>
+      <View style={{ marginTop: backGlyphOffset(fontScale) }}>
         <FigmaIcon name="Back" size={BACK_GLYPH} color={KhazainColors.inkTitle} />
       </View>
     ),
@@ -116,7 +128,6 @@ const styles = StyleSheet.create({
     minWidth: 0,
     flexShrink: 1,
   },
-  backGlyph: { marginTop: BACK_TOP_OFFSET },
   title: {
     ...textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
     flexShrink: 1,
