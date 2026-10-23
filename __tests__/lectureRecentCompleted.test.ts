@@ -48,3 +48,15 @@ describe('recentCompleted', () => {
     expect(await lectureSessions.recentCompleted(3)).toEqual([]);
   });
 });
+
+describe('native SQL', () => {
+  it('selects completed rows newest first with the limit as the only argument', async () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { createLectureSessionsRepository } = require('../db/repositories/lectureSessions');
+    const getAllAsync = jest.fn(async (..._args: unknown[]) => []);
+    await createLectureSessionsRepository({ getAllAsync }).recentCompleted(3);
+    expect(getAllAsync.mock.calls[0][0]).toMatch(/WHERE completed = 1/);
+    expect(getAllAsync.mock.calls[0][0]).toMatch(/ORDER BY last_listened_at DESC, lecture_id ASC LIMIT \?/);
+    expect(getAllAsync.mock.calls[0].slice(1)).toEqual([3]);
+  });
+});
