@@ -6,7 +6,7 @@
  * reorders the screen, and the order is asserted without a renderer.
  */
 
-import { HEADER_BAND } from '@/components/khazain/patterns/HeaderArt';
+import { HEADER_BAND } from '@/constants/layout';
 
 export const HOME_SECTION_ORDER = Object.freeze([
   'header',

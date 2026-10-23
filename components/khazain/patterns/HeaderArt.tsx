@@ -1,4 +1,10 @@
-import { MIN_TOUCH_TARGET, PAGE_CHROME, PHYSICAL_BOX } from '@/constants/layout';
+import {
+  HEADER_BAND,
+  MIN_TOUCH_TARGET,
+  PAGE_CHROME,
+  PHYSICAL_BOX,
+  type HeaderBandKind,
+} from '@/constants/layout';
 import { inlineHeaderHeight, scaledTitleLine } from '@/components/khazain/primitives/InlineHeader';
 import { KhazainColors } from '@/constants/theme';
 import { Image } from 'expo-image';
@@ -86,29 +92,6 @@ export type HeaderArtSmallCorner = keyof typeof SMALL_CORNERS;
  */
 const TILE_SIDE = 392;
 const TILE_TOP = -42.5;
-
-/**
- * Height of each frame family's opaque Header below the 45pt StatusBar (node
- * `Frame 4header`: 80 / 81 / 136 / 137 / 155 in total). Add the safe-area top inset.
- */
-export const HEADER_BAND = Object.freeze({
-  /** Frame reference only (More root 2102:2711, 80): `headerBandHeight` derives the app's own. */
-  more: 35,
-  /** Frame reference only (Contact, About, Dawah, 81): the app's row comes from `inlineHeaderHeight`. */
-  inline: 36,
-  /** Library and Sections roots, 2031:4659 / 2031:5675 (136). Frame literal: those titles are not font-scale driven here. */
-  root: 91,
-  /** Sub-screens with a search or tab row: lists, scholars, Archive 2558:1334 (137). */
-  search: 92,
-  /**
-   * Home 2001:940 (155). Frame literal. Home does not use headerBandHeight('home'); its band
-   * is homeHeaderBand (constants/homePresentation.ts), never below this, growing with the
-   * measured header.
-   */
-  home: 110,
-});
-
-export type HeaderBandKind = keyof typeof HEADER_BAND;
 
 /**
  * The band covers the app's header, not the frame literal, where they differ:

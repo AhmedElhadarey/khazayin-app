@@ -1,7 +1,7 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
 
-import { HEADER_BAND } from '@/components/khazain/patterns/HeaderArt';
+import { HEADER_BAND } from '@/constants/layout';
 import { MIN_TOUCH_TARGET, PAGE_CHROME, SEGMENT_TABS } from '@/constants/layout';
 
 const read = (f: string) => readFileSync(join(__dirname, '..', f), 'utf8');

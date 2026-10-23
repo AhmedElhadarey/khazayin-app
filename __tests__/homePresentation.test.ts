@@ -6,8 +6,7 @@ import {
   HOME_SECTION_ORDER,
   type HomeSectionKey,
 } from '@/constants/homePresentation';
-import { HEADER_BAND } from '@/components/khazain/patterns/HeaderArt';
-import { CONTENT_MAX_WIDTH, responsiveCarouselCardWidth } from '@/constants/layout';
+import { CONTENT_MAX_WIDTH, HEADER_BAND, responsiveCarouselCardWidth } from '@/constants/layout';
 
 /**
  * The Home screen renders straight from HOME_SECTION_ORDER, so this array is

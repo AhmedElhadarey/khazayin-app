@@ -453,6 +453,29 @@ export const PAGE_CHROME = Object.freeze({
 } as const);
 
 /**
+ * Height of each frame family's opaque Header below the 45pt StatusBar (node
+ * `Frame 4header`: 80 / 81 / 136 / 137 / 155 in total). Add the safe-area top inset.
+ */
+export const HEADER_BAND = Object.freeze({
+  /** Frame reference only (More root 2102:2711, 80): `headerBandHeight` derives the app's own. */
+  more: 35,
+  /** Frame reference only (Contact, About, Dawah, 81): the app's row comes from `inlineHeaderHeight`. */
+  inline: 36,
+  /** Library and Sections roots, 2031:4659 / 2031:5675 (136). Frame literal: those titles are not font-scale driven here. */
+  root: 91,
+  /** Sub-screens with a search or tab row: lists, scholars, Archive 2558:1334 (137). */
+  search: 92,
+  /**
+   * Home 2001:940 (155). Frame literal. Home does not use headerBandHeight('home'); its band
+   * is homeHeaderBand (constants/homePresentation.ts), never below this, growing with the
+   * measured header.
+   */
+  home: 110,
+});
+
+export type HeaderBandKind = keyof typeof HEADER_BAND;
+
+/**
  * The alphabet rail — node "DIV-97" on 2031:6193, 2102:2975, 2869:2088 and
  * 2869:2306. A 20pt column at the physical right, itself outlined in
  * `#D7B995` at 16%, holding 16 x 22 chips 4 apart.
