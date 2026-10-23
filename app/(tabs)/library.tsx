@@ -82,6 +82,7 @@ import {
 } from '@/services/libraryView';
 import type { NotificationCategoryId } from '@/types/settings';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useProgressStore } from '@/store/progressStore';
 import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
@@ -129,6 +130,7 @@ export default function LibraryScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const notes = useNotesStore((s) => s.notes);
+  const oneLine = useLineClamp(1);
   const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
 
   const [filter, setFilter] = useState<LibraryFilter>('all');
@@ -578,7 +580,7 @@ export default function LibraryScreen() {
                   style={[styles.recentRow, i > 0 && styles.recentRowGap]}
                 >
                   <Text style={styles.recentTime}>{formatRelativeAr(n.updatedAt)}</Text>
-                  <Text style={styles.recentTitle} numberOfLines={1}>
+                  <Text style={styles.recentTitle} numberOfLines={oneLine}>
                     {n.title}
                   </Text>
                 </Pressable>
@@ -921,19 +923,30 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   // Physical left → right: relative time, then the note title at the right.
-  // DIV-127/134: each recent note is its own 36pt card, not a bare row.
+  // DIV-127/134: each recent note is its own 36pt card, not a bare row. 36 is a
+  // floor (as in note-editor), so an enlarged title wraps and the card grows.
   recentRow: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
     justifyContent: 'space-between',
-    height: 36,
+    minHeight: RECENT_NOTE_ROW.height,
     paddingHorizontal: 8,
+    // Inside the 36 at the default scale (21 + 8); only a wrapped title uses it.
+    paddingVertical: 4,
+    // Keeps a long title off the time, as in note-editor; a short one is unmoved.
+    gap: 8,
     borderRadius: RECENT_NOTE_ROW.radius,
     backgroundColor: KhazainColors.cardBg,
   },
   // Between rows only, so the last row ends on the card's bottom padding.
   recentRowGap: { marginTop: RECENT_NOTE_ROW.gap },
-  recentTitle: textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  // Full width, right-aligned by the role: a shrink-wrapped Arabic title loses
+  // its last word on Android 15, and an unclamped one needs a bounded width.
+  recentTitle: {
+    flex: 1,
+    minWidth: 0,
+    ...textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  },
   recentTime: textStyle('label', { color: KhazainColors.ink500 }),
   recentEmpty: {
     ...textStyle('caption', { color: KhazainColors.ink400 }),

@@ -29,6 +29,16 @@ describe('Library vertical rhythm (LIBRARY-18, 20)', () => {
     expect(body(lib, 'recentRow')).not.toMatch(/marginBottom/);
   });
 
+  // T28: the 36pt card (RECENT_NOTE_ROW) is a floor, as in note-editor, so an
+  // enlarged title wraps (useLineClamp) instead of Android 15 dropping letters.
+  it('recent-note row grows from its 36pt floor, and its title takes the full width', () => {
+    const row = body(lib, 'recentRow');
+    expect(row).toMatch(/minHeight: RECENT_NOTE_ROW\.height,/);
+    expect(row).not.toMatch(/\bheight:/);
+    expect(body(lib, 'recentTitle')).toMatch(/flex: 1,/);
+    expect(lib).toMatch(/<Text style=\{styles\.recentTitle\} numberOfLines=\{oneLine\}>/);
+  });
+
   it('smart-reminders title has 12 below, the audiobook title keeps 8', () => {
     expect(lib).toMatch(/<SectionTitle paddingBottom=\{12\}>التذكيرات الذكية/);
     expect(lib).toMatch(/<SectionTitle>تقدم الكتب المسموعة/);

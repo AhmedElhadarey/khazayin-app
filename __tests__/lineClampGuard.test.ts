@@ -72,6 +72,8 @@ const GROWS: readonly string[] = [
   'app/notes-viewer.tsx',
   'app/note-editor.tsx',
   'app/(tabs)/sections/dawah.tsx',
+  'app/(tabs)/library.tsx',
+  'components/khazain/search/RecentSearchRow.tsx',
 ];
 
 /** Literal clamps that stay, per file: how many, and why the text must not wrap. */
@@ -85,8 +87,6 @@ const FIXED: Record<string, { sites: number; reason: string }> = {
   'components/khazain/home/BookCard.tsx': { sites: 1, reason: 'fallback title in a fixed-height carousel card (bookCardLayout)' },
   'components/khazain/search/SuggestionChips.tsx': { sites: 1, reason: 'chip is a fixed 32pt pill in a horizontal scroller' },
   'components/khazain/search/SearchResultRow.tsx': { sites: 1, reason: 'meta chip: a short content-sized label pill (title and subtitle grow)' },
-  'components/khazain/search/RecentSearchRow.tsx': { sites: 1, reason: 'row is a fixed 44pt line (height, not minHeight)' },
-  'app/(tabs)/library.tsx': { sites: 1, reason: 'recent-note row is a fixed 36pt line (height, not minHeight)' },
   'app/(tabs)/more/community/group/[id].tsx': { sites: 1, reason: 'join code: one LTR line that shrinks to fit (adjustsFontSizeToFit)' },
 };
 

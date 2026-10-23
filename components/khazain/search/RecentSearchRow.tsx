@@ -1,11 +1,15 @@
 import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 // Recent-searches row: tap fills query; X icon removes the entry.
 // Track: khazain-search_20260510  T7
+
+/** The row's 44pt line: a floor, so an enlarged query wraps and the row grows. */
+const ROW_MIN_HEIGHT = 44;
 
 type Props = {
   query: string;
@@ -14,6 +18,7 @@ type Props = {
 };
 
 export function RecentSearchRow({ query, onPress, onRemove }: Props) {
+  const oneLine = useLineClamp(1);
   return (
     <View style={styles.row}>
       {/* Physical left → right: remove button, then the query text. */}
@@ -30,7 +35,7 @@ export function RecentSearchRow({ query, onPress, onRemove }: Props) {
         </View>
       </Pressable>
       <Pressable onPress={onPress} style={styles.tap}>
-        <Text style={styles.text} numberOfLines={1}>
+        <Text style={styles.text} numberOfLines={oneLine}>
           {query}
         </Text>
       </Pressable>
@@ -41,14 +46,16 @@ export function RecentSearchRow({ query, onPress, onRemove }: Props) {
 const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
-    height: 44,
+    minHeight: ROW_MIN_HEIGHT,
     alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: KhazainColors.hairlineFaint,
   },
   tap: {
     flex: 1,
-    height: '100%',
+    minHeight: ROW_MIN_HEIGHT,
+    // Inside the 44 at the default scale; only a wrapped query uses it.
+    paddingVertical: 8,
     justifyContent: 'center',
   },
   text: textStyle('bodyCompact', { color: KhazainColors.ink900 }),

@@ -10,11 +10,12 @@
  * scale explicitly.
  */
 import React from 'react';
-import { Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { LectureCard } from '@/components/khazain/primitives/LectureCard';
 import { ListRowCard } from '@/components/khazain/primitives/ListRowCard';
 import { ReciterRow } from '@/components/khazain/primitives/ReciterRow';
 import { RibbonCard } from '@/components/khazain/primitives/RibbonCard';
+import { RecentSearchRow } from '@/components/khazain/search/RecentSearchRow';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -143,5 +144,33 @@ describe.each(['section', 'archive', 'more'] as const)('ListRowCard variant=%s',
     const c = clampsAt(1.7, row);
     expect(c['قنوات الواتساب']).toBeUndefined();
     expect(c['القنوات الأصلية']).toBeUndefined();
+  });
+});
+
+describe('RecentSearchRow', () => {
+  const QUERY = 'الإعجاز العلمي في السنة النبوية';
+  const row = <RecentSearchRow query={QUERY} onPress={() => {}} onRemove={() => {}} />;
+
+  it('clamps the query to 1 at the default text size and unclamps it at 1.7', () => {
+    expect(clampsAt(1, row)[QUERY]).toBe(1);
+    expect(clampsAt(1.7, row)[QUERY]).toBeUndefined();
+  });
+
+  it('grows from a 44pt floor: row and tap target use minHeight, never a fixed height', () => {
+    mockFontScale = 1;
+    let r!: ReturnType<typeof create>;
+    act(() => {
+      r = create(row);
+    });
+    const flat = (n: Node) => (StyleSheet.flatten(n.props.style) ?? {}) as Record<string, any>;
+    const hosts = r.root.findAll((n) => n.type === 'View');
+    // The row is the first host View; the query's tap target is the one that flexes.
+    const outer = hosts[0];
+    const tapHost = hosts.find((n) => flat(n).flex === 1)!;
+    expect(flat(outer).minHeight).toBe(44);
+    expect(flat(outer).height).toBeUndefined();
+    expect(flat(tapHost).minHeight).toBe(44);
+    expect(flat(tapHost).height).toBeUndefined();
+    act(() => r.unmount());
   });
 });
