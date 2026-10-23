@@ -82,6 +82,15 @@ describe.each(cards)('%s with an action', (_name, card, label) => {
     while (slot && !(slot.type === 'View' && styleOf(slot).position === 'absolute')) slot = slot.parent;
     expect(slot).not.toBeNull();
     expect(styleOf(slot!).elevation ?? 0).toBeGreaterThanOrEqual(styleOf(card_).elevation ?? 0);
+    // At equal elevation the later sibling draws on top, so the slot must follow the card.
+    let frame: Node = slot!.parent!;
+    while (frame.findAll((n) => n === card_).length === 0) frame = frame.parent!;
+    const kids = (frame as Node & { children: (Node | string)[] }).children.filter(
+      (k): k is Node => typeof k !== 'string',
+    );
+    const holds = (target: Node) => kids.findIndex((k) => k === target || k.findAll((n) => n === target).length > 0);
+    expect(holds(card_)).toBeGreaterThanOrEqual(0);
+    expect(holds(slot!)).toBeGreaterThan(holds(card_));
   });
 
   it('keeps the card footprint on the outer frame', () => {
@@ -112,6 +121,25 @@ describe('BookCard without an action (the book detail cover)', () => {
     const r = render(<BookCard id="b1" name="زاد المعاد" titleArt={1} />);
     expect(hostButtons(r.root)).toHaveLength(0);
     expect(r.root.findAll((n) => n.props.accessible === true && n.props.accessibilityLabel === 'زاد المعاد').length).toBeGreaterThan(0);
+  });
+
+  // The real detail cover has no lockup: it renders the fallback text instead.
+  it('without art is not a button either, and the fallback text reads the name', () => {
+    const r = render(<BookCard id="b1" name="زاد المعاد" />);
+    expect(hostButtons(r.root)).toHaveLength(0);
+    expect(r.root.findAll((n) => n.type === Text && n.props.children === 'زاد المعاد')).toHaveLength(1);
+  });
+
+  it('does not shrink under a press it does not handle', () => {
+    for (const el of [<BookCard key="b" id="b1" name="زاد المعاد" />, <ScholarCard key="s" id="s4" nameArt={1} name="ابن باز" />]) {
+      const r = render(el);
+      const fnStyled = r.root.findAll((n) => typeof n.props.style === 'function');
+      expect(fnStyled.length).toBeGreaterThan(0);
+      for (const n of fnStyled) {
+        const flat = StyleSheet.flatten(n.props.style({ pressed: true })) as { transform?: { scale?: number }[] };
+        expect(flat.transform?.[0]?.scale ?? 1).toBe(1);
+      }
+    }
   });
 });
 
