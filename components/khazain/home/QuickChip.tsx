@@ -9,7 +9,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 // are one node in the file (`audio book` 2093:1760 / 1768, `audio` 1775), so
 // the chip paints nothing of its own behind them.
 // 48 tall, flex:1, navy stripe at bottom, label centered.
-// Port of design_source/app/home.jsx QuickChip.
+// Chip frames in 2092:1613; badge nodes 2093:1760 / 1768 / 1775.
+/** The badge's box (24.94 x 24 in the file), shared by every badge drawn into it. */
+export const QUICK_CHIP_BADGE_SIZE = Object.freeze({ width: 25, height: 24 });
+
 export function QuickChip({
   label,
   children,
@@ -54,8 +57,7 @@ const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
     top: -11,
-    width: 25,
-    height: 24,
+    ...QUICK_CHIP_BADGE_SIZE,
     // Children are placed by absolute offset from the badge's physical origin.
     ...PHYSICAL_BOX,
   },

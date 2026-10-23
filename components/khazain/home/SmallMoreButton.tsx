@@ -8,7 +8,7 @@ import { textStyle } from '@/constants/typography';
 // Compact "المزيد" button used inside hero and queen cards.
 // 4px vertical × 19px horizontal padding, bg navy, radius 4, the file's 8pt stemmed arrow (vuesax/outline/arrow-left-stick, #FDF9F2) —
 // instances 2093:1660 / 2031:707 / 2812:1403, none of them mirrored.
-// Port of design_source/app/home.jsx MoreButton / QueenMoreBtn.
+// Pill frames 2093:1660 (Quran), 2031:707 (Prophet) and 2812:1402 (queen card).
 export function SmallMoreButton({ onPress }: { onPress?: () => void }) {
   return (
     <Pressable

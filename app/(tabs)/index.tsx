@@ -45,6 +45,7 @@ import { InteractionManager, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { QUICK_CHIP_BADGE_SIZE } from '@/components/khazain/home/QuickChip';
 import { QUICK_CHIP_SEAL } from '@/components/khazain/home/quickChipSeal';
 
 // The scholar's name as calligraphy, keyed by scholar id; ids must match
@@ -354,7 +355,7 @@ function ExclusiveChipBadge() {
 }
 
 const styles = StyleSheet.create({
-  exclusiveBadge: { ...PHYSICAL_BOX, width: 25, height: 24 },
+  exclusiveBadge: { ...PHYSICAL_BOX, ...QUICK_CHIP_BADGE_SIZE },
   screen: {
     flex: 1,
     backgroundColor: KhazainColors.pageBg,
