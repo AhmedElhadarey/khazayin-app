@@ -1,4 +1,4 @@
-import { LETTER_RAIL } from '@/constants/layout';
+import { LETTER_RAIL, PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import React from 'react';
@@ -16,7 +16,7 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 // RTL note: this component is *visually* pinned to the screen's RIGHT edge
 // (the start-side in RTL). Place it inside the parent screen's right padding.
 const LETTERS = [
-  'أ','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك','ل','م','ن','ه','و','ي',
+  'أ','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك','ل','م','ن','ه','و','ى',
 ];
 
 export type LetterIndexProps = {
@@ -69,8 +69,11 @@ const styles = StyleSheet.create({
     borderStartColor: KhazainColors.iconChipBg,
   },
   railContent: {
+    // The rail pins its own physical box: `flex-end` is the physical right
+    // here whatever the parent's direction (chip column x4 w16 in the 20 rail).
+    ...PHYSICAL_BOX,
     gap: LETTER_RAIL.chipGap,
-    alignItems: 'center',
+    alignItems: 'flex-end',
     paddingBottom: 2,
   },
   chip: {
