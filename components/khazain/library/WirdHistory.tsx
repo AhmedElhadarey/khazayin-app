@@ -224,7 +224,6 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontFamily: 'Amiri-Bold',
     fontSize: 16,
-    fontWeight: '700',
     color: KhazainColors.navy800,
     writingDirection: 'rtl',
     textAlign: 'center',
@@ -243,7 +242,6 @@ const styles = StyleSheet.create({
     marginTop: 4,
     fontFamily: 'TheSansArabic',
     fontSize: 14,
-    fontWeight: '700',
     color: KhazainColors.ink900,
     writingDirection: 'rtl',
     textAlign: 'right',
@@ -267,7 +265,6 @@ const styles = StyleSheet.create({
     width: 44,
     fontFamily: 'TheSansArabic',
     fontSize: 12,
-    fontWeight: '700',
     color: KhazainColors.navy800,
     textAlign: 'left',
     writingDirection: 'rtl',
@@ -333,8 +330,9 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(141,107,52,0.05)',
   },
   cellCheck: {
+    // Bold face (not fontWeight): a registered family is one static face.
+    fontFamily: 'TheSansArabic',
     fontSize: 13,
-    fontWeight: '700',
     color: KhazainColors.cream50,
    writingDirection: 'rtl',},
   cellDay: {
@@ -367,8 +365,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   legendCheck: {
+    // Bold face (not fontWeight): a registered family is one static face.
+    fontFamily: 'TheSansArabic',
     fontSize: 9,
-    fontWeight: '700',
     color: KhazainColors.cream50,
    writingDirection: 'rtl',},
   legendLabel: {
@@ -388,7 +387,6 @@ const styles = StyleSheet.create({
   showMoreLabel: {
     fontFamily: 'TheSansArabic',
     fontSize: 13,
-    fontWeight: '600',
     color: KhazainColors.navy800,
     writingDirection: 'rtl',
   },

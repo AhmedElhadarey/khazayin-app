@@ -237,7 +237,6 @@ const styles = StyleSheet.create({
   previewTime: {
     fontFamily: 'Amiri-Bold',
     fontSize: 34,
-    fontWeight: '700',
     color: KhazainColors.navy800,
     writingDirection: 'rtl',
     textAlign: 'center',

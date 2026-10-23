@@ -82,7 +82,6 @@ const styles = StyleSheet.create({
   chipValue: {
     fontFamily: 'Amiri-Bold',
     fontSize: 14,
-    fontWeight: '700',
     color: KhazainColors.navy800,
     writingDirection: 'rtl',
     textAlign: 'center',

@@ -76,7 +76,6 @@ const styles = StyleSheet.create({
     fontFamily: 'TheSansArabic',
     fontSize: 16,
     lineHeight: 22,
-    fontWeight: '600',
     color: KhazainColors.inkTitle,
     writingDirection: 'rtl',
     textAlign: 'right',

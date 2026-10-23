@@ -127,7 +127,6 @@ const styles = StyleSheet.create({
   appName: {
     fontFamily: 'Amiri-Bold',
     fontSize: 22,
-    fontWeight: '700',
     color: KhazainColors.navy900,
     writingDirection: 'rtl',
     textAlign: 'right',

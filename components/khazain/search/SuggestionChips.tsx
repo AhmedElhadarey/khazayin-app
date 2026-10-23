@@ -70,6 +70,5 @@ const styles = StyleSheet.create({
     fontFamily: 'TheSansArabic',
     fontSize: 13,
     color: KhazainColors.ink900,
-    fontWeight: '600',
   },
 });

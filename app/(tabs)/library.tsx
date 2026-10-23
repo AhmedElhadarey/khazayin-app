@@ -740,7 +740,6 @@ const styles = StyleSheet.create({
   dbErrorBtnLabel: {
     color: '#fff',
     fontSize: 13,
-    fontWeight: '600',
     fontFamily: 'TheSansArabic',
     writingDirection: 'rtl',
     textAlign: 'center',
@@ -874,11 +873,7 @@ const styles = StyleSheet.create({
   recentTitle: textStyle('cardTitle', { color: KhazainColors.ink500 }),
   recentTime: textStyle('label', { color: KhazainColors.ink500 }),
   recentEmpty: {
-    color: KhazainColors.ink400,
-    fontSize: 12,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('caption', { color: KhazainColors.ink400 }),
     paddingVertical: 6,
   },
   filtersRow: {

@@ -191,7 +191,6 @@ const styles = StyleSheet.create({
   cardTitle: {
     fontFamily: 'Amiri-Bold',
     fontSize: 16,
-    fontWeight: '700',
     color: KhazainColors.navy800,
     writingDirection: 'rtl',
     textAlign: 'right',
@@ -261,7 +260,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'TheSansArabic',
     fontSize: 13,
-    fontWeight: '700',
   },
   resetBtn: {
     marginTop: 4,
@@ -274,6 +272,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'TheSansArabic',
     fontSize: 13,
-    fontWeight: '700',
   },
 });

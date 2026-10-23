@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, View, Text } from 'react-native';
 import Svg, { Line, Path, Rect } from 'react-native-svg';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import type { TrendPoint } from '@/db/types';
 
 const HEIGHT = 70;
@@ -102,11 +103,5 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.cream100,
     borderRadius: 8,
   },
-  emptyLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    color: KhazainColors.ink400,
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
+  emptyLabel: textStyle('caption', { color: KhazainColors.ink400, textAlign: 'center' }),
 });

@@ -1,8 +1,12 @@
 # Static Noto Sans Arabic faces
 
 `assets/fonts/NotoSansArabic-{Regular,SemiBold,Bold}.ttf` are static instances
-cut from the variable font `assets/fonts/NotoSansArabic-VF.ttf` (Noto Sans
-Arabic 2.012, 1,711 glyphs, axes `wght` 100-900 and `wdth` 62.5-100).
+cut from the variable font `NotoSansArabic-VF.ttf` (Noto Sans Arabic 2.012,
+1,711 glyphs, axes `wght` 100-900 and `wdth` 62.5-100). The variable file is no
+longer shipped in the bundle; recover it from git history
+(`git log --diff-filter=D -- assets/fonts/NotoSansArabic-VF.ttf`, then
+`git show <commit>^:assets/fonts/NotoSansArabic-VF.ttf > /tmp/NotoSansArabic-VF.ttf`)
+or from the upstream Noto repository before re-running the commands below.
 
 ## Why static
 
@@ -26,7 +30,7 @@ fontTools 4.67.0 (run through `uvx --from fonttools`):
 
 ```
 gen() { uvx --from fonttools fonttools varLib.instancer \
-  assets/fonts/NotoSansArabic-VF.ttf wght=$1 wdth=100 --static \
+  /tmp/NotoSansArabic-VF.ttf wght=$1 wdth=100 --static \
   --update-name-table -o assets/fonts/NotoSansArabic-$2.ttf; }
 gen 400 Regular
 gen 600 SemiBold

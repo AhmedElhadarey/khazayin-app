@@ -57,7 +57,6 @@ const styles = StyleSheet.create({
   message: {
     fontFamily: 'TheSansArabic',
     fontSize: 13,
-    fontWeight: '600',
     color: KhazainColors.navy800,
     writingDirection: 'rtl',
     textAlign: 'right',
@@ -78,7 +77,6 @@ const styles = StyleSheet.create({
     color: KhazainColors.ink700,
     fontFamily: 'TheSansArabic',
     fontSize: 12,
-    fontWeight: '700',
     writingDirection: 'rtl',
   },
   acceptBtn: {
@@ -91,7 +89,6 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontFamily: 'TheSansArabic',
     fontSize: 12,
-    fontWeight: '700',
     writingDirection: 'rtl',
   },
 });

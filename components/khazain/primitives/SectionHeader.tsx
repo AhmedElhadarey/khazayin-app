@@ -68,7 +68,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'TheSansArabic',
     fontSize: 16,
-    fontWeight: '600',
     color: KhazainColors.navy900,
     lineHeight: 21,
     writingDirection: 'rtl',
@@ -80,9 +79,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   linkLabel: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 14,
-    fontWeight: '500',
     color: KhazainColors.goldAccent,
     ...RTL_TEXT,
   },

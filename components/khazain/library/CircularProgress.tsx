@@ -66,7 +66,6 @@ const styles = StyleSheet.create({
   label: {
     fontFamily: 'Amiri-Bold',
     fontSize: 16,
-    fontWeight: '700',
     color: KhazainColors.navy800,
   },
 });

@@ -29,7 +29,6 @@ export function ScrollArt({ width = 100, height = 120 }: { width?: number; heigh
           y={35}
           fontFamily="Amiri-Bold"
           fontSize={18}
-          fontWeight={700}
           fill="#184B75"
           textAnchor="middle"
         >

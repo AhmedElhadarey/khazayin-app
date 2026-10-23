@@ -212,7 +212,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Amiri-Bold',
     fontSize: 14,
-    fontWeight: '700',
     color: KhazainColors.ink900,
     writingDirection: 'rtl',
     textAlign: 'right',

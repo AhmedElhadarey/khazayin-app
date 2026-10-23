@@ -79,7 +79,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'TheSansArabic',
     fontSize: 15,
-    fontWeight: '600',
     color: KhazainColors.ink900,
     textAlign: 'right',
     writingDirection: 'rtl',
@@ -103,7 +102,6 @@ const styles = StyleSheet.create({
     fontFamily: 'TheSansArabic',
     fontSize: 12,
     color: KhazainColors.ink900,
-    fontWeight: '600',
     writingDirection: 'rtl',
     textAlign: 'right',
   },

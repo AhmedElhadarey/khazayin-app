@@ -166,15 +166,14 @@ const styles = StyleSheet.create({
   message: {
     flex: 1,
     color: KhazainColors.cream50,
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 14,
-    fontWeight: '500',
     textAlign: 'right',
     writingDirection: 'rtl',
   },
   messageAchievement: {
     color: KhazainColors.navy800,
-    fontWeight: '700',
+    fontFamily: 'TheSansArabic',
   },
   actionBtn: {
     paddingHorizontal: 8,
@@ -184,6 +183,5 @@ const styles = StyleSheet.create({
     color: KhazainColors.gold200,
     fontFamily: 'TheSansArabic',
     fontSize: 14,
-    fontWeight: '700',
   },
 });

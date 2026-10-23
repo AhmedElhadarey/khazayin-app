@@ -266,7 +266,6 @@ const styles = StyleSheet.create({
   },
   patternLabel: {
     fontFamily: 'TheSansArabic',
-    fontWeight: '600',
     color: KhazainColors.cream100,
     fontSize: 13,
   },

@@ -154,7 +154,6 @@ const styles = StyleSheet.create({
   rowLabel: {
     flex: 1,
     fontFamily: 'Amiri-Bold',
-    fontWeight: '700',
     color: KhazainColors.ink900,
     writingDirection: 'rtl',
     textAlign: 'right',

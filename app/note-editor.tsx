@@ -242,7 +242,8 @@ function FormatBtn({
         <Text
           style={[
             formatStyles.label,
-            bold && { fontWeight: '700' },
+            // The toolbar glyph is the platform 'System' face, not a registered family.
+            bold && { fontWeight: '700' }, // fontweight-ok
             italic && { fontStyle: 'italic' },
           ]}
         >

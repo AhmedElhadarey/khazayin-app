@@ -51,7 +51,7 @@ const badgeStyles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   surahBadgeText: {
-    fontFamily: 'TheSansArabic', fontSize: 14, fontWeight: '700',
+    fontFamily: 'TheSansArabic', fontSize: 14,
     color: KhazainColors.gold200,
   },
   scholarBadge: {
@@ -60,7 +60,7 @@ const badgeStyles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   scholarBadgeText: {
-    fontFamily: 'TheMixArab', fontSize: 18, fontWeight: '700',
+    fontFamily: 'TheSansArabic', fontSize: 18,
     color: KhazainColors.cream50,
   },
 });

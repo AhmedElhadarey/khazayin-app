@@ -1,3 +1,4 @@
+import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import React from 'react';
 import { Pressable, PressableProps, StyleProp, StyleSheet, Text, TextStyle, View, ViewStyle } from 'react-native';
@@ -39,7 +40,6 @@ export function PillButton({
 }: Props) {
   const pal = PALETTES[variant];
   const height = PILL_BUTTON_HEIGHTS[size];
-  const fontSize = size === 'sm' ? 13 : 14;
 
   return (
     <Pressable
@@ -65,13 +65,8 @@ export function PillButton({
       {leading ? <View style={styles.slot}>{leading}</View> : null}
       <Text
         style={[
-          {
-            color: pal.label,
-            fontFamily: 'TheSansArabic',
-            fontSize,
-            fontWeight: '600',
-            writingDirection: 'rtl',
-          },
+          // `label` (12) for the compact pill, `cardTitle` (14) for the large one.
+          textStyle(size === 'sm' ? 'label' : 'cardTitle', { color: pal.label }),
           // Full inner width, centred by textAlign: a shrink-wrapped Text loses
           // its last word on Android 15+ (bounds-vs-advance line breaking).
           styles.label,

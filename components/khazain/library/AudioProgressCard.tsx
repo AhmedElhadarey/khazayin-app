@@ -105,7 +105,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Amiri-Bold',
     fontSize: 16,
     color: KhazainColors.gold300,
-    fontWeight: '700',
   },
   title: textStyle('cardTitle', { color: KhazainColors.inkHeading }),
   author: {

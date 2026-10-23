@@ -33,7 +33,6 @@ const styles = StyleSheet.create({
   },
   ayah: {
     fontFamily: 'Amiri-Bold',
-    fontWeight: '700',
     color: KhazainColors.ink900,
     textAlign: 'center',
     writingDirection: 'rtl',
