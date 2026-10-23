@@ -242,6 +242,22 @@ function useSettingsSettled(): boolean {
   return hydrated || capped;
 }
 
+/**
+ * Options shared by every root-level sheet route. The root Stack paints an
+ * opaque contentStyle on every screen; a transparentModal must override it or
+ * the page underneath is hidden and the sheet scrim reads as flat grey.
+ * react-native-screens keeps the previous screen attached for
+ * 'transparentModal' (iOS and Android; see the presentation docs in its
+ * native-stack types), so with a transparent content background the page
+ * shows through, dimmed by the sheet's own scrim.
+ */
+const SHEET_OPTIONS = {
+  headerShown: false,
+  presentation: 'transparentModal',
+  animation: 'fade',
+  contentStyle: { backgroundColor: 'transparent' },
+} as const;
+
 function RootLayout() {
   const colorScheme = useColorScheme();
   const settingsSettled = useSettingsSettled();
@@ -426,59 +442,31 @@ function RootLayout() {
         />
         <Stack.Screen
           name="note-editor"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="notes-viewer"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="telegram-sheet"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="qiraat-sheet"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="youtube-sheet"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="share-sheet"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="community-report-sheet"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="content-search"

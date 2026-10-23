@@ -15,9 +15,7 @@ const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
 describe('qiraat sheet route', () => {
   it('is a root-level transparentModal with a fade', () => {
     const src = read('app/_layout.tsx');
-    expect(src).toMatch(
-      /name="qiraat-sheet"\s+options=\{\{\s+headerShown: false,\s+presentation: 'transparentModal',\s+animation: 'fade',/,
-    );
+    expect(src).toMatch(/name="qiraat-sheet"\s+options=\{SHEET_OPTIONS\}/);
     expect(fs.existsSync(path.join(ROOT, 'app/qiraat-sheet.tsx'))).toBe(true);
     expect(QIRAAT_SHEET_ROUTE).toBe('/qiraat-sheet');
   });
