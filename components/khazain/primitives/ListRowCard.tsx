@@ -85,10 +85,11 @@ export function ListRowCard({
           {title}
         </Text>
         {subtitle ? (
-          // The section copy is longer than a 360dp column even at the default
-          // scale («تلاوات وتفسير وتدبر القرآن الكريم»), so it wraps and the
-          // card grows; the More row's one-liners keep ellipsizing.
-          <Text style={isMore ? styles.subtitleMore : styles.subtitle} numberOfLines={isMore ? 1 : 2}>
+          // Two lines on every variant: the section copy is longer than a 360dp
+          // column even at the default scale («تلاوات وتفسير وتدبر القرآن
+          // الكريم»), and at 320dp x 1.7 the More one-liners lost words too.
+          // The card grows with it (minHeight, never height).
+          <Text style={isMore ? styles.subtitleMore : styles.subtitle} numberOfLines={2}>
             {subtitle}
           </Text>
         ) : null}
