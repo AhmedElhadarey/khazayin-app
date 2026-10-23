@@ -1,4 +1,3 @@
-import { TEXT_ROLES } from '@/constants/typography';
 /**
  * Pure decisions for the Mushaf reader's tap-to-show chrome (design
  * 2026-10-23 D3). Frame 2349:829 is the bare page; 2349:982 is the same page
@@ -8,6 +7,7 @@ import { TEXT_ROLES } from '@/constants/typography';
  * never on scroll) and comes back on the next tap. Nothing here reads React or
  * React Native, so the whole decision table is unit-tested.
  */
+import { TEXT_ROLES } from '@/constants/typography';
 
 /** A touch counts as a tap only when released inside this window. */
 export const CHROME_TAP_MAX_MS = 300;

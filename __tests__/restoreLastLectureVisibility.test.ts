@@ -39,7 +39,9 @@ describe('restoreLastLecture and the Mushaf-hidden MiniPlayer', () => {
   });
 
   it('the player is visible by default, so restore on another screen still shows it', () => {
-    usePlayerStore.getState().setVisible(true);
+    // The fresh store's own default, not a value this test set.
+    expect(usePlayerStore.getInitialState().isVisible).toBe(true);
+    usePlayerStore.setState({ isVisible: usePlayerStore.getInitialState().isVisible });
     restoreLastLecture();
     expect(usePlayerStore.getState().isVisible).toBe(true);
   });

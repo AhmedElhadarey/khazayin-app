@@ -42,6 +42,21 @@ export function coerceBookmark(raw: unknown): MushafBookmark | null {
   };
 }
 
+/**
+ * Hydration's pick between the stored and the in-memory bookmark: the one
+ * saved later, so a save made before hydration finished survives an older
+ * record, and neither side's null discards the other's bookmark. A tie keeps
+ * the stored record, which carries any keys a newer build added.
+ */
+function laterBookmark(
+  persisted: MushafBookmark | null,
+  current: MushafBookmark | null,
+): MushafBookmark | null {
+  if (!persisted) return current;
+  if (!current) return persisted;
+  return current.savedAt > persisted.savedAt ? current : persisted;
+}
+
 export const useMushafBookmarkStore = create<State>()(
   persist(
     (set) => ({
@@ -56,7 +71,9 @@ export const useMushafBookmarkStore = create<State>()(
       // lenient coercion instead. With nothing persisted, keep what is in
       // memory so a bookmark saved before hydration finished is not wiped.
       merge: (persisted, current) =>
-        isRecord(persisted) ? { ...current, bookmark: coerceBookmark(persisted.bookmark) } : current,
+        isRecord(persisted)
+          ? { ...current, bookmark: laterBookmark(coerceBookmark(persisted.bookmark), current.bookmark) }
+          : current,
     },
   ),
 );

@@ -8,6 +8,7 @@ import { useMushafBookmarkStore, coerceBookmark } from '@/store/mushafBookmarkSt
 import { useToastStore } from '@/store/toastStore';
 import {
   BOOKMARK_COPY,
+  bookmarkJumpAnnouncement,
   bookmarkTarget,
   readingPosition,
   saveMushafBookmark,
@@ -80,6 +81,104 @@ describe('mushafBookmarkStore', () => {
     saveMushafBookmark({ surahId: '004', ayah: 3, page: 77 }, 3);
     useToastStore.getState().current?.action?.onPress();
     expect(useMushafBookmarkStore.getState().bookmark).toBeNull();
+  });
+});
+
+describe('mushafBookmarkStore hydration', () => {
+  const KEY = '@khazain/mushaf-bookmark';
+  const writeRaw = async (value: unknown) => {
+    // Let the write the setState above queued land first, so it cannot
+    // overwrite the record under test.
+    await new Promise((r) => setTimeout(r, 0));
+    await AsyncStorage.setItem(KEY, JSON.stringify(value));
+  };
+
+  beforeEach(async () => {
+    useMushafBookmarkStore.setState({ bookmark: null });
+    await new Promise((r) => setTimeout(r, 0));
+    await AsyncStorage.clear();
+  });
+
+  it('normalises a bare surahId and keeps keys a newer build added', async () => {
+    await writeRaw({
+      state: { bookmark: { surahId: 2, ayah: 255, page: 42, savedAt: 5, label: 'x' } },
+      version: 0,
+    });
+    await useMushafBookmarkStore.persist.rehydrate();
+    expect(useMushafBookmarkStore.getState().bookmark).toEqual({
+      surahId: '002',
+      ayah: 255,
+      page: 42,
+      savedAt: 5,
+      label: 'x',
+    });
+  });
+
+  it('drops a corrupt record (page 605) to null without throwing', async () => {
+    await writeRaw({ state: { bookmark: { surahId: '002', ayah: 1, page: 605, savedAt: 5 } }, version: 0 });
+    await expect(useMushafBookmarkStore.persist.rehydrate()).resolves.toBeUndefined();
+    expect(useMushafBookmarkStore.getState().bookmark).toBeNull();
+  });
+
+  it('leaves in-memory state alone for a non-object payload', async () => {
+    const live = { surahId: '003', ayah: 9, page: 50, savedAt: 7 };
+    for (const payload of [5, 'x', [1, 2], { state: 'x', version: 0 }, { state: [1], version: 0 }]) {
+      useMushafBookmarkStore.setState({ bookmark: live });
+      await writeRaw(payload);
+      await useMushafBookmarkStore.persist.rehydrate();
+      expect(useMushafBookmarkStore.getState().bookmark).toEqual(live);
+    }
+  });
+
+  it('keeps whichever bookmark was saved later: memory over an older record', async () => {
+    const live = { surahId: '003', ayah: 9, page: 50, savedAt: 200 };
+    useMushafBookmarkStore.setState({ bookmark: live });
+    await writeRaw({ state: { bookmark: { surahId: '002', ayah: 1, page: 2, savedAt: 100 } }, version: 0 });
+    await useMushafBookmarkStore.persist.rehydrate();
+    expect(useMushafBookmarkStore.getState().bookmark).toEqual(live);
+  });
+
+  it('keeps whichever bookmark was saved later: a newer record over memory', async () => {
+    useMushafBookmarkStore.setState({ bookmark: { surahId: '003', ayah: 9, page: 50, savedAt: 100 } });
+    const stored = { surahId: '002', ayah: 1, page: 2, savedAt: 200 };
+    await writeRaw({ state: { bookmark: stored }, version: 0 });
+    await useMushafBookmarkStore.persist.rehydrate();
+    expect(useMushafBookmarkStore.getState().bookmark).toEqual(stored);
+  });
+
+  it('keeps the in-memory bookmark when the record has none or a corrupt one', async () => {
+    const live = { surahId: '003', ayah: 9, page: 50, savedAt: 1 };
+    for (const bookmark of [null, { surahId: '002', ayah: 1, page: 605, savedAt: 9 }]) {
+      useMushafBookmarkStore.setState({ bookmark: live });
+      await writeRaw({ state: { bookmark }, version: 0 });
+      await useMushafBookmarkStore.persist.rehydrate();
+      expect(useMushafBookmarkStore.getState().bookmark).toEqual(live);
+    }
+  });
+});
+
+describe('bookmark copy', () => {
+  it('explains a disabled Go to bookmark', () => {
+    expect(BOOKMARK_COPY.noBookmark).toBe('لا توجد علامة محفوظة');
+  });
+
+  it('announces the ayah a same-surah jump lands on, in Arabic-Indic digits', () => {
+    expect(bookmarkJumpAnnouncement(255)).toBe('الآية ٢٥٥');
+  });
+});
+
+describe('shared helpers', () => {
+  const src = require('fs').readFileSync(
+    require('path').join(__dirname, '../services/mushafBookmark.ts'),
+    'utf8',
+  );
+  it('reuses the navigation module length and tolerance instead of its own copies', () => {
+    expect(src).not.toMatch(/const LINE_LENGTH_TOLERANCE/);
+    expect(src).toMatch(/LINE_LENGTH_TOLERANCE/);
+    expect(src).toMatch(/segmentCharLength\(segment\.ayat\)/);
+  });
+  it('documents ayahAtOffset as the span that contains the offset', () => {
+    expect(src).toMatch(/The ayah whose rendered span contains `offset`/);
   });
 });
 

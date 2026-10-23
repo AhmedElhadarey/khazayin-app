@@ -100,6 +100,13 @@ export type CartoucheSlot = (typeof CARTOUCHE_PHYSICAL_ORDER)[number];
 export const MUSHAF_META_PHYSICAL_ORDER = Object.freeze(['page', 'ayahs', 'revelation'] as const);
 export type MushafMetaSlot = (typeof MUSHAF_META_PHYSICAL_ORDER)[number];
 
+/**
+ * The same strip in reading order — the reverse of the physical order, pinned
+ * by `mushafPresentation.test.ts`. The strip is a `READING_GRID`, so its
+ * children are authored in this order and a wrap moves the part read last.
+ */
+export const MUSHAF_META_READING_ORDER = Object.freeze(['revelation', 'ayahs', 'page'] as const);
+
 /** The alphabet rail is pinned to the physical right edge on every screen. */
 export const LETTER_INDEX_EDGE = 'right';
 

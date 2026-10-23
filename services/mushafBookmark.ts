@@ -4,10 +4,13 @@
  * is the one write path (store + toast + screen-reader announcement), shaped
  * like `toggleSaved` / `announceSaveResult` in savedToggle.ts.
  */
-import { AccessibilityInfo } from 'react-native';
+import { toArabicDigits } from '@/constants/progress';
+import { announce } from '@/services/a11yAnnounce';
 import { captureReadingAnchor } from '@/services/mushafAnchor';
 import {
   ayahMarker,
+  LINE_LENGTH_TOLERANCE,
+  segmentCharLength,
   type TextLine,
 } from '@/services/mushafNavigation';
 import { useMushafBookmarkStore, type MushafBookmark } from '@/store/mushafBookmarkStore';
@@ -16,7 +19,12 @@ import { useToastStore } from '@/store/toastStore';
 export const BOOKMARK_COPY = Object.freeze({
   saved: 'تم حفظ العلامة',
   undo: 'تراجع',
+  /** Hint on Go to bookmark while it is disabled. */
+  noBookmark: 'لا توجد علامة محفوظة',
 });
+
+/** Announced after a same-surah jump, which moves the page without a new screen. */
+export const bookmarkJumpAnnouncement = (ayah: number): string => `الآية ${toArabicDigits(ayah)}`;
 export const BOOKMARK_TOAST_MS = 3000;
 
 type SegmentLike = {
@@ -24,7 +32,10 @@ type SegmentLike = {
   ayat: readonly { number: number; text: string }[];
 };
 
-/** Length of the rendered string up to (excluding) ayah `n`'s span, and the span's end. */
+/**
+ * The ayah whose rendered span contains `offset` (a span is the ayah's text,
+ * its marker and the separator after it); the last ayah past the end.
+ */
 function ayahAtOffset(ayat: SegmentLike['ayat'], offset: number): number {
   let start = 0;
   for (const a of ayat) {
@@ -33,8 +44,6 @@ function ayahAtOffset(ayat: SegmentLike['ayat'], offset: number): number {
   }
   return ayat[ayat.length - 1].number;
 }
-
-const LINE_LENGTH_TOLERANCE = 0.05;
 
 /**
  * The ayah at the top of the readable area. `topInset` is the chrome over the
@@ -62,8 +71,7 @@ export function readingPosition(args: {
   const segment = segments.find((s) => s.page === anchor.page);
   if (!segment || segment.ayat.length === 0) return first;
 
-  let expected = Math.max(0, segment.ayat.length - 1);
-  for (const a of segment.ayat) expected += a.text.length + ayahMarker(a.number).length;
+  const expected = segmentCharLength(segment.ayat);
 
   let offset = anchor.fraction * expected;
   const lines = args.lines?.(segment.page);
@@ -96,15 +104,6 @@ export function bookmarkTarget(
   return bookmark.surahId === currentSurahId
     ? { kind: 'jump', ayah: bookmark.ayah }
     : { kind: 'route', surah: bookmark.surahId, ayah: bookmark.ayah };
-}
-
-function announce(message: string): void {
-  // Queued (iOS) so it doesn't cut off the screen reader confirming the press.
-  if (typeof AccessibilityInfo.announceForAccessibilityWithOptions === 'function') {
-    AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
-  } else {
-    AccessibilityInfo.announceForAccessibility(message);
-  }
 }
 
 /** Replaces the bookmark, with an undo toast that puts back what was there. */

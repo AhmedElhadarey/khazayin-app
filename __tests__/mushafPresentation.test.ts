@@ -1,10 +1,18 @@
-import { MUSHAF_FOOTER_ORDER, MUSHAF_META_PHYSICAL_ORDER } from '@/constants/rtlContracts';
+import { readFileSync } from 'fs';
+import { join } from 'path';
+import {
+  MUSHAF_FOOTER_ORDER,
+  MUSHAF_META_PHYSICAL_ORDER,
+  MUSHAF_META_READING_ORDER,
+} from '@/constants/rtlContracts';
 import {
   ayahCharOffset,
   ayahCountLabel,
   ayahMarker,
   indexExit,
   END_OF_AYAH,
+  LINE_LENGTH_TOLERANCE,
+  surahMetaA11yLabel,
   surahMetaRow,
   ayahScrollY,
   findSurahIdForPage,
@@ -94,22 +102,46 @@ describe('ayahCountLabel', () => {
 });
 
 describe('surahMetaRow (DIV-47)', () => {
-  it('lists the parts physical left -> right with a dot between each', () => {
+  it('reads in the reverse of the physical order: revelation at the physical right', () => {
     expect(MUSHAF_META_PHYSICAL_ORDER).toEqual(['page', 'ayahs', 'revelation']);
+    expect(MUSHAF_META_READING_ORDER).toEqual(['revelation', 'ayahs', 'page']);
+    expect([...MUSHAF_META_READING_ORDER]).toEqual([...MUSHAF_META_PHYSICAL_ORDER].reverse());
+  });
+
+  it('lists the parts in reading order for a READING_GRID, each later part owning its dot', () => {
+    // The dot leads the part it introduces, so a wrap moves it with that part
+    // and line 1 never ends on a dangling «•».
     expect(surahMetaRow({ revelationType: 'meccan', ayahCount: 7, page: 1 })).toEqual([
-      { kind: 'text', slot: 'page', text: 'صفحة ١ من ٦٠٤' },
-      { kind: 'dot' },
-      { kind: 'text', slot: 'ayahs', text: '٧ آيات' },
-      { kind: 'dot' },
-      { kind: 'text', slot: 'revelation', text: 'مكية' },
+      { slot: 'revelation', text: 'مكية', leadingDot: false },
+      { slot: 'ayahs', text: '٧ آيات', leadingDot: true },
+      { slot: 'page', text: 'صفحة ١ من ٦٠٤', leadingDot: true },
     ]);
   });
 
-  it('drops unknown parts and their dots', () => {
+  it('drops unknown parts; the first known part carries no dot', () => {
     expect(surahMetaRow({ page: 1 })).toEqual([
-      { kind: 'text', slot: 'page', text: 'صفحة ١ من ٦٠٤' },
+      { slot: 'page', text: 'صفحة ١ من ٦٠٤', leadingDot: false },
     ]);
-    expect(surahMetaRow({ ayahCount: 7, page: 1 }).filter((i) => i.kind === 'dot')).toHaveLength(1);
+    expect(surahMetaRow({ ayahCount: 7, page: 1 })).toEqual([
+      { slot: 'ayahs', text: '٧ آيات', leadingDot: false },
+      { slot: 'page', text: 'صفحة ١ من ٦٠٤', leadingDot: true },
+    ]);
+  });
+});
+
+describe('surahMetaA11yLabel', () => {
+  it('joins the parts in reading order with an Arabic comma, never the «•» glyph', () => {
+    expect(surahMetaA11yLabel({ revelationType: 'meccan', ayahCount: 7, page: 1 })).toBe(
+      'مكية، ٧ آيات، صفحة ١ من ٦٠٤',
+    );
+    expect(surahMetaA11yLabel({ page: 1 })).toBe('صفحة ١ من ٦٠٤');
+    expect(surahMetaA11yLabel({ revelationType: 'meccan', ayahCount: 7, page: 1 })).not.toContain('•');
+  });
+});
+
+describe('LINE_LENGTH_TOLERANCE', () => {
+  it('is the one shared share, exported for the bookmark position', () => {
+    expect(LINE_LENGTH_TOLERANCE).toBe(0.05);
   });
 });
 
@@ -122,9 +154,18 @@ describe('ayah marker', () => {
     expect(/[0-9]/.test(ayahMarker(12))).toBe(false);
   });
 
+  it('its doc points at where AyahNum lives now', () => {
+    const nav = readFileSync(
+      join(__dirname, '../services/mushafNavigation.ts'),
+      'utf8',
+    );
+    expect(nav).toMatch(/`AyahNum` in\s*(\*\s*)?components\/khazain\/mushaf\/AyatSegments\.tsx/);
+    expect(nav).not.toMatch(/`AyahNum` in\s*(\*\s*)?app\/\(tabs\)/);
+  });
+
   it('is the string the reader renders (AyahNum has no markup of its own, in AyatSegments)', () => {
-    const src = require('fs').readFileSync(
-      require('path').join(__dirname, '../components/khazain/mushaf/AyatSegments.tsx'),
+    const src = readFileSync(
+      join(__dirname, '../components/khazain/mushaf/AyatSegments.tsx'),
       'utf8',
     );
     expect(src).toMatch(/\{ayahMarker\(n\)\}/);
@@ -273,5 +314,9 @@ describe('indexExit (footer Index button)', () => {
     expect(indexExit([{ name: 'index' }, reader], 1)).toBe('replace');
     expect(indexExit([reader, reader], 1)).toBe('replace');
     expect(indexExit([], 0)).toBe('replace');
+  });
+  it('treats a non-string surah param as no surah (a list below)', () => {
+    expect(indexExit([{ name: 'mushaf', params: { surah: undefined } }, reader], 1)).toBe('back');
+    expect(indexExit([{ name: 'mushaf', params: { surah: '' } }, reader], 1)).toBe('back');
   });
 });

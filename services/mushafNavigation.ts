@@ -6,7 +6,7 @@
  * on nothing, and the transition must never fall back to an unrelated screen.
  */
 import { SURAH_START_PAGES, toArabicDigits } from '@/constants/progress';
-import { MUSHAF_META_PHYSICAL_ORDER, type MushafMetaSlot } from '@/constants/rtlContracts';
+import { MUSHAF_META_READING_ORDER, type MushafMetaSlot } from '@/constants/rtlContracts';
 
 export const MUSHAF_PAGE_COUNT = 604;
 export const LAST_SURAH = 114;
@@ -78,6 +78,17 @@ function metaTexts(parts: MetaParts): Partial<Record<MushafMetaSlot, string>> {
   return out;
 }
 
+/** The known parts, in reading order (right to left). */
+function metaPartsInReadingOrder(parts: MetaParts): { slot: MushafMetaSlot; text: string }[] {
+  const t = metaTexts(parts);
+  const out: { slot: MushafMetaSlot; text: string }[] = [];
+  for (const slot of MUSHAF_META_READING_ORDER) {
+    const text = t[slot];
+    if (text) out.push({ slot, text });
+  }
+  return out;
+}
+
 /**
  * The reader's metadata strip — revelation type, ayah count, page — in the
  * order node 2349:982 shows them (reading order, right to left). Unknown parts
@@ -85,28 +96,33 @@ function metaTexts(parts: MetaParts): Partial<Record<MushafMetaSlot, string>> {
  * is worse than none.
  */
 export function surahMetaLine(parts: MetaParts): string {
-  const t = metaTexts(parts);
   // Node 2349:982 separates the parts with `•`. The middle dot this used
   // before is easily read as a `٠` between two Arabic-Indic numerals.
-  return [t.revelation, t.ayahs, t.page].filter(Boolean).join(' • ');
+  return metaPartsInReadingOrder(parts)
+    .map((p) => p.text)
+    .join(' • ');
 }
 
-export type MetaRowItem = { kind: 'text'; slot: MushafMetaSlot; text: string } | { kind: 'dot' };
+/**
+ * The strip as one screen-reader label: the parts in reading order, joined by
+ * the Arabic comma so the «•» glyph is not read out.
+ */
+export function surahMetaA11yLabel(parts: MetaParts): string {
+  return metaPartsInReadingOrder(parts)
+    .map((p) => p.text)
+    .join('، ');
+}
+
+export type MetaRowItem = { slot: MushafMetaSlot; text: string; leadingDot: boolean };
 
 /**
- * DIV-47 (2349:994) as separate children for a PHYSICAL_ROW, physical left ->
- * right (`MUSHAF_META_PHYSICAL_ORDER`), a `•` between every two parts.
+ * DIV-47 (2349:994) as separate children for a `READING_GRID`, in reading
+ * order (`MUSHAF_META_READING_ORDER`). Every part after the first owns the
+ * `•` that introduces it, so when a narrow screen or large type wraps the
+ * strip, the dot moves with its part and no line ends on a dangling bullet.
  */
 export function surahMetaRow(parts: MetaParts): MetaRowItem[] {
-  const t = metaTexts(parts);
-  const items: MetaRowItem[] = [];
-  for (const slot of MUSHAF_META_PHYSICAL_ORDER) {
-    const text = t[slot];
-    if (!text) continue;
-    if (items.length > 0) items.push({ kind: 'dot' });
-    items.push({ kind: 'text', slot, text });
-  }
-  return items;
+  return metaPartsInReadingOrder(parts).map((p, i) => ({ ...p, leadingDot: i > 0 }));
 }
 
 // ---------------------------------------------------------------------------
@@ -146,13 +162,14 @@ export const END_OF_AYAH = '\u06DD';
  * never wraps away from its ayah), the end-of-ayah sign and the Arabic-Indic
  * digits. The single-space separator between ayat follows it, so the segment
  * ends on the last marker. `AyahNum` in
- * app/(tabs)/sections/mushaf.tsx renders exactly this string, and the offsets
- * below count it, so deep-link scroll precision depends on it staying the one
- * source.
+ * components/khazain/mushaf/AyatSegments.tsx renders exactly this string, and
+ * the offsets below count it, so deep-link scroll precision depends on it
+ * staying the one source.
  */
 export const ayahMarker = (n: number): string => `\u00A0${END_OF_AYAH}${toArabicDigits(n)}`;
 
-type RouteLike = { name: string; params?: { surah?: string } | object };
+/** A navigator route as `getState()` returns it; params are untyped there. */
+type RouteLike = Readonly<{ name: string; params?: Readonly<object> }>;
 
 /**
  * What the footer Index button does. `replace` would turn [..., list, reader]
@@ -161,9 +178,11 @@ type RouteLike = { name: string; params?: { surah?: string } | object };
  * and deep links, where nothing useful is below) replaces.
  */
 export function indexExit(routes: readonly RouteLike[], index: number): 'back' | 'replace' {
-  const below = routes[index - 1] as { name?: string; params?: { surah?: string } } | undefined;
+  const below = routes[index - 1];
   if (!below || below.name !== 'mushaf') return 'replace';
-  return below.params?.surah ? 'replace' : 'back';
+  const params = below.params;
+  const surah = params && 'surah' in params ? params.surah : undefined;
+  return typeof surah === 'string' && surah !== '' ? 'replace' : 'back';
 }
 
 /**
@@ -200,7 +219,7 @@ export function lineYForOffset(lines: readonly TextLine[], offset: number): numb
 }
 
 /** Summed line lengths may differ from the expected length by this share. */
-const LINE_LENGTH_TOLERANCE = 0.05;
+export const LINE_LENGTH_TOLERANCE = 0.05;
 
 /**
  * Scroll `y` (before any top margin) of an ayah. Uses the measured line when

@@ -44,9 +44,50 @@ describe('footer buttons are live (MUSHAF-12)', () => {
 });
 
 describe('meta strip (MUSHAF-09)', () => {
-  it('renders the parts as separate children in a physical row', () => {
+  const metaRowStyle = /metaRow: \{[^}]*\}/s.exec(screen)?.[0] ?? '';
+  const metaItemStyle = /metaItem: \{[^}]*\}/s.exec(screen)?.[0] ?? '';
+
+  it('is a READING_GRID of reading-order parts, so a wrap drops the page (read last), not the revelation', () => {
     expect(screen).toMatch(/surahMetaRow\(/);
-    expect(screen).toMatch(/metaRow: \{[^}]*\.\.\.PHYSICAL_ROW/s);
+    expect(metaRowStyle).toMatch(/\.\.\.READING_GRID/);
+    expect(metaRowStyle).not.toMatch(/PHYSICAL_ROW/);
+    expect(metaRowStyle).not.toMatch(/flexWrap/);
+  });
+
+  it('puts each dot inside the part it introduces, read before its text', () => {
+    expect(metaItemStyle).toMatch(/\.\.\.READING_ROW/);
+    expect(screen).toMatch(
+      /metaRow\.map\(\(item\) => \(\s*<View key=\{item\.slot\} style=\{\[styles\.metaItem[^\]]*\]\}>\s*\{item\.leadingDot \? <Text style=\{styles\.metaText\}>•<\/Text> : null\}\s*<Text style=\{styles\.metaText\}>\{item\.text\}<\/Text>/,
+    );
+    // No free-standing dot child left between the parts.
+    expect(screen).not.toMatch(/item\.kind === 'dot'/);
+  });
+
+  it('is announced with Arabic commas, not the «•» string', () => {
+    expect(screen).toMatch(/accessibilityLabel=\{surahMetaA11yLabel\(metaParts\)\}/);
+    expect(screen).not.toMatch(/surahMetaLine\(/);
+  });
+});
+
+describe('bookmark buttons before the ayat load (MUSHAF-12)', () => {
+  it('disables Save bookmark while there is no text to take a position from', () => {
+    expect(screen).toMatch(/saveBookmark: \{ onPress: onSaveBookmark, disabled: segments\.length === 0 \}/);
+  });
+
+  it('gives a disabled Go to bookmark a hint that says why', () => {
+    expect(screen).toMatch(/hint: bookmark == null \? BOOKMARK_COPY\.noBookmark : undefined/);
+    expect(screen).toMatch(/accessibilityHint=\{hint\}/);
+    expect(screen).toMatch(/hint=\{footerActions\[slot\]\.hint\}/);
+  });
+
+  it('announces the target ayah on a same-surah jump', () => {
+    expect(screen).toMatch(
+      /if \(target\.kind === 'jump'\) \{\s*jumpToAyah\(target\.ayah\);\s*announce\(bookmarkJumpAnnouncement\(target\.ayah\)\);/,
+    );
+  });
+
+  it('has no alias for the cartouche ayah count', () => {
+    expect(screen).not.toMatch(/cartoucheAyahCount/);
   });
 });
 

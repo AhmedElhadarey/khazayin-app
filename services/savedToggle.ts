@@ -14,7 +14,8 @@
  *
  * Imports the stores directly (not the @/store barrel) so tests stay off SQLite.
  */
-import { AccessibilityInfo, type AccessibilityActionEvent, type PressableProps } from 'react-native';
+import type { AccessibilityActionEvent, PressableProps } from 'react-native';
+import { announce } from '@/services/a11yAnnounce';
 import { useSavedStore } from '@/store/savedStore';
 import { useToastStore } from '@/store/toastStore';
 import type { Lecture, SavedSnapshot, SavedType } from '@/types/content';
@@ -70,15 +71,6 @@ export type SaveGestureProps = Pick<
   PressableProps,
   'onLongPress' | 'accessibilityActions' | 'onAccessibilityAction' | 'accessibilityHint' | 'accessibilityValue'
 >;
-
-function announce(message: string): void {
-  // Queued (iOS) so it doesn't cut off the screen reader confirming the action.
-  if (typeof AccessibilityInfo.announceForAccessibilityWithOptions === 'function') {
-    AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
-  } else {
-    AccessibilityInfo.announceForAccessibility(message);
-  }
-}
 
 /** Announces the outcome of a toggle; the toast has no live region. */
 export function announceSaveResult(nowSaved: boolean): void {

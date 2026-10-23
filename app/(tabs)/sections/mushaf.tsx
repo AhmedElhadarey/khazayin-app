@@ -23,7 +23,7 @@ import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
 import { releaseMiniPlayerOnBlur } from '@/services/mushafPlayerVisibility';
 import { signalCountNow } from '@/services/recommendations/signalCount';
 import { useRecommendationInputsStore } from '@/store/recommendationInputsStore';
-import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_ROW, READING_GRID, READING_ROW } from '@/constants/layout';
 import { insetColumn, mushafSheetWidth, mushafType } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
@@ -36,7 +36,7 @@ import {
   normalizeSurahParam,
   segmentCharLength,
   segmentForAyah,
-  surahMetaLine,
+  surahMetaA11yLabel,
   surahMetaRow,
   type TextLine,
 } from '@/services/mushafNavigation';
@@ -48,7 +48,14 @@ import {
   metaTopPad,
   mushafAccessibilityActions,
 } from '@/services/mushafChrome';
-import { bookmarkTarget, readingPosition, saveMushafBookmark } from '@/services/mushafBookmark';
+import {
+  BOOKMARK_COPY,
+  bookmarkJumpAnnouncement,
+  bookmarkTarget,
+  readingPosition,
+  saveMushafBookmark,
+} from '@/services/mushafBookmark';
+import { announce } from '@/services/a11yAnnounce';
 import { useMushafBookmarkStore } from '@/store/mushafBookmarkStore';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -543,10 +550,8 @@ function ReadingView({
   // loaded (a fixture holds 5 for Al-Baqarah), so it is the fallback (MUSHAF-08).
   const ayahCount = surahRecord?.ayahCount ?? (ayat.length > 0 ? ayat.length : undefined);
   const metaParts = { revelationType: surahRecord?.revelationType, ayahCount, page: currentPage };
-  const metaLine = surahMetaLine(metaParts);
   const metaRow = surahMetaRow(metaParts);
   const { fontScale: windowFontScale } = useWindowDimensions();
-  const cartoucheAyahCount = ayahCount;
 
   // ---- Footer: index, go to bookmark, save bookmark (MUSHAF-12) --------------
   // The footer lives in MushafChrome, a sibling of the page's touch gate, so a
@@ -577,13 +582,25 @@ function ReadingView({
   const onGoToBookmark = useCallback(() => {
     const target = bookmarkTarget(bookmark, surahId);
     if (!target) return;
-    if (target.kind === 'jump') jumpToAyah(target.ayah);
-    else router.replace(`/sections/mushaf?surah=${target.surah}&ayah=${target.ayah}` as any);
+    // A jump moves the page without a new screen, so nothing else tells a
+    // screen reader where it landed.
+    if (target.kind === 'jump') {
+      jumpToAyah(target.ayah);
+      announce(bookmarkJumpAnnouncement(target.ayah));
+    } else router.replace(`/sections/mushaf?surah=${target.surah}&ayah=${target.ayah}` as any);
   }, [bookmark, surahId, jumpToAyah, router]);
-  const footerActions: Record<MushafFooterSlot, { onPress: () => void; disabled?: boolean }> = {
+  const footerActions: Record<
+    MushafFooterSlot,
+    { onPress: () => void; disabled?: boolean; hint?: string }
+  > = {
     index: { onPress: onGoToIndex },
-    goToBookmark: { onPress: onGoToBookmark, disabled: bookmark == null },
-    saveBookmark: { onPress: onSaveBookmark },
+    goToBookmark: {
+      onPress: onGoToBookmark,
+      disabled: bookmark == null,
+      hint: bookmark == null ? BOOKMARK_COPY.noBookmark : undefined,
+    },
+    // Before the ayat load there is no position to save (readingPosition is null).
+    saveBookmark: { onPress: onSaveBookmark, disabled: segments.length === 0 },
   };
 
   return (
@@ -620,7 +637,7 @@ function ReadingView({
             <SurahCartouche
               surahNumber={surahNumber}
               name={displayName}
-              ayahCount={cartoucheAyahCount}
+              ayahCount={ayahCount}
               basmalaType={{ fontSize: type.fontSize, lineHeight: type.lineHeight }}
             />
             <View
@@ -679,10 +696,11 @@ function ReadingView({
           // page it names rather than over a different-width block.
           <View style={[styles.headerBlock, sheetColumn]}>
             <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
-            {/* DIV-47 (2349:994): the parts are separate children, 16 apart. */}
+            {/* DIV-47 (2349:994): the parts are separate children, 16 apart,
+                in reading order; each dot travels with the part it introduces. */}
             <View
               accessible
-              accessibilityLabel={metaLine}
+              accessibilityLabel={surahMetaA11yLabel(metaParts)}
               style={[
                 styles.metaRow,
                 {
@@ -691,10 +709,11 @@ function ReadingView({
                 },
               ]}
             >
-              {metaRow.map((item, i) => (
-                <Text key={i} style={styles.metaText}>
-                  {item.kind === 'dot' ? '•' : item.text}
-                </Text>
+              {metaRow.map((item) => (
+                <View key={item.slot} style={[styles.metaItem, { columnGap: META_GAP }]}>
+                  {item.leadingDot ? <Text style={styles.metaText}>•</Text> : null}
+                  <Text style={styles.metaText}>{item.text}</Text>
+                </View>
               ))}
             </View>
           </View>
@@ -713,6 +732,7 @@ function ReadingView({
                 icon={FOOTER_BUTTONS[slot].icon()}
                 onPress={footerActions[slot].onPress}
                 disabled={footerActions[slot].disabled}
+                hint={footerActions[slot].hint}
               />
             ))}
           </View>
@@ -764,16 +784,19 @@ function MushafBtn({
   icon,
   onPress,
   disabled,
+  hint,
 }: {
   label: string;
   icon: React.ReactNode;
   onPress: () => void;
   disabled?: boolean;
+  hint?: string;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
+      accessibilityHint={hint}
       accessibilityState={{ disabled: !!disabled }}
       disabled={disabled}
       onPress={onPress}
@@ -813,15 +836,21 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   // `DIV-47` (2349:994) — physically "صفحة ١ من ٦٠٤ • ٧ آيات • مكية": a centred
-  // row, items 16 apart (the gap is set at render from the window width),
-  // wrapping rather than clipping at large type. The top pad lands the line's
-  // centre 54 below the status bar inset.
+  // READING_GRID authored مكية, ٧ آيات, صفحة, so the revelation type sits at
+  // the physical right and a wrap at 320dp / large type moves the page (read
+  // last) to line 2. Items are 16 apart (the gap is set at render from the
+  // window width). The top pad lands the line's centre 54 below the status
+  // bar inset.
   metaRow: {
-    ...PHYSICAL_ROW,
+    ...READING_GRID,
     justifyContent: 'center',
     alignItems: 'center',
-    flexWrap: 'wrap',
     paddingHorizontal: 16,
+  },
+  // One part and the «•» that introduces it, the dot read first (physical right).
+  metaItem: {
+    ...READING_ROW,
+    alignItems: 'center',
   },
   metaText: textStyle('bodyCompact', { color: KhazainColors.ink500, textAlign: 'center' }),
   // Full-bleed: the chrome floats over it, so nothing here moves when it fades.
