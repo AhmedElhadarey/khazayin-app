@@ -131,7 +131,7 @@ describe('Library filter visibility', () => {
     // also hide them.
     (['smartReminders', 'wirdSuggestion', 'progressStats'] as const)
       .forEach((key) => {
-        (['all', 'saved', 'notes', 'completed', 'playlist', 'history'] as LibraryFilter[]).forEach((filter) => {
+        (['all', 'saved', 'notes', 'completed', 'playlist', 'reminders', 'history'] as LibraryFilter[]).forEach((filter) => {
           expect([key, filter, isLibrarySectionVisible(key, filter)]).toEqual([
             key,
             filter,
@@ -189,6 +189,16 @@ describe('chips that select a view of their own (LIBRARY-17)', () => {
     expect(at('playlists')).toBe(at('filters') + 1);
     expect(at('playlists')).toBeLessThan(at('savedList'));
     expect(LIBRARY_EXTENSION_SECTIONS).toContain('playlists');
+  });
+
+  it('shows the reminder cards and hides the item lists under تذكيراتي', () => {
+    expect(isLibrarySectionVisible('smartReminders', 'reminders')).toBe(true);
+    (['savedList', 'quickNote', 'playlists', 'audiobookProgress'] as const).forEach((key) =>
+      expect([key, isLibrarySectionVisible(key, 'reminders')]).toEqual([key, false]),
+    );
+    (['wirdHistory', 'wirdTrend', 'insights'] as const).forEach((key) =>
+      expect([key, isLibrarySectionVisible(key, 'reminders')]).toEqual([key, false]),
+    );
   });
 
   it('hides the note composer and saved list under المكتمل', () => {

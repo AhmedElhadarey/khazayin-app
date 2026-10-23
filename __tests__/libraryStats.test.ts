@@ -122,7 +122,7 @@ describe('wird reminder card copy (LIBRARY-11, 12)', () => {
 });
 
 describe('Library filter chips (LIBRARY-17)', () => {
-  const counts = { saved: 3, notes: 12, completed: 0 };
+  const counts = { saved: 3, notes: 12, completed: 0, reminders: 2 };
   it('carries the file chips in the file order (right to left), السجل last', () => {
     expect(LIBRARY_FILTERS.map((f) => [f.id, f.label])).toEqual([
       ['all', 'الكل'],
@@ -130,6 +130,7 @@ describe('Library filter chips (LIBRARY-17)', () => {
       ['playlist', 'قوائم التشغيل'],
       ['completed', 'المكتمل'],
       ['notes', 'ملاحظاتي'],
+      ['reminders', 'تذكيراتي'],
       ['history', 'السجل'],
     ]);
   });
@@ -138,6 +139,12 @@ describe('Library filter chips (LIBRARY-17)', () => {
     expect(filterChipCount('saved', counts)).toBe('٣');
     expect(filterChipCount('notes', counts)).toBe('١٢');
     expect(filterChipCount('completed', counts)).toBe('٠');
+  });
+  it('counts the armed reminders on تذكيراتي, and leaves الكل as saved + notes', () => {
+    expect(filterChipCount('reminders', counts)).toBe('٢');
+    expect(filterChipCount('reminders', { ...counts, reminders: 0 })).toBe('٠');
+    expect(filterChipCount('all', { ...counts, reminders: 9 })).toBe('١٥');
+    expect(LIBRARY_FILTERS.find((f) => f.id === 'reminders')!.count).toBe('');
   });
   it('has no count for playlists or history, and no fake number in the data', () => {
     expect(filterChipCount('playlist', counts)).toBe('');

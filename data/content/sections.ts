@@ -194,9 +194,10 @@ export const MORE_EXTERNAL_URLS: Lookup<string> = {
 // ---------------------------------------------------------------------------
 
 /**
- * Chip set, in the file's order (right to left). The counts of الكل / المحفوظات / ملاحظاتي / المكتمل are
- * real and filled in by the Library from its stores; the rest carry none, so
- * the chip renders its label alone (no fabricated number).
+ * Chip set, in the file's order (right to left). The counts of الكل / المحفوظات / ملاحظاتي / المكتمل /
+ * تذكيراتي are real and filled in by the Library from its stores; the rest carry none, so
+ * the chip renders its label alone (no fabricated number). The file also draws
+ * المفضلة between ملاحظاتي and تذكيراتي; it has no data model, so it is absent.
  */
 export const LIBRARY_FILTERS: LibraryFilterChip[] = [
   { id: 'all',       label: 'الكل',            count: '' },
@@ -204,5 +205,6 @@ export const LIBRARY_FILTERS: LibraryFilterChip[] = [
   { id: 'playlist',  label: 'قوائم التشغيل' },
   { id: 'completed', label: 'المكتمل',          count: '' },
   { id: 'notes',     label: 'ملاحظاتي',         count: '' },
+  { id: 'reminders', label: 'تذكيراتي',         count: '' },
   { id: 'history',   label: 'السجل' },
 ];

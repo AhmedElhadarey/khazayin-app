@@ -172,7 +172,7 @@ export function wirdReminderDescription(
  */
 export function filterChipCount(
   id: LibraryFilterId,
-  counts: { saved: number; notes: number; completed: number },
+  counts: { saved: number; notes: number; completed: number; reminders: number },
 ): string {
   switch (id) {
     case 'all':
@@ -183,6 +183,8 @@ export function filterChipCount(
       return toArabicDigits(counts.notes);
     case 'completed':
       return toArabicDigits(counts.completed);
+    case 'reminders':
+      return toArabicDigits(counts.reminders);
     default:
       return '';
   }

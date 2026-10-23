@@ -281,17 +281,6 @@ export default function LibraryScreen() {
         ? 100
         : 0;
 
-  // US5: the 'history' (السجل) pill is now live and renders <WirdHistory/>.
-  // Override mock counts with real values from savedStore + notesStore.
-  const realFilters = filters.map((f) => ({
-    ...f,
-    count: filterChipCount(f.id, {
-      saved: savedCount,
-      notes: notes.length,
-      completed: completedLectureCount,
-    }),
-  }));
-
   // One card per shipped reminder; a card is armed only when the OS permits it
   // (see `buildSmartReminders`), and the stat card counts exactly those. The
   // wird preference is subscribed above (`wirdReminderOn`), which is what
@@ -308,6 +297,19 @@ export default function LibraryScreen() {
     onToggle: onToggleCategory,
   });
   const armedReminderCount = smartReminders.filter((r) => r.armed).length;
+
+  // US5: the 'history' (السجل) pill is now live and renders <WirdHistory/>.
+  // Override mock counts with real values from savedStore + notesStore, and
+  // تذكيراتي with the armed-reminder count the stat card shows.
+  const realFilters = filters.map((f) => ({
+    ...f,
+    count: filterChipCount(f.id, {
+      saved: savedCount,
+      notes: notes.length,
+      completed: completedLectureCount,
+      reminders: armedReminderCount,
+    }),
+  }));
 
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
   const openNewNote = (seedTitle?: string) =>

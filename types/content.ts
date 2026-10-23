@@ -155,8 +155,8 @@ export interface MoreRow {
   isExternal?: boolean;
 }
 
-/** The Library filter-chip ids. `history` is the السجل view. */
-export type LibraryFilterId = 'all' | 'saved' | 'notes' | 'completed' | 'playlist' | 'history';
+/** The Library filter-chip ids. `history` is the السجل view; `reminders` is تذكيراتي. */
+export type LibraryFilterId = 'all' | 'saved' | 'notes' | 'completed' | 'playlist' | 'reminders' | 'history';
 
 /** One chip in the Library filter bar. */
 export interface LibraryFilterChip {
