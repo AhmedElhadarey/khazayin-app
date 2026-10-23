@@ -16,7 +16,7 @@ import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
 import { releaseMiniPlayerOnBlur } from '@/services/mushafPlayerVisibility';
 import { signalCountNow } from '@/services/recommendations/signalCount';
 import { useRecommendationInputsStore } from '@/store/recommendationInputsStore';
-import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_ROW } from '@/constants/layout';
 import { insetColumn, mushafSheetWidth, mushafType } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
@@ -727,10 +727,14 @@ function FooterGlyph({ name }: { name: FigmaIconName }) {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: MUSHAF_BG },
   listScreen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  searchBlock: {
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.searchPaddingTop,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom,
+  },
   surahList: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: PAGE_CHROME.listAfterSearch,
     // node 2207:17898 steps 66 over a 60 row.
     gap: CARD_DENSITY.lectureListGap,
   },
