@@ -75,11 +75,12 @@ Every ticket ran this loop: an implementer with a failing test first, a spec rev
 - **Home scholar and book cards (T29).** Scholar cards were announced as buttons but did nothing; book cards had no action at all. Both nested their bookmark inside the card, where VoiceOver could not reach it. A scholar card now opens the scholar's page and a book card plays it, as the Sections lists do. The bookmark is a sibling of the card, and on Android it is elevated so it still draws on top (b62b865, fe38734).
 - **Ribbon rows (VoiceOver).** Scholar list, «كل الشرح» and recommendation rows were read as a plain group starting with the duration. Each is now one button in reading order (82748e8).
 - **English «OK» in alerts (T30).** 28 alerts passed no buttons, so each showed the platform's English «OK». `showNotice()` gives them «حسناً», and a guard fails on any `Alert.alert` call without named buttons (c25d849).
+- **Bookmarks (VoiceOver, TalkBack).** A standalone bookmark said only «حفظ في المكتبة» or «إزالة من المحفوظات», so a list of them could not be told apart. It now names its item. On a saved lecture or ribbon row, the nested bookmark is hidden from screen readers, as SurahRow's already was. The row carries «محفوظة» and the unsave action, so TalkBack no longer focuses the bookmark first (5a03ec9).
 - **Recent searches (VoiceOver).** The query and «مسح» were plain groups, and every remove button said only «إزالة». Each is now a named button, and remove names its query (51397c0).
 
 ## 3. Evidence
 
-**Gates.** Unit suite: 254 suites and 3,441 tests pass. `tsc --noEmit` is clean, and eslint is clean on every touched file. These guard tests are new or extended:
+**Gates.** Unit suite: 256 suites and 3,449 tests pass. `tsc --noEmit` is clean, and eslint is clean on every touched file. These guard tests are new or extended:
 - `fontRegistry`, plus the weight guard (no bold `fontWeight` on a registered family)
 - `listRowCardLargeFont` and `wirdStartRow`
 - `figmaAssetLicensing` (no `.fig` source image under `assets/`)
@@ -87,7 +88,7 @@ Every ticket ran this loop: an implementer with a failing test first, a spec rev
 - `dawahPosterA11y`, `segmentTabsA11y` and `lectureCardA11y`
 - `welcomeStepBullets` and `contextualNotesInvariants` (tap case)
 - `lineClampGuard`, `lineClampRows`, `settingsValueRowLargeFont` and `inputLineHeightGuard` (large text)
-- `homeCardsA11y`, `ribbonCardA11y` and `recentSearchA11y`
+- `homeCardsA11y`, `ribbonCardA11y`, `recentSearchA11y`, `bookmarkLabel` and `savedRowBookmarkA11y`
 - `alertButtonsGuard` and `cacheVersionGuard`
 
 **Devices, checked by hand through argent on each ticket's screens.**
@@ -206,12 +207,11 @@ One tooling note: on this letterboxed tablet, argent's normalised taps land in t
 | Item | Detail |
 |---|---|
 | Gold on cream contrast | `goldAccent` is 3.22:1 on 14pt text, and the gold buttons are close to the AA limit. It is the file's own colour, so it matches Figma. Whether to darken it for accessibility is a product decision. |
-| TalkBack order | The saved-row bookmark is read before its row, and «إزالة من المحفوظات» does not name the item. |
+| TalkBack order | On Library › المحفوظات the bookmark is still its own element, read before its row: it is a sibling at the physical left. Since 5a03ec9 it names its item («إزالة من المحفوظات: البقرة»), so the order is clear. Reordering it would mean pinning it absolutely. |
 | Wrapped Mushaf meta line | About 10pt off centre when it wraps. |
 | Meta text at 320dp × 2.0 | Needs `flexShrink` on the meta text. |
 | Empty in-progress CTA | May wrap at 320dp. |
 | Reciter tablist | iOS ax-service still reports AXGroup, so it is verified by unit test only. |
-| Saved LectureCard | The bookmark sits inside the row's Pressable, so VoiceOver reaches unsave only through the row's custom action, not as its own element. |
 | `shouldRasterizeIOS` | Dawah posters can look slightly soft on iOS. |
 | Notes and playback | Notes filtering, and re-render cost during playback, are worth a profiler pass. |
 | Descenders at large font scales | Android 14+ grows `lineHeight` less than `fontSize`. At 1.7 a 14pt role's line box is about 1.26× the size instead of 1.5×, so a TextView clips the descenders of its last line. Covered so far: ListRowCard (`descenderRoom`, 635dfd6) and single-line inputs (`inputTextStyle`, 55de5c8). Unclamped multi-line text looked fine in the 320dp × 1.7 sweep, but no other role is guarded yet. |
