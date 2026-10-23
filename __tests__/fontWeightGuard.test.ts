@@ -41,13 +41,11 @@ const isLegacy = (rel: string) =>
  * applies it, and the file-level family gate below (a file naming no registered
  * family is not scanned at all).
  *
- * `ALLOWLIST` below holds only the Mushaf screen (ticket T20). The test fails if a new offender appears
+ * `ALLOWLIST` below is empty now that the Mushaf screen (ticket T20) is migrated. The test fails if a new offender appears
  * or an allowlisted file's count grows; it also fails when a count shrinks, so
  * the entry is lowered as sites are migrated.
  */
 const ALLOWLIST: Record<string, number> = {
-  // Owned by ticket T20 (Mushaf typography). Remove once migrated.
-  'app/(tabs)/sections/mushaf.tsx': 2,
 };
 
 const FAMILY_RE = new RegExp(

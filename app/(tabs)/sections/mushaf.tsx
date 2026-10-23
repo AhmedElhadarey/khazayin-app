@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
   basmala: {
     fontFamily: 'Amiri-Bold',
     fontSize: 20,
-    fontWeight: '700',
+    fontWeight: '400',
     color: KhazainColors.navy900,
     writingDirection: 'rtl',
   },
@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     lineHeight: 48,
     color: KhazainColors.ink900,
-    fontWeight: '700',
+    fontWeight: '400',
     textAlign: 'justify',
     writingDirection: 'rtl',
   },
