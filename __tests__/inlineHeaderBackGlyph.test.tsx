@@ -6,16 +6,14 @@
  */
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { InlineHeader } from '@/components/khazain/primitives/InlineHeader';
+import { InlineHeader, backGlyphOffset } from '@/components/khazain/primitives/InlineHeader';
+import { backAccessibilityLabel } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { CHROME_MAX_FONT_SCALE, TEXT_ROLES } from '@/constants/typography';
 
 let mockFontScale = 1;
-jest.mock('react-native/Libraries/Utilities/useWindowDimensions', () => ({
-  __esModule: true,
-  default: () => ({ width: 390, height: 844, scale: 3, fontScale: mockFontScale }),
-}));
 jest.mock('@/components/khazain/icons/FigmaIcon', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const R = require('react');
   return { FigmaIcon: (p: object) => R.createElement('FigmaIcon', p) };
 });
@@ -30,6 +28,17 @@ const { act, create } = require('react-test-renderer') as {
 };
 
 const LINE = TEXT_ROLES.bodyLarge.lineHeight;
+
+beforeEach(() => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  jest.spyOn(require('react-native'), 'useWindowDimensions').mockImplementation(() => ({
+    width: 390,
+    height: 844,
+    scale: 3,
+    fontScale: mockFontScale,
+  }));
+});
+afterEach(() => jest.restoreAllMocks());
 
 function measure(fontScale: number) {
   mockFontScale = fontScale;
@@ -47,6 +56,7 @@ function measure(fontScale: number) {
   const touchStyle: any = StyleSheet.flatten(touch.props.style);
   const wrapStyle: any = StyleSheet.flatten(wrapper?.props.style);
   const out = {
+    touchProps: { ...touch.props },
     touchStyle,
     wrapStyle,
     iconProps: { ...icon.props },
@@ -66,6 +76,8 @@ describe('InlineHeader back arrow', () => {
     expect(m.iconProps.size).toBe(20);
     expect(m.iconProps.color).toBe(KhazainColors.inkTitle);
     expect(m.iconProps.mirrored).toBeFalsy();
+    expect(m.touchProps.accessibilityRole).toBe('button');
+    expect(m.touchProps.accessibilityLabel).toBe(backAccessibilityLabel('عنوان'));
   });
 
   it('caps the title at the chrome scale, and the icon follows the capped line', () => {
@@ -77,5 +89,16 @@ describe('InlineHeader back arrow', () => {
     // scale-1 relation: icon centre sits 4pt above the title line centre
     const expected = (titleTop + line / 2) - 4;
     expect(Math.abs(iconTop + 10 - expected)).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('backGlyphOffset', () => {
+  it.each([
+    [1, 0],
+    [1.1, 1.4],
+    [1.2, 2.8],
+    [1.7, 2.8],
+  ])('at font scale %s offsets the arrow by %s', (scale, expected) => {
+    expect(backGlyphOffset(scale)).toBeCloseTo(expected, 5);
   });
 });

@@ -33,8 +33,8 @@ describe('the app bounds the system font scale at the root', () => {
   // outright so the accessibility setting still does something.
   it('caps Text and TextInput defaults in the root layout', () => {
     const src = read('app/_layout.tsx');
-    expect(src).toMatch(/maxFontSizeMultiplier: MAX_FONT_SCALE/);
-    expect(src).toMatch(/const MAX_FONT_SCALE = 1\.2/);
+    expect(src).toMatch(/maxFontSizeMultiplier: CHROME_MAX_FONT_SCALE/);
+    expect(src).not.toMatch(/const MAX_FONT_SCALE/);
     expect(src).toMatch(/\[Text, TextInput\]/);
   });
 

@@ -1,7 +1,7 @@
 import { LaunchSequence, shouldRunLaunchSequence, useLaunchReveal } from '@/components/khazain/launch';
 import { FONT_ASSET_MODULES } from '@/constants/fonts';
 import { Colors, KhazainColors } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
+import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
 import { PillButton } from '@/components/khazain/primitives/PillButton';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
@@ -56,12 +56,11 @@ I18nManager.forceRTL(true);
  * up to 1.2x, so the preference keeps working — it just cannot break a layout.
  * Individual screens may pass a lower value; none may raise it.
  */
-const MAX_FONT_SCALE = 1.2;
 type ScalableText = { defaultProps?: Record<string, unknown> };
 for (const Component of [Text, TextInput] as unknown as ScalableText[]) {
   Component.defaultProps = {
     ...(Component.defaultProps ?? {}),
-    maxFontSizeMultiplier: MAX_FONT_SCALE,
+    maxFontSizeMultiplier: CHROME_MAX_FONT_SCALE,
   };
 }
 if (__DEV__ && process.env.EXPO_PUBLIC_VISUAL_AUDIT === '1') {
