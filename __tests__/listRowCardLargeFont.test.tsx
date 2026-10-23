@@ -18,13 +18,16 @@ import { ListRowCard } from '@/components/khazain/primitives/ListRowCard';
 import { CARD_DENSITY } from '@/constants/layout';
 import { TEXT_ROLES } from '@/constants/typography';
 
-// The jest Dimensions mock reports fontScale 2, where useLineClamp unclamps.
-// This suite pins the default text size, whose clamps are the Figma geometry;
-// enlarged-text unclamping is covered by lineClampRows.test.tsx.
-jest.mock('@/hooks/useLineClamp', () => {
-  const actual = jest.requireActual('@/hooks/useLineClamp');
-  return { ...actual, useLineClamp: (lines: number) => actual.lineClampFor(lines, 1) };
-});
+// Every render names its font scale (the jest Dimensions mock would report 2).
+// The renders run while the describes are collected, so the spy is set here.
+let mockFontScale = 1;
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+jest.spyOn(require('react-native'), 'useWindowDimensions').mockImplementation(() => ({
+  width: 320,
+  height: 640,
+  scale: 2,
+  fontScale: mockFontScale,
+}));
 
 type Node = {
   parent: Node | null;
@@ -40,7 +43,9 @@ const { act, create } = require('react-test-renderer') as {
   create: (el: React.ReactElement) => Renderer;
 };
 
-const render = (el: React.ReactElement) => {
+const LARGE = 1.7;
+const render = (el: React.ReactElement, fontScale = 1) => {
+  mockFontScale = fontScale;
   let r!: Renderer;
   act(() => {
     r = create(el);
@@ -57,7 +62,20 @@ const TITLE = 'قنوات الواتساب';
 const SUBTITLE = 'القنوات الأصلية';
 const COUNT = '١٥٦ حلقة';
 
-describe.each(['more', 'section', 'archive'] as const)('ListRowCard variant=%s at a large font scale', (variant) => {
+describe.each(['more', 'section', 'archive'] as const)('ListRowCard variant=%s at the default font scale', (variant) => {
+  const r = render(
+    <ListRowCard variant={variant} icon={null} title={TITLE} subtitle={SUBTITLE} onPress={() => {}} />,
+  );
+
+  // Two lines, not one: at the default scale every title fits one, and the
+  // section copy needs the second line for its subtitle.
+  it('clamps the title and the subtitle to two lines', () => {
+    expect(textNode(r, TITLE).props.numberOfLines).toBe(2);
+    expect(textNode(r, SUBTITLE).props.numberOfLines).toBe(2);
+  });
+});
+
+describe.each(['more', 'section', 'archive'] as const)('ListRowCard variant=%s at a large font scale (1.7)', (variant) => {
   const r = render(
     <ListRowCard
       variant={variant}
@@ -67,18 +85,21 @@ describe.each(['more', 'section', 'archive'] as const)('ListRowCard variant=%s a
       count={variant === 'more' ? undefined : COUNT}
       onPress={() => {}}
     />,
+    LARGE,
   );
 
-  it('wraps the title to a second line instead of truncating it', () => {
-    expect(textNode(r, TITLE).props.numberOfLines).toBe(2);
+  // A clamp that overflows drops letters on Android 15 with no ellipsis
+  // («الموقع الإلكترون»), so enlarged text is not clamped at all.
+  it('does not clamp the title: it wraps as far as it needs instead of truncating', () => {
+    expect(textNode(r, TITLE).props.numberOfLines).toBeUndefined();
   });
 
   // The section copy («تلاوات وتفسير وتدبر القرآن الكريم», «شروحات الكتب
   // الإسلامية المهمة») is longer than a 360dp text column even at the default
   // scale, and at 320dp x 1.7 the More one-liners lost words too («القنوات
-  // الأصلي.»), so every variant's subtitle wraps to a second line.
-  it('wraps the subtitle to a second line', () => {
-    expect(textNode(r, SUBTITLE).props.numberOfLines).toBe(2);
+  // الأصلي.»), so at a large scale no variant's subtitle is clamped.
+  it('does not clamp the subtitle either', () => {
+    expect(textNode(r, SUBTITLE).props.numberOfLines).toBeUndefined();
     expect(flat(textNode(r, SUBTITLE)).textAlign).toBe('right');
   });
 
