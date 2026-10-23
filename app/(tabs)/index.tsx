@@ -257,7 +257,7 @@ export default function HomeScreen() {
     // In the pair the cards grow to the taller one's height.
     quranHero: <HeroQuran onMore={goToSections} fill />,
     prophetHero: <HeroProphet onMore={goToSections} fill />,
-    queen,
+    queen: <QueenCard onMore={goToSections} fill />,
     quickChips: <View style={styles.quickChipsCell}>{quickChips}</View>,
   };
 

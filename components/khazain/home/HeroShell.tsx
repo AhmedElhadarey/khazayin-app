@@ -37,7 +37,14 @@ export type HeroLayer = {
 
 export type HeroShellProps = {
   /** Fills the card at any height, so it must be the patterned ground alone. */
-  background: ImageSource;
+  background?: ImageSource;
+  /**
+   * A drawn ground instead of (or under) an image, e.g. a gradient. Fills the
+   * card at any height.
+   */
+  backdrop?: React.ReactNode;
+  /** Overrides the shared hero shadow where the file states another. */
+  shadow?: ViewStyle;
   /**
    * Flat colour behind the background image, sampled from the artwork. It
    * covers the frame before the image decodes, and on Android an
@@ -59,6 +66,8 @@ export type HeroShellProps = {
 
 export function HeroShell({
   background,
+  backdrop,
+  shadow,
   backgroundColor,
   layers,
   designWidth,
@@ -104,6 +113,7 @@ export function HeroShell({
         styles.card,
         PHYSICAL_BOX,
         KhazainShadows.hero,
+        shadow,
         fill && styles.fill,
         {
           backgroundColor,
@@ -117,14 +127,17 @@ export function HeroShell({
         },
       ]}
     >
-      <Image
-        source={background}
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-        contentPosition="top"
-        cachePolicy="memory-disk"
-        transition={0}
-      />
+      {backdrop}
+      {background ? (
+        <Image
+          source={background}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          contentPosition="top"
+          cachePolicy="memory-disk"
+          transition={0}
+        />
+      ) : null}
       {/* Nothing is placed until the first layout gives a width to scale by. */}
       {scale > 0
         ? layers.map((layer, i) => (

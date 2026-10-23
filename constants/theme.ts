@@ -224,6 +224,8 @@ export const KhazainColors = {
   inkCount: '#184B76',
   /** Prophet hero body copy (node 2007:479 family), a warm brown rather than the navy. */
   inkBrown: '#5F482D',
+  /** Queen card body copy (node 2812:1401). */
+  queenBody: '#B07F4B',
   inkArrow: '#281E13',
 
   // Accent

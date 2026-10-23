@@ -45,6 +45,7 @@ describe('Figma colour tokens', () => {
     expect(KhazainColors.goldBar).toBe(FIGMA_TOKENS.goldBar);
     expect(KhazainColors.goldAccent).toBe(FIGMA_TOKENS.goldAccent);
     expect(KhazainColors.inkBrown).toBe(FIGMA_TOKENS.inkBrown);
+    expect(KhazainColors.queenBody).toBe(FIGMA_TOKENS.queenBody);
     expect(TAB_BAR.background).toBe(FIGMA_TOKENS.navigationNavy);
     expect(TAB_BAR.activeFill).toBe(FIGMA_TOKENS.activeTabFill);
     expect(TAB_BAR.indicatorColor).toBe(FIGMA_TOKENS.activeTabIndicator);
