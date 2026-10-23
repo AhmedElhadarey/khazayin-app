@@ -119,13 +119,19 @@ const styles = StyleSheet.create({
     width: POSTER_W,
     height: POSTER_H,
   },
+  // Full width, never shrink-wrapped: Android 15+ breaks lines by ink bounds
+  // while RN 0.81 measures by advances, so a shrink-wrapped Arabic title loses
+  // its last word. The title right-aligns itself through its role (RTL_TEXT).
   titleWrap: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'flex-end',
+    alignItems: 'stretch',
     justifyContent: 'center',
   },
-  title: textStyle('cardTitle', { color: KhazainColors.inkTitle }),
+  title: {
+    ...textStyle('cardTitle', { color: KhazainColors.inkTitle }),
+    alignSelf: 'stretch',
+  },
   // The two icons are 20pt and 8 apart, so their hitSlop is asymmetric: each
   // reaches out to the row's edge but stops short of its neighbour, or taps in
   // the band between them would resolve by z-order.
