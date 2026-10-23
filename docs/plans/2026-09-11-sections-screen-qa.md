@@ -267,8 +267,9 @@ bespoke colours any more, so it now asserts the stronger fact.
   because it is the only place the screen says whose lectures these are;
   restyled onto the scale so it reads as furniture, not a second title.
 - The Mushaf's ayat body and ornamented basmala block have no node in 2349:982.
-- `SurahRow` puts a bookmark where the frame puts a play triangle — tapping the
-  row opens the reader, so a play control there would lie.
+- `SurahRow` has a bookmark at the physical left; in 2207:17898 that slot is
+  empty (its play instance has opacity 0), so the bookmark is a pure app
+  addition (savedContent G2 entry point).
 
 **Out of this screen's scope.**
 

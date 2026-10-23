@@ -165,9 +165,9 @@ used for the demo so the card shows the scheduled time.
 
 ## 7. Deliberate deviations from the file, left in place
 
-* `SurahRow` puts a bookmark where frame 2207:17898 puts a play triangle —
-  tapping the row opens the reader rather than starting audio. Documented in
-  the component.
+* `SurahRow` has a bookmark at the physical left of frame 2207:17898, where
+  the left slot is empty (its play instance has opacity 0) — a pure app
+  addition (savedContent G2 entry point). Documented in the component.
 * Qiraat rows carry an `الافتراضي` badge and a gold selected border; the frame
   has neither. It reflects real app state.
 * The reciter header stays `القرآن حياة` on both tabs. The file disagrees with
