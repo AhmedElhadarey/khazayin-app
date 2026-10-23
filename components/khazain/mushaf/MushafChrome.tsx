@@ -70,6 +70,7 @@ export function MushafChrome({
       ) : null}
       <Animated.View
         style={[styles.top, { opacity }]}
+        renderToHardwareTextureAndroid
         pointerEvents={up ? 'box-none' : 'none'}
         accessibilityElementsHidden={a11yHidden}
         importantForAccessibility={a11yHidden ? 'no-hide-descendants' : 'auto'}
@@ -84,6 +85,7 @@ export function MushafChrome({
       </Animated.View>
       <Animated.View
         style={[styles.bottom, { opacity }]}
+        renderToHardwareTextureAndroid
         pointerEvents={up ? 'box-none' : 'none'}
         accessibilityElementsHidden={a11yHidden}
         importantForAccessibility={a11yHidden ? 'no-hide-descendants' : 'auto'}

@@ -618,6 +618,7 @@ function ReadingView({
               surahNumber={surahNumber}
               name={displayName}
               ayahCount={cartoucheAyahCount}
+              basmalaType={{ fontSize: type.fontSize, lineHeight: type.lineHeight }}
             />
             <View
               onTouchEnd={ayatStatus === 'success' ? undefined : consumeTouch}

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Animated, Text } from 'react-native';
+import { Animated, StyleSheet, Text } from 'react-native';
 import { MushafChrome } from '@/components/khazain/mushaf/MushafChrome';
 import { SurahCartouche } from '@/components/khazain/mushaf/SurahCartouche';
 import { CHROME_SCRIM } from '@/services/mushafChrome';
@@ -78,6 +78,19 @@ describe('MushafChrome', () => {
     scrimFills(r).forEach((n) => expect(n.props.pointerEvents).toBe('none'));
   });
 
+  it('lets touches through the header and footer wrappers only while up', () => {
+    const wrappers = (r: Renderer) =>
+      r.root.findAll(
+        (n) => 'pointerEvents' in n.props && !JSON.stringify(n.props.style ?? null).includes(CHROME_SCRIM),
+      );
+    const down = wrappers(chrome({ visible: false }).r);
+    expect(down.length).toBeGreaterThanOrEqual(2); // header and footer, each seen through its wrappers
+    down.forEach((n) => expect(n.props.pointerEvents).toBe('none'));
+    const up = wrappers(chrome({ visible: true }).r);
+    expect(up.length).toBeGreaterThanOrEqual(2);
+    up.forEach((n) => expect(n.props.pointerEvents).toBe('box-none'));
+  });
+
   it('reports the top and bottom block heights including the safe areas', () => {
     const { r, props } = chrome();
     const seen = new Set<unknown>();
@@ -135,5 +148,30 @@ describe('SurahCartouche', () => {
     expect(has(2)).toBe(true);
     expect(has(9)).toBe(false);
     expect(has(1)).toBe(false);
+  });
+
+  it('sizes the basmala from the reader type scale, not a fixed 22/40', () => {
+    const r = render(
+      <SurahCartouche surahNumber={2} name="البقرة" ayahCount={286} basmalaType={{ fontSize: 31, lineHeight: 56 }} />,
+    );
+    const b = r.root.findAll((n) => n.type === Text && JSON.stringify(n.props.children).includes('بِسْمِ'))[0];
+    const flat = StyleSheet.flatten(b.props.style);
+    expect(flat.fontSize).toBe(31);
+    expect(flat.lineHeight).toBe(56);
+    const d = render(<SurahCartouche surahNumber={2} name="البقرة" ayahCount={286} />);
+    const def = d.root.findAll((n) => n.type === Text && JSON.stringify(n.props.children).includes('بِسْمِ'))[0];
+    expect(StyleSheet.flatten(def.props.style).fontSize).toBe(22);
+  });
+
+  it('reads as one labelled element in reading order for a screen reader', () => {
+    const r = render(<SurahCartouche surahNumber={2} name="البقرة" ayahCount={286} />);
+    const band = r.root.findAll((n) => n.props.accessible === true && typeof n.props.accessibilityLabel === 'string');
+    expect(new Set(band.map((n) => n.props.accessibilityLabel))).toEqual(
+      new Set(['سورة البقرة، ترتيبها ٢، آياتها ٢٨٦']),
+    );
+    const unknown = render(<SurahCartouche surahNumber={2} name="البقرة" />);
+    expect(
+      unknown.root.findAll((n) => n.props.accessible === true)[0].props.accessibilityLabel,
+    ).toBe('سورة البقرة، ترتيبها ٢');
   });
 });

@@ -17,9 +17,12 @@ export function SurahCartouche({
   surahNumber,
   name,
   ayahCount,
+  basmalaType,
 }: {
   surahNumber: number;
   name: string;
+  /** The reader's type scale (`mushafType`), so the basmala grows with the ayat below it. */
+  basmalaType?: { fontSize: number; lineHeight: number };
   /** Left out of the band while unknown rather than printed as a placeholder. */
   ayahCount?: number;
 }) {
@@ -41,7 +44,16 @@ export function SurahCartouche({
     <View style={styles.wrap}>
       <View
         style={styles.band}
-        onLayout={(e) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height })}
+        // One element for a screen reader, in reading order: the row is a
+        // PHYSICAL_ROW (ltr), so its children would be read left to right.
+        accessible
+        accessibilityLabel={`سورة ${name}، ترتيبها ${toArabicDigits(surahNumber)}${
+          ayahCount ? `، آياتها ${toArabicDigits(ayahCount)}` : ''
+        }`}
+        onLayout={(e) => {
+          const { width: w, height: h } = e.nativeEvent.layout;
+          setSize((prev) => (prev && prev.w === w && prev.h === h ? prev : { w, h }));
+        }}
       >
         {size ? (
           <Svg width={size.w} height={size.h} style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -70,7 +82,7 @@ export function SurahCartouche({
         ) : null}
         <View style={styles.row}>{CARTOUCHE_PHYSICAL_ORDER.map((slot) => parts[slot])}</View>
       </View>
-      {basmalaShown(surahNumber) ? <Text style={styles.basmala}>{BASMALA_TEXT}</Text> : null}
+      {basmalaShown(surahNumber) ? <Text style={[styles.basmala, basmalaType]}>{BASMALA_TEXT}</Text> : null}
     </View>
   );
 }
