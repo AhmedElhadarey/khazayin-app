@@ -221,6 +221,9 @@ One tooling note: on this letterboxed tablet, argent's normalised taps land in t
 
 ## 6. Before any push
 
-- 198738c (library, T16) also carries the T15 wordmark `.webp` deletions. Move them to 02d2c0e or note it in the PR.
-- 2ca48ce (mushaf) carries the T05/T08 layout hunks, and 9764c8a is empty. Fold the hunks into 9764c8a.
-- The branch's upstream is `origin/main`. Set it to `origin/fix/figma-parity-2026-10-23` when pushing.
+History is kept as it is. Moving the hunks below would rewrite 107 of the branch's 143 commits, and every SHA cited in this record and on the T01–T30 cards would stop resolving. The final tree would be the same either way. The PR description carries these two notes instead:
+
+- 198738c (library, T16) also carries the T15 wordmark `.webp` deletions. They belong with 02d2c0e (splash), the commit right after it.
+- 2ca48ce (mushaf) also carries the T05/T08 layout hunks: `PAGE_CHROME.cardListAfterSearch` / `listAfterTabs` and their screens, `RailedLectureList`, the header-art tests and `searchOffsets`. That is why 9764c8a, the commit right after it, is empty.
+
+The branch's upstream is `origin/main`. Set it to `origin/fix/figma-parity-2026-10-23` when pushing.
