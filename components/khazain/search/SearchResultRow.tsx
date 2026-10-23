@@ -14,10 +14,12 @@ type Props = {
   title: string;
   subtitle?: string;
   meta?: string;
+  /** Rendered first (physical left), before the meta chip, e.g. a bookmark button. */
+  accessory?: React.ReactNode;
   onPress: () => void;
 };
 
-export function SearchResultRow({ iconNode, title, subtitle, meta, onPress }: Props) {
+export function SearchResultRow({ iconNode, title, subtitle, meta, accessory, onPress }: Props) {
   return (
     <Pressable
       onPress={onPress}
@@ -26,7 +28,8 @@ export function SearchResultRow({ iconNode, title, subtitle, meta, onPress }: Pr
         { transform: [{ scale: pressed ? 0.99 : 1 }], opacity: pressed ? 0.92 : 1 },
       ]}
     >
-      {/* Physical left → right: meta chip, title block, icon. */}
+      {/* Physical left → right: accessory, meta chip, title block, icon. */}
+      {accessory ?? null}
       {meta ? (
         <View style={styles.metaChip}>
           <Text style={styles.metaText} numberOfLines={1}>

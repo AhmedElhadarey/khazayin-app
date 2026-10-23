@@ -63,16 +63,16 @@ function SavedRow({ item }: { item: SavedItem }) {
         title={props.title}
         subtitle={props.subtitle}
         meta={props.meta}
+        accessory={
+          <BookmarkButton
+            type={item.type}
+            entityId={item.entityId}
+            snapshot={item.snapshot}
+            variant="light"
+          />
+        }
         onPress={() => router.push(props.route as never)}
       />
-      <View style={styles.rowBookmarkSlot} pointerEvents="box-none">
-        <BookmarkButton
-          type={item.type}
-          entityId={item.entityId}
-          snapshot={item.snapshot}
-          variant="light"
-        />
-      </View>
     </View>
   );
 }
@@ -111,13 +111,6 @@ const styles = StyleSheet.create({
   totalCountText: textStyle('label', { color: KhazainColors.ink500 }),
   rowContainer: {
     ...PHYSICAL_BOX,
-    position: 'relative',
-  },
-  rowBookmarkSlot: {
-    position: 'absolute',
-    top: '50%',
-    left: 16,
-    marginTop: -16,
   },
   emptyWrap: {
     alignItems: 'center',

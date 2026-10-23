@@ -239,6 +239,7 @@ const styles = StyleSheet.create({
   noteCard: {
     ...PHYSICAL_BOX,
     backgroundColor: KhazainColors.cream100,
+    // md on purpose: a note, not a card.
     borderRadius: KhazainRadius.md,
     borderWidth: 1,
     borderColor: KhazainColors.cardBorder,
@@ -251,7 +252,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cream200,
     borderWidth: 1,
     borderColor: KhazainColors.gold500,
-    borderRadius: 16,
+    borderRadius: KhazainRadius.lg,
     paddingVertical: 14,
     paddingHorizontal: 16,
     alignItems: 'stretch',

@@ -4,7 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
-import { PHYSICAL_ROW } from '@/constants/layout';
+import { READING_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 
 /**
@@ -86,9 +86,18 @@ export function ToastOverlay() {
             KhazainShadows.card,
           ]}
         >
-          {/* Physical left → right: action, message, badge. */}
+          {/* Reading order (badge, message, action); READING_ROW puts the first
+              child at the physical right, so it renders action | message | badge. */}
+          {isAchievement ? <CheckmarkBadge /> : null}
+          <Text
+            style={[styles.message, isAchievement && styles.messageAchievement]}
+            numberOfLines={2}
+          >
+            {current.message}
+          </Text>
           {current.action ? (
             <Pressable
+              accessibilityRole="button"
               onPress={() => {
                 current.action!.onPress();
                 dismiss();
@@ -99,13 +108,6 @@ export function ToastOverlay() {
               <Text style={styles.actionLabel}>{current.action.label}</Text>
             </Pressable>
           ) : null}
-          <Text
-            style={[styles.message, isAchievement && styles.messageAchievement]}
-            numberOfLines={2}
-          >
-            {current.message}
-          </Text>
-          {isAchievement ? <CheckmarkBadge /> : null}
         </View>
       </Animated.View>
     </SafeAreaView>
@@ -144,7 +146,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: KhazainRadius.lg,
-    ...PHYSICAL_ROW,
+    ...READING_ROW,
     alignItems: 'center',
     gap: 12,
   },

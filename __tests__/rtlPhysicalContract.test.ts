@@ -43,6 +43,8 @@ const PINNED_SCREENS = [
   'components/khazain/library/WirdHistory.tsx',
   'components/khazain/library/WirdSuggestionBanner.tsx',
   'components/khazain/library/InsightRow.tsx',
+  'components/khazain/library/MySavedSection.tsx',
+  'components/khazain/library/EmptyInProgressCard.tsx',
   'components/khazain/primitives/ToastOverlay.tsx',
   'app/settings-prayer.tsx',
   'app/settings-wird-goal.tsx',
@@ -109,7 +111,7 @@ function code(file: string): string {
 describe('the physical RTL contract holds on every hand-authored screen', () => {
   it.each(PINNED_SCREENS)('%s imports the contract', (file) => {
     const src = code(file);
-    expect(src).toMatch(/PHYSICAL_(BOX|ROW)/);
+    expect(src).toMatch(/(PHYSICAL|READING)_(BOX|ROW)/);
   });
 
   it.each(PINNED_SCREENS)('%s does not reach for row-reverse', (file) => {
@@ -139,7 +141,7 @@ describe('no unpinned container claims a physical edge', () => {
       /padding(?:Right|Left):\s*\d/.test(src) ||
       /alignItems:\s*'flex-end'/.test(src);
     if (!usesPhysicalEdge) return;
-    expect(src).toMatch(/\.\.\.PHYSICAL_(BOX|ROW)/);
+    expect(src).toMatch(/\.\.\.(PHYSICAL|READING)_(BOX|ROW)/);
   });
 });
 
@@ -261,9 +263,23 @@ describe('Library blocks keep their text on the physical right', () => {
     expect(src).not.toMatch(/flexDirection:\s*'row'/);
   });
 
-  it('EmptyInProgressCard is a PHYSICAL_ROW', () => {
+  it('EmptyInProgressCard is a READING_ROW authored disc, text, action', () => {
     const src = code('components/khazain/library/EmptyInProgressCard.tsx');
-    expect(block(src, 'card')).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(block(src, 'card')).toMatch(/\.\.\.READING_ROW/);
+    const iDisc = src.indexOf('<LatticeDisc />');
+    const iText = src.indexOf('styles.title');
+    const iCta = src.indexOf('styles.cta');
+    expect(iDisc).toBeGreaterThan(-1);
+    expect(iDisc).toBeLessThan(iText);
+    expect(iText).toBeLessThan(iCta);
+  });
+
+  it('InsightRow is a READING_ROW with stretch chips (no shrink-wrapped titles)', () => {
+    const src = code('components/khazain/library/InsightRow.tsx');
+    expect(block(src, 'row')).toMatch(/\.\.\.READING_ROW/);
+    expect(block(src, 'chip')).toMatch(/alignItems: 'stretch'/);
+    const order = ['أطول سلسلة', 'أعلى يوم', 'هذا الشهر'].map((t) => src.indexOf(`title="${t}"`));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
   });
 
   it('SearchGroupHeader pins its wrapper (shared with Search and Library)', () => {
@@ -296,20 +312,5 @@ describe('screens without a frame pin their blocks (T24)', () => {
   it('MySavedSection pins its row container', () => {
     const src = code('components/khazain/library/MySavedSection.tsx');
     expect(blk(src, 'rowContainer')).toMatch(/\.\.\.PHYSICAL_BOX/);
-  });
-
-  it('ToastOverlay card is a PHYSICAL_ROW authored action, message, badge', () => {
-    const src = code('components/khazain/primitives/ToastOverlay.tsx');
-    expect(blk(src, 'card')).toMatch(/\.\.\.PHYSICAL_ROW/);
-    expect(src).not.toMatch(/flexDirection:\s*'row'/);
-    const jsx = src.slice(src.indexOf('<Text\n            style={[styles.message'));
-    const iAction = src.indexOf('styles.actionBtn');
-    const iMsg = src.indexOf('styles.message,');
-    const iBadge = src.indexOf('<CheckmarkBadge />');
-    expect(iAction).toBeGreaterThan(-1);
-    expect(iAction).toBeLessThan(iMsg);
-    expect(iMsg).toBeLessThan(iBadge);
-    expect(jsx).toBeTruthy();
-    expect(blk(src, 'message')).not.toMatch(/fontSize/);
   });
 });

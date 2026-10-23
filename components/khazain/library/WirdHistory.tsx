@@ -4,7 +4,7 @@ import { KhazainColors } from '@/constants/theme';
 import { toArabicDigits as toAr } from '@/constants/progress';
 import type { HistoryCell, WeekdayCompletion, WirdCellState } from '@/services/wirdHistory';
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
-import { textStyle } from '@/constants/typography';
+import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
 import { LIBRARY_CARD_RADIUS, LIBRARY_DESIGN, LIBRARY_SECTION_GAP } from './libraryLayout';
 
 /**
@@ -118,13 +118,13 @@ export function WirdHistory({
               accessibilityLabel={a11y}
             >
               {/* Physical left → right: percentage, bar, label (السبت-first weekday at the right). */}
-              <Text style={styles.weekdayPct}>{hasData ? pctLabel(bucket.rate) : '—'}</Text>
+              <Text style={styles.weekdayPct} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>{hasData ? pctLabel(bucket.rate) : '—'}</Text>
               <View style={styles.barTrack}>
                 {hasData ? (
                   <View style={[styles.barFill, { width: `${Math.round(bucket.rate * 100)}%` }]} />
                 ) : null}
               </View>
-              <Text style={styles.weekdayLabel}>{label}</Text>
+              <Text style={styles.weekdayLabel} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>{label}</Text>
             </View>
           );
         })}
@@ -137,7 +137,7 @@ export function WirdHistory({
         <View style={styles.gridRow}>
           {COLUMN_ORDER.map((wd) => (
             <View key={wd} style={styles.headerCellWrap}>
-              <Text style={styles.headerCell}>{WEEKDAYS_AR[wd]}</Text>
+              <Text style={styles.headerCell} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>{WEEKDAYS_AR[wd]}</Text>
             </View>
           ))}
         </View>
@@ -185,7 +185,7 @@ function GridCell({ cell }: { cell: HistoryCell | undefined }) {
         {cell.state === 'completed' ? (
           <Text style={styles.cellCheck}>✓</Text>
         ) : (
-          <Text style={[styles.cellDay, cell.state === 'no-data' && styles.cellDayFaint]}>
+          <Text style={styles.cellDay}>
             {toAr(d)}
           </Text>
         )}
@@ -264,7 +264,7 @@ const styles = StyleSheet.create({
   },
   barFill: {
     position: 'absolute',
-    right: 0, // the track is pinned ltr, so this is the physical right
+    right: 0, // the track inherits ltr from weekdayRow (it is not pinned itself), so this is the physical right
     top: 0,
     bottom: 0,
     borderRadius: 6,
@@ -283,7 +283,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  headerCell: textStyle('labelSmall', { color: KhazainColors.ink400, textAlign: 'center' }),
+  headerCell: textStyle('labelSmall', { color: KhazainColors.ink500, textAlign: 'center' }),
   cellWrap: {
     flex: 1,
     aspectRatio: 1,
@@ -302,8 +302,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: KhazainColors.hairlineWarm,
   },
+  // Hollow, fainter outline than `missed`: no fill, so the digit keeps ink500 contrast.
   cellNoData: {
-    backgroundColor: KhazainColors.hairlineFaint,
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: KhazainColors.hairlineFaint,
   },
   cellCheck: {
     // No fontFamily: U+2713 is not in Noto Sans Arabic, so the glyph falls back to the system face, where weight applies.
@@ -313,9 +316,6 @@ const styles = StyleSheet.create({
     writingDirection: 'rtl',
   },
   cellDay: textStyle('labelSmall', { color: KhazainColors.ink500, textAlign: 'center' }),
-  cellDayFaint: {
-    color: KhazainColors.ink400,
-  },
   legendRow: {
     ...PHYSICAL_ROW,
     justifyContent: 'center',

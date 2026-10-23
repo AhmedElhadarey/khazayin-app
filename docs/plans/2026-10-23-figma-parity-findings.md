@@ -1498,6 +1498,8 @@ Generated from the nine audits behind `docs/plans/2026-10-23-figma-parity-design
 - Files: components/khazain/library/InsightRow.tsx
 - Blast radius: Library history filter. May overlap LIBRARY group.
 
+**Reconciliation (NOFRAME-03 / NOFRAME-35, LIBRARY-24):** the frame-backed values from LIBRARY-24 outrank the NOFRAME contract wording above: the `label` role for the banner buttons and chip titles, `LIBRARY_CARD_RADIUS` (20) instead of `KhazainRadius.md`, and the hairline border instead of `cardBorder`/gold 1.5. The saved total chip (NOFRAME-05) also stays `ink500` rather than `goldAccent`/`navy800` for contrast: `ink500` is 6.24:1, `goldAccent` would be 2.99:1.
+
 
 ## T25 — Figma glyphs on screens without a frame (search, notes, sheets, settings, onboarding)
 
