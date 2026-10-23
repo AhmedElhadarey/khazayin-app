@@ -72,12 +72,16 @@ export function RibbonCard({
       {saved && save ? (
         <View style={styles.metaCluster}>
           {durationNode}
-          <BookmarkButton
-            type={save.type}
-            entityId={save.entityId}
-            snapshot={save.snapshot}
-            variant="light"
-          />
+          {/* Hidden from screen readers, as on SurahRow: the card carries the
+              saved state and the unsave action. */}
+          <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+            <BookmarkButton
+              type={save.type}
+              entityId={save.entityId}
+              snapshot={save.snapshot}
+              variant="light"
+            />
+          </View>
         </View>
       ) : (
         durationNode

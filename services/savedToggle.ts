@@ -37,6 +37,17 @@ export const SAVED_COPY = Object.freeze({
   savedValue: 'محفوظة',
 });
 
+/**
+ * The label of a standalone bookmark, named by its item: a bookmark is its own
+ * screen-reader element, so a bare «إزالة من المحفوظات» would not say what it
+ * removes. Row custom actions keep the bare copy; the row names the item.
+ */
+export function bookmarkLabel(saved: boolean, snapshot: SavedSnapshot): string {
+  const base = saved ? SAVED_COPY.unsaveLabel : SAVED_COPY.saveLabel;
+  const name = 'name' in snapshot ? snapshot.name : snapshot.title;
+  return name ? `${base}: ${name}` : base;
+}
+
 export const SAVE_TOAST_MS = 3000;
 export const UNSAVE_TOAST_MS = 5000;
 export const SAVE_ACTION_NAME = 'toggleSave';

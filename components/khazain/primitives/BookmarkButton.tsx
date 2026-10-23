@@ -1,5 +1,5 @@
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { SAVED_COPY, toggleSaved } from '@/services/savedToggle';
+import { bookmarkLabel, toggleSaved } from '@/services/savedToggle';
 import { useSavedStore } from '@/store';
 import type { SavedSnapshot, SavedType } from '@/types/content';
 import React from 'react';
@@ -74,7 +74,7 @@ export function BookmarkButton({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={saved ? SAVED_COPY.unsaveLabel : SAVED_COPY.saveLabel}
+      accessibilityLabel={bookmarkLabel(saved, snapshot)}
       hitSlop={8}
       style={({ pressed }) => [
         { width: hitSize, height: hitSize, opacity: pressed ? 0.7 : 1 },

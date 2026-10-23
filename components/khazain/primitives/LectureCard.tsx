@@ -77,12 +77,17 @@ export function LectureCard({
         <View style={styles.endCluster}>
           {!rail && duration ? <Text style={styles.duration}>{duration}</Text> : null}
           {saved ? (
-            <BookmarkButton
-              type={saveTarget.type}
-              entityId={saveTarget.entityId}
-              snapshot={saveTarget.snapshot}
-              variant="light"
-            />
+            // Hidden from screen readers, as on SurahRow: the row carries the
+            // saved state and the unsave action, and TalkBack would otherwise
+            // focus this nested button on its own, before the row.
+            <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <BookmarkButton
+                type={saveTarget.type}
+                entityId={saveTarget.entityId}
+                snapshot={saveTarget.snapshot}
+                variant="light"
+              />
+            </View>
           ) : null}
         </View>
       ) : null,

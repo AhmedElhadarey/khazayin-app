@@ -19,9 +19,8 @@ describe('BookmarkButton', () => {
     // evaluated when onChange is undefined, so the tap would do nothing.
     expect(src).not.toMatch(/\?\.\(\s*toggleSaved/);
   });
-  it('takes its labels from SAVED_COPY, not hard-coded strings', () => {
-    expect(src).toMatch(/SAVED_COPY\.unsaveLabel/);
-    expect(src).toMatch(/SAVED_COPY\.saveLabel/);
+  it('takes its labels from SAVED_COPY through bookmarkLabel, not hard-coded strings', () => {
+    expect(src).toMatch(/accessibilityLabel=\{bookmarkLabel\(saved, snapshot\)\}/);
     expect(src).not.toMatch(/'حفظ في المكتبة'|'إزالة من المحفوظات'/);
   });
   it('plays the same haptic as the row long-press, and has no long-press of its own', () => {
