@@ -5,6 +5,7 @@
  */
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { DawahPoster } from '@/components/khazain/home/DawahPoster';
 import { QuickChip } from '@/components/khazain/home/QuickChip';
 import { KhazainColors } from '@/constants/theme';
@@ -49,9 +50,9 @@ describe('DawahPoster', () => {
     const s = flat(press(tree));
     expect(s.backgroundColor).toBe('transparent');
     expect(s.borderRadius ?? 0).toBe(0);
-    const json = JSON.stringify(tree.toJSON());
-    expect(json).not.toContain('rgba(255,255,255,0.22)');
-    expect(json).not.toContain('rgba(255,255,255,0.18)');
+    // No sheen gradient, and no bevel (a bordered overlay) over the art.
+    expect(tree.root.findAll((n: any) => n.type === LinearGradient)).toHaveLength(0);
+    expect(tree.root.findAll((n: any) => flat(n).borderWidth === 1)).toHaveLength(0);
   });
 
   it('holds a neutral page-colour placeholder only while decoding', () => {
@@ -64,7 +65,14 @@ describe('DawahPoster', () => {
     expect(s.shadowOffset).toEqual({ width: 0, height: 1.22 });
     expect(s.shadowRadius).toBeCloseTo(1.22, 2);
     expect(s.shadowOpacity).toBeCloseTo(0.25, 2);
-    expect(s.elevation).toBe(1);
+    // Android draws a grey band for an elevation shadow over a transparent card
+    // (see HeroShell), so the poster states no elevation: iOS-only shadow.
+    expect(s.elevation).toBeUndefined();
+  });
+
+  it('rasterizes the shadowed poster on iOS so animated slots do not redraw it', () => {
+    const tree = render(<DawahPoster quote={POSTER} />);
+    expect(press(tree).props.shouldRasterizeIOS).toBe(true);
   });
 });
 
@@ -76,5 +84,18 @@ describe('QuickChip', () => {
       (n: any) => n.type === 'View' && flat(n).width === 80 && flat(n).height === 4,
     )[0];
     expect(flat(stripe).borderRadius).toBeCloseTo(1, 2);
+  });
+});
+
+describe('QuickChip label', () => {
+  it('keeps the full label at the 1.2 cap: two fixed-line-height lines, not shrink-wrapped', () => {
+    const tree = render(<QuickChip label="حصريات خزائن الرحمن">{null}</QuickChip>);
+    const label = tree.root.findAll(
+      (n: any) => n.type === 'Text' && n.props.children === 'حصريات خزائن الرحمن',
+    )[0];
+    expect(label.props.numberOfLines).toBe(2);
+    expect(flat(label).alignSelf).toBe('stretch');
+    expect(flat(label).textAlign).toBe('center');
+    expect(typeof flat(label).lineHeight).toBe('number');
   });
 });

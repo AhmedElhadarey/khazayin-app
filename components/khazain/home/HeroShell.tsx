@@ -44,14 +44,14 @@ export type HeroShellProps = {
    */
   backdrop?: React.ReactNode;
   /** Overrides the shared hero shadow where the file states another. */
-  shadow?: ViewStyle;
+  shadow?: Pick<ViewStyle, 'shadowColor' | 'shadowOffset' | 'shadowOpacity' | 'shadowRadius' | 'elevation'>;
   /**
    * Flat colour behind the background image, sampled from the artwork. It
    * covers the frame before the image decodes, and on Android an
    * elevation shadow over a transparent card renders as a grey band.
    */
   backgroundColor: string;
-  layers: HeroLayer[];
+  layers: readonly HeroLayer[];
   designWidth: number;
   /** The card's minimum height; text is free to push it past this. */
   designHeight: number;
@@ -60,9 +60,18 @@ export type HeroShellProps = {
   /** Text column, in design units, from the card's physical left edge. */
   column: { left: number; width: number; top: number; bottom: number };
   accessibilityLabel: string;
+  /** The card's copy, read after the label so VoiceOver users get what sighted users see. */
+  accessibilityHint?: string;
   onPress?: () => void;
+  /**
+   * The nested المزيد pill. A button inside an accessible Pressable is not
+   * reachable by VoiceOver / TalkBack, so it is also exposed as a custom action.
+   */
+  onMore?: () => void;
   children: (scale: number) => React.ReactNode;
 };
+
+const HERO_ACTIONS = [{ name: 'activate' }, { name: 'more', label: 'المزيد' }];
 
 export function HeroShell({
   background,
@@ -75,7 +84,9 @@ export function HeroShell({
   fill,
   column,
   accessibilityLabel,
+  accessibilityHint,
   onPress,
+  onMore,
   children,
 }: HeroShellProps) {
   const [width, setWidth] = useState(0);
@@ -109,6 +120,12 @@ export function HeroShell({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      accessibilityActions={HERO_ACTIONS}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === 'more') (onMore ?? onPress)?.();
+        else if (e.nativeEvent.actionName === 'activate') onPress?.();
+      }}
       style={({ pressed }) => [
         styles.card,
         PHYSICAL_BOX,

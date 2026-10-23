@@ -1,6 +1,5 @@
 import {
   CENTRE_WIDTH_RATIO,
-  POSTER_OPACITY_STEPS,
   SCALE_STEPS,
   dawahLayout,
 } from '@/components/khazain/home/dawahLayout';
@@ -54,7 +53,12 @@ describe('dawah coverflow layout', () => {
 });
 
 describe('dawah poster dimming', () => {
-  it('keeps every poster fully opaque at every step (HOME-16)', () => {
-    expect([...POSTER_OPACITY_STEPS]).toEqual([1, 1, 1, 1, 1]);
+  it('applies no opacity once a slot is measured (every step of the design is 1) (HOME-16)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const src = require('fs').readFileSync(
+      require('path').join(__dirname, '..', 'components/khazain/home/DawahCarousel.tsx'),
+      'utf8',
+    );
+    expect(src).not.toMatch(/opacity:\s*interpolate/);
   });
 });

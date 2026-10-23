@@ -17,12 +17,12 @@
 // The outline is a pixel-stair trace: one path alone is 16,575 segments
 // (274 KB of path data). As a vector that is ~320 KB in the JS bundle and a
 // heavy parse on a low-end phone for a 55pt mark, so the vector is rendered
-// here, once, to assets/khazain/home/queen-emblem.webp (lossless-quality alpha)
-// and the app draws that.
+// here, once, to assets/khazain/home/queen-emblem.webp (colour is lossy at
+// quality 92, alpha at 100) and the app draws that.
 //
-// Paths with no extent (both sides under 0.1 pt) are dropped: they are the
+// Nodes with no extent (both sides under 0.1 pt) are dropped: they are the
 // trace's dust, invisible at any size this renders, and an SVG gradient over a
-// zero-sized box is undefined.
+// zero-sized box is undefined. 43 nodes carry a visible gradient; 13 remain.
 //
 // Usage:  node scripts/figma/extract-queen-emblem.js
 const fs = require('fs');
@@ -111,12 +111,22 @@ async function main() {
   const bytes = await sharp(Buffer.from(svg), { density: 72 })
     .webp({ quality: 92, alphaQuality: 100, effort: 6 })
     .toBuffer();
+  const before = fs.existsSync(OUT) ? fs.readFileSync(OUT) : null;
+  if (before && before.equals(bytes)) {
+    console.log(`unchanged  ${path.relative(ROOT, OUT)}  ${bytes.length} bytes`);
+    return;
+  }
   fs.writeFileSync(OUT, bytes);
   console.log(
-    `wrote ${path.relative(ROOT, OUT)} - ${count} paths, ${gradients.length} gradients, `
+    `wrote      ${path.relative(ROOT, OUT)} - ${count} paths, ${gradients.length} gradients, `
     + `${Math.round(width * SCALE)}x${Math.round(height * SCALE)}, ${bytes.length} bytes`,
   );
 }
 
-if (require.main === module) main();
+if (require.main === module) {
+  main().catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });
+}
 module.exports = { build, SCALE };

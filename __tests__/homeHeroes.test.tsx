@@ -98,3 +98,27 @@ describe('HeroProphet', () => {
     expect(flat(bar).borderRadius).toBeCloseTo(0.96, 2);
   });
 });
+
+describe('hero accessibility', () => {
+  it.each([
+    ['HeroQuran', (p: any) => <HeroQuran {...p} />],
+    ['HeroProphet', (p: any) => <HeroProphet {...p} />],
+  ])('%s exposes المزيد to VoiceOver as a custom action and reads its copy as the hint', (_n, make) => {
+    const onPress = jest.fn();
+    const onMore = jest.fn();
+    const tree = mount(make({ onPress, onMore }));
+    const card = tree.root.findAll(
+      (n: any) => Array.isArray(n.props.accessibilityActions) && typeof n.props.onAccessibilityAction === 'function',
+    )[0];
+    expect(card.props.accessibilityActions).toEqual([
+      { name: 'activate' },
+      { name: 'more', label: 'المزيد' },
+    ]);
+    expect(typeof card.props.accessibilityHint).toBe('string');
+    expect(card.props.accessibilityHint.length).toBeGreaterThan(20);
+    act(() => card.props.onAccessibilityAction({ nativeEvent: { actionName: 'more' } }));
+    expect(onMore).toHaveBeenCalledTimes(1);
+    act(() => card.props.onAccessibilityAction({ nativeEvent: { actionName: 'activate' } }));
+    expect(onPress).toHaveBeenCalledTimes(1);
+  });
+});

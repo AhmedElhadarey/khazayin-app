@@ -29,6 +29,20 @@ describe('queen card art (scripts/figma/extract-images.js, extract-queen-emblem.
     expect(require('fs').statSync(file).size).toBeLessThan(maxBytes);
   });
 
+  it('fades the crown’s top and right edges and the watermark’s bottom into the ground (no seam)', async () => {
+    const alphaAt = async (name: string, x: number, y: number) => {
+      const { data, info } = await sharp(path.join(HOME, name)).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+      return data[(y * info.width + x) * 4 + 3];
+    };
+    // Crown: transparent at its very top row, opaque by 14pt (42px), solid at the bottom-left.
+    expect(await alphaAt('queen-crown.webp', 400, 0)).toBeLessThan(10);
+    expect(await alphaAt('queen-crown.webp', 400, 60)).toBe(255);
+    expect(await alphaAt('queen-crown.webp', 400, 277)).toBe(255);
+    expect(await alphaAt('queen-crown.webp', 895, 150)).toBeLessThan(10);
+    // Watermark: its (already 8%) alpha reaches 0 at the bottom row.
+    expect(await alphaAt('queen-watermark.webp', 100, 287)).toBe(0);
+  });
+
   it('no longer ships the flattened card', () => {
     expect(existsSync(path.join(HOME, 'hero-queen-card.webp'))).toBe(false);
   });

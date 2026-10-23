@@ -18,7 +18,7 @@ import Animated, {
 import { KhazainSpacing } from '@/constants/theme';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import { DawahPoster } from './DawahPoster';
-import { POSTER_OPACITY_STEPS, SCALE_STEPS, clampFocus, dawahLayout, nearestSlot, resolveWrap } from './dawahLayout';
+import { SCALE_STEPS, clampFocus, dawahLayout, nearestSlot, resolveWrap } from './dawahLayout';
 
 // The fan's proportions come from Figma node 2001:940 rather than from
 // hand-picked numbers — see `dawahLayout`. The design overlaps these posters
@@ -27,12 +27,13 @@ import { POSTER_OPACITY_STEPS, SCALE_STEPS, clampFocus, dawahLayout, nearestSlot
 // neighbours down harder, which is what reads as depth.
 //
 // Which poster is focused comes from where each slot actually landed, not
-// from `index * slot`. That arithmetic assumes the scroll axis starts at
-// content x = 0 and runs left to right, and this app forces RTL — but it also
-// pins `direction: 'ltr'` on layout containers, so which way a given
-// ScrollView runs is not something to predict. Measuring sidesteps it: a slot
-// reports its own centre, and the fan is a function of the distance from that
-// to the middle of the viewport.
+// from `index * slot`. That arithmetic would assume the scroll axis starts at
+// content x = 0 and runs left to right. This ScrollView inherits the app's
+// forced RTL, so on native its content starts at the RIGHT edge: slot 0 sits
+// rightmost, and the poster after the focused one sits on its left. (The data
+// order in data/content/dawah.ts relies on that.) Measuring keeps the maths
+// independent of it: a slot reports its own centre, and the fan is a function
+// of the distance from that to the middle of the viewport.
 
 type WrappedEntry = { item: DawahPosterModel; realIndex: number };
 
@@ -193,6 +194,8 @@ export function DawahCarousel({
       style={{ width: stageWidth, alignSelf: 'center' }}
       onMomentumScrollEnd={handleMomentumEnd}
       scrollEventThrottle={16}
+      // No `direction` is pinned here: the inherited RTL is what orders the slots
+      // right-to-left (see the note at the top of the file).
       contentContainerStyle={{
         paddingTop: KhazainSpacing.x3,
         paddingBottom: DAWAH_PAD_BOTTOM,
@@ -255,7 +258,8 @@ function Slot({
   const animatedStyle = useAnimatedStyle(() => {
     if (!measured.value) return { opacity: 0 };
     // Distance in slots between this poster and the middle of the viewport.
-    // Scale, opacity and stacking are all symmetric about it.
+    // Scale and stacking are symmetric about it. Opacity is not driven at all:
+    // every poster in the design is fully opaque.
     const d = (centre.value - (scrollX.value + viewportWidth / 2)) / slot;
     return {
       transform: [
@@ -267,7 +271,6 @@ function Slot({
           ),
         },
       ],
-      opacity: interpolate(d, STEPS, [...POSTER_OPACITY_STEPS], Extrapolation.CLAMP),
       zIndex: Math.round(interpolate(d, STEPS, [0, 5, 100, 5, 0], Extrapolation.CLAMP)),
     };
   });

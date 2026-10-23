@@ -68,7 +68,8 @@ const QUEEN = {
     from: 'Node 2812:1396 `Vector Smart Object copy 3` (361 x 94 at 0,-1 in `Mask group` 2812:1394, which sits at '
       + '0,3 on the card). Paint m00 1.14364 m02 0.05345 m11 0.71509 m12 0.05303: the 1965 x 814 image is drawn '
       + '315.65 x 131.45 from (-16.87, -6.97) in the node. The mask 2812:1395 is 367 x 92.55 r17 at (0,3), so the '
-      + 'visible art is the card\'s x 0..298.8, y 3..95.55; that region is all that is kept.',
+      + 'visible art is the card\'s x 0..298.8, y 3..95.55; that region is all that is kept, with its top and right '
+      + 'edges faded (FADE) so they do not show as seams.',
     node: { width: 361, height: 94 },
     transform: { m00: 1.1436392068862915, m02: 0.05345037207007408, m11: 0.7150943875312805, m12: 0.05303496867418289 },
     // Mask rectangle in the node's own space: card y 3..95.55, node sits at card y 2.
@@ -79,11 +80,33 @@ const QUEEN = {
     hash: 'd8a8d3c91598fe2e2c86360983194e01406bfbc9',
     from: 'Node 2812:1393 `Layer 23` (123.05 x 186 at 276,-73, opacity 0.08, blend LUMINOSITY): the pink '
       + 'calligraphy. React Native has no blend modes, so the blend is baked in against the card\'s own ground '
-      + '(per column, since the ground is a horizontal gradient) with the 0.08 opacity folded into alpha.',
+      + '(per column, since the ground is a horizontal gradient) with the 0.08 opacity folded into alpha. Its foot '
+      + 'is faded out over FADE.watermarkBottom so a card taller than 96 shows no cut edge.',
     node: { x: 276, y: -73, width: 123.05, height: 186 },
     opacity: 0.08,
   },
 };
+
+/**
+ * The edges the file hides behind the card's clip, faded instead (design units).
+ * The file cuts the crown art with its mask at y 3 and at x 298.8, and the
+ * watermark with the card's bottom at y 96. Those are hard edges against a
+ * different ground, and they show as seams on a device: the top and right of
+ * the crown art, and, once live copy makes the card taller than 96, the foot of
+ * the watermark. Ramping alpha to 0 over these distances dissolves them into
+ * the ground; the art inside the ramps is the only thing that differs.
+ */
+const FADE = { crownTop: 14, crownRight: 8, watermarkBottom: 24 };
+
+/** Multiply each pixel's alpha by `ramp(x, y)` (0..1) in a raw RGBA buffer. */
+function fadeAlpha(buf, width, height, ramp) {
+  for (let y = 0; y < height; y += 1) {
+    for (let x = 0; x < width; x += 1) {
+      const i = (y * width + x) * 4 + 3;
+      buf[i] = Math.round(buf[i] * ramp(x, y));
+    }
+  }
+}
 
 const lum = (c) => 0.3 * c[0] + 0.59 * c[1] + 0.11 * c[2];
 function clipColor(c) {
@@ -148,10 +171,17 @@ async function deriveQueenCrown(src, dest) {
   const height = Math.round((crown.clip.bottom - paintedTop) * sy) - top;
   const outW = Math.round(visRight * px);
   const outH = Math.round((crown.clip.bottom - crown.clip.top) * px);
-  const bytes = await sharp(src)
+  const { data } = await sharp(src)
     .extract({ left, top, width, height })
     .resize(outW, outH)
-    .webp({ quality: 82, effort: 6 })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true });
+  const rampTop = FADE.crownTop * px;
+  const rampRight = FADE.crownRight * px;
+  fadeAlpha(data, outW, outH, (x, y) => Math.min(1, y / rampTop) * Math.min(1, (outW - 1 - x) / rampRight));
+  const bytes = await sharp(data, { raw: { width: outW, height: outH, channels: 4 } })
+    .webp({ quality: 82, alphaQuality: 100, effort: 6 })
     .toBuffer();
   console.log(`crown      visible ${visRight.toFixed(2)} x ${(crown.clip.bottom - crown.clip.top).toFixed(2)} pt, `
     + `source crop ${width}x${height} at ${left},${top}`);
@@ -186,6 +216,8 @@ async function deriveQueenWatermark(src, dest) {
       out[i + 3] = Math.round((data[i + 3] / 255) * w.opacity * 255);
     }
   }
+  const rampBottom = FADE.watermarkBottom * px;
+  fadeAlpha(out, outW, outH, (_x, y) => Math.min(1, (outH - 1 - y) / rampBottom));
   const bytes = await sharp(out, { raw: { width: outW, height: outH, channels: 4 } })
     .webp({ lossless: true, effort: 6 })
     .toBuffer();
@@ -307,4 +339,4 @@ async function main() {
 }
 
 if (require.main === module) main();
-module.exports = { WANTED, PAGE_BG, QUEEN, luminosity };
+module.exports = { WANTED, PAGE_BG, QUEEN, FADE, luminosity };

@@ -5,7 +5,7 @@
  */
 import React from 'react';
 import { StyleSheet } from 'react-native';
-import { QueenCard } from '@/components/khazain/home/QueenCard';
+import { QUEEN_GROUND, QueenCard } from '@/components/khazain/home/QueenCard';
 import { KhazainColors } from '@/constants/theme';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -104,5 +104,15 @@ describe('QueenCard', () => {
     )[0];
     act(() => card.props.onPress());
     expect(onPress).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('QueenCard ground', () => {
+  it('is the gradient the watermark was baked against (scripts/figma/extract-images.js)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { QUEEN } = require('../scripts/figma/extract-images.js');
+    const hex = (rgb: number[]) => '#' + rgb.map((v) => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+    expect(QUEEN.gradient.map((g: any) => hex(g.rgb))).toEqual([...QUEEN_GROUND.colors]);
+    expect(QUEEN.gradient.map((g: any) => g.at)).toEqual([...QUEEN_GROUND.locations]);
   });
 });

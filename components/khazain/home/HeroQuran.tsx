@@ -36,6 +36,10 @@ const GROUND = '#EBE1D0';
  */
 const TITLE_BAR = { width: 2, height: 26, radius: 0.96, gap: 3.83 };
 
+/** Gaps in the column (measured against frame 2093:1655): title → subtitle, subtitle → المزيد pill. */
+const SUBTITLE_GAP = 5.8;
+const PILL_GAP = 8;
+
 const SUBTITLE = 'اقْتَرَبَ فَثَمَّ حَيَاة مع القرآن لَمْ تَحْيَهَا بُعْد !';
 
 export function HeroQuran({
@@ -57,7 +61,9 @@ export function HeroQuran({
       designHeight={DESIGN.height}
       column={COLUMN}
       accessibilityLabel="القرآن حياة"
+      accessibilityHint={SUBTITLE}
       onPress={onPress ?? onMore}
+      onMore={onMore ?? onPress}
       fill={fill}
     >
       {(scale) => (
@@ -87,12 +93,12 @@ export function HeroQuran({
             />
           </View>
           <Text
-            style={[styles.subtitle, { marginTop: 5.8 * scale }]}
+            style={[styles.subtitle, { marginTop: SUBTITLE_GAP * scale }]}
             maxFontSizeMultiplier={1}
           >
             {SUBTITLE}
           </Text>
-          <View style={[styles.pillRow, { marginTop: 8 * scale }]}>
+          <View style={[styles.pillRow, { marginTop: PILL_GAP * scale }]}>
             <SmallMoreButton onPress={onMore ?? onPress} />
           </View>
         </>

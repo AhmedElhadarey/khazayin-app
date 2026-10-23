@@ -32,7 +32,10 @@ export function QuickChip({
       <View style={styles.badge}>{children}</View>
       <Text
         style={styles.label}
-        numberOfLines={1}
+        // Two lines at a fixed line height: the longest label («حصريات خزائن الرحمن»)
+        // does not fit one line in a ~112pt chip at the 1.2 chrome cap. The label
+        // takes the chip's full width (see styles.label) rather than shrink-wrapping.
+        numberOfLines={2}
         maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
       >
         {label}
@@ -65,6 +68,10 @@ const styles = StyleSheet.create({
     ...textStyle('label', { color: KhazainColors.navy, textAlign: 'center' }),
     marginTop: 8,
     paddingHorizontal: 4,
+    // Full width, never shrink-wrapped: Android 15+ can drop the last word of a
+    // shrink-wrapped Arabic Text. Sibling chips stretch to the tallest, so the
+    // row's heights stay equal.
+    alignSelf: 'stretch',
   },
   navyStripe: {
     position: 'absolute',

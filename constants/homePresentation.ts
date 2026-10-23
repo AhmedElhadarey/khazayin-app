@@ -78,3 +78,15 @@ export const HOME_QUICK_CHIPS: readonly HomeQuickChip[] = Object.freeze([
   { id: 'radio', label: 'برامج إذاعية', route: '/sections/radio' },
   { id: 'audiobooks', label: 'كتب صوتية', route: '/sections/audiobooks' },
 ]);
+
+/**
+ * Height of the opaque header band behind Home's header, below the safe-area
+ * inset. Frame 2001:940's header is 110 tall around 102pt of content (54 row +
+ * 8 + 40 search pill), 8pt of its own below, so the band is the measured header
+ * plus that 8 and never less than the frame's 110. Measuring (rather than
+ * passing a font scale) keeps it in step with whatever the header grows to at
+ * large text.
+ */
+export function homeHeaderBand(insetTop: number, headerHeight: number, frameBand = 110, below = 8): number {
+  return insetTop + Math.max(frameBand, headerHeight + below);
+}

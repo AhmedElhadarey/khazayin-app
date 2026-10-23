@@ -27,24 +27,35 @@ const EMBLEM = require('@/assets/khazain/home/queen-emblem.webp');
 // is pre-composited against the card's own ground with its 0.08 opacity in the
 // alpha channel; drawn at full opacity it reproduces the design.
 const DESIGN = { width: 361, height: 96 };
+// Copy frame 2812:1397: 120 wide at (157, 6), 84 tall inside a 96 card (6 below).
 const COLUMN = { left: 157, width: 120, top: 6, bottom: 6 };
 
 // Crown art grounded at the bottom (the mask ends 0.45 above the card's edge),
 // the watermark and emblem hang from the top, so extra height from live copy
 // shows as ground rather than stretching any art.
+// Boxes, in design units: watermark 2812:1393 (276,-73, 123 x 186) cut to the
+// card (85 x 96 visible); crown 2812:1396 clipped by mask 2812:1395 (0,3 .. 95.55,
+// so 0.45 above the bottom); emblem 2815:1402 (294,6, 54.57 x 82.47).
 const LAYERS = [
   { source: WATERMARK, left: 276, top: 0, width: 85, height: 96 },
   { source: CROWN, left: 0, bottom: 0.45, width: 298.79, height: 92.55 },
   { source: EMBLEM, left: 294, top: 6, width: 54.57, height: 82.47 },
 ];
 
-const GROUND_COLORS = ['#EDE0D1', '#F1E8DD', '#EDE0D1'] as const;
-const GROUND_LOCATIONS = [0, 0.5528846383094788, 1] as const;
+/**
+ * The card's ground (frame 2812:1392's GRADIENT_LINEAR). The watermark is baked
+ * against these same stops by scripts/figma/extract-images.js (`QUEEN.gradient`);
+ * `__tests__/queenCard.test.tsx` fails if the two drift apart.
+ */
+export const QUEEN_GROUND = Object.freeze({
+  colors: ['#EDE0D1', '#F1E8DD', '#EDE0D1'],
+  locations: [0, 0.5528846383094788, 1],
+} as const);
 
-/** Frame 2812:1398: the title, 4 to its right a 2 x 15 #D7B995 bar (radius 4). */
+/** Frame 2812:1398 (51 x 16): the title, 4 to its right a 2 x 15 #D7B995 bar (radius 4). */
 const TITLE_BAR = { width: 2, height: 15, radius: 4, gap: 4 };
 
-/** The design's shadow is #000 at 25%, blur 4, 4 down. */
+/** The card's DROP_SHADOW effect (2812:1392): #000 at 25%, blur 4, offset (0, 4). */
 const SHADOW = {
   shadowColor: '#000',
   shadowOpacity: 0.25,
@@ -52,6 +63,9 @@ const SHADOW = {
   shadowOffset: { width: 0, height: 4 },
   elevation: 4,
 } as const;
+
+/** The copy frame 2812:1397 is a vertical auto-layout with a 4 gap. */
+const COLUMN_GAP = 4;
 
 const BODY =
   'مَلِكةٌ أنتِ لا سِواكِ وفي قُربك من ربك: هُداكِ فأعدَدنا لكِ هذا المحتوى النَّدِي لتَصنعي جِيلًا على هَدي النبي ﷺ';
@@ -70,22 +84,24 @@ export function QueenCard({
     <HeroShell
       backdrop={
         <LinearGradient
-          colors={GROUND_COLORS}
-          locations={GROUND_LOCATIONS}
+          colors={QUEEN_GROUND.colors}
+          locations={QUEEN_GROUND.locations}
           start={{ x: 0, y: 0.5 }}
           end={{ x: 1, y: 0.5 }}
           style={StyleSheet.absoluteFill}
           pointerEvents="none"
         />
       }
-      backgroundColor={GROUND_COLORS[0]}
+      backgroundColor={QUEEN_GROUND.colors[0]}
       shadow={SHADOW}
       layers={LAYERS}
       designWidth={DESIGN.width}
       designHeight={DESIGN.height}
       column={COLUMN}
       accessibilityLabel="أنتِ ملكة"
+      accessibilityHint={BODY}
       onPress={onPress ?? onMore}
+      onMore={onMore ?? onPress}
       fill={fill}
     >
       {(scale) => (
@@ -108,10 +124,10 @@ export function QueenCard({
               }}
             />
           </View>
-          <Text style={[styles.body, { marginTop: 4 * scale }]} maxFontSizeMultiplier={1}>
+          <Text style={[styles.body, { marginTop: COLUMN_GAP * scale }]} maxFontSizeMultiplier={1}>
             {BODY}
           </Text>
-          <View style={[styles.pillRow, { marginTop: 4 * scale }]}>
+          <View style={[styles.pillRow, { marginTop: COLUMN_GAP * scale }]}>
             <SmallMoreButton onPress={onMore ?? onPress} />
           </View>
         </>

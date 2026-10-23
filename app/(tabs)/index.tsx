@@ -12,7 +12,7 @@ import {
   SkeletonCardList,
   SkeletonPosterList,
 } from '@/components/khazain';
-import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
+import { HeaderArt } from '@/components/khazain/patterns';
 import { RtlCarousel } from '@/components/khazain/primitives';
 import { RecommendedSection } from '@/components/khazain/recommendations/RecommendedSection';
 import {
@@ -20,6 +20,7 @@ import {
   type HomeQuickChip,
   HOME_SECTION_ORDER,
   type HomeSectionKey,
+  homeHeaderBand,
   homeSectionGap,
   homeTabletRows,
 } from '@/constants/homePresentation';
@@ -41,8 +42,8 @@ import { useRecommendationInputsStore } from '@/store/recommendationInputsStore'
 import { useSavedStore } from '@/store/savedStore';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useRef } from 'react';
-import { InteractionManager, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { InteractionManager, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
@@ -82,7 +83,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, isTablet, homeColumnStyle } = useResponsiveLayout();
-  const { fontScale } = useWindowDimensions();
+  // The header's real height, seeded with the design's 102 (54 row + 8 + 40 pill).
+  const [headerHeight, setHeaderHeight] = useState(102);
 
   const goToSections = () => router.push('/sections');
 
@@ -165,7 +167,11 @@ export default function HomeScreen() {
   // Rendered from HOME_SECTION_ORDER so the running order lives in one place
   // and is asserted by __tests__/homePresentation.test.ts.
   const sections: Record<HomeSectionKey, React.ReactNode> = {
-    header: <HomeHeader onSearchOpen={openSearch} />,
+    header: (
+      <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+        <HomeHeader onSearchOpen={openSearch} />
+      </View>
+    ),
 
     quranHero: (
       <View style={styles.heroPad}>
@@ -270,13 +276,16 @@ export default function HomeScreen() {
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <StatusBar style="dark" backgroundColor={KhazainColors.pageBg} />
       {/* 2001:940 lays the tile, the corner pair (the small one rotated 20.8deg) and
-          the opaque 155pt header over the page. Drawn behind the scroll, so the
-          cards pass over it; the title sits in the Home column, whose right edge
-          is the column's border plus the 16pt page padding. */}
+          the opaque 155pt header over the page. Drawn behind the scroll because the
+          app's header scrolls with the page while the frame's header is fixed
+          (FIXED_WHEN_CHILD_OF_SCROLLING_FRAME); the band's height follows the
+          measured header so large text never leaves tile showing under it. The
+          title sits in the Home column, whose right edge is the column's border
+          plus the 16pt page padding. */}
       <HeaderArt
         smallCorner="home"
         inset={(homeColumnStyle.borderRightWidth ?? 0) + 16}
-        bandHeight={headerBandHeight(insets.top, 'home', fontScale)}
+        bandHeight={homeHeaderBand(insets.top, headerHeight)}
       />
       <ScrollView
         contentContainerStyle={[

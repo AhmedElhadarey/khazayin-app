@@ -33,14 +33,6 @@ export const SCALE_STEPS = Object.freeze([
 ] as const);
 
 /**
- * Opacity at each distance from the focused poster (-2..2). The design dims
- * nothing: its posters are bare images at full opacity, and depth comes from
- * scale alone. Only the centre poster 2132:2193 carries a (barely visible) drop
- * shadow.
- */
-export const POSTER_OPACITY_STEPS = Object.freeze([1, 1, 1, 1, 1] as const);
-
-/**
  * Distance from the focused poster's centre to its neighbours' centres. This
  * is the scroll step: one swipe moves the fan by exactly one poster.
  *

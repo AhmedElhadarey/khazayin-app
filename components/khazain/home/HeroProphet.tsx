@@ -43,6 +43,10 @@ const TITLE_SIZE = { width: 95, height: 26 };
 /** Frame 2007:479: the title image, 3.83 to its right a 2 x 25 navy bar (2007:481, radius 0.96). */
 const TITLE_BAR = { width: 2, height: 25, radius: 0.96, gap: 3.83 };
 
+/** Gaps in the column (measured against frame 2007:479): title → body, body → المزيد pill. */
+const BODY_GAP = 5.8;
+const PILL_GAP = 8.6;
+
 const BODY =
   'وِجهتُك المُثلى لِتَعرفَ وتَغرفَ مِن سِيرة: النبيِّ ﷺ وأصحابِه العِظام، وأزواجِه الكِرام عَبْرَ محتوًى موثوقٍ شاملٍ يعزِّز الفَهم العميق لشخصيَّاتهم ويبيِّن الأثر العظيم لتضحيَاتهم.';
 
@@ -65,7 +69,9 @@ export function HeroProphet({
       designHeight={DESIGN.height}
       column={COLUMN}
       accessibilityLabel="محمد رسول الله"
+      accessibilityHint={BODY}
       onPress={onPress ?? onMore}
+      onMore={onMore ?? onPress}
       fill={fill}
     >
       {(scale) => (
@@ -99,12 +105,12 @@ export function HeroProphet({
             Pinned at 1 so the composition holds; the surrounding UI still
             scales to the app-wide 1.2 ceiling. */}
           <Text
-            style={[styles.body, { marginTop: 5.8 * scale }]}
+            style={[styles.body, { marginTop: BODY_GAP * scale }]}
             maxFontSizeMultiplier={1}
           >
             {BODY}
           </Text>
-          <View style={[styles.pillRow, { marginTop: 8.6 * scale }]}>
+          <View style={[styles.pillRow, { marginTop: PILL_GAP * scale }]}>
             <SmallMoreButton onPress={onMore ?? onPress} />
           </View>
         </>

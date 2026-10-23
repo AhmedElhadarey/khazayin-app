@@ -384,10 +384,12 @@ describe('the header art the frames lay over the page', () => {
       const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
       expect([file, src.includes('OrnamentPattern')]).toEqual([file, false]);
       expect([file, src.includes('<HeaderArt')]).toEqual([file, true]);
-      expect([file, src.includes(`headerBandHeight(insets.top, '${kind}', fontScale)`)]).toEqual([
-        file,
-        true,
-      ]);
+      // Home's band follows the measured header (homeHeaderBand), not a font scale.
+      const band =
+        kind === 'home'
+          ? 'homeHeaderBand(insets.top, headerHeight)'
+          : `headerBandHeight(insets.top, '${kind}', fontScale)`;
+      expect([file, src.includes(band)]).toEqual([file, true]);
       if (corners === 'single') expect([file, src.includes('corners="single"')]).toEqual([file, true]);
       else expect([file, src.includes('smallCorner="home"')]).toEqual([file, true]);
     }

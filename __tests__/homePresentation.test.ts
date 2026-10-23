@@ -1,6 +1,7 @@
 import {
   HOME_QUICK_CHIPS,
   HOME_SECTION_GAP,
+  homeHeaderBand,
   homeSectionGap,
   HOME_SECTION_ORDER,
   type HomeSectionKey,
@@ -104,5 +105,21 @@ describe('Featured dawah posters', () => {
       'home-helal',
       'home-mawiza',
     ]);
+  });
+});
+
+describe('Home header band', () => {
+  // Frame 2001:940's header is 110 tall under the status bar around a 102pt
+  // content (54 row + 8 + 40 pill): 8pt of its own below.
+  it('is the frame’s 110 at the design header height', () => {
+    expect(homeHeaderBand(47, 102)).toBe(47 + 110);
+  });
+
+  it('grows with the header at large text instead of leaving tile showing under it', () => {
+    expect(homeHeaderBand(47, 118)).toBe(47 + 118 + 8);
+  });
+
+  it('never shrinks below the frame', () => {
+    expect(homeHeaderBand(0, 90)).toBe(110);
   });
 });

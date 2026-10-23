@@ -31,6 +31,9 @@ export function DawahPoster({
   return (
     <Pressable
       onPress={onPress}
+      // The shadowed poster is rasterized once so the carousel's per-frame scale
+      // moves a cached bitmap instead of redrawing it, wrap clones included.
+      shouldRasterizeIOS
       style={({ pressed }) => [
         styles.card,
         {
@@ -71,12 +74,13 @@ const styles = StyleSheet.create({
   card: {
     position: 'relative',
     // The file's DROP_SHADOW on the centre poster. Not clipped, so the bare
-    // art's own edge is what shows.
+    // art's own edge is what shows. No `elevation`: Android draws a grey band
+    // for an elevation shadow over a transparent card (see HeroShell), so the
+    // faint shadow is iOS-only.
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1.22 },
     shadowOpacity: 0.25,
     shadowRadius: 1.22,
-    elevation: 1,
   },
   image: {
     width: '100%',
