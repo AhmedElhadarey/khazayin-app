@@ -7,6 +7,7 @@ import {
   FONT_SUBSTITUTIONS,
   REGISTERED_FONT_FAMILIES,
 } from '@/constants/fonts';
+import { TEXT_ROLES, fontFace } from '@/constants/typography';
 
 const REPO_ROOT = path.resolve(__dirname, '..');
 
@@ -90,10 +91,37 @@ describe('font registry', () => {
 
   it('finds the app actually using the registered families', () => {
     // Guards against the scan silently matching nothing and passing vacuously.
-    const used = usedFontFamilies();
-    // TheSansArabic is reached through type roles / fontFace(), not a literal.
+    // Families reach a style three ways: a literal (`fontFamily: '…'` or the JSX
+    // `fontFamily="…"`), a type role, or `fontFace(weight)`. Count all three.
+    const used = new Set(usedFontFamilies());
+    const grep = (pattern: string) => {
+      try {
+        return execFileSync('grep', ['-rhoE', pattern, 'app', 'components', 'services'], {
+          cwd: REPO_ROOT,
+          encoding: 'utf8',
+        });
+      } catch {
+        return ''; // grep exits 1 on no match
+      }
+    };
+    grep('fontFamily="[^"]+"').split('\n').filter(Boolean)
+      .forEach((l) => used.add(l.replace(/^fontFamily="/, '').replace(/"$/, '')));
+    const roleUse = grep('textStyle\\(\'[A-Za-z]+\'').split('\n').filter(Boolean);
+    roleUse.forEach((l) => {
+      const role = l.replace(/^textStyle\('/, '').replace(/'$/, '') as keyof typeof TEXT_ROLES;
+      if (TEXT_ROLES[role]) used.add(TEXT_ROLES[role].fontFamily);
+    });
+    grep('fontFace\\((400|600|700)\\)').split('\n').filter(Boolean).forEach((l) => {
+      used.add(fontFace(Number(l.replace(/\D/g, '')) as 400 | 600 | 700).fontFamily);
+    });
+    // The scan matched real usage: both design faces and Amiri are reached.
+    expect(used.size).toBeGreaterThanOrEqual(4);
+    expect(used).toContain('TheSansArabic');
     expect(used).toContain('TheMixArab');
     expect(used).toContain('Amiri-Bold');
+    // Whatever the style says must be registered.
+    const registered = new Set<string>(REGISTERED_FONT_FAMILIES);
+    expect([...used].filter((f) => f !== 'System' && !registered.has(f))).toEqual([]);
   });
 
   it('resolves every registered font asset on disk', () => {

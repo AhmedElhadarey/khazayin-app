@@ -1,11 +1,10 @@
 import React, { useEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
-import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
-import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { ChoiceRow } from '@/components/khazain/settings';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { useRecitersStore, useSettingsStore } from '@/store';
@@ -70,26 +69,7 @@ function SelectableReciterRow({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        selected ? styles.rowSelected : null,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      {selected ? (
-        <Svg width={18} height={18} viewBox="0 0 18 18">
-          <Path
-            d="M4 9.5l3.5 3.5L14 5.5"
-            stroke={KhazainColors.goldAccent}
-            strokeWidth={2.2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </Svg>
-      ) : null}
+    <ChoiceRow selected={selected} onPress={onPress} accessibilityLabel={subtitle ? `${title}، ${subtitle}` : title}>
       <View style={styles.textCol}>
         <Text style={styles.rowTitle} numberOfLines={1}>
           {title}
@@ -100,7 +80,7 @@ function SelectableReciterRow({
           </Text>
         ) : null}
       </View>
-    </Pressable>
+    </ChoiceRow>
   );
 }
 
@@ -119,23 +99,6 @@ const styles = StyleSheet.create({
     paddingBottom: 12,
   },
   list: { paddingHorizontal: 16, gap: 8 },
-  row: {
-    // Physical left -> right: tick, text column.
-    ...PHYSICAL_ROW,
-    alignItems: 'center',
-    gap: 12,
-    minHeight: CARD_DENSITY.reciterRowMinHeight,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: CARD_DENSITY.reciterRowRadius,
-    backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
-    borderColor: KhazainColors.hairlineWarm,
-  },
-  rowSelected: {
-    borderColor: KhazainColors.goldAccent,
-    borderWidth: 1.5,
-  },
   textCol: { flex: 1, gap: 2 },
   rowTitle: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   rowSubtitle: textStyle('caption', { color: KhazainColors.ink500 }),

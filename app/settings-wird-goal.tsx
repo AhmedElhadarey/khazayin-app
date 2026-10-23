@@ -10,9 +10,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
-import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { ChoiceRow } from '@/components/khazain/settings';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import {
@@ -137,33 +137,12 @@ function PresetRow({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      style={({ pressed }) => [
-        styles.row,
-        selected ? styles.rowSelected : null,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      {selected ? (
-        <Svg width={18} height={18} viewBox="0 0 18 18">
-          <Path
-            d="M4 9.5l3.5 3.5L14 5.5"
-            stroke={KhazainColors.goldAccent}
-            strokeWidth={2.2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </Svg>
-      ) : null}
+    <ChoiceRow selected={selected} onPress={onPress}>
       <Text style={styles.rowPages}>{`${toArNum(pages)} صفحة`}</Text>
       <Text style={styles.rowLabel} numberOfLines={1}>
         {label}
       </Text>
-    </Pressable>
+    </ChoiceRow>
   );
 }
 
@@ -183,23 +162,6 @@ const styles = StyleSheet.create({
   },
   body: { paddingHorizontal: 16, gap: 16 },
   list: { gap: 8 },
-  row: {
-    // Physical left -> right: tick, page count, label.
-    ...PHYSICAL_ROW,
-    alignItems: 'center',
-    gap: 12,
-    minHeight: CARD_DENSITY.reciterRowMinHeight,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: CARD_DENSITY.reciterRowRadius,
-    backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
-    borderColor: KhazainColors.hairlineWarm,
-  },
-  rowSelected: {
-    borderColor: KhazainColors.goldAccent,
-    borderWidth: 1.5,
-  },
   rowLabel: {
     flex: 1,
     ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),

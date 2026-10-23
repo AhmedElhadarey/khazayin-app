@@ -39,10 +39,7 @@ const ROOT = path.resolve(__dirname, '..');
  */
 const PINNED_SCREENS = [
   'app/settings-about.tsx',
-  'app/settings-font-size.tsx',
   'app/settings-prayer.tsx',
-  'app/settings-qiraa.tsx',
-  'app/settings-reciter.tsx',
   'app/settings-wird-goal.tsx',
   'app/settings-wird-reminder.tsx',
   'app/note-editor.tsx',
@@ -69,6 +66,9 @@ const PINNED_SCREENS = [
   'app/(tabs)/sections/discussion/[lectureId].tsx',
   'app/community-report-sheet.tsx',
   'components/khazain/settings/SettingsSection.tsx',
+  // The shared single-choice row used by the qira'a, reciter, wird-goal and
+  // font-size sheets, which no longer hand-roll it.
+  'components/khazain/settings/ChoiceRow.tsx',
   // Onboarding. Not in the original sweep because it is the one flow the
   // captures never reached: the persisted `onboardingComplete` flag meant a
   // installed-once emulator always booted past it. A release build on a

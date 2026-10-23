@@ -6,8 +6,11 @@
 import fs from 'fs';
 import path from 'path';
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 
+import { ChoiceRow } from '@/components/khazain/settings/ChoiceRow';
+import { SettingsToggleRow } from '@/components/khazain/settings/SettingsToggleRow';
+import { WirdSuggestionBanner } from '@/components/khazain/library/WirdSuggestionBanner';
 import { PillButton } from '@/components/khazain/primitives/PillButton';
 import { SearchGroupHeader } from '@/components/khazain/search/SearchGroupHeader';
 import { SelectableRow } from '@/components/khazain/onboarding/SelectableRow';
@@ -21,6 +24,8 @@ jest.mock('react-native-safe-area-context', () => {
   const { View } = require('react-native');
   return { SafeAreaView: View };
 });
+// The primitives barrel pulls in the store (Sentry); only Toggle is used here.
+jest.mock('@/components/khazain/primitives', () => ({ Toggle: () => null }));
 jest.mock('@/hooks/useResponsiveLayout', () => ({
   useResponsiveLayout: () => ({ width: 393, sideInsets: 0 }),
 }));
@@ -131,14 +136,13 @@ describe('NOFRAME-23 selectable rows', () => {
     expect(frame(row(true))).toMatchObject({ borderColor: KhazainColors.goldAccent, borderWidth: 1.5 });
   });
 
-  it.each(['app/settings-qiraa.tsx', 'app/settings-reciter.tsx', 'app/settings-wird-goal.tsx'])(
-    '%s rows use reciter density, hairlineWarm, no shadow and role titles',
+  it.each(['app/settings-qiraa.tsx', 'app/settings-reciter.tsx', 'app/settings-wird-goal.tsx', 'app/settings-font-size.tsx'])(
+    '%s lists its choices with the shared ChoiceRow and role text',
     (rel) => {
       const src = read(rel);
-      expect(src).toContain('CARD_DENSITY.reciterRowMinHeight');
-      expect(src).toContain('CARD_DENSITY.reciterRowRadius');
-      expect(src).toContain('KhazainColors.hairlineWarm');
-      expect(src).not.toMatch(/styles\.row,\s*KhazainShadows/);
+      expect(src).toContain('<ChoiceRow');
+      expect(src).not.toContain('KhazainShadows.card,\n        selected');
+      expect(src).not.toContain('rowSelected');
       expect(src).toMatch(/textStyle\('bodyCompact', \{ color: KhazainColors\.inkTitle \}\)/);
     },
   );
@@ -176,7 +180,7 @@ describe('source-level role routing (screens with heavy providers)', () => {
 
   it('NOFRAME-33 settings-prayer: role-based active label and time, stretch empty state', () => {
     const src = read('app/settings-prayer.tsx');
-    expect(src).toContain("selectLabelActive: textStyle('cardTitle', { color: KhazainColors.navy800 })");
+    expect(src).toContain("selectLabelActive: textStyle('sectionTitle', { color: KhazainColors.navy800 })");
     expect(src).toContain("timeValue: textStyle('sectionTitle', { color: KhazainColors.navy800 })");
     expect(src).toMatch(/emptyState: \{[^}]*alignItems: 'stretch'/);
   });
@@ -192,31 +196,67 @@ describe('source-level role routing (screens with heavy providers)', () => {
   });
 });
 
-describe('NOFRAME-23 settings-font-size LevelRow', () => {
-  const src = read('app/settings-font-size.tsx');
-  it('uses reciter density, a hairlineWarm overlay frame and no shadow', () => {
-    expect(src).toContain('CARD_DENSITY.reciterRowMinHeight');
-    expect(src).toContain('CARD_DENSITY.reciterRowRadius');
-    expect(src).toContain('KhazainColors.hairlineWarm');
-    expect(src).toContain('styles.frame');
-    expect(src).not.toContain('KhazainShadows');
+describe('ChoiceRow (qiraa, reciter, wird goal, font size)', () => {
+  const rowOf = (selected: boolean) => {
+    const r = render(
+      <ChoiceRow selected={selected} onPress={() => {}}>
+        <Text style={{ fontSize: 18 }}>متوسط</Text>
+      </ChoiceRow>,
+    );
+    const pressable = r.root.findAll((n) => n.props.accessibilityRole === 'radio')[0];
+    const resolved = pressable.props.style({ pressed: false });
+    const frame = r.root.findAll((n) => n.type === 'View' && flat(n)?.position === 'absolute')[0];
+    return { row: StyleSheet.flatten(resolved), frame: flat(frame), pressable };
+  };
+
+  it('has identical padding, size and border on the row itself in both states', () => {
+    const idle = rowOf(false).row;
+    const chosen = rowOf(true).row;
+    expect(chosen).toEqual(idle);
+    expect(idle.minHeight).toBe(CARD_DENSITY.reciterRowMinHeight);
+    expect(idle.borderRadius).toBe(CARD_DENSITY.reciterRowRadius);
+    expect(idle.borderWidth).toBeUndefined();
+    expect(idle.shadowOpacity).toBeUndefined();
+    expect(idle.elevation).toBeUndefined();
   });
-  it('takes its label from bodyCompact but keeps the per-level size', () => {
-    expect(src).toContain("...textStyle('bodyCompact', { color: KhazainColors.inkTitle })");
-    expect(src).toMatch(/\[styles\.rowLabel, \{ fontSize,/);
-    expect(src).not.toContain('Amiri-Bold');
+
+  it('only the overlay frame changes on selection: hairlineWarm 1 -> gold 1.5', () => {
+    expect(rowOf(false).frame).toMatchObject({ borderColor: KhazainColors.hairlineWarm, borderWidth: 1 });
+    expect(rowOf(true).frame).toMatchObject({ borderColor: KhazainColors.goldAccent, borderWidth: 1.5 });
+  });
+
+  it('is a radio that reports its state', () => {
+    expect(rowOf(true).pressable.props.accessibilityState).toEqual({ selected: true });
+    expect(rowOf(false).pressable.props.accessibilityState).toEqual({ selected: false });
+  });
+
+  it('draws the tick only when chosen', () => {
+    const count = (selected: boolean) =>
+      render(
+        <ChoiceRow selected={selected} onPress={() => {}}>
+          <Text>x</Text>
+        </ChoiceRow>,
+      ).root.findAll((n) => n.props.viewBox === '0 0 18 18').length;
+    expect(count(false)).toBe(0);
+    expect(count(true)).toBeGreaterThan(0);
   });
 });
 
-describe('weight decisions', () => {
-  it('SettingsToggleRow title matches the value row (bodyCompact)', () => {
-    expect(read('components/khazain/settings/SettingsToggleRow.tsx')).toContain(
-      "textStyle('bodyCompact', { color: KhazainColors.inkTitle })",
+describe('weight decisions (render)', () => {
+  it('SettingsToggleRow title matches the value row: bodyCompact / inkTitle', () => {
+    const r = render(
+      <SettingsToggleRow title="تنبيه" icon={null} value={false} onValueChange={() => {}} />,
     );
+    const s = flat(textWith(r, 'تنبيه'));
+    sameRole(s, 'bodyCompact');
+    expect(s.color).toBe(KhazainColors.inkTitle);
   });
-  it('the suggestion banner sentence is Regular', () => {
-    expect(read('components/khazain/library/WirdSuggestionBanner.tsx')).toContain(
-      "message: textStyle('bodyCompact'",
-    );
+
+  it('the suggestion banner sentence is Regular bodyCompact and its buttons are label', () => {
+    const r = render(<WirdSuggestionBanner suggestedTarget={5} onAccept={() => {}} onDismiss={() => {}} />);
+    const sentence = r.root.findAll((n) => n.type === 'Text' && typeof n.props.children === 'string' && n.props.children.includes('تجاوزتَ'))[0];
+    sameRole(flat(sentence), 'bodyCompact');
+    sameRole(flat(textWith(r, 'قبول')), 'label');
+    sameRole(flat(textWith(r, 'لاحقًا')), 'label');
   });
 });

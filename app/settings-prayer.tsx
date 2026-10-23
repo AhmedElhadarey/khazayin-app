@@ -350,7 +350,9 @@ const styles = StyleSheet.create({
     ...textStyle('body', { color: KhazainColors.ink900 }),
     flex: 1,
   },
-  selectLabelActive: textStyle('cardTitle', { color: KhazainColors.navy800 }),
+  // sectionTitle (bold 16/24), not cardTitle: the chosen label keeps its neighbours' size.
+  // Deviates from NOFRAME-33's wording because the wording's role was the wrong size.
+  selectLabelActive: textStyle('sectionTitle', { color: KhazainColors.navy800 }),
   caption: {
     ...textStyle('bodyCompact', { color: KhazainColors.ink700 }),
     paddingHorizontal: 4,

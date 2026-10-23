@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
-import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import { FontSizePreview } from '@/components/khazain/settings';
-import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { ChoiceRow, FontSizePreview } from '@/components/khazain/settings';
 import { MIN_LINE_HEIGHT_RATIO, textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { FONT_SIZE_SCALE } from '@/constants/settings';
@@ -87,26 +85,7 @@ function LevelRow({
   onPress: () => void;
 }) {
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        selected ? styles.rowPadSelected : styles.rowPadIdle,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
-      {selected ? (
-        <Svg width={18} height={18} viewBox="0 0 18 18">
-          <Path
-            d="M4 9.5l3.5 3.5L14 5.5"
-            stroke={KhazainColors.goldAccent}
-            strokeWidth={2.2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </Svg>
-      ) : null}
+    <ChoiceRow selected={selected} onPress={onPress} accessibilityLabel={label}>
       {/* The preview size is the one deliberate exception to the role's size. */}
       <Text
         style={[styles.rowLabel, { fontSize, lineHeight: Math.ceil(fontSize * MIN_LINE_HEIGHT_RATIO) }]}
@@ -114,15 +93,7 @@ function LevelRow({
       >
         {label}
       </Text>
-      {/* Border drawn as an overlay so choosing a row never moves its content. */}
-      <View
-        pointerEvents="none"
-        accessible={false}
-        accessibilityElementsHidden
-        importantForAccessibility="no-hide-descendants"
-        style={[styles.frame, selected ? styles.frameSelected : null]}
-      />
-    </Pressable>
+    </ChoiceRow>
   );
 }
 
@@ -142,31 +113,6 @@ const styles = StyleSheet.create({
   },
   body: { paddingHorizontal: 16, gap: 16 },
   list: { gap: 8 },
-  row: {
-    // PHYSICAL_ROW, not `row-reverse`: an unpinned row is already RTL under
-    // forceRTL, so `row-reverse` rendered left->right and put the label on the
-    // physical left with the tick on the right. Children are authored physical
-    // left -> right: tick, label.
-    ...PHYSICAL_ROW,
-    alignItems: 'center',
-    gap: 12,
-    minHeight: CARD_DENSITY.reciterRowMinHeight,
-    borderRadius: CARD_DENSITY.reciterRowRadius,
-    backgroundColor: KhazainColors.cardBg,
-  },
-  // The 12 / 16 inset plus the frame border it sits inside, per state.
-  rowPadIdle: { paddingVertical: 13, paddingHorizontal: 17 },
-  rowPadSelected: { paddingVertical: 13.5, paddingHorizontal: 17.5 },
-  frame: {
-    ...StyleSheet.absoluteFillObject,
-    borderRadius: CARD_DENSITY.reciterRowRadius,
-    borderWidth: 1,
-    borderColor: KhazainColors.hairlineWarm,
-  },
-  frameSelected: {
-    borderColor: KhazainColors.goldAccent,
-    borderWidth: 1.5,
-  },
   // Family and colour from the role; the size comes from the level.
   rowLabel: {
     flex: 1,

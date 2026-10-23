@@ -39,7 +39,8 @@ const isLegacy = (rel: string) =>
  * `<Text>` in one file wrapping a child in another), a style object built from
  * spread/computed keys, a weight passed through a prop to a component that
  * applies it, and the file-level family gate below (a file naming no registered
- * family is not scanned at all).
+ * family is not scanned at all). Also missed: a ternary with a bare-identifier
+ * arm (`on ? weight : '400'`) and the shorthand property `{ fontWeight }`.
  *
  * `ALLOWLIST` below is empty now that the Mushaf screen (ticket T20) is migrated. The test fails if a new offender appears
  * or an allowlisted file's count grows; it also fails when a count shrinks, so
@@ -84,8 +85,12 @@ function heavyWeightLines(source: string, strict = false): number {
     const t = line.trim();
     if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return false;
     if (WEIGHT_OK_RE.test(line)) return false;
-    const m = WEIGHT_RE.exec(line);
+    // Judge the code only: a trailing `// was 500?` comment is not a ternary.
+    const code = line.replace(/\/\*.*?\*\//g, '').replace(/\/\/.*$/, '');
+    const m = WEIGHT_RE.exec(code);
     if (!m) return false;
+    // A type member (`fontWeight: string;`) declares a type, it sets no weight.
+    if (m[1].trim().endsWith(';')) return false;
     const value = weightValue(m[1]);
     // Ternaries are checked whole (up to the line's end) so both arms count.
     if (HEAVY_RE.test(m[1].includes('?') ? m[1] : value)) return true;
@@ -109,8 +114,9 @@ function offenders(): Record<string, number> {
 /**
  * `TheSansArabic` is the BOLD file, so a hand-assembled `fontFamily:
  * 'TheSansArabic'` is always bold. Prose, data and meta text must use a role
- * (`textStyle`) or `fontFace(400)`. A site that is intentionally bold and has
- * no matching role carries `// bold-ok: <reason>` on the same line. The reason
+ * (`textStyle`) or `fontFace(400)`. A bold site with no matching role uses
+ * `...fontFace(700)`, the sanctioned route. `// bold-ok: <reason>` is only for
+ * a hand-built family that cannot use either. The reason
  * must be true: for a screen with no Figma frame say so ("no frame; contract:
  * label role"), never claim the file shows it.
  */
@@ -170,6 +176,10 @@ describe('no bold fontWeight on a registered custom family', () => {
     expect(heavyWeightLines("fontWeight: on ? '400' : '400',", true)).toBe(0);
     expect(heavyWeightLines("fontWeight: '400',", true)).toBe(0);
     expect(heavyWeightLines("fontWeight: 'bold',")).toBe(1);
+    // Comments and type members are not weights.
+    expect(heavyWeightLines("fontWeight: '400', // was 500?")).toBe(0);
+    expect(heavyWeightLines("fontWeight: '700', // really?")).toBe(1);
+    expect(heavyWeightLines('fontWeight: string;', true)).toBe(0);
     expect(heavyWeightLines("fontWeight: '400',")).toBe(0);
     expect(heavyWeightLines("// fontWeight: '700'")).toBe(0);
   });
