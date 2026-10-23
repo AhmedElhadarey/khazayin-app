@@ -138,15 +138,23 @@ describe('SurahRow bookmark as a row accessibility action', () => {
 
   it('toggles saved state, relabels, and hides the nested button', () => {
     useSavedStore.setState({ items: [] } as any);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { AccessibilityInfo } = require('react-native') as typeof import('react-native');
+    const announced = jest.fn();
+    (AccessibilityInfo as any).announceForAccessibilityWithOptions = (m: string) => announced(m);
     const s = pick(2);
     const r = render(<SurahRow surah={s} />);
     const row = rowOf(r);
-    expect(row.props.accessibilityActions).toEqual([{ name: 'bookmark', label: SAVED_COPY.saveLabel }]);
-    act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'bookmark' } }));
+    expect(row.props.accessibilityActions).toEqual([{ name: 'toggleSave', label: SAVED_COPY.saveLabel }]);
+    act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'toggleSave' } }));
     expect(isSaved(s.id)).toBe(true);
+    expect(announced).toHaveBeenLastCalledWith(SAVED_COPY.saved);
+    expect(rowOf(r).props.accessibilityValue).toEqual({ text: SAVED_COPY.savedValue });
+    expect(rowOf(r).props.onLongPress).toBeUndefined();
     expect(rowOf(r).props.accessibilityActions[0].label).toBe(SAVED_COPY.unsaveLabel);
-    act(() => rowOf(r).props.onAccessibilityAction({ nativeEvent: { actionName: 'bookmark' } }));
+    act(() => rowOf(r).props.onAccessibilityAction({ nativeEvent: { actionName: 'toggleSave' } }));
     expect(isSaved(s.id)).toBe(false);
+    expect(announced).toHaveBeenLastCalledWith(SAVED_COPY.removed);
     const hidden = r.root.findAll((n) => n.props.importantForAccessibility === 'no-hide-descendants');
     expect(hidden.length).toBeGreaterThan(0);
     expect(hidden[0].props.accessibilityElementsHidden).toBe(true);

@@ -80,6 +80,11 @@ function announce(message: string): void {
   }
 }
 
+/** Announces the outcome of a toggle; the toast has no live region. */
+export function announceSaveResult(nowSaved: boolean): void {
+  announce(nowSaved ? SAVED_COPY.saved : SAVED_COPY.removed);
+}
+
 /**
  * Pure builder for a saveable row's Pressable props. `onToggle` performs the
  * toggle and returns the new saved state. Only the `toggleSave` custom action
@@ -97,7 +102,7 @@ export function saveGestureProps(saved: boolean, onToggle: () => boolean): SaveG
     onAccessibilityAction: (e: AccessibilityActionEvent) => {
       if (e.nativeEvent.actionName !== SAVE_ACTION_NAME) return;
       const nowSaved = onToggle();
-      announce(nowSaved ? SAVED_COPY.saved : SAVED_COPY.removed);
+      announceSaveResult(nowSaved);
     },
     accessibilityHint: saved ? SAVED_COPY.unsaveHint : SAVED_COPY.saveHint,
     accessibilityValue: { text: saved ? SAVED_COPY.savedValue : undefined },

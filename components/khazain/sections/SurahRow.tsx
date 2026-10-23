@@ -4,7 +4,7 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { BookmarkButton, SurahStar } from '@/components/khazain/primitives';
 import type { Surah } from '@/types/content';
-import { SAVED_COPY, toggleSaved } from '@/services/savedToggle';
+import { SAVED_COPY, SAVE_ACTION_NAME, announceSaveResult, toggleSaved } from '@/services/savedToggle';
 import { useSavedStore } from '@/store';
 import { playSaveHaptic } from '@/components/khazain/primitives/useSaveGesture';
 import React from 'react';
@@ -47,20 +47,21 @@ export function SurahRow({
   // focus; the same toggle is exposed as a custom action on the row instead.
   const toggleBookmark = () => {
     playSaveHaptic();
-    toggleSaved({ type: 'surah', entityId: surah.id, snapshot });
+    announceSaveResult(toggleSaved({ type: 'surah', entityId: surah.id, snapshot }));
   };
 
   return (
     <Pressable
       onPress={onPress}
       accessibilityActions={[
-        { name: 'bookmark', label: saved ? SAVED_COPY.unsaveLabel : SAVED_COPY.saveLabel },
+        { name: SAVE_ACTION_NAME, label: saved ? SAVED_COPY.unsaveLabel : SAVED_COPY.saveLabel },
       ]}
       onAccessibilityAction={(e) => {
-        if (e.nativeEvent.actionName === 'bookmark') toggleBookmark();
+        if (e.nativeEvent.actionName === SAVE_ACTION_NAME) toggleBookmark();
       }}
       accessibilityRole="button"
       accessibilityLabel={`${surah.name}، ${surah.meta}`}
+      accessibilityValue={{ text: saved ? SAVED_COPY.savedValue : undefined }}
       style={({ pressed }) => [
         styles.row,
         { transform: [{ scale: pressed ? 0.99 : 1 }], opacity: pressed ? 0.92 : 1 },
