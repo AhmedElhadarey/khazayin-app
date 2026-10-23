@@ -36,7 +36,8 @@ export function LectureCard({
   scholar,
   duration,
   pretitleSmall,
-  compact,
+  compact: compactProp,
+  variant,
   onPress,
 }: {
   id: string;
@@ -47,8 +48,17 @@ export function LectureCard({
   duration?: string;
   pretitleSmall?: string;
   compact?: boolean;
+  /**
+   * `rail` is the Audiobooks / Exclusive row (2869:2158, 2869:2367): the
+   * compact shape with the badge and ONE line of text, vertically centred.
+   * The scholar and duration are not drawn there; they stay in the
+   * accessibility label so a screen reader still gets them.
+   */
+  variant?: 'rail';
   onPress?: () => void;
 }) {
+  const rail = variant === 'rail';
+  const compact = compactProp || rail;
   // `compact` changes the card's shape and clamps the title to one line — the
   // rail lists are single-line in the file. It no longer forks the text
   // styles: both frames set the same faces and sizes.
@@ -62,9 +72,9 @@ export function LectureCard({
     // frames draw no bookmark, so the unsaved row stays exactly as they do;
     // saving is a long-press (useSaveGesture).
     meta:
-      duration || saved ? (
+      (!rail && duration) || saved ? (
         <View style={styles.endCluster}>
-          {duration ? <Text style={styles.duration}>{duration}</Text> : null}
+          {!rail && duration ? <Text style={styles.duration}>{duration}</Text> : null}
           {saved ? (
             <BookmarkButton
               type={saveTarget.type}
@@ -76,8 +86,16 @@ export function LectureCard({
         </View>
       ) : null,
     text: (
-      <View style={[styles.textBlock, compact ? null : styles.textBlockCard]}>
-        {pretitleSmall ? (
+      <View
+        style={[
+          styles.textBlock,
+          compact ? null : styles.textBlockCard,
+          // Full width, not shrink-wrapped (Android 15 line-breaking), and
+          // centred on the row's cross axis.
+          rail ? styles.textBlockRail : null,
+        ]}
+      >
+        {pretitleSmall && !rail ? (
           <Text style={styles.pretitle} numberOfLines={1}>
             {pretitleSmall}
           </Text>
@@ -88,7 +106,7 @@ export function LectureCard({
         >
           {title}
         </Text>
-        {scholar ? (
+        {scholar && !rail ? (
           <Text style={[styles.scholar, compact ? null : styles.scholarCard]} numberOfLines={1}>
             {scholar}
           </Text>
@@ -103,6 +121,9 @@ export function LectureCard({
     <Pressable
       onPress={onPress}
       {...gestureProps}
+      {...(rail
+        ? { accessibilityLabel: [title, scholar, duration].filter(Boolean).join('، ') }
+        : null)}
       style={({ pressed }) => [
         styles.cardBase,
         heightStyle,
@@ -152,6 +173,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   textBlockCard: { gap: 0 },
+  textBlockRail: { alignItems: 'stretch', alignSelf: 'stretch', justifyContent: 'center' },
   // `H3-145` is TheMixArab Regular 14 and `P-148` TheMixArab Regular 12 in
   // every one of these frames — the body face, not the calligraphic one the
   // app had been reaching for.

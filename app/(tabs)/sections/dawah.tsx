@@ -95,7 +95,8 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: KhazainColors.hairlineWarm,
-    paddingVertical: 8,
+    // 1 + 7 + 40 + 7 + 1 = 56.
+    paddingVertical: 7,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
     alignItems: 'center',
     gap: 8,

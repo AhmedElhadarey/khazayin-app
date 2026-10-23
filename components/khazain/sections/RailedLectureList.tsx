@@ -65,7 +65,7 @@ export function RailedLectureList({
             <LectureCard
               id={item.id}
               category={item.category}
-              compact
+              variant="rail"
               iconNode={badge(CARD_DENSITY.lectureBadgeDisc)}
               title={item.title}
               scholar={item.scholar}

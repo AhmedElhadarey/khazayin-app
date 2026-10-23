@@ -51,7 +51,7 @@ export function DawahPosterRow({
           accessibilityLabel="مشاركة"
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <FigmaIcon name="DawahShare" size={ACTION_GLYPH} color={KhazainColors.ink700} />
+          <FigmaIcon name="DawahShare" size={ACTION_GLYPH} color={KhazainColors.inkTitle} />
         </Pressable>
         <Pressable
           onPress={onDownload}
@@ -59,7 +59,7 @@ export function DawahPosterRow({
           accessibilityLabel="تنزيل"
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <FigmaIcon name="DawahDownload" size={ACTION_GLYPH} color={KhazainColors.ink700} />
+          <FigmaIcon name="DawahDownload" size={ACTION_GLYPH} color={KhazainColors.inkTitle} />
         </Pressable>
       </View>
 
@@ -100,7 +100,8 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: KhazainColors.hairlineWarm,
-    paddingVertical: 8,
+    // 1 + 7 + 73 + 7 + 1 = 89.
+    paddingVertical: 7,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
     alignItems: 'center',
     gap: 8,
