@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
   },
   list: {
     paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingTop: PAGE_CHROME.cardListAfterSearch,
     gap: CARD_DENSITY.lectureListGap,
   },
 });

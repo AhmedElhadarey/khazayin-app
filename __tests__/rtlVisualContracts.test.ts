@@ -5,6 +5,7 @@ import {
   LECTURE_CARD_ORDER,
   LETTER_INDEX_EDGE,
   LIST_ROW_ORDER,
+  CARTOUCHE_PHYSICAL_ORDER,
   MUSHAF_FOOTER_ORDER,
   RECITER_ROW_ORDER,
   RECOMMENDATION_ROW_ORDER,
@@ -45,6 +46,12 @@ describe('physical order contracts', () => {
 
   it('orders the Mushaf footer Index, Go to bookmark, Save bookmark', () => {
     expect(MUSHAF_FOOTER_ORDER).toEqual(['index', 'goToBookmark', 'saveBookmark']);
+  });
+
+  it('puts the cartouche ayah count at the physical left, name centred, order at the right', () => {
+    // Page image images/02f06fab… in docs/KHAZAYIN.fig: «آياتها ١٧٦» left, «ترتيبها ٤» right.
+    expect(CARTOUCHE_PHYSICAL_ORDER).toEqual(['ayahs', 'name', 'order']);
+    expect(Object.isFrozen(CARTOUCHE_PHYSICAL_ORDER)).toBe(true);
   });
 
   it('keeps the letter rail on the physical right edge', () => {

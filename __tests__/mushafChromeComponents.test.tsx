@@ -1,8 +1,8 @@
 import React from 'react';
-import { Animated, Text, View } from 'react-native';
+import { Animated, Text } from 'react-native';
 import { MushafChrome } from '@/components/khazain/mushaf/MushafChrome';
 import { SurahCartouche } from '@/components/khazain/mushaf/SurahCartouche';
-import { CHROME_SCRIM, HIDE_CONTROLS_LABEL } from '@/services/mushafChrome';
+import { CHROME_SCRIM } from '@/services/mushafChrome';
 
 jest.mock('react-native-safe-area-context', () => ({ useSafeAreaInsets: () => ({ top: 20, bottom: 10, left: 0, right: 0 }) }));
 
@@ -18,15 +18,14 @@ const textOf = (r: Renderer): string[] =>
   r.root
     .findAll((n) => n.type === Text)
     .map((n) => [n.props.children].flat(5).filter((c) => typeof c === 'string').join(''));
-const scrims = (r: Renderer) =>
-  r.root.findAll((n) => n.props.accessibilityLabel === HIDE_CONTROLS_LABEL && typeof n.props.onPress === 'function');
+const scrimFills = (r: Renderer) =>
+  r.root.findAll((n) => JSON.stringify(n.props.style ?? null).includes(CHROME_SCRIM) && 'pointerEvents' in n.props);
 
 function chrome(over: Partial<React.ComponentProps<typeof MushafChrome>> = {}) {
   const props = {
     visible: true,
     screenReaderOn: false,
     reduceMotion: false,
-    onScrimPress: jest.fn(),
     onTopHeight: jest.fn(),
     onBottomHeight: jest.fn(),
     top: <Text>رأس</Text>,
@@ -43,19 +42,19 @@ function chrome(over: Partial<React.ComponentProps<typeof MushafChrome>> = {}) {
 describe('MushafChrome', () => {
   afterEach(() => jest.restoreAllMocks());
 
-  it('draws the 24% scrim and closes on a scrim press', () => {
-    const { r, props } = chrome();
-    const s = scrims(r);
-    expect(s).toHaveLength(1);
-    const fills = r.root.findAll((n) => n.type === View || (n.type as any)?.displayName === 'Animated.View');
-    expect(JSON.stringify(fills.map((n) => n.props.style))).toContain(CHROME_SCRIM);
-    act(() => s[0].props.onPress());
-    expect(props.onScrimPress).toHaveBeenCalledTimes(1);
+  it('draws the 24% scrim as a visual layer only: touches pass through to the page', () => {
+    const { r } = chrome();
+    const s = scrimFills(r);
+    expect(s.length).toBeGreaterThan(0);
+    s.forEach((n) => expect(n.props.pointerEvents).toBe('none'));
+    // No press handler anywhere: show and hide both go through the page's tap gate.
+    expect(r.root.findAll((n) => typeof n.props.onPress === 'function')).toHaveLength(0);
+    expect(r.root.findAll((n) => n.props.accessibilityRole === 'button')).toHaveLength(0);
   });
 
   it('has no scrim while a screen reader pins the chrome up', () => {
     const { r } = chrome({ screenReaderOn: true });
-    expect(scrims(r)).toHaveLength(0);
+    expect(scrimFills(r)).toHaveLength(0);
     expect(textOf(r)).toEqual(expect.arrayContaining(['رأس', 'تذييل']));
   });
 
@@ -76,7 +75,7 @@ describe('MushafChrome', () => {
     const { r } = chrome({ visible: false });
     const hidden = r.root.findAll((n) => n.props.accessibilityElementsHidden === true);
     expect(hidden.length).toBeGreaterThan(0);
-    expect(scrims(r)[0]?.props.pointerEvents ?? 'none').not.toBe('auto');
+    scrimFills(r).forEach((n) => expect(n.props.pointerEvents).toBe('none'));
   });
 
   it('reports the top and bottom block heights including the safe areas', () => {
@@ -115,6 +114,14 @@ describe('SurahCartouche', () => {
   it('never prints a middle dot', () => {
     const t = textOf(render(<SurahCartouche surahNumber={114} name="الناس" ayahCount={6} />));
     expect(t.join('')).not.toContain('·');
+  });
+
+  it('puts the ayah count at the physical left and the order at the physical right (MUSHAF-04)', () => {
+    const t = textOf(render(<SurahCartouche surahNumber={4} name="النساء" ayahCount={176} />));
+    const at = (s: string) => t.findIndex((x) => x === s);
+    expect(at('آياتها ١٧٦')).toBeGreaterThanOrEqual(0);
+    expect(at('آياتها ١٧٦')).toBeLessThan(at('سورة النساء'));
+    expect(at('سورة النساء')).toBeLessThan(at('ترتيبها ٤'));
   });
 
   it('drops the ayah label rather than print a placeholder while the count is unknown', () => {

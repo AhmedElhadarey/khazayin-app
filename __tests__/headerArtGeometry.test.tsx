@@ -170,6 +170,20 @@ describe('HeaderArt render order', () => {
     act(() => r.unmount());
   });
 
+  it('tile={false} with a single corner paints only the large corner', () => {
+    const r = render({ corners: 'single', tile: false });
+    const kids = layer(r).children;
+    expect(kids).toHaveLength(1);
+    expect(kids[0].props.source).toBeDefined();
+    act(() => r.unmount());
+  });
+
+  it("corners='none' paints only the tile", () => {
+    const r = render({ corners: 'none' });
+    expect(layer(r).children).toHaveLength(1);
+    act(() => r.unmount());
+  });
+
   it('paints the band after the tile and before the corners', () => {
     const r = render({ bandHeight: 80 });
     const kids = layer(r).children;

@@ -100,7 +100,7 @@ export const HEADER_BAND = Object.freeze({
   root: 91,
   /** Sub-screens with a search or tab row: lists, scholars, Archive 2558:1334 (137). */
   search: 92,
-  /** Home 2001:940 (155). */
+  /** Home 2001:940 (155). Frame literal: like `root`, it does not follow font scale. */
   home: 110,
 });
 

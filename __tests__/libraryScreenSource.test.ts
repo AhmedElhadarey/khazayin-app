@@ -70,7 +70,7 @@ describe('search and header offsets (LIBRARY-13, 25)', () => {
     expect(PAGE_CHROME.searchPaddingBottom + LIBRARY_SEARCH_MARGIN_BELOW).toBe(32);
   });
   it('keeps 12 under the title', () => {
-    expect(body(lib, 'headerBlock')).toMatch(/paddingBottom: 12/);
+    expect(body(lib, 'headerBlock')).toMatch(/paddingBottom: 12\b/);
   });
 });
 

@@ -54,4 +54,27 @@ describe('Mushaf reader chrome wiring', () => {
   it('the resume placeholder is no longer called a loading state of frame 2349:829', () => {
     expect(raw).not.toMatch(/Node 2349:829 — a stable page surface/);
   });
+  it('the scrim is visual only: no scrim press prop, both directions use the tap gate', () => {
+    expect(src).not.toMatch(/onScrimPress/);
+    expect(src).toMatch(/chromeAfterTap\(/);
+  });
+  it('keeps both screen-reader actions on the page', () => {
+    expect(src).toMatch(/name: 'hideControls'/);
+    expect(src).toMatch(/name: 'showControls'/);
+    expect(src).toContain('HIDE_CONTROLS_LABEL');
+  });
+  it('touches ending in the notes block, suggestions or the retry are consumed', () => {
+    expect(src).toMatch(/tap\.consumeTouch\(\)/);
+    expect(src).toMatch(/onTouchEnd=\{ayatStatus === 'success' \? undefined : consumeTouch\}/);
+    expect(src).toMatch(/onTouchEnd=\{consumeTouch\}[^>]*>\s*<SurahNotesFooter/);
+  });
+  it('the resume placeholder shows the same tile and sheet column as the loaded page', () => {
+    const i = src.indexOf('function ResumePlaceholder');
+    expect(i).toBeGreaterThan(0);
+    const body = src.slice(i, i + 700);
+    expect(body).toContain('<HeaderArt corners="none"');
+    expect(body).toContain('insetColumn(');
+    expect(body).toContain('styles.resumeSheet');
+    expect(src).toMatch(/resumeSheet:\s*\{[^}]*KhazainColors\.mushafSheet/);
+  });
 });

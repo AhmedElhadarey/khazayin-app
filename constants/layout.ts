@@ -418,8 +418,20 @@ export const PAGE_CHROME = Object.freeze({
   searchPaddingBottom: 8,
   /** Sections root: pill bottom 128, first card 148 (2031:5675). */
   rootSearchPaddingBottom: 20,
-  /** First row / card under a search block with no tab strip: 10 below the pill. */
+  /**
+   * First compact row under a search block with no tab strip: 2 below the
+   * `searchPaddingBottom` (10 below the pill). Frames 2207:5270, 2102:2975,
+   * 2869:2088, 2207:17898.
+   */
   listAfterSearch: 2,
+  /**
+   * First card under the pill on the card lists (Prophet, Queen, Books, Radio):
+   * 4 below the `searchPaddingBottom` (12 below the pill; first card at 141).
+   * Frames 2465:1911, 2589:1772, 2597:2552, 2606:3830.
+   */
+  cardListAfterSearch: 4,
+  /** First row / rail top under the segment tab strip (Reciter): frame 2031:6193. */
+  listAfterTabs: 8,
   /** Letter rail top inside a body that starts `listAfterSearch` under the pill. */
   railTop: 4,
 } as const);

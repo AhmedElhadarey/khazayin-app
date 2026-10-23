@@ -10,6 +10,7 @@ const SEARCH_SCREENS = [
   'app/(tabs)/sections/radio.tsx',
   'app/(tabs)/sections/queen.tsx',
   'app/(tabs)/sections/reciter.tsx',
+  'app/(tabs)/sections/mushaf.tsx',
   'app/(tabs)/sections/books.tsx',
   'app/(tabs)/sections/scholar.tsx',
   'app/(tabs)/sections/prophet.tsx',
@@ -64,5 +65,11 @@ describe('search pill and first-row offsets', () => {
     expect(SEGMENT_TABS.stripPaddingVertical).toBe(8);
     expect(PAGE_CHROME.searchPaddingBottom + SEGMENT_TABS.stripPaddingVertical).toBe(16);
     expect(read('app/(tabs)/sections/reciter.tsx')).toMatch(/body:\s*\{[^}]*paddingTop:\s*8/);
+  });
+
+  it('Mushaf index starts its rows 2 under the pill', () => {
+    expect(read('app/(tabs)/sections/mushaf.tsx')).toMatch(
+      /surahList:\s*\{[^}]*paddingTop:\s*PAGE_CHROME\.listAfterSearch/,
+    );
   });
 });

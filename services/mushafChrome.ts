@@ -73,6 +73,7 @@ export class ChromeTapTracker {
   private multi = false;
   private scrollingAtStart = false;
   private longPress = false;
+  private consumed = false;
 
   start(p: { x: number; y: number; ms: number; touches: number; scrolling: boolean }): void {
     this.active = true;
@@ -83,6 +84,7 @@ export class ChromeTapTracker {
     this.multi = p.touches > 1;
     this.scrollingAtStart = p.scrolling;
     this.longPress = false;
+    this.consumed = false;
   }
 
   move(p: { x: number; y: number; touches: number }): void {
@@ -96,6 +98,14 @@ export class ChromeTapTracker {
     this.longPress = true;
   }
 
+  /**
+   * An in-page control (a note row, a recommendation's dismiss, a retry button)
+   * took this touch: it bubbles to the page, but it is not a tap on the page.
+   */
+  consumeTouch(): void {
+    this.consumed = true;
+  }
+
   cancel(): void {
     this.active = false;
   }
@@ -104,6 +114,7 @@ export class ChromeTapTracker {
   end(p: { ms: number; scrolling: boolean }): boolean {
     if (!this.active) return false;
     this.active = false;
+    if (this.consumed) return false;
     return isChromeTap({
       pressMs: p.ms - this.startMs,
       movedPt: this.moved,

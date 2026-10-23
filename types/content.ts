@@ -44,6 +44,12 @@ export interface Surah {
   ayahCount: number;
 }
 
+/**
+ * One ayah of a surah. `text` must NOT carry a Tanzil-style basmala prefix
+ * («بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ») on ayah 1: the reader draws the
+ * basmala itself (SurahCartouche), except for surahs 1 (where it IS ayah 1)
+ * and 9 (which has none). A prefixed text would print it twice.
+ */
 export interface Ayah {
   surahId: string;
   number: number;       // ayah number within surah

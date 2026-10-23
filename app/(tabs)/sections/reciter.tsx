@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
     // to real physical edges; without it forceRTL swaps both to the left.
     ...PHYSICAL_BOX,
     flex: 1,
-    paddingTop: 8,
+    paddingTop: PAGE_CHROME.listAfterTabs,
     position: 'relative',
   },
   listContent: {
@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
   rail: {
     // LETTER_INDEX_EDGE — the alphabet rail lives on the physical right edge.
     position: 'absolute',
-    top: 8,
+    top: PAGE_CHROME.listAfterTabs,
     bottom: 0,
     // The right offset (`LETTER_INDEX_EDGE`) is set at render time from
     // `railListGeometry`: 16 on phones, the column's edge on tablets.

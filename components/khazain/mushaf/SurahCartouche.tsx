@@ -1,3 +1,4 @@
+import { CARTOUCHE_PHYSICAL_ORDER } from '@/constants/rtlContracts';
 import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { toArabicDigits } from '@/constants/progress';
 import { KhazainColors } from '@/constants/theme';
@@ -5,13 +6,6 @@ import { BASMALA_TEXT, basmalaShown } from '@/services/mushafChrome';
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
-
-/**
- * Physical left -> right order of the three cartouche parts. A frozen literal
- * like the other slot orders in `constants/rtlContracts.ts`; flip it here if
- * the client's art puts the ayah count and the order the other way round.
- */
-export const CARTOUCHE_PHYSICAL_ORDER = Object.freeze(['order', 'name', 'ayahs'] as const);
 
 /**
  * The surah header band and, under it, the plain basmala line (MUSHAF-04).

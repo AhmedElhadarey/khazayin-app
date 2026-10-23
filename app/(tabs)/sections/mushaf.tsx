@@ -33,7 +33,12 @@ import {
 } from '@/services/mushafNavigation';
 import { ReadingPlaceController, currentKeyEntry } from '@/services/mushafAnchor';
 import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
-import { ChromeTapTracker, SHOW_CONTROLS_LABEL, chromeAfterTap } from '@/services/mushafChrome';
+import {
+  ChromeTapTracker,
+  HIDE_CONTROLS_LABEL,
+  SHOW_CONTROLS_LABEL,
+  chromeAfterTap,
+} from '@/services/mushafChrome';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { surahName, surahStartPage } from '@/constants/progress';
@@ -152,15 +157,33 @@ export default function MushafScreen() {
     );
   }
   if (!resumeChecked) {
-    // A stable sheet-coloured surface, not the index and not a spinner over
-    // unrelated content.
-    return <View style={[styles.screen, { backgroundColor: KhazainColors.mushafSheet }]} />;
+    return <ResumePlaceholder />;
   }
   return (
     <ListView
       onBack={() => router.back()}
       onPick={(id) => router.push(`/sections/mushaf?surah=${id}` as any)}
     />
+  );
+}
+
+/**
+ * Waiting surface while the saved page is looked up. It draws the same layers
+ * the loaded reader draws (tile, then the sheet in the tablet column), so
+ * nothing in the margins changes when the page opens (MUSHAF-17: placeholder
+ * must equal page). Spec said `<HeaderArt corners="none" />`; this keeps that
+ * and adds the sheet column the reader has.
+ */
+function ResumePlaceholder() {
+  const { width, isTablet, sideInsets } = useResponsiveLayout();
+  const column = isTablet ? insetColumn(width, mushafSheetWidth(width), sideInsets) : undefined;
+  return (
+    <View style={styles.screen}>
+      <HeaderArt corners="none" />
+      <View style={[styles.resumeColumn, column]}>
+        <View style={styles.resumeSheet} />
+      </View>
+    </View>
   );
 }
 
@@ -489,6 +512,10 @@ function ReadingView({
     const t = e.nativeEvent;
     tap.move({ x: t.pageX, y: t.pageY, touches: t.touches?.length ?? 1 });
   };
+  // In-page controls (note rows, suggestion dismiss, retry) bubble their touch
+  // to the page; marking it consumed keeps it from toggling the chrome. Child
+  // touch-end handlers run before the page's, so the mark lands in time.
+  const consumeTouch = useCallback(() => tap.consumeTouch(), [tap]);
   const onPageTouchEnd = () => {
     if (tap.end({ ms: Date.now(), scrolling: scrollingRef.current })) {
       setChromeShown((shown) => chromeAfterTap(shown, screenReaderOn));
@@ -548,6 +575,7 @@ function ReadingView({
               ayahCount={cartoucheAyahCount}
             />
             <View
+              onTouchEnd={ayatStatus === 'success' ? undefined : consumeTouch}
               onLayout={(e) => {
                 bodyYRef.current = e.nativeEvent.layout.y;
                 place.setBodyY(e.nativeEvent.layout.y);
@@ -583,10 +611,12 @@ function ReadingView({
                     ]}
                     accessibilityActions={[
                       { name: 'showControls', label: SHOW_CONTROLS_LABEL },
+                      { name: 'hideControls', label: HIDE_CONTROLS_LABEL },
                       { name: 'addSurahNote', label: 'إضافة ملاحظة على السورة' },
                     ]}
                     onAccessibilityAction={(e) => {
                       if (e.nativeEvent.actionName === 'showControls') setChromeShown(true);
+                      if (e.nativeEvent.actionName === 'hideControls') setChromeShown(false);
                       if (e.nativeEvent.actionName === 'addSurahNote') takeAyahNote(undefined);
                     }}
                   >
@@ -612,14 +642,16 @@ function ReadingView({
             </View>
             {/* Outside the measured body wrapper above, so the page-segment offsets
                 the reading tracker uses are unaffected. */}
-            <SurahNotesFooter
-              surahId={surahId}
-              onOpenNote={(id) =>
-                router.push({ pathname: '/note-editor' as any, params: { id } })
-              }
-              onJump={jumpToAyah}
-            />
-            {ayatStatus === 'success' ? <SurahEndSuggestions surahNumber={surahNumber} /> : null}
+            <View onTouchEnd={consumeTouch}>
+              <SurahNotesFooter
+                surahId={surahId}
+                onOpenNote={(id) =>
+                  router.push({ pathname: '/note-editor' as any, params: { id } })
+                }
+                onJump={jumpToAyah}
+              />
+              {ayatStatus === 'success' ? <SurahEndSuggestions surahNumber={surahNumber} /> : null}
+            </View>
           </View>
         </ScrollView>
       </View>
@@ -627,7 +659,6 @@ function ReadingView({
         visible={chromeShown}
         screenReaderOn={screenReaderOn}
         reduceMotion={reduceMotion}
-        onScrimPress={() => setChromeShown(false)}
         onTopHeight={(h) => setChromeTop((prev) => (Math.abs(prev - h) < 0.5 ? prev : h))}
         onBottomHeight={(h) => setChromeBottom((prev) => (Math.abs(prev - h) < 0.5 ? prev : h))}
         top={
@@ -726,6 +757,8 @@ function FooterGlyph({ name }: { name: FigmaIconName }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: MUSHAF_BG },
+  resumeColumn: { flex: 1 },
+  resumeSheet: { flex: 1, backgroundColor: KhazainColors.mushafSheet },
   listScreen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   searchBlock: {
     paddingHorizontal: 16,

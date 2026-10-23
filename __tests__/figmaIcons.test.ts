@@ -405,7 +405,7 @@ describe('the header art the frames lay over the page', () => {
   it('lays the Library root band (2031:4659) as the first child of the screen', () => {
     const src = fs.readFileSync(path.join(ROOT, 'app/(tabs)/library.tsx'), 'utf8');
     expect(src).toMatch(
-      /<SafeAreaView[^>]*>\s*<HeaderArt corners="pair" smallCorner="library" bandHeight=\{headerBandHeight\(insets\.top, 'root', fontScale\)\} \/>/,
+      /<SafeAreaView[^>]*>\s*<HeaderArt corners="pair" smallCorner="library" bandHeight=\{headerBandHeight\(insets\.top, 'root'\)\} \/>/,
     );
   });
 });

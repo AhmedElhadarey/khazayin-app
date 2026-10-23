@@ -84,6 +84,14 @@ export const MUSHAF_FOOTER_ORDER = Object.freeze([
 ] as const);
 export type MushafFooterSlot = (typeof MUSHAF_FOOTER_ORDER)[number];
 
+/**
+ * Mushaf surah cartouche, physical left -> right. The page image
+ * (docs/KHAZAYIN.fig images/02f06fab…) shows «آياتها ١٧٦» at the left and
+ * «ترتيبها ٤» at the right.
+ */
+export const CARTOUCHE_PHYSICAL_ORDER = Object.freeze(['ayahs', 'name', 'order'] as const);
+export type CartoucheSlot = (typeof CARTOUCHE_PHYSICAL_ORDER)[number];
+
 /** The alphabet rail is pinned to the physical right edge on every screen. */
 export const LETTER_INDEX_EDGE = 'right';
 

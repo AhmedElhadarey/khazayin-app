@@ -132,3 +132,48 @@ describe('basmalaShown', () => {
     expect(basmalaShown(8)).toBe(true);
   });
 });
+
+describe('one gate for showing and hiding', () => {
+  // What the reader does with a finished touch: toggle only when the tracker says tap.
+  const run = (
+    shown: boolean,
+    o: { holdMs?: number; moveTo?: number; consume?: boolean; longPress?: boolean; scrolling?: boolean },
+  ) => {
+    const t = new ChromeTapTracker();
+    t.start({ x: 50, y: 50, ms: 0, touches: 1, scrolling: false });
+    if (o.moveTo) t.move({ x: 50, y: 50 + o.moveTo, touches: 1 });
+    if (o.longPress) t.noteLongPress();
+    if (o.consume) t.consumeTouch();
+    return t.end({ ms: o.holdMs ?? 100, scrolling: !!o.scrolling })
+      ? chromeAfterTap(shown, false)
+      : shown;
+  };
+
+  it.each([true, false])('a quick tap flips the chrome from shown=%s', (shown) => {
+    expect(run(shown, {})).toBe(!shown);
+  });
+  it.each([true, false])('a hold over 300ms leaves shown=%s alone', (shown) => {
+    expect(run(shown, { holdMs: 301 })).toBe(shown);
+  });
+  it.each([true, false])('a 10pt move leaves shown=%s alone', (shown) => {
+    expect(run(shown, { moveTo: 10 })).toBe(shown);
+  });
+  it.each([true, false])('a long-press (NOTE) leaves shown=%s alone', (shown) => {
+    expect(run(shown, { longPress: true, holdMs: 600 })).toBe(shown);
+  });
+  it.each([true, false])('a scroll leaves shown=%s alone', (shown) => {
+    expect(run(shown, { scrolling: true })).toBe(shown);
+  });
+  it.each([true, false])('a touch an in-page control consumed leaves shown=%s alone', (shown) => {
+    expect(run(shown, { consume: true })).toBe(shown);
+  });
+
+  it('a consumed touch does not poison the next one', () => {
+    const t = new ChromeTapTracker();
+    t.start({ x: 0, y: 0, ms: 0, touches: 1, scrolling: false });
+    t.consumeTouch();
+    expect(t.end({ ms: 50, scrolling: false })).toBe(false);
+    t.start({ x: 0, y: 0, ms: 100, touches: 1, scrolling: false });
+    expect(t.end({ ms: 150, scrolling: false })).toBe(true);
+  });
+});

@@ -8,7 +8,9 @@ import {
   CARD_DENSITY,
   PHYSICAL_BOX,
   RESERVED_COLUMNS,
-  SCREEN_BOTTOM_BREATHING, PAGE_CHROME } from '@/constants/layout';
+  SCREEN_BOTTOM_BREATHING,
+  PAGE_CHROME,
+} from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import type { Lecture } from '@/types/content';
 import { openSearch } from '@/services/searchNavigation';

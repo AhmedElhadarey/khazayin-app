@@ -1,12 +1,11 @@
 import { KhazainColors } from '@/constants/theme';
 import {
   CHROME_SCRIM,
-  HIDE_CONTROLS_LABEL,
   chromeFadeMs,
   chromeIsUp,
 } from '@/services/mushafChrome';
 import React, { useEffect, useRef } from 'react';
-import { Animated, Easing, Pressable, StyleSheet, View } from 'react-native';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 /**
@@ -14,6 +13,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
  * absolutely positioned so the page underneath never moves. The page pads its
  * scroll content by the heights reported here.
  *
+ * The scrim never takes a touch; the page's tap gate shows and hides the chrome.
  * `visible` is the tap state; a screen reader pins the chrome up regardless and
  * drops the scrim, which would otherwise stand between it and the text.
  */
@@ -21,7 +21,6 @@ export function MushafChrome({
   visible,
   screenReaderOn,
   reduceMotion,
-  onScrimPress,
   onTopHeight,
   onBottomHeight,
   top,
@@ -31,7 +30,6 @@ export function MushafChrome({
   visible: boolean;
   screenReaderOn: boolean;
   reduceMotion: boolean;
-  onScrimPress: () => void;
   /** Height of the header block including the top safe area. */
   onTopHeight: (h: number) => void;
   /** Height of the footer block including the bottom safe area. */
@@ -61,17 +59,13 @@ export function MushafChrome({
       {!screenReaderOn ? (
         <Animated.View
           style={[styles.fill, { opacity, backgroundColor: CHROME_SCRIM }]}
-          pointerEvents={up ? 'auto' : 'none'}
+          // Visual only: touches fall through to the page, so scrolling, the
+          // ayah long-press (NOTE) and the tap gate (`chromeAfterTap`, both ways)
+          // behave the same with the chrome up or down.
+          pointerEvents="none"
           accessibilityElementsHidden={a11yHidden}
           importantForAccessibility={a11yHidden ? 'no-hide-descendants' : 'auto'}
-        >
-          <Pressable
-            style={styles.fill}
-            onPress={onScrimPress}
-            accessibilityRole="button"
-            accessibilityLabel={HIDE_CONTROLS_LABEL}
-          />
-        </Animated.View>
+        />
       ) : null}
       <Animated.View
         style={[styles.top, { opacity }]}
