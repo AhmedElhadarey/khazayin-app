@@ -84,7 +84,7 @@ Every ticket ran this loop: an implementer with a failing test first, a spec rev
 | iPad Pro 13 | Splash, onboarding, Home, Mushaf. The tablet reading column, grid and split pane kept their 10-22 behaviour. |
 | Pixel 7 (412dp) | Scholars, Home, plus the `screens:matrix` sweep |
 | Realme Note 50-class AVD (360dp) | Cold start, Home, Sections, Library, More, Mushaf, Books (§4) |
-| Pixel Tablet | Not re-run in this pass. The tablet layout is unchanged since the 2026-10-22 QA, and the iPad Pro 13 covered it here. |
+| Pixel Tablet (1280 × 800dp, landscape) | Home, Sections, Library. Home's heroes sit side by side, Sections is a four-column grid read from the right, and Library is the centred reading column. The 2026-10-22 tablet behaviour holds with the new faces. |
 | iPhone 16 + Pixel 7, frame harness | All 23 frames, before and after (see below) |
 
 **Android matrix.** `docs/audit/screen-matrix/2026-10-23T15-15-54/` holds 60 captures plus the sheets, across 320/360/384/411/480dp × font scale 1 / 1.3 / 1.7.
