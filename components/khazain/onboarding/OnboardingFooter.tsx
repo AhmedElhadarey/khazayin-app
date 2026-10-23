@@ -50,6 +50,7 @@ export function OnboardingFooter({
           onPress={onSkip}
           accessibilityRole="button"
           accessibilityLabel="تخطّي الإعداد والانتقال إلى التطبيق"
+          hitSlop={{ left: 8, right: 8 }}
           style={styles.link}
         >
           <Text style={styles.linkText}>تخطّي</Text>
@@ -59,6 +60,7 @@ export function OnboardingFooter({
             onPress={onBack}
             accessibilityRole="button"
             accessibilityLabel="رجوع إلى الخطوة السابقة"
+            hitSlop={{ left: 8, right: 8 }}
             style={styles.link}
           >
             <Text style={styles.linkText}>رجوع</Text>
@@ -86,7 +88,7 @@ const styles = StyleSheet.create({
   },
   link: {
     minHeight: MIN_TOUCH_TARGET,
-    minWidth: 44,
+    minWidth: MIN_TOUCH_TARGET,
     justifyContent: 'center',
   },
   linkText: textStyle('cardTitle', { color: KhazainColors.inkSubtle }),

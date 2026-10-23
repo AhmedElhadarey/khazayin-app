@@ -92,7 +92,7 @@ describe('list-sheet geometry (Figma 2457:954)', () => {
     expect(SHEET_LIST_GEOMETRY).toMatchObject({
       radius: 16,
       strokeWidth: 1,
-      strokeColor: 'rgba(215,185,149,0.16)',
+      strokeColor: 'rgba(215, 185, 149, 0.16)',
       grabberWidth: 36,
       grabberHeight: 4,
       grabberTop: 8,

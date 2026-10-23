@@ -7,11 +7,12 @@ import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
 import { resolveBuildNumber } from '@/services/appBuildInfo';
-import { MIN_TOUCH_TARGET, PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { MIN_TOUCH_TARGET, PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { Wordmark } from '@/components/khazain/primitives';
 import { toArabicDigits } from '@/constants/progress';
+import { isolateLtr } from '@/services/bidi';
 import {
   QURAN_PAGE_DATA_CHANGES,
   QURAN_PAGE_DATA_CREDIT,
@@ -19,12 +20,9 @@ import {
   QURAN_PAGE_DATA_LICENSE_URL,
 } from '@/constants/quranPages';
 
-const LRI = '\u2066'; // Left-to-Right Isolate
-const PDI = '\u2069'; // Pop Directional Isolate
-
 /** Arabic-Indic digits kept in reading order inside RTL text, as formatClockTime does. */
 function isolatedDigits(value: string): string {
-  return `${LRI}${toArabicDigits(value)}${PDI}`;
+  return isolateLtr(toArabicDigits(value));
 }
 
 function resolveVersion(): string {
@@ -67,7 +65,8 @@ export default function SettingsAboutScreen() {
       >
         <View style={[styles.card, KhazainShadows.card]}>
           <Wordmark size={22} color={KhazainColors.navy900} style={styles.wordmark} />
-          <Text style={styles.foundation}>مؤسسة خزائن الرحمن العالمية</Text>
+          {/* The Wordmark already renders the foundation name; this line is the app name. */}
+          <Text style={styles.foundation}>خزائن الرحمن</Text>
           <View style={styles.versionRow}>
             <Text style={styles.versionValue}>{isolatedDigits(version)}</Text>
             <Text style={styles.versionLabel}>الإصدار</Text>
@@ -115,7 +114,7 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 12,
   },
-  body: { paddingHorizontal: 16, gap: 12 },
+  body: { paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 12 },
   card: {
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,

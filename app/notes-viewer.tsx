@@ -13,7 +13,7 @@ import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Bottom-sheet styled notes viewer (Figma page-08).
+// Bottom-sheet styled notes viewer (no Figma frame; contract: SHEET_CHROME + Library note contracts).
 // Visual contract:
 //   - Top: grey handle pill, then centered title "عرض الملاحظات"
 //   - Vertical list of one-line note rows: title (right) + relative time (left)

@@ -12,7 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import { useRouter } from 'expo-router';
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
 import { ChoiceRow } from '@/components/khazain/settings';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
@@ -152,7 +152,7 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 12,
   },
-  body: { paddingHorizontal: 16, gap: 16 },
+  body: { paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 16 },
   list: { gap: 8 },
   rowLabel: {
     flex: 1,
@@ -189,6 +189,6 @@ const styles = StyleSheet.create({
     borderTopColor: KhazainColors.cardBorder,
     backgroundColor: KhazainColors.pageBg,
   },
-  footerInner: { paddingHorizontal: 16 },
+  footerInner: { paddingHorizontal: SHEET_CHROME.paddingHorizontal },
   applyBtn: { width: '100%' },
 });

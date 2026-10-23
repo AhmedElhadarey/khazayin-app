@@ -310,6 +310,5 @@ const styles = StyleSheet.create({
   body: { ...PHYSICAL_BOX, gap: 12 },
   // The composer, fixed above the keyboard; the reading column applies on tablets.
   inputRow: { ...PHYSICAL_BOX, paddingHorizontal: 16, paddingVertical: 12 },
-  // Legacy palette: the Khazain tokens carry no error colour.
   error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

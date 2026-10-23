@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { PillButton } from '@/components/khazain/primitives';
 import { SheetHandle } from '@/components/khazain/sheets';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SHEET_CHROME } from '@/constants/layout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import { useRouter } from 'expo-router';
@@ -99,7 +100,7 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 12,
   },
-  body: { paddingHorizontal: 16, gap: 16 },
+  body: { paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 16 },
   list: { gap: 8 },
   // Family and colour from the role; the size comes from the level.
   rowLabel: {
@@ -113,6 +114,6 @@ const styles = StyleSheet.create({
     borderTopColor: KhazainColors.cardBorder,
     backgroundColor: KhazainColors.pageBg,
   },
-  footerInner: { paddingHorizontal: 16 },
+  footerInner: { paddingHorizontal: SHEET_CHROME.paddingHorizontal },
   applyBtn: { width: '100%' },
 });

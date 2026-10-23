@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { SheetHandle } from '@/components/khazain/sheets';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SHEET_CHROME } from '@/constants/layout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import { useRouter } from 'expo-router';
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 12,
   },
-  list: { paddingHorizontal: 16, gap: 8 },
+  list: { paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 8 },
   textCol: { flex: 1, gap: 2 },
   rowTitle: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   rowSubtitle: textStyle('caption', { color: KhazainColors.ink500 }),

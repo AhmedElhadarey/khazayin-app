@@ -21,7 +21,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { CALCULATION_METHOD_IDS, PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 12,
   },
-  body: { ...PHYSICAL_BOX, paddingHorizontal: 16, gap: 8 },
+  body: { ...PHYSICAL_BOX, paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 8 },
   sectionTitle: {
     ...textStyle('sectionTitle', { color: KhazainColors.navy900 }),
     marginTop: 12,

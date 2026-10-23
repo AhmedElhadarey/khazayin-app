@@ -10,17 +10,22 @@ const read = (rel: string) => fs.readFileSync(path.resolve(__dirname, '..', rel)
 describe('OnboardingFooter touch targets', () => {
   const src = read('components/khazain/onboarding/OnboardingFooter.tsx');
   it('gives both links a 44pt target', () => {
-    expect(src).toMatch(/link: \{[^}]*minHeight: MIN_TOUCH_TARGET[^}]*minWidth: 44[^}]*justifyContent: 'center'/);
+    expect(src).toMatch(/link: \{[^}]*minHeight: MIN_TOUCH_TARGET[^}]*minWidth: MIN_TOUCH_TARGET[^}]*justifyContent: 'center'/);
     expect((src.match(/style=\{styles\.link\}/g) ?? []).length).toBe(2);
+    expect((src.match(/hitSlop=\{\{ left: 8, right: 8 \}\}/g) ?? []).length).toBe(2);
     expect(src).toMatch(/minHeight: MIN_TOUCH_TARGET,\s*\}/);
   });
 });
 
 describe('OnboardingProgress', () => {
-  it('draws inactive dots in cream400', () => {
+  it('draws inactive dots as an ink400 ring (cream400 is 1.51:1 on pageBg)', () => {
     const src = read('components/khazain/onboarding/OnboardingProgress.tsx');
-    expect(src).toMatch(/backgroundColor: KhazainColors\.cream400/);
-    expect(src).not.toMatch(/KhazainColors\.cardBorder/);
+    expect(src).toMatch(
+      /dot: \{[^}]*width: 8,[^}]*height: 8,[^}]*borderRadius: 4,[^}]*borderWidth: 1\.5,[^}]*borderColor: KhazainColors\.ink400,[^}]*backgroundColor: 'transparent'/,
+    );
+    expect(src).toMatch(/dotDone: \{\s*borderWidth: 0,/);
+    expect(src).toMatch(/dotActive: \{\s*borderWidth: 0,/);
+    expect(src).not.toMatch(/cream400|KhazainColors\.cardBorder/);
   });
 });
 

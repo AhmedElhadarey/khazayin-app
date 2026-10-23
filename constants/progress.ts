@@ -165,9 +165,14 @@ export function toArabicDigits(n: number | string): string {
   return String(n).replace(/[0-9]/g, (d) => _ARABIC_DIGITS[Number(d)]);
 }
 
-/** Arabic-Indic digits → ASCII digits. Inverse of `toArabicDigits`. */
+/**
+ * Arabic-Indic (U+0660–0669) and Persian/Urdu (U+06F0–06F9) digits → ASCII
+ * digits. Inverse of `toArabicDigits`.
+ */
 export function fromArabicDigits(s: string): string {
-  return s.replace(/[٠-٩]/g, (d) => String(_ARABIC_DIGITS.indexOf(d)));
+  return s
+    .replace(/[٠-٩]/g, (d) => String(_ARABIC_DIGITS.indexOf(d)))
+    .replace(/[۰-۹]/g, (d) => String(d.charCodeAt(0) - 0x06f0));
 }
 
 /** Returns 'YYYY-MM-DD' for the local day after `today`. */

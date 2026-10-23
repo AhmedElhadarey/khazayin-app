@@ -256,6 +256,5 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   counter: { ...RTL_TEXT, ...textStyle('caption', { color: KhazainColors.ink500 }) },
-  // Legacy palette: the Khazain tokens carry no error colour.
   error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

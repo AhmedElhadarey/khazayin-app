@@ -38,7 +38,7 @@ type Params = {
   refSpeaker?: string;
 };
 
-// Bottom-sheet styled note editor (Figma page-07).
+// Bottom-sheet styled note editor (no Figma frame; contract: SHEET_CHROME + Library note contracts).
 // Visual contract:
 //   - Top: grey handle pill, then right-aligned title "إضافة ملاحظة" / "تعديل الملاحظة"
 //   - Single body input (placeholder "اكتب ملاحظتك هنا...")
@@ -174,6 +174,8 @@ export default function NoteEditor() {
                 <Pressable
                   onPress={save}
                   style={({ pressed }) => [styles.saveBtn, { opacity: pressed ? 0.85 : 1 }]}
+                  accessibilityRole="button"
+                  hitSlop={{ top: 4, bottom: 4 }}
                   accessibilityLabel="حفظ الملاحظة"
                 >
                   <Text style={styles.saveLabel}>حفظ</Text>
@@ -308,7 +310,8 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
     borderRadius: RECENT_NOTE_ROW.radius,
     minHeight: RECENT_NOTE_ROW.height,
-    paddingHorizontal: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     gap: 8,
   },
   recentTime: textStyle('label', { color: KhazainColors.ink500 }),

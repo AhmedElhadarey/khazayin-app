@@ -59,12 +59,16 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: KhazainColors.cream400,
+    borderWidth: 1.5,
+    borderColor: KhazainColors.ink400,
+    backgroundColor: 'transparent',
   },
   dotDone: {
+    borderWidth: 0,
     backgroundColor: KhazainColors.goldAccent,
   },
   dotActive: {
+    borderWidth: 0,
     width: 22,
     backgroundColor: KhazainColors.navy800,
   },

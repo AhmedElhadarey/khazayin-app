@@ -339,6 +339,5 @@ const styles = StyleSheet.create({
   headingBox: { ...PHYSICAL_BOX },
   heading: { ...RTL_TEXT, ...textStyle('sectionTitle', { color: KhazainColors.navy900 }) },
   members: { gap: 8 },
-  // Legacy palette: the Khazain tokens carry no error colour.
   error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

@@ -165,12 +165,18 @@ export const Shadows = {
  * translucent colour names the token it comes from instead of repeating its
  * channels as a literal.
  */
-export function withAlpha(hex: string, alpha: number): string {
+export function withAlpha(hex: `#${string}`, alpha: number): string {
+  if (!(alpha >= 0 && alpha <= 1)) throw new Error(`withAlpha expects alpha in 0..1, got ${alpha}`);
   const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
   if (!m) throw new Error(`withAlpha expects #RRGGBB, got ${hex}`);
   const [r, g, b] = [m[1], m[2], m[3]].map((h) => parseInt(h, 16));
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
+
+/** The one destructive/error red; `danger` and `dangerBorder` derive from it. */
+const DANGER = '#B43838';
+/** Calligraphy gold; `sheetStroke` derives from it. */
+const GOLD_CALLIGRAPHY = '#D7B995';
 
 export const KhazainColors = {
   // Surfaces
@@ -179,7 +185,7 @@ export const KhazainColors = {
   cardBorder: 'rgba(141, 107, 52, 0.10)',
   iconChipBg: 'rgba(215, 185, 149, 0.16)',
   /** The 1pt top stroke of the qiraat list sheet (frame 2457:954). */
-  sheetStroke: 'rgba(215,185,149,0.16)',
+  sheetStroke: withAlpha(GOLD_CALLIGRAPHY, 0.16),
 
   // Cream scale
   cream50: '#FCFAF8',
@@ -205,7 +211,7 @@ export const KhazainColors = {
   gold200: '#E8C78A',
   goldAccent: '#A88051',
   goldBar: '#C1A584',
-  goldCalligraphy: '#D7B995', // calligraphy stroke colour on navy ribbon cards (ScholarCard / BookCard)
+  goldCalligraphy: GOLD_CALLIGRAPHY, // calligraphy stroke colour on navy ribbon cards (ScholarCard / BookCard)
   navPill: '#C1A584',
   navPillBg: 'rgba(215, 185, 149, 0.16)',
   navLabel: '#F1E7DD',
@@ -246,8 +252,8 @@ export const KhazainColors = {
 
   // Destructive actions and form errors. The one red in the app; the legacy
   // `Colors.light.error` (#D94040) and two screen-local reds are retired.
-  danger: '#B43838',
-  dangerBorder: 'rgba(180, 56, 56, 0.18)', // withAlpha(danger, 0.18), pinned by sheetChrome.test
+  danger: DANGER,
+  dangerBorder: withAlpha(DANGER, 0.18),
 
   // Accent
   teal600: '#2E6B6B',

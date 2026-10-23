@@ -5,7 +5,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { textStyle } from '@/constants/typography';
 
 // Shared row used by all 4 group types in the search modal.
-// RTL: icon on visual right (absolute positioned), meta chip on visual left.
+// RTL: icon on visual right (a flex slot in the PHYSICAL_ROW), meta chip on visual left.
 //
 // Track: khazain-search_20260510  T7
 

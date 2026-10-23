@@ -17,7 +17,7 @@ describe('withAlpha', () => {
     expect(withAlpha('#B43838', 0.25)).toBe('rgba(180, 56, 56, 0.25)');
   });
   it('rejects a non-hex input', () => {
-    expect(() => withAlpha('rgba(0,0,0,1)', 0.5)).toThrow();
+    expect(() => withAlpha('rgba(0,0,0,1)' as `#${string}`, 0.5)).toThrow();
   });
 });
 
@@ -103,6 +103,8 @@ describe('danger token', () => {
     'app/(tabs)/more/community/group/[id].tsx',
     'components/khazain/community/Composer.tsx',
     'app/community-report-sheet.tsx',
+    'app/(tabs)/sections/discussion/[lectureId].tsx',
+    'components/khazain/community/PostRow.tsx',
   ])('%s has no stray red', (f) => {
     const src = read(f);
     expect(src).not.toMatch(/#B43838|#C04A3A|rgba\(176,\s*52,\s*40|Colors\.light\.error/i);
@@ -131,7 +133,7 @@ describe('SheetShell structure', () => {
   });
   it('takes the list stroke from a token', () => {
     expect(src).not.toMatch(/rgba\(215/);
-    expect(KhazainColors.sheetStroke).toBe('rgba(215,185,149,0.16)');
+    expect(KhazainColors.sheetStroke).toBe(withAlpha(KhazainColors.goldCalligraphy as `#${string}`, 0.16));
   });
 });
 

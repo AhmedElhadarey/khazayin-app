@@ -254,7 +254,6 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-  // Legacy palette: the Khazain tokens carry no error colour.
   error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
   acceptRow: { ...PHYSICAL_ROW, alignItems: 'center', justifyContent: 'flex-end', gap: 12, minHeight: 44 },
   acceptLabel: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.ink900 }), flexShrink: 1 },

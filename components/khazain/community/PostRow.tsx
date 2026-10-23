@@ -142,7 +142,6 @@ const styles = StyleSheet.create({
   actions: { ...PHYSICAL_BOX, alignItems: 'flex-start', flexShrink: 0 },
   action: { minHeight: MIN_TOUCH_TARGET, minWidth: MIN_TOUCH_TARGET, paddingHorizontal: 6, justifyContent: 'center' },
   actionText: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.navy800 }) },
-  // Legacy palette: the Khazain tokens carry no error colour.
   actionDanger: { color: KhazainColors.danger },
   // alignItems 'flex-end' is the physical right: the box is pinned ltr.
   textCol: { ...PHYSICAL_BOX, flex: 1, minWidth: 0, alignItems: 'flex-end', gap: 2 },

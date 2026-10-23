@@ -15,7 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import { ClockGlyph, NotificationsGlyph } from '@/components/khazain/settings/SettingsGlyphs';
 import { useRouter } from 'expo-router';
-import { PHYSICAL_BOX } from '@/constants/layout';
+import { PHYSICAL_BOX, SHEET_CHROME } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { SettingsToggleRow, SettingsValueRow } from '@/components/khazain/settings';
@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
     paddingTop: 6,
     paddingBottom: 12,
   },
-  body: { ...PHYSICAL_BOX, paddingHorizontal: 16, gap: 16 },
+  body: { ...PHYSICAL_BOX, paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 16 },
   list: { gap: 8 },
   noteCard: {
     ...PHYSICAL_BOX,

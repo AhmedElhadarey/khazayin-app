@@ -51,6 +51,7 @@ const styles = StyleSheet.create({
     gap: 16,
     minHeight: CARD_DENSITY.moreCardHeight,
     paddingHorizontal: CARD_DENSITY.moreCardPaddingHorizontal,
+    paddingVertical: 8,
     borderRadius: CARD_DENSITY.moreCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,

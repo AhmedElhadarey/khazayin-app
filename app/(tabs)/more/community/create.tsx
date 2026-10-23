@@ -266,6 +266,5 @@ const styles = StyleSheet.create({
   optionOn: { backgroundColor: KhazainColors.navy800 },
   optionLabel: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.navy800 }) },
   optionLabelOn: { color: KhazainColors.cream100 },
-  // Legacy palette: the Khazain tokens carry no error colour.
   error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

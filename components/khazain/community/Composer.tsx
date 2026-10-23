@@ -113,6 +113,5 @@ const styles = StyleSheet.create({
   label: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.inkTitle }) },
   counter: { ...RTL_TEXT, ...textStyle('caption', { color: KhazainColors.ink500 }) },
   note: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.ink900 }) },
-  // Legacy palette: the Khazain tokens carry no error colour.
   error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

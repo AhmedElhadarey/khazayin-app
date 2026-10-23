@@ -147,6 +147,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     letterSpacing: 4,
   },
-  // Legacy palette: the Khazain tokens carry no error colour.
   error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });
