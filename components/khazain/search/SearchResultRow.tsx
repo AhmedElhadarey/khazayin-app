@@ -39,6 +39,9 @@ export function SearchResultRow({ iconNode, title, subtitle, meta, accessory, on
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
+        // Reading order: without a label the meta chip, drawn at the physical
+        // left, is read first.
+        accessibilityLabel={[title, subtitle, meta].filter(Boolean).join('، ')}
         onPressIn={() => setPressed(true)}
         onPressOut={() => setPressed(false)}
         // The row's padding (16 x 8) sits outside the Pressable; hitSlop keeps the
