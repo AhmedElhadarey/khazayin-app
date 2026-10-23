@@ -12,7 +12,6 @@ import {
   EmptyInProgressCard,
   InsightRow,
   ReminderList,
-  type ReminderSummary,
   MySavedSection,
   TrendSparkline,
   WirdHistory,
@@ -38,7 +37,6 @@ import {
   remindersSubtitle,
   streakSubtitle,
   wirdHighlightLabel,
-  wirdReminderDescription,
 } from '@/services/libraryStats';
 import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
@@ -73,8 +71,9 @@ import {
   type WeekdayCompletion,
 } from '@/services/wirdHistory';
 import { useLibraryFiltersStore, useSavedStore, useSettingsStore } from '@/store';
-import { describeWirdReminder, formatNextWirdReminder } from '@/services/wirdReminder';
+import { describeWirdReminder } from '@/services/wirdReminder';
 import { setCategoryEnabled } from '@/services/notificationCategoryToggle';
+import { audiobookCardsFor, buildSmartReminders } from '@/services/libraryView';
 import type { NotificationCategoryId } from '@/types/settings';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
@@ -85,7 +84,7 @@ import type { LectureSession } from '@/db/types';
 import { lectureNoteParamsFromSession } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   Linking,
@@ -111,6 +110,10 @@ function surahNameForPage(page: number): { name: string; surahNumber: number } |
   return null;
 }
 
+const HISTORY_WEEKS_INITIAL = 12;
+const HISTORY_WEEKS_STEP = 12;
+const HISTORY_WEEKS_MAX = 52;
+
 /** `DIV-46` draws its stat glyph at 22.2 x 21.3 inside a 40pt chip. */
 const STAT_GLYPH = 22;
 
@@ -127,9 +130,6 @@ export default function LibraryScreen() {
   // Wird completion history (US5). Loaded lazily when the السجل pill is active.
   // The window defaults to 12 weeks and grows via the "show more" affordance so
   // multi-year grids are never eagerly rendered.
-  const HISTORY_WEEKS_INITIAL = 12;
-  const HISTORY_WEEKS_STEP = 12;
-  const HISTORY_WEEKS_MAX = 52;
   const [historyWeeks, setHistoryWeeks] = useState(HISTORY_WEEKS_INITIAL);
   const [history, setHistory] = useState<{
     byWeekday: WeekdayCompletion[];
@@ -159,26 +159,35 @@ export default function LibraryScreen() {
     permission: notificationPermission,
     goalMetToday,
   });
+  // One in-flight change per category: a second tap while the permission
+  // prompt or horizon re-arm is still running is ignored, and a failure leaves
+  // the switch where it was.
+  const pendingToggles = useRef(new Set<NotificationCategoryId>());
   const onToggleCategory = (id: NotificationCategoryId, next: boolean) => {
-    void setCategoryEnabled(id, next).then((outcome) => {
-      if (outcome === 'permission-denied') {
-        Alert.alert(
-          'إذن الإشعارات مطلوب',
-          'لتفعيل التذكير، يرجى السماح بالإشعارات من إعدادات النظام.',
-          [
-            { text: 'إلغاء', style: 'cancel' },
-            {
-              text: 'فتح الإعدادات',
-              onPress: () => {
-                Linking.openSettings().catch(() => {
-                  Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
-                });
+    if (pendingToggles.current.has(id)) return;
+    pendingToggles.current.add(id);
+    setCategoryEnabled(id, next)
+      .then((outcome) => {
+        if (outcome === 'permission-denied') {
+          Alert.alert(
+            'إذن الإشعارات مطلوب',
+            'لتفعيل التذكير، يرجى السماح بالإشعارات من إعدادات النظام.',
+            [
+              { text: 'إلغاء', style: 'cancel' },
+              {
+                text: 'فتح الإعدادات',
+                onPress: () => {
+                  Linking.openSettings().catch(() => {
+                    Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+                  });
+                },
               },
-            },
-          ],
-        );
-      }
-    });
+            ],
+          );
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => pendingToggles.current.delete(id));
   };
 
   useEffect(() => {
@@ -252,7 +261,7 @@ export default function LibraryScreen() {
   const lastSurah = surahNameForPage(lastReadPage);
   // The data model holds a page, not an ayah, so the page stays; with no
   // reading history the line is hidden rather than repeating the line above.
-  const wirdHighlight = wirdHighlightLabel(lastSurah?.name ?? null, lastReadPage, trendLast28);
+  const wirdHighlight = wirdHighlightLabel(lastSurah?.name ?? null, lastReadPage, trendLast28, totalPagesRead);
   const monthDeltaPct =
     pagesLastMonth > 0
       ? ((pagesThisMonth - pagesLastMonth) / pagesLastMonth) * 100
@@ -271,43 +280,22 @@ export default function LibraryScreen() {
     }),
   }));
 
-  // Reminder categories that are both shipped and switched on. Derived from the
-  // notification registry, so the Library never advertises a reminder that has
-  // no scheduler behind it.
-  // Subscribe to the notifications slice so the list re-renders on a toggle;
-  // `isCategoryEnabled` owns the backfill semantics for unregistered ids.
-  useSettingsStore((st) => st.notifications);
-  const activeReminders = NOTIFICATION_CATEGORIES.filter(
-    (category) => category.available && isCategoryEnabled(category.id),
-  );
-
-  // Every shipped reminder gets a card with its own switch. The wird switch
-  // goes through `onToggleCategory` (permission-aware, same as the settings
-  // screen); a card is armed only when the OS permits it, never on the stored
-  // preference alone.
-  const now = new Date();
-  const smartReminders: ReminderSummary[] = NOTIFICATION_CATEGORIES.filter((c) => c.available).map(
-    (c) =>
-      c.id === 'wird-daily'
-        ? {
-            id: c.id,
-            labelAr: c.libraryLabelAr ?? c.labelAr,
-            descriptionAr: wirdReminderDescription(trendLast28, c.descriptionAr),
-            armed: reminder.armed,
-            nextLabel: reminder.armed
-              ? formatNextWirdReminder(now, wirdReminderTime, goalMetToday, 'التذكير التالي')
-              : undefined,
-            statusLabel: reminder.armed ? undefined : reminder.caption,
-            onToggle: (next: boolean) => onToggleCategory(c.id, next),
-          }
-        : {
-            id: c.id,
-            labelAr: c.libraryLabelAr ?? c.labelAr,
-            descriptionAr: c.descriptionAr,
-            armed: isCategoryEnabled(c.id),
-            onToggle: (next: boolean) => onToggleCategory(c.id, next),
-          },
-  );
+  // One card per shipped reminder; a card is armed only when the OS permits it
+  // (see `buildSmartReminders`), and the stat card counts exactly those. The
+  // wird preference is subscribed above (`wirdReminderOn`), which is what
+  // re-renders this on a toggle.
+  const smartReminders = buildSmartReminders({
+    categories: NOTIFICATION_CATEGORIES,
+    isEnabled: isCategoryEnabled,
+    permission: notificationPermission,
+    now: new Date(),
+    wirdTime: wirdReminderTime,
+    goalMetToday,
+    trend: trendLast28,
+    totalPagesRead,
+    onToggle: onToggleCategory,
+  });
+  const armedReminderCount = smartReminders.filter((r) => r.armed).length;
 
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
   const openNewNote = (seedTitle?: string) =>
@@ -321,7 +309,7 @@ export default function LibraryScreen() {
     reminders: (
       <StatCard
         title="تذكيراتي"
-        subtitle={remindersSubtitle(activeReminders.length)}
+        subtitle={remindersSubtitle(armedReminderCount)}
         icon={<FigmaIcon name="LibraryReminders" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
@@ -369,17 +357,22 @@ export default function LibraryScreen() {
 
   // The data model has no episode position or series length, so the card's
   // «الحلقة n من m» meta is omitted until it can be stated truthfully.
-  const playLecture = (lecture: LectureSession, fromStart: boolean) => {
-    usePlayerStore.getState().setTrack({
-      id: lecture.lectureId,
-      title: lecture.title,
-      reciter: lecture.author,
-      durationSec: lecture.durationSec,
-    });
-    usePlayerStore
-      .getState()
-      .setProgress(!fromStart && lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0);
-    usePlayerStore.getState().setVisible(true);
+  // Hands the lecture to the player store with its starting position. The
+  // position goes in through `setTrack`'s initial progress, which restores it
+  // WITHOUT firing a lecture tick (a tick would rewrite position and
+  // last-listened as if the reader had listened).
+  const showLectureInPlayer = (lecture: LectureSession, fromStart: boolean) => {
+    const player = usePlayerStore.getState();
+    player.setTrack(
+      {
+        id: lecture.lectureId,
+        title: lecture.title,
+        reciter: lecture.author,
+        durationSec: lecture.durationSec,
+      },
+      !fromStart && lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0,
+    );
+    player.setVisible(true);
   };
 
   const inProgressCard = inProgressLecture ? (
@@ -396,7 +389,7 @@ export default function LibraryScreen() {
           subtitle={`${toArNum(pct)}٪ مكتمل`}
           primaryLabel="متابعة"
           secondaryLabel="إضافة ملاحظة"
-          onPrimary={() => playLecture(lecture, false)}
+          onPrimary={() => showLectureInPlayer(lecture, false)}
           onSecondary={() => {
             // Linked to the saved second. A session whose id is not an episode
             // id cannot be linked, so it keeps the old title-seeded note.
@@ -419,7 +412,7 @@ export default function LibraryScreen() {
       subtitle="مكتمل"
       primaryLabel="مراجعة"
       secondaryLabel="عرض الملاحظات"
-      onPrimary={() => playLecture(recentCompletedLecture, true)}
+      onPrimary={() => showLectureInPlayer(recentCompletedLecture, true)}
       onSecondary={() => router.push('/notes-viewer' as any)}
     />
   ) : null;
@@ -427,17 +420,19 @@ export default function LibraryScreen() {
   // Under المكتمل the section is the completed card alone (or an empty state);
   // otherwise it shows whichever real cards exist, and the empty card only when
   // there is neither an in-progress nor a completed lecture.
-  const audiobookProgressCard =
-    filter === 'completed' ? (
-      completedCard ?? <EmptyState message="لا توجد محاضرات مكتملة بعد" />
-    ) : inProgressCard || completedCard ? (
-      <View style={styles.audiobookStack}>
-        {inProgressCard}
-        {completedCard}
-      </View>
+  const audiobookView = audiobookCardsFor(filter, inProgressLecture, recentCompletedLecture);
+  const audiobookProgressCard = audiobookView.empty ? (
+    audiobookView.empty === 'completed' ? (
+      <EmptyState message="لا توجد محاضرات مكتملة بعد" />
     ) : (
       <EmptyInProgressCard onBrowse={() => router.push('/(tabs)/sections/scholar' as any)} />
-    );
+    )
+  ) : (
+    <View style={styles.audiobookStack}>
+      {audiobookView.inProgress ? inProgressCard : null}
+      {audiobookView.completed ? completedCard : null}
+    </View>
+  );
 
   // Rendered from LIBRARY_SECTION_ORDER so the reference hierarchy is a
   // single declaration, and every newer metric provably sits below it.
@@ -515,16 +510,16 @@ export default function LibraryScreen() {
             >
               <Text style={styles.startBtnLabel}>بدء الورد</Text>
             </Pressable>
-            <View style={{ flex: 1 }} />
-            <View>
-              <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
+            {/* One full-width column (Android 15: a shrink-wrapped Arabic Text can
+                lose its last word), the texts right-aligned inside it. */}
+            <View style={{ flex: 1 }}>
+              <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28, totalPagesRead)}</Text>
               {wirdHighlight ? <Text style={styles.wirdHighlight}>{wirdHighlight}</Text> : null}
             </View>
           </View>
           {/* Physical left → right: the toggle, then its label. */}
           <View style={styles.reminderInline}>
             <Toggle on={reminder.armed} onChange={(next) => onToggleCategory('wird-daily', next)} label="التذكير اليومي" />
-            <View style={{ flex: 1 }} />
             <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
           </View>
           {/* The design has no frame for a blocked reminder, so this line is
@@ -614,7 +609,7 @@ export default function LibraryScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={f.label}
-                onPress={() => setFilter(f.id as LibraryFilter)}
+                onPress={() => setFilter(f.id)}
                 style={[styles.filterPill, active && styles.filterPillActive]}
               >
                 {/* The frame sets the label at 14 and the count at 12, with a
@@ -878,7 +873,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 14,
   },
-  reminderInlineLabel: textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  reminderInlineLabel: { flex: 1, ...textStyle('cardTitle', { color: KhazainColors.ink500 }) },
   wirdReminderNext: {
     ...textStyle('label', { color: KhazainColors.gold600 }),
     marginTop: 8,

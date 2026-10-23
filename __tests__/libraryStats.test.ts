@@ -77,17 +77,21 @@ describe('Library summary-card number agreement (LIBRARY-15)', () => {
 
 describe('wird card highlight line (LIBRARY-16)', () => {
   it('joins surah and page with a spaced hyphen and keeps the page number', () => {
-    expect(wirdHighlightLabel('البقرة', 12, trend(0, 2))).toBe('سورة البقرة - صفحة ١٢');
+    expect(wirdHighlightLabel('البقرة', 12, trend(0, 2), 5)).toBe('سورة البقرة - صفحة ١٢');
   });
   it('is null when there is no reading history so the line is hidden', () => {
-    expect(wirdHighlightLabel(null, 0, trend(0, 2))).toBeNull();
+    expect(wirdHighlightLabel(null, 0, trend(0, 2), 5)).toBeNull();
     // lastReadPage defaults to 1, so a new user must not see «الفاتحة - صفحة ١».
-    expect(wirdHighlightLabel('الفاتحة', 1, trend(0, 0, 0))).toBeNull();
-    expect(wirdHighlightLabel('الفاتحة', 1, [])).toBeNull();
+    expect(wirdHighlightLabel('الفاتحة', 1, trend(0, 0, 0), 0)).toBeNull();
+    expect(wirdHighlightLabel('الفاتحة', 1, [], 0)).toBeNull();
+  });
+
+  it('keeps the line for a lapsed reader (read before, nothing in 28 days)', () => {
+    expect(wirdHighlightLabel('البقرة', 40, trend(0, 0, 0), 120)).toBe('سورة البقرة - صفحة ٤٠');
   });
 });
 
-import { daysSinceLastRead, lastReadingLabel, wirdReminderDescription } from '@/services/libraryStats';
+import { daySpan, daysSinceLastRead, lastReadingLabel, wirdReminderDescription } from '@/services/libraryStats';
 import { filterChipCount } from '@/services/libraryStats';
 import { LIBRARY_FILTERS } from '@/data/content/sections';
 
@@ -103,14 +107,15 @@ describe('wird reminder card copy (LIBRARY-11, 12)', () => {
   });
 
   it('describes the habit with number agreement, falling back with no history', () => {
+    expect(wirdReminderDescription(trend(0, 0), 'x', 9)).toBe('لم تقرأ الورد منذ أكثر من ٤ أسابيع. تذكر أن قراءة القرآن نور وشفاء للقلوب');
     const fallback = 'تذكير يومي بقراءة الورد';
     const tail = '. تذكر أن قراءة القرآن نور وشفاء للقلوب';
-    expect(wirdReminderDescription(trend(0, 0), fallback)).toBe(fallback);
-    expect(wirdReminderDescription(trend(0, 4), fallback)).toBe('قرأت وردك اليوم');
-    expect(wirdReminderDescription(trend(4, 0), fallback)).toBe(`لم تقرأ الورد منذ يوم واحد${tail}`);
-    expect(wirdReminderDescription(trend(4, 0, 0), fallback)).toBe(`لم تقرأ الورد منذ يومين${tail}`);
-    expect(wirdReminderDescription(trend(4, 0, 0, 0), fallback)).toBe(`لم تقرأ الورد منذ ٣ أيام${tail}`);
-    expect(wirdReminderDescription(trend(4, ...Array(11).fill(0)), fallback)).toBe(
+    expect(wirdReminderDescription(trend(0, 0), fallback, 0)).toBe(fallback);
+    expect(wirdReminderDescription(trend(0, 4), fallback, 9)).toBe('قرأت وردك اليوم');
+    expect(wirdReminderDescription(trend(4, 0), fallback, 9)).toBe(`لم تقرأ الورد منذ يوم واحد${tail}`);
+    expect(wirdReminderDescription(trend(4, 0, 0), fallback, 9)).toBe(`لم تقرأ الورد منذ يومين${tail}`);
+    expect(wirdReminderDescription(trend(4, 0, 0, 0), fallback, 9)).toBe(`لم تقرأ الورد منذ ٣ أيام${tail}`);
+    expect(wirdReminderDescription(trend(4, ...Array(11).fill(0)), fallback, 9)).toBe(
       `لم تقرأ الورد منذ ١١ يومًا${tail}`,
     );
   });
@@ -141,10 +146,29 @@ describe('Library filter chips (LIBRARY-17)', () => {
   });
 });
 
+describe('daySpan', () => {
+  it('agrees with the count: 1, 2, 3-10, 11+', () => {
+    expect(daySpan(1)).toBe('يوم واحد');
+    expect(daySpan(2)).toBe('يومين');
+    expect(daySpan(3)).toBe('٣ أيام');
+    expect(daySpan(10)).toBe('١٠ أيام');
+    expect(daySpan(11)).toBe('١١ يومًا');
+    expect(daySpan(27)).toBe('٢٧ يومًا');
+  });
+});
+
 describe('lastReadingLabel', () => {
-  it('says nothing started when no day has pages', () => {
-    expect(lastReadingLabel(trend(0, 0))).toBe('لم تبدأ القراءة بعد');
-    expect(lastReadingLabel(trend(0, 3))).toBe('آخر قراءة: اليوم');
-    expect(lastReadingLabel(trend(3, 0))).toBe('آخر قراءة: أمس');
+  it('names today and yesterday', () => {
+    expect(lastReadingLabel(trend(0, 3), 3)).toBe('آخر قراءة: اليوم');
+    expect(lastReadingLabel(trend(3, 0), 3)).toBe('آخر قراءة: أمس');
+  });
+  it('agrees the day count: يومين, أيام, يومًا', () => {
+    expect(lastReadingLabel(trend(3, 0, 0), 3)).toBe('آخر قراءة: قبل يومين');
+    expect(lastReadingLabel(trend(3, 0, 0, 0), 3)).toBe('آخر قراءة: قبل ٣ أيام');
+    expect(lastReadingLabel(trend(3, ...Array(11).fill(0)), 3)).toBe('آخر قراءة: قبل ١١ يومًا');
+  });
+  it('separates never-read from lapsed', () => {
+    expect(lastReadingLabel(trend(0, 0), 0)).toBe('لم تبدأ القراءة بعد');
+    expect(lastReadingLabel(trend(0, 0), 120)).toBe('آخر قراءة منذ أكثر من ٤ أسابيع');
   });
 });

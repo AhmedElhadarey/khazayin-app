@@ -10,6 +10,8 @@
  * `app/(tabs)/library.tsx` renders straight from LIBRARY_SECTION_ORDER.
  */
 
+import type { LibraryFilterId } from '@/types/content';
+
 /** Sections the Figma frame defines, in reference order. */
 export const LIBRARY_REFERENCE_SECTIONS = Object.freeze([
   'header',
@@ -91,7 +93,7 @@ export const LIBRARY_IN_PLACE_EXTENSIONS = Object.freeze(['playlists', 'savedLis
  * `completed` keeps the audiobook section, which then shows only the completed
  * card (see library.tsx).
  */
-export type LibraryFilter = 'all' | 'saved' | 'notes' | 'completed' | 'playlist' | 'history';
+export type LibraryFilter = LibraryFilterId;
 
 /**
  * Which filters each section appears under. Sections absent from this map are

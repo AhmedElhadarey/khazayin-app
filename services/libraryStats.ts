@@ -4,6 +4,7 @@
  * middle dot reads as ٠ between Arabic-Indic digits (see mushafNavigation).
  */
 import { JUZ_PAGE_RANGES, toArabicDigits } from '@/constants/progress';
+import type { LibraryFilterId } from '@/types/content';
 
 export type CountForms = { one: string; two: string; few: string; many: string };
 
@@ -27,6 +28,17 @@ const LECTURE_FORMS: CountForms = {
   few: 'محاضرات',
   many: 'محاضرة',
 };
+
+/** «٥ أيام» / «١١ يومًا» for a count shown on its own (the insight chips). */
+export function dayCountLabel(n: number): string {
+  return n === 0
+    ? '٠ أيام'
+    : arabicCount(n, { one: 'يوم واحد', two: 'يومان', few: 'أيام', many: 'يومًا' });
+}
+
+export function pageCountLabel(n: number): string {
+  return n === 0 ? '٠ صفحات' : arabicCount(n, PAGE_FORMS);
+}
 
 export function pagesReadSubtitle(total: number): string {
   return total > 0 ? arabicCount(total, PAGE_FORMS) : 'لم تبدأ بعد';
@@ -77,64 +89,85 @@ export function notesSubtitle(count: number): string {
   });
 }
 
-/**
- * «آخر قراءة: …» — when the reader last read, from the 28-day trend (the last
- * point is today). «لم تبدأ القراءة بعد» when no day has pages.
- */
-export function lastReadingLabel(trend: ReadonlyArray<{ pagesRead: number }>): string {
-  const days = daysSinceLastRead(trend);
-  if (days === null) return NOT_STARTED_LABEL;
-  if (days === 0) return 'آخر قراءة: اليوم';
-  if (days === 1) return 'آخر قراءة: أمس';
-  return `آخر قراءة: قبل ${toArabicDigits(days)} أيام`;
-}
+type TrendLike = readonly { pagesRead: number }[];
 
-const NOT_STARTED_LABEL = 'لم تبدأ القراءة بعد';
-
-/**
- * The wird card's second line: where the reader stopped. The data model holds a
- * page, not an ayah, so the page number stays (deviation from the file's ayah).
- * Null hides the line when there is no reading history — judged from the trend,
- * because `lastReadPage` defaults to 1 and would otherwise show «الفاتحة - صفحة ١»
- * to a reader who has not started.
- */
-export function wirdHighlightLabel(
-  surahName: string | null,
-  page: number,
-  trend: ReadonlyArray<{ pagesRead: number }>,
-): string | null {
-  if (lastReadingLabel(trend) === NOT_STARTED_LABEL) return null;
-  if (!surahName || page <= 0) return null;
-  return `سورة ${surahName} - صفحة ${toArabicDigits(page)}`;
-}
-
-/** Days since the last day with pages read; the last trend point is today. Null with no history. */
-export function daysSinceLastRead(
-  trend: ReadonlyArray<{ pagesRead: number }>,
-): number | null {
+/** Days since the last day with pages read; the last trend point is today. Null when the window has none. */
+export function daysSinceLastRead(trend: TrendLike): number | null {
   for (let i = trend.length - 1; i >= 0; i -= 1) {
     if (trend[i].pagesRead > 0) return trend.length - 1 - i;
   }
   return null;
 }
 
+/**
+ * Never read, read within the 28-day window, or read before but not in it.
+ * An empty window alone cannot tell the first from the last: a lapsed reader
+ * has `totalPagesRead > 0`.
+ */
+export type ReadingStatus = { kind: 'never' } | { kind: 'lapsed' } | { kind: 'recent'; days: number };
+
+export function readingStatus(trend: TrendLike, totalPagesRead: number): ReadingStatus {
+  const days = daysSinceLastRead(trend);
+  if (days !== null) return { kind: 'recent', days };
+  return totalPagesRead > 0 ? { kind: 'lapsed' } : { kind: 'never' };
+}
+
+/** «يوم واحد» / «يومين» / «٣ أيام» / «١١ يومًا» — a day count that agrees with its number. */
+export function daySpan(days: number): string {
+  if (days === 1) return 'يوم واحد';
+  if (days === 2) return 'يومين';
+  const lastTwo = days % 100;
+  return lastTwo >= 3 && lastTwo <= 10
+    ? `${toArabicDigits(days)} أيام`
+    : `${toArabicDigits(days)} يومًا`;
+}
+
+// 28 days = 4 weeks, the trend window.
+const LAPSED_SPAN = 'أكثر من ٤ أسابيع';
+
+/**
+ * «آخر قراءة: …» — when the reader last read (the last trend point is today).
+ * A reader with nothing in the window but pages before it is lapsed, not new.
+ */
+export function lastReadingLabel(trend: TrendLike, totalPagesRead: number): string {
+  const status = readingStatus(trend, totalPagesRead);
+  if (status.kind === 'never') return 'لم تبدأ القراءة بعد';
+  if (status.kind === 'lapsed') return `آخر قراءة منذ ${LAPSED_SPAN}`;
+  if (status.days === 0) return 'آخر قراءة: اليوم';
+  if (status.days === 1) return 'آخر قراءة: أمس';
+  return `آخر قراءة: قبل ${daySpan(status.days)}`;
+}
+
+/**
+ * The wird card's second line: where the reader stopped. The data model holds a
+ * page, not an ayah, so the page number stays (deviation from the file's ayah).
+ * Null only for a reader who has never read: `lastReadPage` defaults to 1 and
+ * would otherwise show «الفاتحة - صفحة ١». A lapsed reader keeps the line.
+ */
+export function wirdHighlightLabel(
+  surahName: string | null,
+  page: number,
+  trend: TrendLike,
+  totalPagesRead: number,
+): string | null {
+  if (readingStatus(trend, totalPagesRead).kind === 'never') return null;
+  if (!surahName || page <= 0) return null;
+  return `سورة ${surahName} - صفحة ${toArabicDigits(page)}`;
+}
+
+const REMINDER_TAIL = 'تذكر أن قراءة القرآن نور وشفاء للقلوب';
+
 /** The wird reminder card's description, from the reading habit. */
 export function wirdReminderDescription(
-  trend: ReadonlyArray<{ pagesRead: number }>,
+  trend: TrendLike,
   fallback: string,
+  totalPagesRead: number,
 ): string {
-  const days = daysSinceLastRead(trend);
-  if (days === null) return fallback;
-  if (days === 0) return 'قرأت وردك اليوم';
-  const span =
-    days === 1
-      ? 'يوم واحد'
-      : days === 2
-        ? 'يومين'
-        : days % 100 >= 3 && days % 100 <= 10
-          ? `${toArabicDigits(days)} أيام`
-          : `${toArabicDigits(days)} يومًا`;
-  return `لم تقرأ الورد منذ ${span}. تذكر أن قراءة القرآن نور وشفاء للقلوب`;
+  const status = readingStatus(trend, totalPagesRead);
+  if (status.kind === 'never') return fallback;
+  if (status.kind === 'lapsed') return `لم تقرأ الورد منذ ${LAPSED_SPAN}. ${REMINDER_TAIL}`;
+  if (status.days === 0) return 'قرأت وردك اليوم';
+  return `لم تقرأ الورد منذ ${daySpan(status.days)}. ${REMINDER_TAIL}`;
 }
 
 /**
@@ -143,7 +176,7 @@ export function wirdReminderDescription(
  * renders its label alone instead of a made-up count.
  */
 export function filterChipCount(
-  id: string,
+  id: LibraryFilterId,
   counts: { saved: number; notes: number; completed: number },
 ): string {
   switch (id) {

@@ -31,12 +31,14 @@ export function WirdSuggestionBanner({
       <View style={styles.actions}>
         <Pressable
           onPress={onAccept}
+          accessibilityRole="button"
           style={({ pressed }) => [styles.acceptBtn, { opacity: pressed ? 0.85 : 1 }]}
         >
           <Text style={styles.acceptLabel}>قبول</Text>
         </Pressable>
         <Pressable
           onPress={onDismiss}
+          accessibilityRole="button"
           style={({ pressed }) => [styles.dismissBtn, { opacity: pressed ? 0.85 : 1 }]}
         >
           <Text style={styles.dismissLabel}>لاحقًا</Text>

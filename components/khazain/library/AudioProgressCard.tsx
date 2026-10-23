@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
-    backgroundColor: 'rgba(215, 185, 149, 0.16)',
+    backgroundColor: KhazainColors.iconChipBg,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -155,9 +155,12 @@ export interface MoreRow {
   isExternal?: boolean;
 }
 
+/** The Library filter-chip ids. `history` is the السجل view. */
+export type LibraryFilterId = 'all' | 'saved' | 'notes' | 'completed' | 'playlist' | 'history';
+
 /** One chip in the Library filter bar. */
-export interface LibraryFilter {
-  id: string;
+export interface LibraryFilterChip {
+  id: LibraryFilterId;
   label: string;
   /** Display count shown alongside the label in the filter pill (e.g. "١٢").
    *  Optional — screens that don't render a count can ignore it. */

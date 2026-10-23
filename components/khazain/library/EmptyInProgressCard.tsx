@@ -1,4 +1,4 @@
-import { PHYSICAL_ROW } from '@/constants/layout';
+import { READING_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { LatticeDisc } from './LatticeDisc';
@@ -17,22 +17,26 @@ export function EmptyInProgressCard({
 }) {
   return (
     <View style={styles.card}>
-      {/* Physical left → right: action, text, lattice disc (no gold border). */}
-      {onBrowse ? (
-        <Pressable
-          onPress={onBrowse}
-          style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.85 : 1 }]}
-        >
-          <Text style={styles.ctaLabel}>تصفّح المحاضرات</Text>
-        </Pressable>
-      ) : null}
+      {/* Reading order (first child at the physical right, and first announced):
+          disc, text, then the action at the left. */}
+      <LatticeDisc />
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>لا توجد محاضرة قيد الاستماع</Text>
         <Text style={styles.subtitle}>
           ابدأ بمحاضرة من قسم العلماء وستظهر هنا للمتابعة لاحقًا.
         </Text>
       </View>
-      <LatticeDisc />
+      {onBrowse ? (
+        <Pressable
+          onPress={onBrowse}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.85 : 1 }]}
+        >
+          <Text style={styles.ctaLabel} numberOfLines={1}>
+            تصفّح المحاضرات
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
@@ -45,7 +49,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: KhazainColors.hairlineFaint,
-    ...PHYSICAL_ROW,
+    ...READING_ROW,
     alignItems: 'center',
     gap: 12,
   },

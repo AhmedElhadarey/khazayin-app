@@ -7,9 +7,10 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { Toggle } from '@/components/khazain/primitives/Toggle';
+import type { NotificationCategoryId } from '@/types/settings';
 
 export type ReminderSummary = {
-  id: string;
+  id: NotificationCategoryId;
   labelAr: string;
   descriptionAr: string;
   /**
@@ -17,13 +18,13 @@ export type ReminderSummary = {
    * drives the switch and the highlighted card. Never the stored preference
    * alone: that would advertise a reminder that cannot fire.
    */
-  armed?: boolean;
+  armed: boolean;
   /** «التذكير التالي: …», shown only while armed. */
   nextLabel?: string;
   /** What to say instead while not armed (switched off / permission missing). */
   statusLabel?: string;
   /** Flips the reminder through the same permission path as the settings screen. */
-  onToggle?: (next: boolean) => void;
+  onToggle: (next: boolean) => void;
 };
 
 /** The armed card's gradient and every other card's flat fill (node 2031:4659). */
@@ -43,15 +44,11 @@ const GRADIENT_END = { x: 0.73, y: 1.99 } as const;
  *   description, then the next-reminder line.
  */
 export function ReminderCard({ reminder }: { reminder: ReminderSummary }) {
-  const armed = reminder.armed === true;
+  const armed = reminder.armed;
   const body = (
     <>
       <View style={styles.header}>
-        {reminder.onToggle ? (
-          <Toggle on={armed} onChange={reminder.onToggle} label={reminder.labelAr} />
-        ) : (
-          <View />
-        )}
+        <Toggle on={armed} onChange={reminder.onToggle} label={reminder.labelAr} />
         <View style={styles.titleGroup}>
           <Text style={styles.title} numberOfLines={1}>
             {reminder.labelAr}
@@ -140,11 +137,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
+  // flex: 1 on the group and the title: a shrink-wrapped Arabic Text can lose
+  // its last word on Android 15.
   titleGroup: {
     ...PHYSICAL_ROW,
+    flex: 1,
     alignItems: 'center',
     gap: 8,
-    flexShrink: 1,
   },
   disc: {
     width: 32,
@@ -154,7 +153,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: textStyle('cardTitle', { color: KhazainColors.inkHeading }),
+  title: { flex: 1, ...textStyle('cardTitle', { color: KhazainColors.inkHeading }) },
   description: textStyle('label', { color: KhazainColors.ink500 }),
   status: {
     ...textStyle('label', { color: KhazainColors.ink500 }),

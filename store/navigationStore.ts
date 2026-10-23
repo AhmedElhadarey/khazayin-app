@@ -8,7 +8,7 @@
 
 import { createAsyncStore } from './createAsyncStore';
 import { contentService } from '../services/contentService';
-import type { LibraryFilter, MoreRow, SectionEntry } from '../types/content';
+import type { LibraryFilterChip, MoreRow, SectionEntry } from '../types/content';
 
 export const useSectionsStore = createAsyncStore<SectionEntry[]>({
   name: 'sections',
@@ -26,7 +26,7 @@ export const useMoreRowsStore = createAsyncStore<MoreRow[]>({
   isEmpty: (data) => data.length === 0,
 });
 
-export const useLibraryFiltersStore = createAsyncStore<LibraryFilter[]>({
+export const useLibraryFiltersStore = createAsyncStore<LibraryFilterChip[]>({
   name: 'library-filters',
   initialData: [],
   swr: { domain: 'libraryFilters' },

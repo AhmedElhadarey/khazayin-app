@@ -60,15 +60,17 @@ describe('AudioProgressCard (T16)', () => {
 });
 
 describe('EmptyInProgressCard (T16)', () => {
-  it('is a pinned row: cta, text, cover', () => {
+  it('is a reading-order row: disc, text, cta (the cta lands at the left)', () => {
     const r = render(<EmptyInProgressCard onBrowse={() => {}} />);
     const card = r.root.findAll((n) => n.type === 'View')[0];
     expect(style(card).direction).toBe('ltr');
-    expect(style(card).flexDirection).toBe('row');
+    expect(style(card).flexDirection).toBe('row-reverse');
     const kids = card.children as Node[];
-    expect(texts(kids[0])).toEqual(['تصفّح المحاضرات']);
+    expect(texts(kids[0])).toEqual([]); // the disc holds only an image
     expect(texts(kids[1])[0]).toBe('لا توجد محاضرة قيد الاستماع');
-    expect(texts(kids[2])).toEqual([]); // the cover holds only an svg
+    expect(texts(kids[2])).toEqual(['تصفّح المحاضرات']);
+    const label = card.findAll((n) => n.type === 'Text' && n.children.includes('تصفّح المحاضرات'))[0];
+    expect(label.props.numberOfLines).toBe(1);
     expect(KhazainColors.pageBg).toBeTruthy();
   });
 });
@@ -131,7 +133,7 @@ describe('AudioProgressCard structure (T18)', () => {
     expect(secondary).toMatchObject({ height: 36, paddingVertical: 8, paddingHorizontal: 12 });
     expect(primary.flex).toBeUndefined();
     expect(secondary.flex).toBeUndefined();
-    expect(secondary.backgroundColor).toBe('rgba(215, 185, 149, 0.16)');
+    expect(secondary.backgroundColor).toBe(KhazainColors.iconChipBg);
   });
 
   it('completed: full navy track, gold primary (only the primary is gold)', () => {
@@ -148,7 +150,7 @@ describe('EmptyInProgressCard cover (T18)', () => {
   it('uses the 48pt lattice disc with no gold border', () => {
     const r = render(<EmptyInProgressCard onBrowse={() => {}} />);
     const card = r.root.findAll((n) => n.type === 'View')[0];
-    const disc = (card.children as Node[])[2].findAll((n) => n.type === 'View')[0];
+    const disc = (card.children as Node[])[0].findAll((n) => n.type === 'View')[0];
     expect(style(disc)).toMatchObject({ width: 48, height: 48, borderRadius: 24 });
     expect(style(disc).borderWidth).toBeUndefined();
     expect(style(card)).toMatchObject({ paddingVertical: 17, paddingHorizontal: 12 });

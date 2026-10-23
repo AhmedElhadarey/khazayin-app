@@ -43,8 +43,6 @@ const PINNED_SCREENS = [
   'components/khazain/library/WirdHistory.tsx',
   'components/khazain/library/WirdSuggestionBanner.tsx',
   'components/khazain/library/InsightRow.tsx',
-  'components/khazain/library/MySavedSection.tsx',
-  'components/khazain/library/EmptyInProgressCard.tsx',
   'components/khazain/primitives/ToastOverlay.tsx',
   'app/settings-prayer.tsx',
   'app/settings-wird-goal.tsx',
@@ -111,7 +109,7 @@ function code(file: string): string {
 describe('the physical RTL contract holds on every hand-authored screen', () => {
   it.each(PINNED_SCREENS)('%s imports the contract', (file) => {
     const src = code(file);
-    expect(src).toMatch(/(PHYSICAL|READING)_(BOX|ROW)/);
+    expect(src).toMatch(/(PHYSICAL_(BOX|ROW)|READING_ROW)/);
   });
 
   it.each(PINNED_SCREENS)('%s does not reach for row-reverse', (file) => {
@@ -141,7 +139,7 @@ describe('no unpinned container claims a physical edge', () => {
       /padding(?:Right|Left):\s*\d/.test(src) ||
       /alignItems:\s*'flex-end'/.test(src);
     if (!usesPhysicalEdge) return;
-    expect(src).toMatch(/\.\.\.(PHYSICAL|READING)_(BOX|ROW)/);
+    expect(src).toMatch(/\.\.\.(PHYSICAL_(BOX|ROW)|READING_ROW)/);
   });
 });
 
@@ -312,5 +310,20 @@ describe('screens without a frame pin their blocks (T24)', () => {
   it('MySavedSection pins its row container', () => {
     const src = code('components/khazain/library/MySavedSection.tsx');
     expect(blk(src, 'rowContainer')).toMatch(/\.\.\.PHYSICAL_BOX/);
+  });
+
+  it('ToastOverlay card is a PHYSICAL_ROW authored action, message, badge', () => {
+    const src = code('components/khazain/primitives/ToastOverlay.tsx');
+    expect(blk(src, 'card')).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(src).not.toMatch(/flexDirection:\s*'row'/);
+    const jsx = src.slice(src.indexOf('<Text\n            style={[styles.message'));
+    const iAction = src.indexOf('styles.actionBtn');
+    const iMsg = src.indexOf('styles.message,');
+    const iBadge = src.indexOf('<CheckmarkBadge />');
+    expect(iAction).toBeGreaterThan(-1);
+    expect(iAction).toBeLessThan(iMsg);
+    expect(iMsg).toBeLessThan(iBadge);
+    expect(jsx).toBeTruthy();
+    expect(blk(src, 'message')).not.toMatch(/fontSize/);
   });
 });

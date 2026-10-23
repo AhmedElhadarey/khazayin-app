@@ -8,7 +8,7 @@ import type { ContentService } from '../contentService';
 import { request } from './client';
 import { isNotModified } from './types';
 import type { CacheOpts } from './types';
-import type { SectionEntry, MoreRow, LibraryFilter } from '../../types/content';
+import type { SectionEntry, MoreRow, LibraryFilterChip } from '../../types/content';
 
 export const navigationAdapter: ContentService['navigation'] = {
   async listSections(opts?: CacheOpts) {
@@ -30,7 +30,7 @@ export const navigationAdapter: ContentService['navigation'] = {
   },
 
   async listLibraryFilters(opts?: CacheOpts) {
-    const result = await request<LibraryFilter[]>({
+    const result = await request<LibraryFilterChip[]>({
       path: '/v1/library-filters',
       ifNoneMatch: opts?.ifNoneMatch ?? null,
     });

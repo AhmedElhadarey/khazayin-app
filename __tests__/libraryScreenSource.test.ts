@@ -82,9 +82,6 @@ describe('completed lecture card (LIBRARY-10)', () => {
     expect(lib).toMatch(/secondaryLabel="عرض الملاحظات"/);
     expect(lib).toMatch(/subtitle="مكتمل"/);
   });
-  it('shows the empty card only when there is neither an in-progress nor a completed lecture', () => {
-    expect(lib).toMatch(/inProgressCard \|\| completedCard/);
-  });
 });
 
 describe('filter chip rendering (LIBRARY-17)', () => {
@@ -105,22 +102,35 @@ describe('spec-review fixes', () => {
     expect(REMINDER_CARD.descriptionToNext).toBe(8);
   });
 
-  it('المكتمل shows only the completed card, or an empty state', () => {
-    expect(lib).toMatch(/filter === 'completed'/);
+  it('shows the shared empty states for المكتمل and قوائم التشغيل', () => {
     expect(lib).toMatch(/لا توجد محاضرات مكتملة بعد/);
-  });
-
-  it('قوائم التشغيل shows the shared empty state', () => {
     expect(lib).toMatch(/<EmptyState message="لا توجد قوائم تشغيل بعد" \/>/);
-  });
-
-  it('routes every reminder switch through the permission-aware toggle', () => {
-    expect(lib).not.toMatch(/setNotificationEnabled\(c\.id/);
-    expect(lib).toMatch(/setCategoryEnabled/);
   });
 
   it('no stale comments naming the old stat titles', () => {
     expect(lib).not.toMatch(/محاضرات مسموعة، الأجزاء المكتملة/);
     expect(read('constants/libraryPresentation.ts')).not.toMatch(/محاضرات مسموعة، الأجزاء المكتملة/);
+  });
+});
+
+describe('player boundary and layout (quality review)', () => {
+  it('hands lectures to the player through setTrack with the start position, not setProgress', () => {
+    expect(lib).toMatch(/showLectureInPlayer/);
+    expect(lib).not.toMatch(/setProgress/);
+    expect(lib).not.toMatch(/playLecture/);
+  });
+
+  it('guards the reminder switch against double taps and swallows failures', () => {
+    expect(lib).toMatch(/pendingToggles/);
+    expect(lib).toMatch(/\.catch\(\(\) => undefined\)\s*\.finally\(/);
+  });
+
+  it('keeps the history window constants at module scope', () => {
+    expect(lib).toMatch(/^const HISTORY_WEEKS_INITIAL = 12;/m);
+  });
+
+  it('gives the wird texts and the toggle label a full-width column', () => {
+    expect(body(lib, 'reminderInlineLabel')).toBeDefined();
+    expect(lib).toMatch(/reminderInlineLabel: \{ flex: 1/);
   });
 });

@@ -12,7 +12,7 @@
  * Track: khazain-content-service_20260506  Phase 1 / T1.5
  */
 
-import type { LibraryFilter, Lookup, MoreRow, SectionEntry } from '../../types/content';
+import type { LibraryFilterChip, Lookup, MoreRow, SectionEntry } from '../../types/content';
 import type { CommunityMode } from '../../services/community/gate';
 
 // ---------------------------------------------------------------------------
@@ -198,7 +198,7 @@ export const MORE_EXTERNAL_URLS: Lookup<string> = {
  * real and filled in by the Library from its stores; the rest carry none, so
  * the chip renders its label alone (no fabricated number).
  */
-export const LIBRARY_FILTERS: LibraryFilter[] = [
+export const LIBRARY_FILTERS: LibraryFilterChip[] = [
   { id: 'all',       label: 'الكل',            count: '' },
   { id: 'saved',     label: 'المحفوظات',        count: '' },
   { id: 'playlist',  label: 'قوائم التشغيل' },

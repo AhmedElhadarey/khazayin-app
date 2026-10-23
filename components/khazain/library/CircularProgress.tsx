@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { toArabicDigits } from '@/constants/progress';
 import { KhazainColors } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
+import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
 
 /**
  * The wird ring, node 2031:4659: a 3pt ring on the warm hairline with a
@@ -64,7 +64,7 @@ export function CircularProgress({
       </Svg>
       <View style={StyleSheet.absoluteFill}>
         <View style={styles.center}>
-          <Text style={styles.label}>{`${toArabicDigits(clamped)}٪`}</Text>
+          <Text style={styles.label} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>{`${toArabicDigits(clamped)}٪`}</Text>
         </View>
       </View>
     </View>

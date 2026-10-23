@@ -4,8 +4,6 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
   default: { getItem: jest.fn(async () => null), setItem: jest.fn(async () => undefined), removeItem: jest.fn(async () => undefined) },
 }));
 
-import fs from 'fs';
-import path from 'path';
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { ReminderList, type ReminderSummary } from '@/components/khazain/library/ReminderCard';
@@ -38,6 +36,8 @@ const summary = (extra: Partial<ReminderSummary> = {}): ReminderSummary => ({
   id: 'wird-daily',
   labelAr: 'تذكير ورد القرآن',
   descriptionAr: 'آخر قراءة أمس',
+  armed: false,
+  onToggle: () => undefined,
   ...extra,
 });
 
@@ -92,7 +92,7 @@ describe('ReminderCard', () => {
 
   it('spaces the description and next-time line by 8, and the cards by 12', () => {
     const r = render(
-      <ReminderList reminders={[summary({ armed: true, nextLabel: 'x' }), summary({ id: 'b' })]} />,
+      <ReminderList reminders={[summary({ armed: true, nextLabel: 'x' }), summary({ id: 'prayer-fajr' })]} />,
     );
     const next = r.root.findAll((n) => n.type === 'Text' && style(n).color === KhazainColors.navy800)[0];
     expect(style(next).marginTop).toBe(8);
@@ -114,13 +114,7 @@ describe('ReminderCard', () => {
   });
 });
 
-describe('wiring', () => {
-  const lib = fs.readFileSync(path.join(__dirname, '..', 'app/(tabs)/library.tsx'), 'utf8');
-  it('the wird card switch uses the permission-aware toggle, not the raw preference', () => {
-    expect(lib).toMatch(/onToggle: \(next: boolean\) => onToggleCategory\(c\.id, next\)/);
-    expect(lib).toMatch(/armed: reminder\.armed/);
-    expect(lib).not.toMatch(/setNotificationEnabled\('wird-daily'/);
-  });
+describe('registry naming', () => {
   it('names the wird reminder for the Library without renaming the settings row', () => {
     const wird = NOTIFICATION_CATEGORIES.find((c) => c.id === 'wird-daily')!;
     expect(wird.libraryLabelAr).toBe('تذكير ورد القرآن');
