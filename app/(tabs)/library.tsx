@@ -734,14 +734,16 @@ const styles = StyleSheet.create({
     ...PHYSICAL_BOX,
     paddingHorizontal: LIBRARY_DESIGN.sideMargin,
     paddingTop: 8,
-    paddingBottom: 16,
+    // h1 keeps its 28pt line; 12 below it puts the field where the frame does.
+    paddingBottom: 12,
     alignItems: 'flex-end',
   },
   // The frame sets the page title in the body face, not the display face:
   // TheMixArab Regular 18 in ink, where every heading below it is
   // TheSansArabic Bold.
   h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
-  searchBlock: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, paddingBottom: 8 },
+  // The search field ends at y=128 and the stat cards start at 160: a 32 gap.
+  searchBlock: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, paddingBottom: 32 },
   dbErrorBanner: {
     marginHorizontal: 14,
     marginBottom: 14,

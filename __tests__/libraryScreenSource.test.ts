@@ -59,3 +59,12 @@ describe('saved total count pill (LIBRARY-22)', () => {
     expect(src).toMatch(/totalCountText: textStyle\('label', \{ color: KhazainColors\.ink500 \}\)/);
   });
 });
+
+describe('search and header offsets (LIBRARY-13, 25)', () => {
+  it('leaves 32 between the search field and the stat cards', () => {
+    expect(lib).toMatch(/searchBlock: \{[^}]*paddingBottom: 32/);
+  });
+  it('keeps 12 under the title', () => {
+    expect(body(lib, 'headerBlock')).toMatch(/paddingBottom: 12/);
+  });
+});
