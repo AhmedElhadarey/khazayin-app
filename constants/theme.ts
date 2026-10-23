@@ -222,6 +222,8 @@ export const KhazainColors = {
   inkPlaceholder: '#988671',
   ink400: '#988671',
   inkCount: '#184B76',
+  /** Prophet hero body copy (node 2007:479 family), a warm brown rather than the navy. */
+  inkBrown: '#5F482D',
   inkArrow: '#281E13',
 
   // Accent

@@ -62,8 +62,9 @@ export function HomeHeader({
 const styles = StyleSheet.create({
   wrap: {
     paddingHorizontal: 16,
-    // Note: bottom gap to HeroQuran is owned by `heroPad.marginTop: 8` in
-    // app/(tabs)/index.tsx so the search pill→hero gap is exactly 8px (G4).
+    // Note: the gap to HeroQuran is owned by the section gap in
+    // app/(tabs)/index.tsx (`homeSectionGap('quranHero')` = 16, the file's
+    // search pill→hero gap), so this wrap adds none (G4).
     paddingBottom: 0,
   },
   row: {

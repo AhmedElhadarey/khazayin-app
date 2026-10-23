@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import { textStyle } from '@/constants/typography';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { HeroShell } from './HeroShell';
 import { SmallMoreButton } from './SmallMoreButton';
@@ -37,7 +38,10 @@ const LAYERS = [
 const GROUND = '#EBE1D0';
 
 /** The title is calligraphy in the design, so it stays a picture. */
-const TITLE_SIZE = { width: 95, height: 26, trailingInset: 5.8 };
+const TITLE_SIZE = { width: 95, height: 26 };
+
+/** Frame 2007:479: the title image, 3.83 to its right a 2 x 25 navy bar (2007:481, radius 0.96). */
+const TITLE_BAR = { width: 2, height: 25, radius: 0.96, gap: 3.83 };
 
 const BODY =
   'وِجهتُك المُثلى لِتَعرفَ وتَغرفَ مِن سِيرة: النبيِّ ﷺ وأصحابِه العِظام، وأزواجِه الكِرام عَبْرَ محتوًى موثوقٍ شاملٍ يعزِّز الفَهم العميق لشخصيَّاتهم ويبيِّن الأثر العظيم لتضحيَاتهم.';
@@ -66,18 +70,26 @@ export function HeroProphet({
     >
       {(scale) => (
         <>
-          <Image
-            source={TITLE}
-            style={{
-              alignSelf: 'flex-end',
-              marginRight: TITLE_SIZE.trailingInset * scale,
-              width: TITLE_SIZE.width * scale,
-              height: TITLE_SIZE.height * scale,
-            }}
-            contentFit="fill"
-            cachePolicy="memory-disk"
-            transition={0}
-          />
+          <View style={[styles.titleRow, { gap: TITLE_BAR.gap * scale }]}>
+            <Image
+              source={TITLE}
+              style={{
+                width: TITLE_SIZE.width * scale,
+                height: TITLE_SIZE.height * scale,
+              }}
+              contentFit="fill"
+              cachePolicy="memory-disk"
+              transition={0}
+            />
+            <View
+              style={{
+                width: TITLE_BAR.width * scale,
+                height: TITLE_BAR.height * scale,
+                borderRadius: TITLE_BAR.radius * scale,
+                backgroundColor: KhazainColors.navy,
+              }}
+            />
+          </View>
           {/* The hero copy sits inside an artwork frame whose height is a fixed
             proportion of its width (HeroShell scales every layer by
             measuredWidth / designWidth). Letting the type grow with the system
@@ -102,8 +114,14 @@ export function HeroProphet({
 }
 
 const styles = StyleSheet.create({
+  titleRow: {
+    // Physical order [title][bar]; the pair ends on the column's trailing edge.
+    ...PHYSICAL_ROW,
+    alignSelf: 'flex-end',
+    alignItems: 'center',
+  },
   body: {
-    ...textStyle('caption', { color: KhazainColors.navy }),
+    ...textStyle('caption', { color: KhazainColors.inkBrown }),
   },
   pillRow: {
     // The design aligns the pill's trailing edge with the copy's.

@@ -1,6 +1,7 @@
 import {
   HOME_QUICK_CHIPS,
   HOME_SECTION_GAP,
+  homeSectionGap,
   HOME_SECTION_ORDER,
   type HomeSectionKey,
 } from '@/constants/homePresentation';
@@ -38,6 +39,13 @@ describe('Home section order', () => {
 
   it('uses one vertical rhythm between sections', () => {
     expect(HOME_SECTION_GAP).toBe(24);
+  });
+
+  it('closes the search-to-Quran-hero gap to the 16 the file states (HOME-14)', () => {
+    expect(homeSectionGap('quranHero')).toBe(16);
+    expect(homeSectionGap('prophetHero')).toBe(24);
+    expect(homeSectionGap('queen')).toBe(24);
+    expect(homeSectionGap('dawah')).toBe(24);
   });
 });
 

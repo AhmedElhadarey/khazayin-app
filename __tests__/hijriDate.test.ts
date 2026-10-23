@@ -109,3 +109,24 @@ describe('T-HM — hijriMonth', () => {
     }
   });
 });
+
+describe('T-HD — no Arabic comma (HOME-19)', () => {
+  it('T-HD-6: strips the comma ICU puts after the month', () => {
+    const original = Intl.DateTimeFormat;
+    // @ts-expect-error deliberately stubbing Intl
+    Intl.DateTimeFormat = function () {
+      return { format: () => '١٧ ذو القعدة، ١٤٤٧ هـ' };
+    };
+    try {
+      expect(todayHijriArabic(new Date(2026, 6, 9))).toBe('١٧ ذو القعدة ١٤٤٧ هـ');
+    } finally {
+      Intl.DateTimeFormat = original;
+    }
+  });
+
+  it('T-HD-7: the real formatter output carries no comma and keeps Arabic-Indic digits', () => {
+    const result = todayHijriArabic(new Date(2026, 6, 9));
+    expect(result).not.toMatch(/[،,]/);
+    expect(result).toMatch(/[٠-٩]/);
+  });
+});

@@ -27,6 +27,8 @@ describe('Figma colour tokens', () => {
     expect(FIGMA_TOKENS.inkTitle).toBe('#281E13');
     expect(FIGMA_TOKENS.goldBar).toBe('#C1A584');
     expect(FIGMA_TOKENS.goldAccent).toBe('#A88051');
+    expect(FIGMA_TOKENS.inkBrown).toBe('#5F482D');
+    expect(FIGMA_TOKENS.queenBody).toBe('#B07F4B');
   });
 
   it('locks the active tab fill and indicator', () => {
@@ -42,6 +44,7 @@ describe('Figma colour tokens', () => {
     expect(KhazainColors.inkTitle).toBe(FIGMA_TOKENS.inkTitle);
     expect(KhazainColors.goldBar).toBe(FIGMA_TOKENS.goldBar);
     expect(KhazainColors.goldAccent).toBe(FIGMA_TOKENS.goldAccent);
+    expect(KhazainColors.inkBrown).toBe(FIGMA_TOKENS.inkBrown);
     expect(TAB_BAR.background).toBe(FIGMA_TOKENS.navigationNavy);
     expect(TAB_BAR.activeFill).toBe(FIGMA_TOKENS.activeTabFill);
     expect(TAB_BAR.indicatorColor).toBe(FIGMA_TOKENS.activeTabIndicator);

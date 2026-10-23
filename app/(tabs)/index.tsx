@@ -15,12 +15,11 @@ import {
 import { RtlCarousel } from '@/components/khazain/primitives';
 import { RecommendedSection } from '@/components/khazain/recommendations/RecommendedSection';
 import {
-  HOME_HERO_TOP_GAP,
   HOME_QUICK_CHIPS,
   type HomeQuickChip,
-  HOME_SECTION_GAP,
   HOME_SECTION_ORDER,
   type HomeSectionKey,
+  homeSectionGap,
   homeTabletRows,
 } from '@/constants/homePresentation';
 import { PHYSICAL_BOX, PHYSICAL_ROW, READING_ROW, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
@@ -280,7 +279,11 @@ export default function HomeScreen() {
               typeof row === 'string' && sections[row] == null ? null : (
                 <View
                   key={typeof row === 'string' ? row : row.join('+')}
-                  style={index === 0 ? undefined : styles.sectionGap}
+                  style={
+                    index === 0
+                      ? undefined
+                      : { marginTop: homeSectionGap(typeof row === 'string' ? row : row[0]) }
+                  }
                 >
                   {typeof row === 'string' ? (
                     sections[row]
@@ -299,7 +302,10 @@ export default function HomeScreen() {
             )
           : HOME_SECTION_ORDER.map((key, index) =>
               sections[key] == null ? null : (
-                <View key={key} style={index === 0 ? undefined : styles.sectionGap}>
+                <View
+                  key={key}
+                  style={index === 0 ? undefined : { marginTop: homeSectionGap(key) }}
+                >
                   {sections[key]}
                 </View>
               ),
@@ -356,12 +362,8 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 0,
   },
-  sectionGap: {
-    marginTop: HOME_SECTION_GAP,
-  },
   heroPad: {
     paddingHorizontal: 16,
-    marginTop: HOME_HERO_TOP_GAP,
   },
   // Tablet only: two sections side by side, the first on the physical right.
   pairRow: {
@@ -369,7 +371,6 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'stretch',
     paddingHorizontal: 16,
-    marginTop: HOME_HERO_TOP_GAP,
   },
   pairCell: {
     flex: 1,

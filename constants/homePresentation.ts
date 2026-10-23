@@ -49,8 +49,18 @@ export function homeTabletRows(order: readonly HomeSectionKey[]): HomeTabletRow[
 /** One vertical rhythm between sections, rather than a per-section margin. */
 export const HOME_SECTION_GAP = 24;
 
-/** Gap between the search field and the first hero. */
-export const HOME_HERO_TOP_GAP = 8;
+/**
+ * Sections whose gap above them is not the shared rhythm. The file puts 16
+ * between the search field and the Quran hero (search 2093:1646 → hero), and 24
+ * everywhere else (Quran → Prophet, books → queen, ...).
+ */
+export const HOME_SECTION_GAP_OVERRIDES: Readonly<Partial<Record<HomeSectionKey, number>>> =
+  Object.freeze({ quranHero: 16 });
+
+/** The gap above a section (or above a tablet row, keyed by its first section). */
+export function homeSectionGap(key: HomeSectionKey): number {
+  return HOME_SECTION_GAP_OVERRIDES[key] ?? HOME_SECTION_GAP;
+}
 
 export type HomeQuickChip = {
   /** Also the slot key for the chip's glyph — see HOME_QUICK_CHIP_GLYPH. */
