@@ -4,6 +4,11 @@ import type { NotificationCategoryId } from '@/types/settings';
 export type NotificationCategory = Readonly<{
   id: NotificationCategoryId;
   labelAr: string;
+  /**
+   * The Library's smart-reminder card names the reminder differently from the
+   * settings row (node 2031:4659); settings keeps `labelAr`.
+   */
+  libraryLabelAr?: string;
   descriptionAr: string;
   defaultOn: boolean;
   /**
@@ -20,6 +25,7 @@ export const NOTIFICATION_CATEGORIES: ReadonlyArray<NotificationCategory> = [
   {
     id: 'wird-daily',
     labelAr: 'تذكير الورد',
+    libraryLabelAr: 'تذكير ورد القرآن',
     descriptionAr: 'تذكير يومي بقراءة الورد',
     defaultOn: true,
     available: true,

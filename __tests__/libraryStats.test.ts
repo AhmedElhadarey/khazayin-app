@@ -83,3 +83,34 @@ describe('wird card highlight line (LIBRARY-16)', () => {
     expect(wirdHighlightLabel(null, 0)).toBeNull();
   });
 });
+
+import { daysSinceLastRead, nextReminderLabel, wirdReminderDescription } from '@/services/libraryStats';
+
+const trend = (...pages: number[]) =>
+  pages.map((pagesRead, i) => ({ localDay: `2026-10-${String(i + 1).padStart(2, '0')}`, pagesRead }));
+
+describe('wird reminder card copy (LIBRARY-11, 12)', () => {
+  it('counts days since the last reading, today being the last point', () => {
+    expect(daysSinceLastRead(trend(0, 3, 0, 0))).toBe(2);
+    expect(daysSinceLastRead(trend(0, 0, 0, 5))).toBe(0);
+    expect(daysSinceLastRead(trend(0, 0, 0))).toBeNull();
+    expect(daysSinceLastRead([])).toBeNull();
+  });
+
+  it('describes the habit, falling back to the static copy with no history', () => {
+    const fallback = 'تذكير يومي بقراءة الورد';
+    expect(wirdReminderDescription(trend(0, 0), fallback)).toBe(fallback);
+    expect(wirdReminderDescription(trend(0, 4), fallback)).toBe('قرأت وردك اليوم');
+    expect(wirdReminderDescription(trend(4, 0), fallback)).toBe('آخر قراءة أمس');
+    expect(wirdReminderDescription(trend(4, 0, 0), fallback)).toBe('لم تقرأ منذ يومين');
+    expect(wirdReminderDescription(trend(4, 0, 0, 0), fallback)).toBe('لم تقرأ منذ ٣ أيام');
+    expect(wirdReminderDescription(trend(4, ...Array(11).fill(0)), fallback)).toBe('لم تقرأ منذ ١١ يومًا');
+  });
+
+  it('names the next reminder «التذكير التالي» with today or tomorrow', () => {
+    const now = new Date(2026, 9, 23, 6, 0);
+    expect(nextReminderLabel(now, { hour: 8, minute: 0 }, false)).toContain('التذكير التالي: اليوم');
+    expect(nextReminderLabel(now, { hour: 8, minute: 0 }, true)).toContain('التذكير التالي: غدًا');
+    expect(nextReminderLabel(now, { hour: 8, minute: 0 }, false)).toContain('٨:٠٠');
+  });
+});

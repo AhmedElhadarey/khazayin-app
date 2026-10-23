@@ -4,6 +4,8 @@
  * middle dot reads as ٠ between Arabic-Indic digits (see mushafNavigation).
  */
 import { JUZ_PAGE_RANGES, toArabicDigits } from '@/constants/progress';
+import { computeNextWirdReminder, formatClockTime } from '@/services/wirdReminder';
+import type { TimeOfDay } from '@/types/settings';
 
 export type CountForms = { one: string; two: string; few: string; many: string };
 
@@ -85,4 +87,40 @@ export function notesSubtitle(count: number): string {
 export function wirdHighlightLabel(surahName: string | null, page: number): string | null {
   if (!surahName || page <= 0) return null;
   return `سورة ${surahName} - صفحة ${toArabicDigits(page)}`;
+}
+
+/** Days since the last day with pages read; the last trend point is today. Null with no history. */
+export function daysSinceLastRead(
+  trend: ReadonlyArray<{ pagesRead: number }>,
+): number | null {
+  for (let i = trend.length - 1; i >= 0; i -= 1) {
+    if (trend[i].pagesRead > 0) return trend.length - 1 - i;
+  }
+  return null;
+}
+
+/** The wird reminder card's description, from the reading habit. */
+export function wirdReminderDescription(
+  trend: ReadonlyArray<{ pagesRead: number }>,
+  fallback: string,
+): string {
+  const days = daysSinceLastRead(trend);
+  if (days === null) return fallback;
+  if (days === 0) return 'قرأت وردك اليوم';
+  if (days === 1) return 'آخر قراءة أمس';
+  if (days === 2) return 'لم تقرأ منذ يومين';
+  const lastTwo = days % 100;
+  return lastTwo >= 3 && lastTwo <= 10
+    ? `لم تقرأ منذ ${toArabicDigits(days)} أيام`
+    : `لم تقرأ منذ ${toArabicDigits(days)} يومًا`;
+}
+
+/** «التذكير التالي: اليوم ٨:٠٠ م» — the card's wording of the next armed fire time. */
+export function nextReminderLabel(now: Date, time: TimeOfDay, goalMetToday: boolean): string {
+  const next = computeNextWirdReminder(now, time, { goalMetToday });
+  const isToday =
+    next.getFullYear() === now.getFullYear() &&
+    next.getMonth() === now.getMonth() &&
+    next.getDate() === now.getDate();
+  return `التذكير التالي: ${isToday ? 'اليوم' : 'غدًا'} ${formatClockTime(time)}`;
 }

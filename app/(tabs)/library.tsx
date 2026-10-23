@@ -12,6 +12,7 @@ import {
   EmptyInProgressCard,
   InsightRow,
   ReminderList,
+  type ReminderSummary,
   MySavedSection,
   TrendSparkline,
   WirdHistory,
@@ -30,11 +31,13 @@ import {
 import {
   juzCompletedSubtitle,
   lecturesListenedSubtitle,
+  nextReminderLabel,
   notesSubtitle,
   pagesReadSubtitle,
   remindersSubtitle,
   streakSubtitle,
   wirdHighlightLabel,
+  wirdReminderDescription,
 } from '@/services/libraryStats';
 import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
@@ -286,6 +289,34 @@ export default function LibraryScreen() {
   useSettingsStore((st) => st.notifications);
   const activeReminders = NOTIFICATION_CATEGORIES.filter(
     (category) => category.available && isCategoryEnabled(category.id),
+  );
+
+  // Every shipped reminder gets a card with its own switch. The wird switch
+  // goes through `onToggleWirdReminder` (permission-aware, same as the settings
+  // screen); a card is armed only when the OS permits it, never on the stored
+  // preference alone.
+  const now = new Date();
+  const smartReminders: ReminderSummary[] = NOTIFICATION_CATEGORIES.filter((c) => c.available).map(
+    (c) =>
+      c.id === 'wird-daily'
+        ? {
+            id: c.id,
+            labelAr: c.libraryLabelAr ?? c.labelAr,
+            descriptionAr: wirdReminderDescription(trendLast28, c.descriptionAr),
+            armed: reminder.armed,
+            nextLabel: reminder.armed
+              ? nextReminderLabel(now, wirdReminderTime, goalMetToday)
+              : undefined,
+            statusLabel: reminder.armed ? undefined : reminder.caption,
+            onToggle: onToggleWirdReminder,
+          }
+        : {
+            id: c.id,
+            labelAr: c.libraryLabelAr ?? c.labelAr,
+            descriptionAr: c.descriptionAr,
+            armed: isCategoryEnabled(c.id),
+            onToggle: (next: boolean) => useSettingsStore.getState().setNotificationEnabled(c.id, next),
+          },
   );
 
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
@@ -625,11 +656,7 @@ export default function LibraryScreen() {
         <SectionTitle paddingBottom={12}>التذكيرات الذكية</SectionTitle>
         <View style={styles.block}>
           <ReminderList
-            reminders={activeReminders.map((c) => ({
-              id: c.id,
-              labelAr: c.labelAr,
-              descriptionAr: c.descriptionAr,
-            }))}
+            reminders={smartReminders}
             onManage={() => router.push('/settings-notifications' as any)}
           />
         </View>
