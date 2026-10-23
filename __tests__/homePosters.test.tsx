@@ -22,8 +22,10 @@ const { act, create } = require('react-test-renderer') as {
 };
 
 const flat = (n: any) => StyleSheet.flatten(n.props.style) ?? {};
-/** The Pressable's host view, which carries its resolved style. */
-const press = (tree: any) => tree.root.findAll((n: any) => n.type === 'View')[0];
+/** The Pressable's host view, which carries its resolved style. The poster's
+ * outer frame also holds the bookmark, so pick the button, not the first View. */
+const press = (tree: any) =>
+  tree.root.findAll((n: any) => n.type === 'View' && n.props.accessibilityRole === 'button')[0];
 
 const POSTER = {
   id: 'p',
