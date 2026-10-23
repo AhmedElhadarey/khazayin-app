@@ -24,7 +24,7 @@ jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));
 
-type Node = { type: unknown; props: Record<string, any>; children: any[]; findAll: (p: (n: Node) => boolean) => Node[] };
+type Node = { parent: Node | null; type: unknown; props: Record<string, any>; children: any[]; findAll: (p: (n: Node) => boolean) => Node[] };
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { act, create } = require('react-test-renderer') as {
   act: (fn: () => void) => void;
@@ -43,6 +43,8 @@ const textOf = (r: ReturnType<typeof create>, s: string) =>
   r.root.findAll((n) => n.type === Text && n.props.children === s)[0];
 const pressable = (r: ReturnType<typeof create>) => r.root.findAll((n) => typeof n.props.style === 'function')[0];
 
+const parentOf = (r: ReturnType<typeof create>, s: string) => textOf(r, s).parent as Node;
+
 const lh = (r: ReturnType<typeof create>, s: string) => flat(textOf(r, s)).lineHeight as number;
 const mb = (r: ReturnType<typeof create>, s: string) => (flat(textOf(r, s)).marginBottom ?? 0) as number;
 
@@ -50,12 +52,25 @@ describe('ReciterRow (SECTIONS-03, SECTIONS-11)', () => {
   const r = render(<ReciterRow title="عنوان" subtitle="فرعي" onPress={() => {}} />);
   it('fills the 56 row with 24 + 4 + 20', () => {
     const row = flat(pressable(r));
-    const col = r.root.findAll((n) => flat(n)?.flex === 1 && flat(n)?.alignItems === 'flex-end')[0];
-    const gap = flat(col).gap ?? 0;
+    const gap = flat(parentOf(r, 'عنوان')).gap ?? 0;
     const content = lh(r, 'عنوان') + mb(r, 'عنوان') + gap + lh(r, 'فرعي');
     expect(content).toBe(48);
     const chrome = 2 * (row.paddingVertical + row.borderWidth);
     expect(content + chrome).toBe(56);
+  });
+  it('text column stretches and the title is right-aligned (Android 15 shrink-wrap)', () => {
+    const col = flat(parentOf(r, 'عنوان'));
+    expect(col.alignItems).toBe('stretch');
+    expect(col.flex).toBe(1);
+    expect(flat(textOf(r, 'عنوان')).textAlign).toBe('right');
+    expect(flat(textOf(r, 'فرعي')).textAlign).toBe('right');
+  });
+  it('a row with no subtitle has no title marginBottom, so Qiraat rows stay centred', () => {
+    const q = render(<ReciterRow title="قراءة" onPress={() => {}} />);
+    expect(mb(q, 'قراءة')).toBe(0);
+  });
+  it('uses the border token for the hairline', () => {
+    expect(flat(pressable(r)).borderWidth).toBe(LIST_ROW_TEXT.borderWidth);
   });
   it('draws the disclosure wedge in inkTitle', () => {
     const icon = r.root.findAll((n) => n.props.name === 'Back')[0];
@@ -72,10 +87,23 @@ describe('LectureCard (MEDIA-11, SCHOLARS-12)', () => {
   it('bordered card is 64: 1 + 7 + 48 + 7 + 1', () => {
     const r = mk(false);
     const card = flat(pressable(r));
-    const col = r.root.findAll((n) => flat(n)?.flex === 1 && flat(n)?.alignItems === 'flex-end')[0];
-    const content = lh(r, 'العنوان') + mb(r, 'العنوان') + (flat(col).gap ?? 0) + lh(r, 'الشيخ');
+    const content = lh(r, 'العنوان') + mb(r, 'العنوان') + (flat(parentOf(r, 'العنوان')).gap ?? 0) + lh(r, 'الشيخ');
     expect(content).toBe(48);
     expect(2 * (card.paddingVertical + card.borderWidth) + content).toBe(CARD_DENSITY.lectureCardMinHeight);
+  });
+  it('bordered card text block stretches; title and scholar are right-aligned', () => {
+    const r = mk(false);
+    const col = flat(parentOf(r, 'العنوان'));
+    expect(col.alignItems).toBe('stretch');
+    expect(col.flex).toBe(1);
+    expect(flat(textOf(r, 'العنوان')).textAlign).toBe('right');
+    expect(flat(textOf(r, 'الشيخ')).textAlign).toBe('right');
+  });
+  it('card padding is 8 minus the border, so the 64 row stays tied to it', () => {
+    const card = flat(pressable(mk(false)));
+    expect(card.paddingVertical + card.borderWidth).toBe(8);
+    expect(card.paddingHorizontal + card.borderWidth).toBe(CARD_DENSITY.lectureCardPaddingHorizontal);
+    expect(card.borderWidth).toBe(LIST_ROW_TEXT.borderWidth);
   });
   it('title line height is the bodyCompactLoose role', () => {
     expect(LIST_ROW_TEXT.titleLineHeight).toBe(TEXT_ROLES.bodyCompactLoose.lineHeight);
@@ -96,13 +124,20 @@ describe('RibbonCard', () => {
     const card = flat(pressable(r));
     expect(lh(r, 'الاسم')).toBe(24);
     expect(lh(r, 'فضيلة الشيخ')).toBe(24);
+    // The two lines fill the 48 content box (sum, not a literal).
+    expect(lh(r, 'الاسم') + lh(r, 'فضيلة الشيخ')).toBe(48);
     const block = r.root.findAll((n) => flat(n)?.flex === 1 && flat(n)?.alignItems === 'stretch')[0];
     expect(flat(block).gap ?? 0).toBe(0);
-    expect(2 * card.paddingVertical + 48).toBe(CARD_DENSITY.scholarRowMinHeight);
+    expect(2 * card.paddingVertical + lh(r, 'الاسم') + lh(r, 'فضيلة الشيخ')).toBe(CARD_DENSITY.scholarRowMinHeight);
     expect(card.paddingRight).toBe(8);
     expect(card.paddingLeft).toBe(16);
     expect(flat(textOf(r, 'الاسم')).color).toBe(KhazainColors.inkTitle);
     expect(flat(textOf(r, 'فضيلة الشيخ')).color).toBe(KhazainColors.inkTitle);
+  });
+
+  it('no-badge pretitle stays ink500 (recommendation rows depend on it)', () => {
+    const r = render(<RibbonCard pretitle="سبب" title="العنوان" meta="الوصف" />);
+    expect(flat(textOf(r, 'سبب')).color).toBe(KhazainColors.ink500);
   });
 
   it('ribbon variant: 1 + 3 + 48 + 3 + 1 = 56, ribbon spans border to border (SCHOLARS-13/14)', () => {

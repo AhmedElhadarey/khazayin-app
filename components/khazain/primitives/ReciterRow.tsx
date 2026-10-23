@@ -84,7 +84,7 @@ const styles = StyleSheet.create({
     gap: 8,
     borderRadius: CARD_DENSITY.reciterRowRadius,
     backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
+    borderWidth: LIST_ROW_TEXT.borderWidth,
     borderColor: KhazainColors.hairlineWarm,
     alignItems: 'center',
   },
@@ -99,7 +99,9 @@ const styles = StyleSheet.create({
   textCol: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'flex-end',
+    // Full width, not shrink-wrapped (Android 15); text styles are right-aligned.
+    alignItems: 'stretch',
+    alignSelf: 'stretch',
     gap: 0,
   },
   // `H3-145` is TheMixArab Regular 14, `P-148` TheMixArab Regular 12.

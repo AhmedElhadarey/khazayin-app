@@ -143,11 +143,11 @@ const styles = StyleSheet.create({
   card: {
     minHeight: CARD_DENSITY.lectureCardMinHeight,
     borderRadius: CARD_DENSITY.lectureCardRadius,
-    borderWidth: 1,
+    borderWidth: LIST_ROW_TEXT.borderWidth,
     borderColor: KhazainColors.hairlineWarm,
     // 1 + 7 + 48 + 7 + 1 = 64, and the disc sits 8 from the outer edge.
-    paddingVertical: 7,
-    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal - 1,
+    paddingVertical: 8 - LIST_ROW_TEXT.borderWidth,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal - LIST_ROW_TEXT.borderWidth,
   },
   cardRail: {
     minHeight: CARD_DENSITY.reciterRowMinHeight,
@@ -162,11 +162,14 @@ const styles = StyleSheet.create({
   textBlock: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'flex-end',
+    // Full width, not shrink-wrapped (Android 15 line-breaking); the text
+    // styles carry textAlign 'right' (RTL_TEXT).
+    alignItems: 'stretch',
+    alignSelf: 'stretch',
     gap: 2,
   },
   textBlockCard: { gap: 0 },
-  textBlockRail: { alignItems: 'stretch', alignSelf: 'stretch', justifyContent: 'center' },
+  textBlockRail: { justifyContent: 'center' },
   // `H3-145` is TheMixArab Regular 14 and `P-148` TheMixArab Regular 12 in
   // every one of these frames — the body face, not the calligraphic one the
   // app had been reaching for.

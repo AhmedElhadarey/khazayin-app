@@ -1,4 +1,5 @@
 import { KhazainColors, withAlpha } from '@/constants/theme';
+import { TEXT_ROLES } from '@/constants/typography';
 
 // Layout constants for tab screens.
 //
@@ -303,23 +304,6 @@ export function physicalTabOrder<T>(tabs: readonly T[]): T[] {
 // Shared card density (design spec section 5.2)
 // ---------------------------------------------------------------------------
 //
-/**
- * Text metrics shared by the 56pt list rows (ReciterRow, the bordered
- * LectureCard, RibbonCard's ribbon variant; nodes 2031:6193, 2465:1911,
- * 2510:1990): a 24 title, 4, then a 20 subtitle fill the 48pt column. Padding
- * and hairline are the ribbon/reciter row's (1 + 3 + 48 + 3 + 1 = 56); the gold
- * ribbon pulls back out over the padding. The 24 title is the
- * `bodyCompactLoose` role; the 20 line has no role. Home's recommendation slot
- * derives from this.
- */
-export const LIST_ROW_TEXT = Object.freeze({
-  paddingVertical: 3,
-  borderWidth: 1,
-  titleLineHeight: 24,
-  titleGap: 4,
-  subtitleLineHeight: 20,
-} as const);
-
 // One density for every lecture-like screen. Do not fork these per route
 // unless the corresponding Figma frame genuinely differs — the audit found the
 // app's rows roughly a third taller than the reference, which pushed content
@@ -406,6 +390,24 @@ export const CARD_DENSITY = Object.freeze({
    * before; 1 keeps a card lifted without the separator the audit flagged.
    */
   cardElevation: 1,
+} as const);
+
+/**
+ * Text metrics shared by the list rows that use the 24 + 4 + 20 text column
+ * (ReciterRow, RibbonCard's ribbon variant; nodes 2031:6193, 2510:1990): a 24
+ * title, 4, then a 20 subtitle fill the 48pt column. With the ribbon/reciter
+ * row's padding and hairline that is 1 + 3 + 48 + 3 + 1 = 56; the gold ribbon
+ * pulls back out over the padding. The bordered LectureCard (64, node 2465:1911)
+ * shares the column, the hairline and the line heights, but pads 8 - border
+ * instead of `paddingVertical`. The 24 title is the `bodyCompactLoose` role;
+ * the 20 line has no role. Home's recommendation slot derives from this.
+ */
+export const LIST_ROW_TEXT = Object.freeze({
+  paddingVertical: 3,
+  borderWidth: 1,
+  titleLineHeight: TEXT_ROLES.bodyCompactLoose.lineHeight,
+  titleGap: 4,
+  subtitleLineHeight: 20,
 } as const);
 
 // ---------------------------------------------------------------------------
