@@ -77,8 +77,18 @@ import { lectureNoteParamsFromSession } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 
@@ -112,6 +122,8 @@ export default function LibraryScreen() {
   const { columnStyle } = useResponsiveLayout();
   const controls = useWindowControlsInset();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   const notes = useNotesStore((s) => s.notes);
   const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
 
@@ -655,6 +667,7 @@ export default function LibraryScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
+      <HeaderArt corners="pair" smallCorner="library" bandHeight={headerBandHeight(insets.top, 'root', fontScale)} />
       <ScrollView
         contentContainerStyle={[{ paddingBottom: 24 }, columnStyle]}
         showsVerticalScrollIndicator={false}

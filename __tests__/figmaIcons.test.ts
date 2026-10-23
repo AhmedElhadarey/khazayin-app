@@ -348,6 +348,8 @@ describe('the header art the frames lay over the page', () => {
       // 2031:5675 is a tab root and carries the pair of corner motifs; the
       // 22-10 device audit caught it painting a bare ground.
       'app/(tabs)/sections/index.tsx',
+      // 2031:4659 is the other tab root with the pair and the library corner.
+      'app/(tabs)/library.tsx',
     ];
     for (const file of screens) {
       const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -389,6 +391,13 @@ describe('the header art the frames lay over the page', () => {
     }
     const qiraat = fs.readFileSync(path.join(ROOT, sub('qiraat')), 'utf8');
     expect(qiraat.includes('HeaderArt')).toBe(false);
+  });
+
+  it('lays the Library root band (2031:4659) as the first child of the screen', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'app/(tabs)/library.tsx'), 'utf8');
+    expect(src).toMatch(
+      /<SafeAreaView[^>]*>\s*<HeaderArt corners="pair" smallCorner="library" bandHeight=\{headerBandHeight\(insets\.top, 'root', fontScale\)\} \/>/,
+    );
   });
 });
 
