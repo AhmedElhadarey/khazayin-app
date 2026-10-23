@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 
 /**
@@ -85,13 +86,7 @@ export function ToastOverlay() {
             KhazainShadows.card,
           ]}
         >
-          {isAchievement ? <CheckmarkBadge /> : null}
-          <Text
-            style={[styles.message, isAchievement && styles.messageAchievement]}
-            numberOfLines={2}
-          >
-            {current.message}
-          </Text>
+          {/* Physical left → right: action, message, badge. */}
           {current.action ? (
             <Pressable
               onPress={() => {
@@ -104,6 +99,13 @@ export function ToastOverlay() {
               <Text style={styles.actionLabel}>{current.action.label}</Text>
             </Pressable>
           ) : null}
+          <Text
+            style={[styles.message, isAchievement && styles.messageAchievement]}
+            numberOfLines={2}
+          >
+            {current.message}
+          </Text>
+          {isAchievement ? <CheckmarkBadge /> : null}
         </View>
       </Animated.View>
     </SafeAreaView>
@@ -142,7 +144,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: KhazainRadius.lg,
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
   },
@@ -166,11 +168,7 @@ const styles = StyleSheet.create({
   },
   message: {
     flex: 1,
-    color: KhazainColors.cream50,
-    fontFamily: 'TheMixArab',
-    fontSize: 14,
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    ...textStyle('bodyCompact', { color: KhazainColors.cream50 }),
   },
   messageAchievement: textStyle('cardTitle', { color: KhazainColors.navy800 }),
   actionBtn: {

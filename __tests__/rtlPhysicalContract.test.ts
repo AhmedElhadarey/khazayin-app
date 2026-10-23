@@ -39,6 +39,11 @@ const ROOT = path.resolve(__dirname, '..');
  */
 const PINNED_SCREENS = [
   'app/settings-about.tsx',
+  'app/settings-notifications.tsx',
+  'components/khazain/library/WirdHistory.tsx',
+  'components/khazain/library/WirdSuggestionBanner.tsx',
+  'components/khazain/library/InsightRow.tsx',
+  'components/khazain/primitives/ToastOverlay.tsx',
   'app/settings-prayer.tsx',
   'app/settings-wird-goal.tsx',
   'app/settings-wird-reminder.tsx',
@@ -269,5 +274,42 @@ describe('Library blocks keep their text on the physical right', () => {
   it('MySavedSection authors its header row physically', () => {
     const src = code('components/khazain/library/MySavedSection.tsx');
     expect(block(src, 'headerRow')).toMatch(/\.\.\.PHYSICAL_ROW/);
+  });
+});
+
+describe('screens without a frame pin their blocks (T24)', () => {
+  const blk = (src: string, name: string) => {
+    const at = src.search(new RegExp(`\\n  ${name}: \\{`));
+    expect(at).toBeGreaterThan(-1);
+    return src.slice(at, src.indexOf('\n  },', at));
+  };
+
+  it('settings-notifications pins body, noteCard and banner, and stretches the banner', () => {
+    const src = code('app/settings-notifications.tsx');
+    for (const n of ['body', 'noteCard', 'banner']) {
+      expect(blk(src, n)).toMatch(/\.\.\.PHYSICAL_BOX/);
+    }
+    expect(blk(src, 'banner')).toMatch(/alignItems:\s*'stretch'/);
+    expect(src).not.toMatch(/alignItems:\s*'flex-end'/);
+  });
+
+  it('MySavedSection pins its row container', () => {
+    const src = code('components/khazain/library/MySavedSection.tsx');
+    expect(blk(src, 'rowContainer')).toMatch(/\.\.\.PHYSICAL_BOX/);
+  });
+
+  it('ToastOverlay card is a PHYSICAL_ROW authored action, message, badge', () => {
+    const src = code('components/khazain/primitives/ToastOverlay.tsx');
+    expect(blk(src, 'card')).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(src).not.toMatch(/flexDirection:\s*'row'/);
+    const jsx = src.slice(src.indexOf('<Text\n            style={[styles.message'));
+    const iAction = src.indexOf('styles.actionBtn');
+    const iMsg = src.indexOf('styles.message,');
+    const iBadge = src.indexOf('<CheckmarkBadge />');
+    expect(iAction).toBeGreaterThan(-1);
+    expect(iAction).toBeLessThan(iMsg);
+    expect(iMsg).toBeLessThan(iBadge);
+    expect(jsx).toBeTruthy();
+    expect(blk(src, 'message')).not.toMatch(/fontSize/);
   });
 });

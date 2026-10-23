@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyTitle: textStyle('sectionTitle', { color: KhazainColors.navy800, textAlign: 'center' }),
-  emptyBody: textStyle('label', { color: KhazainColors.ink500, textAlign: 'center' }),
+  emptyBody: textStyle('caption', { color: KhazainColors.ink500, textAlign: 'center' }),
   sectionLabel: {
     paddingHorizontal: LIBRARY_DESIGN.sideMargin,
     paddingBottom: 8,

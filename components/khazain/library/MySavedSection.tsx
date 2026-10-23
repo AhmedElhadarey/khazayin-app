@@ -1,7 +1,7 @@
 import { BookmarkIcon } from '@/components/khazain/icons';
 import { BookmarkButton } from '@/components/khazain/primitives';
 import { SearchGroupHeader, SearchResultRow } from '@/components/khazain/search';
-import { PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { groupSavedItems, SAVED_EMPTY_COPY } from '@/constants/savedPresentation';
 import { toArabicDigits } from '@/constants/progress';
 import { textStyle } from '@/constants/typography';
@@ -110,6 +110,7 @@ const styles = StyleSheet.create({
   },
   totalCountText: textStyle('label', { color: KhazainColors.ink500 }),
   rowContainer: {
+    ...PHYSICAL_BOX,
     position: 'relative',
   },
   rowBookmarkSlot: {
