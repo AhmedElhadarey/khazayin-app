@@ -86,3 +86,10 @@ export const LIST_CARD = Object.freeze({ radius: LIBRARY_CARD_RADIUS });
 export function statCardWidth(frameWidth: number): number {
   return (frameWidth - LIBRARY_DESIGN.sideMargin * 2 - STAT_CARD.gap * 2) / 3;
 }
+
+/**
+ * Extra space under the search pill before the stat cards: the pill ends at
+ * y=128 and the cards start at 160, a 32 gap = the shared header padding (8)
+ * plus this 24 margin wrap.
+ */
+export const LIBRARY_SEARCH_MARGIN_BELOW = 24;

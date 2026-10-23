@@ -17,7 +17,7 @@ import {
   WirdHistory,
   WirdSuggestionBanner,
 } from '@/components/khazain/library';
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PAGE_CHROME, PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import {
   LIBRARY_PROGRESS_STAT_ORDER,
   LIBRARY_SUMMARY_CARD_ORDER,
@@ -45,6 +45,7 @@ import {
   FILTER_CHIP,
   LIBRARY_CARD_RADIUS,
   LIBRARY_DESIGN,
+  LIBRARY_SEARCH_MARGIN_BELOW,
   LIBRARY_SECTION_GAP,
   NOTE_FIELD,
   QUICK_NOTE_CARD,
@@ -743,7 +744,10 @@ const styles = StyleSheet.create({
   // TheSansArabic Bold.
   h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
   // The search field ends at y=128 and the stat cards start at 160: a 32 gap.
-  searchBlock: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, paddingBottom: 32 },
+  searchBlock: {
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom + LIBRARY_SEARCH_MARGIN_BELOW,
+  },
   dbErrorBanner: {
     marginHorizontal: 14,
     marginBottom: 14,

@@ -1,4 +1,6 @@
 import fs from 'fs';
+import { LIBRARY_SEARCH_MARGIN_BELOW } from '@/components/khazain/library/libraryLayout';
+import { PAGE_CHROME } from '@/constants/layout';
 import path from 'path';
 
 const read = (f: string) =>
@@ -62,7 +64,10 @@ describe('saved total count pill (LIBRARY-22)', () => {
 
 describe('search and header offsets (LIBRARY-13, 25)', () => {
   it('leaves 32 between the search field and the stat cards', () => {
-    expect(lib).toMatch(/searchBlock: \{[^}]*paddingBottom: 32/);
+    expect(lib).toMatch(
+      /searchBlock: \{[^}]*paddingBottom: PAGE_CHROME\.searchPaddingBottom \+ LIBRARY_SEARCH_MARGIN_BELOW/,
+    );
+    expect(PAGE_CHROME.searchPaddingBottom + LIBRARY_SEARCH_MARGIN_BELOW).toBe(32);
   });
   it('keeps 12 under the title', () => {
     expect(body(lib, 'headerBlock')).toMatch(/paddingBottom: 12/);
