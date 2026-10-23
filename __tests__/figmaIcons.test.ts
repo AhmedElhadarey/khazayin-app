@@ -145,6 +145,82 @@ describe('the generated icon set', () => {
     });
   });
 
+  // MORE-04: an instance override that clears a pre-outlined vuesax vector's
+  // fill and sets a stroke means "the outline, in this colour". The stroke of
+  // that already-outlined ring is ~2 units wide and printed as a solid block.
+  describe('an override that swaps a pre-outlined fill for a stroke colour', () => {
+    const { collectPaths } = require('../scripts/figma/vector.js');
+    const blobOf = (pts: ReadonlyArray<readonly [number, number]>) => {
+      const b = Buffer.alloc(pts.length * 9 + 1);
+      let o = 0;
+      pts.forEach(([x, y], i) => {
+        b.writeUInt8(i === 0 ? 1 : 2, o); o += 1;
+        b.writeFloatLE(x, o); o += 4;
+        b.writeFloatLE(y, o); o += 4;
+      });
+      b.writeUInt8(0, o);
+      return { bytes: b };
+    };
+    const navy = { type: 'SOLID', visible: true, color: { r: 0, g: 0, b: 1, a: 1 } };
+    const grey = { type: 'SOLID', visible: true, color: { r: 0.5, g: 0.5, b: 0.5, a: 1 } };
+    const g = (localID: number) => ({ sessionID: 1, localID });
+
+    const run = (overrideFill: unknown[] | undefined) => {
+      const master = { guid: g(10), type: 'SYMBOL', size: { x: 24, y: 24 } };
+      const vec = {
+        guid: g(11), type: 'VECTOR', size: { x: 24, y: 24 },
+        transform: { m00: 1, m01: 0, m02: 0, m10: 0, m11: 1, m12: 0 },
+        fillPaints: [grey],
+        fillGeometry: [{ commandsBlob: 0, windingRule: 'ODD' }],
+      };
+      const inst = {
+        guid: g(12), type: 'INSTANCE', size: { x: 20, y: 20 },
+        symbolData: {
+          symbolID: g(10),
+          symbolOverrides: [{
+            guidPath: { guids: [g(11)] },
+            ...(overrideFill ? { fillPaints: overrideFill } : {}),
+            strokePaints: [navy],
+          }],
+        },
+        derivedSymbolData: [{
+          guidPath: { guids: [g(11)] },
+          strokeGeometry: [{ commandsBlob: 1, windingRule: 'NONZERO' }],
+        }],
+      };
+      const nodes = [master, vec, inst];
+      const byGuid = Object.assign(
+        new Map(nodes.map((n) => [`${n.guid.sessionID}:${n.guid.localID}`, n])),
+        { blobs: [blobOf([[1, 1], [9, 1], [9, 9]]), blobOf([[0, 0], [30, 0], [30, 30]])] },
+      );
+      const childrenOf = (k: string) => (k === '1:10' ? [vec] : []);
+      return collectPaths(inst, { byGuid, childrenOf });
+    };
+
+    it('draws the thin outline ring in the stroke colour, not the thick stroke of it', () => {
+      const paths = run([]);
+      expect(paths).toHaveLength(1);
+      expect(paths[0].d).toBe('M1 1L9 1L9 9Z');
+      expect(paths[0].fill).toBe('#0000FF');
+      expect(paths[0].fillRule).toBe('evenodd');
+    });
+
+    it('still draws the stroke outline when the fill was not cleared', () => {
+      const paths = run(undefined);
+      expect(paths.map((p: { d: string }) => p.d)).toEqual(['M1 1L9 1L9 9Z', 'M0 0L30 0L30 30Z']);
+    });
+  });
+
+  it('draws the archive book as a thin outline, not a solid block', () => {
+    // The ring is an outer and an inner contour (wound opposite ways, so the
+    // inside is left open) about 1.25pt apart; its stroke outline spans the
+    // whole box and rendered as a solid navy slab.
+    const [ring] = FIGMA_ICONS.MoreArchive.paths;
+    expect(ring.d.match(/M/g)).toHaveLength(2);
+    expect(ring.d).toContain('M7.04 2.5'); // the inner contour exists
+    expect(ring.fill).toBe('#184B76');
+  });
+
   // The generator is the only writer of `figmaIcons.ts`. If someone edits the
   // manifest and forgets to re-run it, or hand-edits the output, the file and
   // the design file disagree — and nothing else would notice.

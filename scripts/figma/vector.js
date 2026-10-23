@@ -159,8 +159,19 @@ function collectPaths(root, { byGuid, childrenOf }) {
       }
     };
 
-    emit(fillGeom, fillPaints);
-    emit(strokeGeom, strokePaints);
+    // An instance override that CLEARS the fill of a vuesax "outline" vector and
+    // sets a stroke colour is how the file recolours a glyph that Figma has
+    // already outlined: `fillGeometry` is the thin ring itself, and the stroke
+    // is only the carrier of the colour. Stroking that ring again (the derived
+    // `strokeGeometry`) thickens it into a solid block (MoreArchive), so the
+    // ring is emitted in the stroke colour and the stroke outline is skipped.
+    const fillCleared = over && Array.isArray(over.fillPaints) && over.fillPaints.length === 0;
+    if (fillCleared && solidHex(strokePaints) && (fillGeom || []).length) {
+      emit(fillGeom, strokePaints);
+    } else {
+      emit(fillGeom, fillPaints);
+      emit(strokeGeom, strokePaints);
+    }
 
     // An INSTANCE's drawable content is the master's subtree, positioned by
     // the instance's own transform.
