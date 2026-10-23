@@ -395,6 +395,11 @@ describe('the header art the frames lay over the page', () => {
     expect(qiraat.includes('HeaderArt')).toBe(false);
   });
 
+  it('insets the scholar detail header art to the title (gutter + 16 in split pane, 16 otherwise)', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'app/(tabs)/sections/scholar/[id].tsx'), 'utf8');
+    expect(src).toMatch(/inset=\{\(splitPadding\?\.paddingRight \?\? 0\) \+ 16\}/);
+  });
+
   it('lays the Library root band (2031:4659) as the first child of the screen', () => {
     const src = fs.readFileSync(path.join(ROOT, 'app/(tabs)/library.tsx'), 'utf8');
     expect(src).toMatch(

@@ -97,7 +97,11 @@ export default function ScholarDetailScreen() {
   const { fontScale } = useWindowDimensions();
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'search', fontScale)} />
+      <HeaderArt
+        corners="single"
+        bandHeight={headerBandHeight(insets.top, 'search', fontScale)}
+        inset={(splitPadding?.paddingRight ?? 0) + 16}
+      />
       <View style={splitPadding ?? undefined}>
         <InlineHeader title="كل الشرح" onBack={() => router.back()} />
       </View>
