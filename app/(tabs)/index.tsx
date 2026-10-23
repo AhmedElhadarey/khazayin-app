@@ -34,6 +34,7 @@ import {
   useFeaturedDawahStore,
   useScholarsStore,
 } from '@/store';
+import { startLecturePlayback } from '@/services/lecturePlayback';
 import { signalCountNow } from '@/services/recommendations/signalCount';
 import { watchSignals } from '@/services/recommendations/watchSignals';
 import { openSearch } from '@/services/searchNavigation';
@@ -199,7 +200,14 @@ export default function HomeScreen() {
             {featuredScholars
               .slice(0, carouselVisibleCount(width, 'scholar', featuredScholars.length))
               .map((s) => (
-              <ScholarCard key={s.id} id={s.id} nameArt={NAME_ART_BY_ID[s.id]} name={s.name} />
+              <ScholarCard
+                key={s.id}
+                id={s.id}
+                nameArt={NAME_ART_BY_ID[s.id]}
+                name={s.name}
+                // The same destination as the Sections scholar list.
+                onPress={() => router.push(`/sections/scholar/${s.id}` as any)}
+              />
             ))}
           </RtlCarousel>
         </AsyncContent>
@@ -218,7 +226,14 @@ export default function HomeScreen() {
         >
           <RtlCarousel contentContainerStyle={styles.scrollerPad}>
             {bookLectures.slice(0, carouselVisibleCount(width, 'book', bookLectures.length)).map((b) => (
-              <BookCard key={b.id} id={b.id} name={b.title} titleArt={BOOK_TITLE_ART} />
+              <BookCard
+                key={b.id}
+                id={b.id}
+                name={b.title}
+                titleArt={BOOK_TITLE_ART}
+                // The same action as the Sections books list.
+                onPress={() => startLecturePlayback(b)}
+              />
             ))}
           </RtlCarousel>
         </AsyncContent>
