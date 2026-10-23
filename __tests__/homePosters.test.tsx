@@ -97,5 +97,8 @@ describe('QuickChip label', () => {
     expect(flat(label).alignSelf).toBe('stretch');
     expect(flat(label).textAlign).toBe('center');
     expect(typeof flat(label).lineHeight).toBe('number');
+    // Clear of the badge (bottom at 13) by as much as a single-line chip, wrapped or not.
+    const chip = flat(press(tree));
+    expect(chip.paddingTop + flat(label).marginTop).toBeGreaterThanOrEqual(20);
   });
 });

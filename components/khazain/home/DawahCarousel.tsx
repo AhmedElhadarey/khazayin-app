@@ -256,12 +256,16 @@ function Slot({
   };
 
   const animatedStyle = useAnimatedStyle(() => {
+    // Hidden until measured. Every branch states `opacity` explicitly: Reanimated
+    // does not reset a key the worklet stops returning, so omitting it after the
+    // measure left the slot stuck at 0 and the carousel drew nothing.
     if (!measured.value) return { opacity: 0 };
     // Distance in slots between this poster and the middle of the viewport.
     // Scale and stacking are symmetric about it. Opacity is not driven at all:
     // every poster in the design is fully opaque.
     const d = (centre.value - (scrollX.value + viewportWidth / 2)) / slot;
     return {
+      opacity: 1,
       transform: [
         {
           scale: interpolate(

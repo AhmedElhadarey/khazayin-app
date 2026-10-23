@@ -50,6 +50,11 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 7.5,
+    // Clearance under the floating badge (bottom at 13): with the label's marginTop
+    // the text starts at 20 whether it takes one line or wraps to two, and the chip
+    // grows to fit two. Siblings stretch to the tallest, so heights stay equal.
+    paddingTop: 12,
+    paddingBottom: 6,
     backgroundColor: KhazainColors.heroCream,
     alignItems: 'center',
     justifyContent: 'center',
