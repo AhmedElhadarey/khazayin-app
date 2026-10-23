@@ -62,6 +62,12 @@ describe('mushaf reader', () => {
   it('ayah long-press uses the pure params', () => {
     expect(src).toMatch(/takeAyahNoteParams\(surahId, /);
   });
+  it('a tap toggles the chrome, a long-press on an ayah only ever takes a note', () => {
+    // The long-press marks the touch so its release cannot toggle the chrome.
+    expect(src).toMatch(/onLongPress=\{\(\) => \{\s*tap\.noteLongPress\(\);\s*takeAyahNote\(a\.number\);\s*\}\}/);
+    expect(src).toMatch(/chromeAfterTap\(/);
+    expect(src).not.toMatch(/onPress=\{[^}]*setChromeShown/);
+  });
 });
 
 describe('mini player', () => {

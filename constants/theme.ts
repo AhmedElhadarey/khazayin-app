@@ -233,6 +233,11 @@ export const KhazainColors = {
   // Accent
   teal600: '#2E6B6B',
 
+  // Mushaf reading page (frame 2349:829): black text on an ivory sheet. The
+  // frame ground around the sheet stays `pageBg`.
+  mushafInk: '#000000',
+  mushafSheet: '#FBFAEE',
+
   // Skeleton placeholder (navy at ~8% opacity on cream pageBg)
   skeleton: 'rgba(24,75,118,0.08)',
 } as const;

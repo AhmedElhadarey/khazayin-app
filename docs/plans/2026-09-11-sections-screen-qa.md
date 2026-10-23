@@ -147,7 +147,7 @@ file says 40. The target is made up with `hitSlop`, and
 
 The reader painted a `#FBF3DF` parchment under a `#F3E4BE` footer with a rule
 above it. Node 2349:982 contains **only** a header, a meta line and a footer,
-all on the same `#F8F2ED` as every other screen. It is *silent* on a reading
+all on the same `#F8F2ED` as every other screen. *(Superseded 2026-10-23: 2349:982 is the header-and-footer overlay shown on tap over the page of 2349:829, which is the reading page itself.)* It is *silent* on a reading
 surface, not contradicting one — so this is a reading of the spec, not a
 quotation of it.
 

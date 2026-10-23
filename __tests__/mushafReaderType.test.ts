@@ -22,8 +22,13 @@ describe('Mushaf reader Quran text face', () => {
     expect(block).not.toMatch(/fontWeight: '[5-9]00'/);
   });
 
-  it('basmala uses the Amiri-Bold face at weight 400', () => {
-    const block = styleBlock('basmala');
+  it('basmala line uses the Amiri-Bold face at weight 400', () => {
+    const src2 = fs.readFileSync(
+      path.resolve(__dirname, '../components/khazain/mushaf/SurahCartouche.tsx'),
+      'utf8',
+    );
+    const start = src2.indexOf('  basmala: {');
+    const block = src2.slice(start, src2.indexOf('\n  },', start));
     expect(block).toContain("fontFamily: 'Amiri-Bold'");
     expect(block).toContain("fontWeight: '400'");
   });
