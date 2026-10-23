@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as SplashScreen from 'expo-splash-screen';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Image, Linking, StyleSheet, View, useWindowDimensions, type ViewStyle } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import Animated, {
   Easing,
   ReduceMotion,
@@ -20,6 +21,9 @@ import Animated, {
 import {
   BACKDROP_FADE_MS,
   FIGMA_EASE,
+  GROUND_EXIT_FADE,
+  GROUND_GRADIENT,
+  GROUND_GRADIENT_EXIT,
   SPLASH_GROUND,
   STEP_MS,
   STEP_STARTS,
@@ -32,25 +36,17 @@ import {
   resolveHomeReveal,
   type LaunchMode,
 } from './launchTiming';
+import { LAUNCH_WORDMARK } from './generated/launchWordmark';
 
 const PATTERN = require('@/assets/khazain/splash/pattern.webp');
 const EMBLEM = require('@/assets/khazain/splash/emblem.webp');
-const WORDMARK = require('@/assets/khazain/splash/wordmark.webp');
 
 /**
  * Geometry from the Splash frames: `Artboard 1 2` is 130.7 x 181 at rest and
- * `png_1 1` is 220 x 35.1, 24 above the bottom edge in every frame.
+ * `png_1 1` is 220 x 35.06, 24 above the bottom edge in every frame.
  */
 const EMBLEM_SIZE = { width: 131, height: 181 };
-const WORDMARK_SIZE = { width: 220, height: 35 };
 const WORDMARK_BOTTOM = 24;
-
-/**
- * The gradient and pattern are the 2026-09-09 decomposition, measured against
- * the frame export (`docs/plans/2026-09-09-splash-rebuild-design.md`).
- */
-const GRADIENT = ['#D8BFA1', '#F4E7DA', '#D8BE9D'] as const;
-const GRADIENT_STOPS = [0, 0.52, 1] as const;
 
 /** Release the native splash anyway if the pattern never reports back. */
 const NATIVE_HANDOVER_CAP_MS = 1500;
@@ -94,7 +90,8 @@ export function useLaunchReveal(active: boolean): LaunchReveal {
  * run as one sequence on the UI thread, so a JS thread busy hydrating the app
  * cannot make them stutter or drift; only the reveal waits on readiness.
  *
- * Every layer is raster: naming a font family here would make the overlay wait
+ * Every layer is raster or vector (the wordmark is the file's outlines as
+ * an SVG path): naming a font family here would make the overlay wait
  * for the very load it is covering. `onDone` fires exactly once, including when
  * the component unmounts early.
  */
@@ -127,6 +124,7 @@ export function LaunchSequence({
 
   const start = emblemPose(1, height);
   const backdrop = useSharedValue(0);
+  const exitGround = useSharedValue(0);
   const emblemY = useSharedValue(start.translateY);
   const emblemScale = useSharedValue(start.scale);
   const emblemOpacity = useSharedValue(1);
@@ -205,6 +203,12 @@ export function LaunchSequence({
       return;
     }
 
+    // Step 4's lighter ground comes in with the emblem's exit (2001:835 → 2007:511).
+    exitGround.value = withDelay(
+      GROUND_EXIT_FADE.startMs,
+      withTiming(1, { duration: GROUND_EXIT_FADE.durationMs, easing: ease }),
+    );
+
     const grown = emblemPose(3, height);
     const gone = emblemPose(4, height);
     const dropEnd = STEP_STARTS.drop + STEP_MS.drop;
@@ -228,7 +232,7 @@ export function LaunchSequence({
         withTiming(gone.scale, { duration: STEP_MS.exit, easing: ease }),
       ),
     );
-  }, [visible, mode, height, backdrop, emblemY, emblemScale, emblemOpacity]);
+  }, [visible, mode, height, backdrop, exitGround, emblemY, emblemScale, emblemOpacity]);
 
   // The reveal is resolved once, when the app is first ready, and scheduled on
   // the UI thread like the steps it follows. A JS timer backs up the
@@ -265,16 +269,18 @@ export function LaunchSequence({
       clearTimeout(backstop.current);
       cancelAnimation(emblemY);
       cancelAnimation(emblemScale);
+      cancelAnimation(exitGround);
       cancelAnimation(revealY);
       cancelAnimation(revealOpacity);
       revealY.value = 0;
       revealOpacity.value = 1;
       complete();
     },
-    [complete, emblemY, emblemScale, revealY, revealOpacity],
+    [complete, emblemY, emblemScale, exitGround, revealY, revealOpacity],
   );
 
   const appear = useAnimatedStyle(() => ({ opacity: backdrop.value }));
+  const exitGroundStyle = useAnimatedStyle(() => ({ opacity: exitGround.value }));
   const emblem = useAnimatedStyle(() => ({
     opacity: emblemOpacity.value,
     transform: [{ translateY: emblemY.value }, { scale: emblemScale.value }],
@@ -292,10 +298,19 @@ export function LaunchSequence({
     >
       <Animated.View style={[StyleSheet.absoluteFillObject, appear]}>
         <LinearGradient
-          colors={GRADIENT}
-          locations={GRADIENT_STOPS}
+          colors={GROUND_GRADIENT.colors}
+          locations={GROUND_GRADIENT.locations}
           style={StyleSheet.absoluteFillObject}
         />
+        {/* Step 4's lighter ground (2007:511), faded in over the first. The
+            reduced and brief paths never reach step 4 and keep step 2's. */}
+        <Animated.View style={[StyleSheet.absoluteFillObject, exitGroundStyle]}>
+          <LinearGradient
+            colors={GROUND_GRADIENT_EXIT.colors}
+            locations={GROUND_GRADIENT_EXIT.locations}
+            style={StyleSheet.absoluteFillObject}
+          />
+        </Animated.View>
         {/* Laid out tile by tile at the authored size, so a larger phone
             shows more of the pattern rather than a stretched copy. The first
             tile's decode is what releases the native splash. */}
@@ -325,7 +340,9 @@ export function LaunchSequence({
         />
       </View>
       <Animated.View style={[styles.footer, appear]} pointerEvents="none">
-        <Image source={WORDMARK} style={WORDMARK_SIZE} resizeMode="contain" fadeDuration={0} />
+        <Svg width={LAUNCH_WORDMARK.width} height={LAUNCH_WORDMARK.height} viewBox={`0 0 ${LAUNCH_WORDMARK.width} ${LAUNCH_WORDMARK.height}`}>
+          <Path d={LAUNCH_WORDMARK.d} fill={LAUNCH_WORDMARK.fill} fillRule={LAUNCH_WORDMARK.fillRule} />
+        </Svg>
       </Animated.View>
     </View>
   );

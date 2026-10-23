@@ -23,6 +23,8 @@ export type ScholarCardLayout = {
   radius: number;
   /** Overhangs the card's top edge, so it must not be clipped. */
   stripe: Rect;
+  /** The stripe's corner radius: three quarters of half its height. */
+  stripeRadius: number;
   honorific: Rect;
   /** The name image's box, which clips the art. */
   name: Rect;
@@ -36,6 +38,8 @@ export const SCHOLAR_CARD_DESIGN = Object.freeze({ width: 216.1, height: 88.37 }
 const RADIUS = 6.35591983795166;
 
 // Both images are centred on the card, so only their widths are stated here.
+/** The file rounds its pill stripes to 0.75 of a full half-height radius. */
+const STRIPE_ROUNDING = 0.75;
 const STRIPE = { width: 149.59, height: 5.07, top: -2.54 };
 const HONORIFIC = { width: 74.6329, height: 22.3949, top: 8.91 };
 const NAME = { width: 178.228, height: 43.6946, top: 35.7606 };
@@ -62,6 +66,7 @@ export function scholarCardLayout(cardWidth: number): ScholarCardLayout {
     cardHeight: SCHOLAR_CARD_DESIGN.height * scale,
     radius: RADIUS * scale,
     stripe: centred(STRIPE),
+    stripeRadius: (STRIPE.height / 2) * STRIPE_ROUNDING * scale,
     honorific: centred(HONORIFIC),
     name,
     nameArt: {

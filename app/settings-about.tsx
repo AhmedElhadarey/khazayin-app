@@ -1,20 +1,30 @@
 import React from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SheetHandle } from '@/components/khazain/sheets';
+import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import * as Application from 'expo-application';
 import Constants from 'expo-constants';
 import { MORE_EXTERNAL_URLS } from '@/data/content/sections';
 import { resolveBuildNumber } from '@/services/appBuildInfo';
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { MIN_TOUCH_TARGET, PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { Wordmark } from '@/components/khazain/primitives';
+import { toArabicDigits } from '@/constants/progress';
+import { isolateLtr } from '@/services/bidi';
 import {
   QURAN_PAGE_DATA_CHANGES,
   QURAN_PAGE_DATA_CREDIT,
   QURAN_PAGE_DATA_LICENSE_LABEL,
   QURAN_PAGE_DATA_LICENSE_URL,
 } from '@/constants/quranPages';
+import { showNotice } from '@/services/notice';
+
+/** Arabic-Indic digits kept in reading order inside RTL text, as formatClockTime does. */
+function isolatedDigits(value: string): string {
+  return isolateLtr(toArabicDigits(value));
+}
 
 function resolveVersion(): string {
   return Constants.expoConfig?.version ?? '1.0.0';
@@ -28,7 +38,7 @@ async function openExternalUrl(url: string) {
     if (!can) throw new Error('cannot open');
     await Linking.openURL(url);
   } catch {
-    Alert.alert('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
+    showNotice('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
   }
 }
 
@@ -47,7 +57,7 @@ export default function SettingsAboutScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
-        <View style={styles.handle} />
+        <SheetHandle />
       </View>
       <Text style={styles.title}>حول التطبيق</Text>
       <ScrollView
@@ -55,19 +65,21 @@ export default function SettingsAboutScreen() {
         showsVerticalScrollIndicator={false}
       >
         <View style={[styles.card, KhazainShadows.card]}>
-          <Text style={styles.appName}>خزائن الرحمن</Text>
-          <Text style={styles.foundation}>مؤسسة خزائن الرحمن العالمية</Text>
+          <Wordmark size={22} color={KhazainColors.navy900} style={styles.wordmark} />
+          {/* The Wordmark already renders the foundation name; this line is the app name. */}
+          <Text style={styles.foundation}>خزائن الرحمن</Text>
           <View style={styles.versionRow}>
-            <Text style={styles.versionValue}>{version}</Text>
+            <Text style={styles.versionValue}>{isolatedDigits(version)}</Text>
             <Text style={styles.versionLabel}>الإصدار</Text>
           </View>
           <View style={styles.versionRow}>
-            <Text style={styles.versionValue}>{build ?? '—'}</Text>
+            <Text style={styles.versionValue}>{isolatedDigits(build ?? '—')}</Text>
             <Text style={styles.versionLabel}>رقم البناء</Text>
           </View>
         </View>
         <Pressable
           onPress={openFoundationWebsite}
+          accessibilityRole="link"
           style={({ pressed }) => [
             styles.linkCard,
             KhazainShadows.card,
@@ -85,7 +97,7 @@ export default function SettingsAboutScreen() {
           <Pressable
             accessibilityRole="link"
             accessibilityLabel={QURAN_PAGE_DATA_LICENSE_LABEL}
-            hitSlop={8}
+            style={styles.licenceLink}
             onPress={() => void openExternalUrl(QURAN_PAGE_DATA_LICENSE_URL)}
           >
             <Text style={styles.linkValue}>{QURAN_PAGE_DATA_LICENSE_LABEL}</Text>
@@ -99,38 +111,24 @@ export default function SettingsAboutScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   handleWrap: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
-  handle: {
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(40,30,19,0.18)',
-  },
   title: {
     ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
   },
-  body: { paddingHorizontal: 16, gap: 12 },
+  body: { paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 12 },
   card: {
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: KhazainColors.cardBorder,
     borderRadius: 16,
     paddingVertical: 20,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     // PHYSICAL_BOX so `flex-end` is the physical right. Unpinned, the card is
     // RTL and `flex-end` stacked every line against the physical left.
     ...PHYSICAL_BOX,
     alignItems: 'flex-end',
     gap: 8,
-  },
-  appName: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.navy900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
   foundation: {
     ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
@@ -154,12 +152,15 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.cardBorder,
     borderRadius: 16,
     paddingVertical: 16,
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     ...PHYSICAL_BOX,
     alignItems: 'flex-end',
     gap: 4,
   },
   linkTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
   linkValue: textStyle('bodyCompact', { color: KhazainColors.goldAccent }),
+  // Full width, right-aligned: a shrink-wrapped Arabic title can lose its last word on Android 15+.
+  wordmark: { alignSelf: 'stretch', textAlign: 'right' },
+  licenceLink: { minHeight: MIN_TOUCH_TARGET, justifyContent: 'center' },
   creditValue: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
 });

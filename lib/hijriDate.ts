@@ -22,13 +22,16 @@
 
 export function todayHijriArabic(date: Date = new Date()): string | null {
   try {
-    const formatted = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-arab', {
+    // ICU puts an Arabic comma after the month; the design's date has none.
+    const raw = new Intl.DateTimeFormat('ar-SA-u-ca-islamic-umalqura-nu-arab', {
       day: 'numeric',
       month: 'long',
       year: 'numeric',
     }).format(date);
 
-    if (typeof formatted !== 'string' || formatted.trim().length === 0) return null;
+    if (typeof raw !== 'string') return null;
+    const formatted = raw.replace(/[،,]\s*/g, ' ').replace(/\s+/g, ' ').trim();
+    if (formatted.length === 0) return null;
 
     // `format()` already appends the era ("هـ") for the islamic-umalqura
     // calendar in most ICU builds; only add it when it is genuinely absent.

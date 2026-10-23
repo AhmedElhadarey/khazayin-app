@@ -30,47 +30,52 @@ export function BookCard({
   const l = bookCardLayout(cardWidth);
 
   return (
-    <Pressable
-      onPress={onPress}
-      // Without an action the card is not one element: its title and its
-      // bookmark button are reached on their own (Home rail, book detail cover).
-      accessible={onPress !== undefined}
-      accessibilityRole={onPress ? 'button' : undefined}
-      // Only the element that is announced carries the name; without an
-      // action the title (text or art) reads it, so TalkBack does not say it twice.
-      accessibilityLabel={onPress ? name : undefined}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          width: cardWidth,
-          height: l.cardHeight,
-          borderRadius: l.radius,
-          transform: [{ scale: pressed && onPress ? 0.97 : 1 }],
-        },
-      ]}
-    >
-      <View style={[styles.stripe, l.stripe]} />
-      {titleArt ? (
-        <Image
-          source={titleArt}
-          style={[styles.title, l.title]}
-          // When the card is not itself the accessibility element (no action),
-          // the calligraphy is the only thing that carries the book's name.
-          accessible={onPress === undefined}
-          accessibilityLabel={name}
-          // The design's fill is STRETCH with an identity transform: the
-          // 450 x 108 lockup is squeezed into the 160 x 37 rect.
-          contentFit="fill"
-          cachePolicy="memory-disk"
-          transition={0}
-        />
-      ) : (
-        <View style={[styles.title, styles.fallback, l.title]}>
-          <Text style={styles.name} numberOfLines={2}>
-            {name}
-          </Text>
-        </View>
-      )}
+    // The bookmark is the Pressable's sibling, not its child: a Pressable is one
+    // accessibility element on iOS, so a nested save could not be reached and
+    // its label leaked into the card's (as DawahPoster, f4ad707).
+    <View style={[styles.frame, { width: cardWidth, height: l.cardHeight }]}>
+      <Pressable
+        onPress={onPress}
+        // Without an action the card is not one element: its title is reached
+        // on its own (book detail cover).
+        accessible={onPress !== undefined}
+        accessibilityRole={onPress ? 'button' : undefined}
+        // Only the element that is announced carries the name; without an
+        // action the title (text or art) reads it, so TalkBack does not say it twice.
+        accessibilityLabel={onPress ? name : undefined}
+        style={({ pressed }) => [
+          styles.card,
+          {
+            width: cardWidth,
+            height: l.cardHeight,
+            borderRadius: l.radius,
+            transform: [{ scale: pressed && onPress ? 0.97 : 1 }],
+          },
+        ]}
+      >
+        <View style={[styles.stripe, l.stripe, { borderRadius: l.stripeRadius }]} />
+        {titleArt ? (
+          <Image
+            source={titleArt}
+            style={[styles.title, l.title]}
+            // When the card is not itself the accessibility element (no action),
+            // the calligraphy is the only thing that carries the book's name.
+            accessible={onPress === undefined}
+            accessibilityLabel={name}
+            // The design's fill is STRETCH with an identity transform: the
+            // 450 x 108 lockup is squeezed into the 160 x 37 rect.
+            contentFit="fill"
+            cachePolicy="memory-disk"
+            transition={0}
+          />
+        ) : (
+          <View style={[styles.title, styles.fallback, l.title]}>
+            <Text style={styles.name} numberOfLines={2}>
+              {name}
+            </Text>
+          </View>
+        )}
+      </Pressable>
       <View style={styles.bookmarkSlot} pointerEvents="box-none">
         <BookmarkButton
           type="book"
@@ -79,11 +84,16 @@ export function BookCard({
           variant="light"
         />
       </View>
-    </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Not clipped: the stripe straddles the card's top edge and the shadow
+  // spreads past it.
+  frame: {
+    position: 'relative',
+  },
   card: {
     backgroundColor: KhazainColors.heroCream,
     shadowColor: 'rgba(20,64,100,0.24)',
@@ -112,5 +122,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
+    // Android stacks siblings by elevation before order, so without matching
+    // the card's the save would draw under it. A view with no background
+    // casts no shadow, so this only orders the two.
+    elevation: 3,
   },
 });

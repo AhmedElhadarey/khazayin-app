@@ -1,8 +1,11 @@
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
+import { RECENT_NOTE_ROW } from '@/components/khazain/library/libraryLayout';
+import { SheetHandle } from '@/components/khazain/sheets';
 import { noteEditorSheetExtra, sheetColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { textStyle } from '@/constants/typography';
-import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
+import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { editorSeed, linkedNoteRow, NoteRefLink } from '@/components/khazain/notes';
 import { useNotesStore } from '@/store/notesStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -19,7 +22,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { FormatButton } from '@/components/khazain/primitives/FormatButton';
 
 // `id`/`title` predate linked notes; the `ref*` keys are written by
 // services/noteRefs.ts `noteRefToParams` (prefixed to avoid clashing with them).
@@ -36,7 +39,7 @@ type Params = {
   refSpeaker?: string;
 };
 
-// Bottom-sheet styled note editor (Figma page-07).
+// Bottom-sheet styled note editor (no Figma frame; contract: SHEET_CHROME + Library note contracts).
 // Visual contract:
 //   - Top: grey handle pill, then right-aligned title "إضافة ملاحظة" / "تعديل الملاحظة"
 //   - Single body input (placeholder "اكتب ملاحظتك هنا...")
@@ -69,6 +72,7 @@ export default function NoteEditor() {
   const titleRef = useRef<string>(existing?.title ?? seedTitle ?? '');
 
   const didUnmount = useRef(false);
+  const oneLine = useLineClamp(1);
   useEffect(() => () => {
     didUnmount.current = true;
   }, []);
@@ -120,11 +124,17 @@ export default function NoteEditor() {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Backdrop — tap outside the sheet to dismiss. */}
-      <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
-        {/* Stop touches from propagating into the dismiss handler. */}
+      <View style={styles.backdrop}>
+        {/* Backdrop — an empty sibling behind the sheet, as in SheetShell. A
+            Pressable around the sheet made it ONE accessibility element on iOS:
+            VoiceOver saw «إغلاق» and none of the sheet. */}
         <Pressable
-          onPress={() => {}}
+          accessibilityRole="button"
+          accessibilityLabel="إغلاق"
+          onPress={close}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
           style={[
             styles.sheetOuter,
             sheetColumn(width, sideInsets),
@@ -133,7 +143,7 @@ export default function NoteEditor() {
         >
           <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
             <View style={styles.handleWrap}>
-              <View style={styles.handle} />
+              <SheetHandle />
             </View>
 
             <ScrollView
@@ -172,22 +182,23 @@ export default function NoteEditor() {
                 <Pressable
                   onPress={save}
                   style={({ pressed }) => [styles.saveBtn, { opacity: pressed ? 0.85 : 1 }]}
+                  accessibilityRole="button"
+                  hitSlop={{ top: 4, bottom: 4 }}
                   accessibilityLabel="حفظ الملاحظة"
                 >
                   <Text style={styles.saveLabel}>حفظ</Text>
                 </Pressable>
                 <View style={{ flex: 1 }} />
-                <FormatBtn>
-                  <ListGlyph />
-                </FormatBtn>
-                <FormatBtn italic>I</FormatBtn>
-                <FormatBtn bold>B</FormatBtn>
+                <FormatButton mark="NoteListFormat" accessibilityLabel="قائمة" />
+                <FormatButton mark="NoteItalic" accessibilityLabel="مائل" />
+                <FormatButton mark="NoteBold" accessibilityLabel="عريض" />
               </View>
 
               {editingId ? (
                 <Pressable
                   onPress={confirmDelete}
                   hitSlop={6}
+                  accessibilityRole="button"
                   style={({ pressed }) => [styles.deleteRow, { opacity: pressed ? 0.7 : 1 }]}
                   accessibilityLabel="حذف الملاحظة"
                 >
@@ -201,13 +212,13 @@ export default function NoteEditor() {
                   {recentNotes.map((n) => {
                     const row = linkedNoteRow(n);
                     return (
-                      <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
+                      <View key={n.id} style={styles.recentRow}>
                         {/* Physical left -> right: relative time, title (+ source label). */}
-                        <Text style={styles.recentTime} numberOfLines={1}>
+                        <Text style={styles.recentTime} numberOfLines={oneLine}>
                           {row.time}
                         </Text>
                         <View style={styles.recentColumn}>
-                          <Text style={styles.recentTitle} numberOfLines={1}>
+                          <Text style={styles.recentTitle} numberOfLines={oneLine}>
                             {row.title}
                           </Text>
                           {row.label ? <NoteRefLink label={row.label} /> : null}
@@ -219,52 +230,9 @@ export default function NoteEditor() {
               ) : null}
             </ScrollView>
           </SafeAreaView>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </KeyboardAvoidingView>
-  );
-}
-
-// ── Inline glyphs / small components ────────────────────────────────────
-
-function FormatBtn({
-  children,
-  bold,
-  italic,
-}: {
-  children: React.ReactNode;
-  bold?: boolean;
-  italic?: boolean;
-}) {
-  return (
-    <Pressable style={({ pressed }) => [formatStyles.btn, { opacity: pressed ? 0.75 : 1 }]}>
-      {typeof children === 'string' ? (
-        <Text
-          style={[
-            formatStyles.label,
-            bold && { fontWeight: '700' },
-            italic && { fontStyle: 'italic' },
-          ]}
-        >
-          {children}
-        </Text>
-      ) : (
-        children
-      )}
-    </Pressable>
-  );
-}
-
-function ListGlyph() {
-  return (
-    <Svg width={14} height={14} viewBox="0 0 14 14">
-      <Path
-        d="M2 3h10M2 7h10M2 11h10"
-        stroke={KhazainColors.ink700}
-        strokeWidth={1.3}
-        strokeLinecap="round"
-      />
-    </Svg>
   );
 }
 
@@ -273,7 +241,7 @@ const styles = StyleSheet.create({
   // too (it shows through translucent keyboard corners and while animating).
   root: {
     flex: 1,
-    backgroundColor: 'rgba(20,30,30,0.35)',
+    backgroundColor: SHEET_CHROME.backdrop,
   },
   backdrop: {
     flex: 1,
@@ -281,8 +249,8 @@ const styles = StyleSheet.create({
   },
   sheetOuter: {
     backgroundColor: KhazainColors.pageBg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: SHEET_CHROME.topRadius,
+    borderTopRightRadius: SHEET_CHROME.topRadius,
     maxHeight: '88%',
     minHeight: '50%',
     overflow: 'hidden',
@@ -292,17 +260,11 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     alignItems: 'center',
   },
-  handle: {
-    width: 48,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(120,100,80,0.25)',
-  },
   scrollContent: {
     // Pinned so the sheet title and the "آخر الملاحظات" heading resolve
     // `textAlign: 'right'` to the physical right. Unpinned they rendered left.
     ...PHYSICAL_BOX,
-    paddingHorizontal: 18,
+    paddingHorizontal: SHEET_CHROME.paddingHorizontal,
     paddingTop: 12,
     paddingBottom: 24,
     gap: 14,
@@ -312,7 +274,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cream50,
     borderRadius: KhazainRadius.lg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineWarm,
     minHeight: 140,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -327,20 +289,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   saveBtn: {
-    paddingHorizontal: 28,
-    paddingVertical: 11,
-    borderRadius: 10,
+    // Library quick-note save button (frame 2031:4659): 36 tall, radius 8, padH 16.
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveLabel: textStyle('cardTitle', { color: '#fff' }),
+  saveLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
   deleteRow: {
     ...PHYSICAL_BOX,
     paddingVertical: 4,
     alignItems: 'flex-end',
   },
-  deleteLabel: textStyle('label', { color: '#B43838' }),
+  deleteLabel: textStyle('label', { color: KhazainColors.danger }),
   recentBlock: {
     marginTop: 4,
     gap: 8,
@@ -351,33 +314,17 @@ const styles = StyleSheet.create({
   recentRow: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    backgroundColor: KhazainColors.cream50,
-    borderRadius: KhazainRadius.md,
-    borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    // Library recent-note row (RECENT_NOTE_ROW, frame 2031:4659): a flat 36pt
+    // card, radius 8, no stroke or shadow. minHeight so a source label can grow it.
+    backgroundColor: KhazainColors.cardBg,
+    borderRadius: RECENT_NOTE_ROW.radius,
+    minHeight: RECENT_NOTE_ROW.height,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
     gap: 8,
   },
-  recentTime: textStyle('caption', { color: KhazainColors.ink400 }),
+  recentTime: textStyle('label', { color: KhazainColors.ink500 }),
   recentColumn: { flex: 1, gap: 2 },
-  recentTitle: textStyle('cardTitle', { color: KhazainColors.ink900 }),
+  recentTitle: textStyle('cardTitle', { color: KhazainColors.ink500 }),
 });
 
-const formatStyles = StyleSheet.create({
-  btn: {
-    width: 36,
-    height: 36,
-    borderRadius: 999,
-    backgroundColor: KhazainColors.cream50,
-    borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    fontFamily: 'System',
-    fontSize: 14,
-    color: KhazainColors.ink700,
-  },
-});

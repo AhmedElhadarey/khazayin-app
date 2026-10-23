@@ -147,7 +147,7 @@ file says 40. The target is made up with `hitSlop`, and
 
 The reader painted a `#FBF3DF` parchment under a `#F3E4BE` footer with a rule
 above it. Node 2349:982 contains **only** a header, a meta line and a footer,
-all on the same `#F8F2ED` as every other screen. It is *silent* on a reading
+all on the same `#F8F2ED` as every other screen. *(Superseded 2026-10-23: 2349:982 is the header-and-footer overlay shown on tap over the page of 2349:829, which is the reading page itself.)* It is *silent* on a reading
 surface, not contradicting one — so this is a reading of the spec, not a
 quotation of it.
 
@@ -267,8 +267,9 @@ bespoke colours any more, so it now asserts the stronger fact.
   because it is the only place the screen says whose lectures these are;
   restyled onto the scale so it reads as furniture, not a second title.
 - The Mushaf's ayat body and ornamented basmala block have no node in 2349:982.
-- `SurahRow` puts a bookmark where the frame puts a play triangle — tapping the
-  row opens the reader, so a play control there would lie.
+- `SurahRow` has a bookmark at the physical left; in 2207:17898 that slot is
+  empty (its play instance has opacity 0), so the bookmark is a pure app
+  addition (savedContent G2 entry point).
 
 **Out of this screen's scope.**
 

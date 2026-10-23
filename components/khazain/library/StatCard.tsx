@@ -58,10 +58,14 @@ const styles = StyleSheet.create({
   },
   title: {
     ...textStyle('cardTitle', { color: KhazainColors.inkHeading, textAlign: 'center' }),
+    // Full width, not shrink-wrapped: Android 15 drops the last word of a
+    // Text boxed at exactly its advance width.
+    alignSelf: 'stretch',
     marginTop: 8,
   },
   sub: {
     ...textStyle('label', { color: KhazainColors.ink500, textAlign: 'center' }),
+    alignSelf: 'stretch',
     marginTop: 4,
   },
 });

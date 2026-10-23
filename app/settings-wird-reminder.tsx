@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
+import { PillButton } from '@/components/khazain/primitives';
+import { SheetHandle } from '@/components/khazain/sheets';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import { PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { useSettingsStore } from '@/store';
 import { applyWirdReminderTime } from '@/services/wirdReminderToggle';
 import { formatClockTime } from '@/services/wirdReminder';
 import type { TimeOfDay } from '@/types/settings';
+import { showNotice } from '@/services/notice';
 
 type Period = 'ص' | 'م';
 
@@ -19,7 +22,7 @@ type Period = 'ص' | 'م';
 // out. (Third copy — worth hoisting into a shared helper next time one is added.)
 function openOsSettings() {
   Linking.openSettings().catch(() => {
-    Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+    showNotice('خطأ', 'تعذّر فتح الإعدادات.');
   });
 }
 
@@ -80,7 +83,7 @@ export default function SettingsWirdReminderScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
-        <View style={styles.handle} />
+        <SheetHandle />
       </View>
       <Text style={styles.title}>وقت تذكير الورد</Text>
       <ScrollView
@@ -116,14 +119,7 @@ export default function SettingsWirdReminderScreen() {
       <View style={styles.footer}>
         {/* The rule spans the sheet; the button sits in the reading column. */}
         <View style={[styles.footerInner, columnStyle]}>
-          <Pressable
-            onPress={apply}
-            accessibilityRole="button"
-            accessibilityLabel="تطبيق"
-            style={({ pressed }) => [styles.applyBtn, { opacity: pressed ? 0.85 : 1 }]}
-          >
-            <Text style={styles.applyBtnLabel}>تطبيق</Text>
-          </Pressable>
+          <PillButton variant="navy" label="تطبيق" onPress={apply} style={styles.applyBtn} />
         </View>
       </View>
     </SafeAreaView>
@@ -212,18 +208,12 @@ function PeriodPill({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   handleWrap: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
-  handle: {
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(40,30,19,0.18)',
-  },
   title: {
     ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
   },
-  body: { paddingHorizontal: 16, gap: 12 },
+  body: { paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 12 },
   preview: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -237,7 +227,6 @@ const styles = StyleSheet.create({
   previewTime: {
     fontFamily: 'Amiri-Bold',
     fontSize: 34,
-    fontWeight: '700',
     color: KhazainColors.navy800,
     writingDirection: 'rtl',
     textAlign: 'center',
@@ -301,16 +290,9 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(141,107,52,0.12)',
+    borderTopColor: KhazainColors.cardBorder,
     backgroundColor: KhazainColors.pageBg,
   },
-  footerInner: { paddingHorizontal: 16 },
-  applyBtn: {
-    backgroundColor: KhazainColors.navy800,
-    borderRadius: 999,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  applyBtnLabel: textStyle('sectionTitle', { color: '#fff' }),
+  footerInner: { paddingHorizontal: SHEET_CHROME.paddingHorizontal },
+  applyBtn: { width: '100%' },
 });

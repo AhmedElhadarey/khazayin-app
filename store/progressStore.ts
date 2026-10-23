@@ -45,6 +45,8 @@ export type ProgressSnapshot = {
   trendLast28: TrendPoint[];
 
   inProgressLecture: LectureSession | null;
+  /** The most recently finished lecture, for the Library's completed card. */
+  recentCompletedLecture: LectureSession | null;
   totalListenedMinutes: number;
   completedLectureCount: number;
   totalPagesRead: number;
@@ -90,6 +92,7 @@ const EMPTY: ProgressSnapshot = {
   bestWirdDayPages: 0,
   trendLast28: [],
   inProgressLecture: null,
+  recentCompletedLecture: null,
   totalListenedMinutes: 0,
   completedLectureCount: 0,
   totalPagesRead: 0,
@@ -127,6 +130,7 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
           bestWirdDay,
           trendLast28,
           inProgressLecture,
+          recentCompleted,
           totalListenedSec,
           completedLectureCount,
           totalPagesRead,
@@ -142,6 +146,7 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
           progressRepo.bestWirdDay(),
           progressRepo.trendLastNDays(TREND_DAYS),
           lectureRepo.findInProgress(),
+          lectureRepo.recentCompleted(1),
           lectureRepo.totalListenedSec(),
           lectureRepo.completedCount(),
           progressRepo.totalPagesRead(),
@@ -158,6 +163,7 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
           bestWirdDayPages: bestWirdDay?.pagesRead ?? 0,
           trendLast28,
           inProgressLecture,
+          recentCompletedLecture: recentCompleted[0] ?? null,
           totalListenedMinutes: Math.floor(totalListenedSec / 60),
           completedLectureCount,
           totalPagesRead,
@@ -238,15 +244,22 @@ export const useProgressStore = create<ProgressSnapshot & ProgressStoreActions>(
       const now = Date.now();
       if (now - _lastLectureRefreshAt < LECTURE_TICK_REFRESH_MS) return;
       _lastLectureRefreshAt = now;
-      const [inProgressLecture, totalListenedSec, completedLectureCount, listenedLectureCount] =
-        await Promise.all([
-          lectureRepo.findInProgress(),
-          lectureRepo.totalListenedSec(),
-          lectureRepo.completedCount(),
-          lectureRepo.listenedCount(),
-        ]);
+      const [
+        inProgressLecture,
+        recentCompleted,
+        totalListenedSec,
+        completedLectureCount,
+        listenedLectureCount,
+      ] = await Promise.all([
+        lectureRepo.findInProgress(),
+        lectureRepo.recentCompleted(1),
+        lectureRepo.totalListenedSec(),
+        lectureRepo.completedCount(),
+        lectureRepo.listenedCount(),
+      ]);
       set({
         inProgressLecture,
+        recentCompletedLecture: recentCompleted[0] ?? null,
         totalListenedMinutes: Math.floor(totalListenedSec / 60),
         completedLectureCount,
         listenedLectureCount,

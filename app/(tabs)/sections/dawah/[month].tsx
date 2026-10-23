@@ -4,9 +4,11 @@ import { KhazainColors } from '@/constants/theme';
 import { useDawahByMonthStore, useDawahMonthsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { showNotice } from '@/services/notice';
 
 // Page 30: تصميمات دعوية → month detail. Header is the month-pair title
 // (e.g. "من شوال إلى رمضان"), then a stack of poster cards. Each row has
@@ -37,10 +39,13 @@ export default function DawahMonthScreen() {
     months.find((m) => m.id === month)?.title ?? 'تصميمات دعوية';
 
   const handleShare = () => router.push('/share-sheet' as any);
-  const handleDownload = () => Alert.alert('تنزيل', 'سيتم التنزيل قريباً');
+  const handleDownload = () => showNotice('تنزيل', 'سيتم التنزيل قريباً');
 
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline', fontScale)} />
       <InlineHeader title={title} onBack={() => router.back()} style={columnStyle} />
       <ScrollView
         contentContainerStyle={[styles.list, { paddingBottom: 24 }, columnStyle]}
@@ -59,7 +64,7 @@ export default function DawahMonthScreen() {
                 key={p.id}
                 title={p.title}
                 quote={p}
-                onPress={() => Alert.alert(p.title, 'فتح التفاصيل قريباً')}
+                onPress={() => showNotice(p.title, 'فتح التفاصيل قريباً')}
                 onShare={handleShare}
                 onDownload={handleDownload}
               />

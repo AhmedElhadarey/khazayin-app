@@ -109,6 +109,8 @@ export interface LectureSessionsRepository {
   }): Promise<LectureSession>;
   findInProgress(): Promise<LectureSession | null>;
   completedCount(): Promise<number>;
+  /** Completed sessions only, newest first by `lastListenedAt` (the Library's completed card). */
+  recentCompleted(limit: number): Promise<LectureSession[]>;
   /** Sessions that are completed or have ≥ LECTURE_LISTENED_MIN_SEC (or the whole clip) of forward listening. */
   listenedCount(): Promise<number>;
   totalListenedSec(): Promise<number>;

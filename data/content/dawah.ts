@@ -40,6 +40,9 @@ const DAWAH_HELAL  = require('../../assets/khazain/home/dawah-helal.webp') as nu
 
 export const DAWAH_POSTERS: DawahPoster[] = [
   // ── Home-screen 3 (from DawahPoster.tsx:19-23) ──
+  // Order is the physical fan: the carousel scrolls right-to-left, so the poster
+  // after the focused one sits on its LEFT. The file shows «هدايات» (helal) left
+  // of centre and «موعظة الصباح» right of it.
   {
     id: 'home-laylat',
     tone:        '#1A3F62',
@@ -49,20 +52,20 @@ export const DAWAH_POSTERS: DawahPoster[] = [
     month:       'ramadan-shawwal',
   },
   {
-    id: 'home-mawiza',
-    tone:        '#3F2A1B',
-    title:       'موعظة الصباح',
-    body:        'فاجعل لها قِسطًا من دعائك',
-    imageSource: DAWAH_MAWIZA,
-    month:       'rabi1-rabi2',
-  },
-  {
     id: 'home-helal',
     tone:        '#1A3F62',
     title:       'هلال',
     body:        'كلُّ الحياة',
     imageSource: DAWAH_HELAL,
     month:       'muharram-safar',
+  },
+  {
+    id: 'home-mawiza',
+    tone:        '#3F2A1B',
+    title:       'موعظة الصباح',
+    body:        'فاجعل لها قِسطًا من دعائك',
+    imageSource: DAWAH_MAWIZA,
+    month:       'rabi1-rabi2',
   },
   // ── Month-detail 4 (from dawah/[month].tsx:24-61 POSTERS) ──
   {

@@ -1,5 +1,5 @@
 import { KhazainColors } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
+import { textStyle, CHROME_MAX_FONT_SCALE } from '@/constants/typography';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { FigmaIcon } from '../icons/FigmaIcon';
@@ -14,11 +14,32 @@ import { FigmaIcon } from '../icons/FigmaIcon';
  * star than the one the design draws. The numeral stays app-side because it is
  * data — the file states a single `١`.
  */
-export function SurahStar({ index, size = 36 }: { index: string; size?: number }) {
+export function SurahStar({
+  index,
+  size = 36,
+  labelRole = 'label',
+}: {
+  index: string;
+  size?: number;
+  /** 12 (`label`) on the Mushaf list, 14 (`cardTitle`) on a reciter's list. */
+  labelRole?: 'label' | 'cardTitle';
+}) {
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
       <FigmaIcon name="SurahStar" size={size} />
-      <Text style={styles.label} numberOfLines={1}>
+      <Text
+        style={[
+          styles.label,
+          textStyle(labelRole, { color: KhazainColors.goldAccent, textAlign: 'center' }),
+          // 20pt leading, centred by the parent (no fixed height: iOS draws a
+          // fixed-height Text from the top). 14/20 under `cardTitle` is below
+          // MIN_LINE_HEIGHT_RATIO on purpose — node 2345:2014 states 14/20 and
+          // digits carry no marks that need the headroom.
+          { lineHeight: 20 },
+        ]}
+        numberOfLines={1}
+        maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
+      >
         {index}
       </Text>
     </View>
@@ -31,7 +52,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    ...textStyle('label', { color: KhazainColors.goldAccent, textAlign: 'center' }),
     position: 'absolute',
     includeFontPadding: false,
   },

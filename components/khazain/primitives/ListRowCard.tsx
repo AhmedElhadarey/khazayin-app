@@ -2,6 +2,7 @@ import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { LIST_ROW_ORDER, type ListRowSlot, listRowAccessibilityLabel } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { FigmaIcon } from '../icons/FigmaIcon';
@@ -28,6 +29,10 @@ import { FigmaIcon } from '../icons/FigmaIcon';
  *    card in either frame that casts one), inset 16, and a 48pt rounded
  *    *square* chip with no stroke. Both its lines are body face at 14.
  *
+ * At a large font scale the card grows with its text — every variant sets
+ * `minHeight`, never `height` — and its lines are no longer clamped
+ * (`useLineClamp`): at the default scale title and subtitle clamp to two.
+ *
  * Physical order (left → right) is disclosure, text, icon badge, driven by
  * LIST_ROW_ORDER inside a PHYSICAL_ROW container so React Native cannot
  * reverse it under forceRTL.
@@ -52,6 +57,7 @@ export function ListRowCard({
   onPress?: () => void;
 }) {
   const isMore = variant === 'more';
+  const twoLines = useLineClamp(2);
 
   const slots: Record<ListRowSlot, React.ReactNode> = {
     // The two rows do not share a disclosure either: the section card
@@ -75,11 +81,19 @@ export function ListRowCard({
     ) : null,
     text: (
       <View style={styles.textCol}>
-        <Text style={isMore ? styles.titleMore : styles.title} numberOfLines={1}>
+        {/* Two lines at the default scale, unclamped when text is enlarged: a
+            clamped title either ellipsized or, on Android 15, silently lost its
+            last letter («الموقع الإلكترون»). At the default scale every title fits one. */}
+        <Text style={isMore ? styles.titleMore : styles.title} numberOfLines={twoLines}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={isMore ? styles.subtitleMore : styles.subtitle} numberOfLines={1}>
+          // Two lines on every variant: the section copy is longer than a 360dp
+          // column even at the default scale («تلاوات وتفسير وتدبر القرآن
+          // الكريم»), and at 320dp x 1.7 the More one-liners lost words too.
+          // The card grows with it (minHeight, never height), and enlarged
+          // text is not clamped at all (useLineClamp).
+          <Text style={isMore ? styles.subtitleMore : styles.subtitle} numberOfLines={twoLines}>
             {subtitle}
           </Text>
         ) : null}
@@ -109,6 +123,24 @@ export function ListRowCard({
   );
 }
 
+/**
+ * Room under each line for the glyphs that hang below its line box, cancelled
+ * by an equal negative margin so the row measures exactly as before.
+ *
+ * Android 14+ converts `fontSize` and `lineHeight` through its non-linear font
+ * scale curve, which grows a larger sp value by less. At font scale 1.7 the
+ * 21 line height of a 14 role ends up ~1.26x the glyph size instead of 1.5x,
+ * the half-leading goes negative, and the TextView clips the descenders of its
+ * last line to its own bounds (the dots of ي and the tail of ع were cut off on
+ * the 320dp matrix). Padding is inside that clip; the parent does not clip.
+ */
+const DESCENDER_SLACK = 8;
+const descenderRoom = { paddingBottom: DESCENDER_SLACK, marginBottom: -DESCENDER_SLACK } as const;
+
+/** Section/archive column gaps: title to subtitle, subtitle to count. */
+const SECTION_SUBTITLE_GAP = 4;
+const SECTION_COUNT_GAP = 1;
+
 const styles = StyleSheet.create({
   cardBase: {
     ...PHYSICAL_ROW,
@@ -137,6 +169,7 @@ const styles = StyleSheet.create({
   // `card` elevation.
   cardMore: {
     minHeight: CARD_DENSITY.moreCardHeight,
+    paddingVertical: CARD_DENSITY.moreCardPaddingVertical,
     paddingHorizontal: CARD_DENSITY.moreCardPaddingHorizontal,
     borderRadius: CARD_DENSITY.moreCardRadius,
     borderWidth: 1,
@@ -162,24 +195,35 @@ const styles = StyleSheet.create({
     height: CARD_DENSITY.moreChipSize,
     borderRadius: CARD_DENSITY.moreChipRadius,
   },
+  // Full width, never shrink-wrapped (Android 15 breaks lines by ink bounds,
+  // RN 0.81 measures by advances); the text styles carry textAlign 'right'.
+  // Stretched to the card's height too, so it re-centres its own lines.
   textCol: {
     flex: 1,
     minWidth: 0,
+    alignItems: 'stretch',
+    alignSelf: 'stretch',
+    justifyContent: 'center',
   },
-  title: textStyle('sectionTitle', { color: KhazainColors.inkTitle }),
-  // `H3-49` ends at y=186 and `P-52` starts at 192; `P-55` follows 2 later.
+  title: { ...textStyle('sectionTitle', { color: KhazainColors.inkTitle }), ...descenderRoom },
+  // `DIV-48` stacks title 24, 4 + 2, subtitle 20, 2, count 16 = 68, which is
+  // the 96 card less its 14 + 14 inset. The Arabic leading floor makes the
+  // subtitle 21 and the count 18, so the margins give back the 3: 24 + 4 + 21
+  // + 1 + 18 = 68 (GLOBAL-15; the column had summed 71 and the card drew 99).
   subtitle: {
     ...textStyle('cardTitle', { color: KhazainColors.inkSubtle }),
-    marginTop: 6,
+    ...descenderRoom,
+    marginTop: SECTION_SUBTITLE_GAP,
   },
   count: {
     ...textStyle('label', { color: KhazainColors.inkCount }),
-    marginTop: 2,
+    ...descenderRoom,
+    marginTop: SECTION_COUNT_GAP,
   },
   // `H3-18` and `P-21` are both TheMixArab Regular 14, set flush — the first
   // ends at y=146.5 and the second starts there.
-  titleMore: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
-  subtitleMore: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
+  titleMore: { ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }), ...descenderRoom },
+  subtitleMore: { ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }), ...descenderRoom },
 });
 
 const VARIANT_CARD = {

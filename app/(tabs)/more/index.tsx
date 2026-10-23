@@ -1,6 +1,8 @@
 import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
-import { HeaderArt } from '@/components/khazain/patterns';
+import { WhatsappRingGlyph } from '@/components/khazain/icons/WhatsappRingGlyph';
+import { WHATSAPP_RING } from '@/components/khazain/icons/whatsappRing';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -10,15 +12,15 @@ import { useMoreRowsStore } from '@/store';
 import type { MoreRow as MoreRowData } from '@/types/content';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Linking, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import Svg, { Circle, Path } from 'react-native-svg';
-
-/** Node 2102:2711 draws each row glyph at ~20pt inside the 48pt squircle. */
-const MORE_GLYPH = 20;
+import { showNotice } from '@/services/notice';
 
 export default function MoreScreen() {
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   const { columnStyle } = useResponsiveLayout();
   const controls = useWindowControlsInset();
   const router = useRouter();
@@ -46,7 +48,7 @@ export default function MoreScreen() {
           if (!can) throw new Error('cannot open');
           await Linking.openURL(url);
         } catch {
-          Alert.alert('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
+          showNotice('الرابط غير متاح', 'تعذّر فتح الرابط على هذا الجهاز.');
         }
         return;
       }
@@ -57,7 +59,7 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <HeaderArt />
+      <HeaderArt bandHeight={headerBandHeight(insets.top, 'more', fontScale)} />
       <ScrollView
         // React Navigation already reserves the measured tab-bar height.
         contentContainerStyle={[{ paddingBottom: SCREEN_BOTTOM_BREATHING }, columnStyle]}
@@ -125,7 +127,8 @@ export default function MoreScreen() {
  * the file. The whatsapp one took two passes to find: it sits inside an
  * INSTANCE named `Yu` whose own paints are a disc, and the glyph under it is
  * addressed by `overrideKey` rather than by guid — so the first read found the
- * disc and nothing else, and looked like an unfinished placeholder.
+ * disc and nothing else, and looked like an unfinished placeholder. The instance
+ * also draws a navy ring around it, which `WhatsappRingGlyph` rebuilds.
  *
  * The rows below the frame's eight (settings, progress, community) have no frame at all,
  * so they keep their drawn glyphs.
@@ -134,7 +137,6 @@ const ROW_ICONS: Partial<Record<string, FigmaIconName>> = {
   web: 'MoreWeb',
   youtube: 'MoreYoutube',
   telegram: 'MoreTelegram',
-  whatsapp: 'MoreWhatsapp',
   soundcloud: 'MoreSoundcloud',
   archive: 'MoreArchive',
   contact: 'MoreContact',
@@ -142,9 +144,11 @@ const ROW_ICONS: Partial<Record<string, FigmaIconName>> = {
 };
 
 function RowGlyph({ id }: { id: string }) {
+  // The `Yu` instance 2548:1411: a 16pt, 1pt navy ring around the glyph at 0.4x.
+  if (id === 'whatsapp') return <WhatsappRingGlyph spec={WHATSAPP_RING.more} />;
   const fromFile = ROW_ICONS[id];
   if (fromFile) {
-    return <FigmaIcon name={fromFile} size={MORE_GLYPH} color={KhazainColors.navy800} />;
+    return <FigmaIcon name={fromFile} size={CARD_DENSITY.moreGlyphSize} color={KhazainColors.navy800} />;
   }
   return <DrawnRowGlyph id={id} />;
 }
@@ -152,7 +156,7 @@ function RowGlyph({ id }: { id: string }) {
 /** The rows the design file has no frame for (settings, progress, community). */
 function DrawnRowGlyph({ id }: { id: string }) {
   const c = KhazainColors.navy800;
-  const size = MORE_GLYPH;
+  const size = CARD_DENSITY.moreGlyphSize;
   switch (id) {
     case 'progress':
       return (

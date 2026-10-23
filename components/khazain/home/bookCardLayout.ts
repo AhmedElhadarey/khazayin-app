@@ -18,6 +18,8 @@ export type BookCardLayout = {
   radius: number;
   /** Half of it overhangs the card's top edge, so it must not be clipped. */
   stripe: Rect;
+  /** The stripe's corner radius: three quarters of half its height. */
+  stripeRadius: number;
   title: Rect;
 };
 
@@ -25,6 +27,8 @@ export type BookCardLayout = {
 export const BOOK_CARD_DESIGN = Object.freeze({ width: 192, height: 81 });
 
 const RADIUS = 7.713674545288086;
+/** The file rounds its pill stripes to 0.75 of a full half-height radius. */
+const STRIPE_ROUNDING = 0.75;
 const STRIPE = { width: 113.77, height: 3.86, top: -1.93 };
 const TITLE = { width: 160, height: 37, top: 22 };
 
@@ -41,6 +45,7 @@ export function bookCardLayout(cardWidth: number): BookCardLayout {
     cardHeight: BOOK_CARD_DESIGN.height * scale,
     radius: RADIUS * scale,
     stripe: centred(STRIPE),
+    stripeRadius: (STRIPE.height / 2) * STRIPE_ROUNDING * scale,
     title: centred(TITLE),
   };
 }

@@ -1,7 +1,9 @@
 import { InlineHeader, ListRowCard } from '@/components/khazain';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { WhatsappRingGlyph } from '@/components/khazain/icons/WhatsappRingGlyph';
+import { WHATSAPP_RING } from '@/components/khazain/icons/whatsappRing';
 import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
-import { HeaderArt } from '@/components/khazain/patterns';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import {
@@ -22,10 +24,12 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import Svg, { Path } from 'react-native-svg';
+import { showNotice } from '@/services/notice';
+import { useInputLineHeight } from '@/hooks/useLineClamp';
 
 // Real phone / email values to be supplied by the foundation. Defaults match
 // the Figma mock.
@@ -37,6 +41,12 @@ const CONTACT_PHONE = '01228888888';
  */
 const CONTACT_PHONE_AR = '٠١٢٢٨٨٨٨٨٨٨٨٨٨';
 const CONTACT_EMAIL = 'khazayin@email.com';
+
+/**
+ * Node 2548:1650 (the form title) states a 21pt line box; the `bodyTitle` role
+ * is taller (1.5x floor, 30), and the surplus splits evenly above and below.
+ */
+const TITLE_BOX_EXCESS = (textStyle('bodyTitle').lineHeight - 21) / 2;
 
 /** `Icon` inside `DIV-66` is 21 x 20; both chips draw at that size. */
 const CONTACT_GLYPH = 20;
@@ -55,7 +65,7 @@ export default function ContactScreen() {
       if (!can) throw new Error('cannot open');
       await Linking.openURL(url);
     } catch {
-      Alert.alert(label, 'تعذّر فتح التطبيق على هذا الجهاز.');
+      showNotice(label, 'تعذّر فتح التطبيق على هذا الجهاز.');
     }
   };
 
@@ -64,7 +74,7 @@ export default function ContactScreen() {
 
   const submit = () => {
     if (!isContactFormComplete({ name, email, message })) {
-      Alert.alert(CONTACT_INCOMPLETE_ALERT.title, CONTACT_INCOMPLETE_ALERT.body);
+      showNotice(CONTACT_INCOMPLETE_ALERT.title, CONTACT_INCOMPLETE_ALERT.body);
       return;
     }
     // INTENTIONAL PLACEHOLDER (T7.8 / D3): the form does not yet transmit the
@@ -76,9 +86,11 @@ export default function ContactScreen() {
     ]);
   };
 
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt corners="single" />
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline', fontScale)} />
       <InlineHeader title="تواصل معنا" onBack={() => router.back()} style={columnStyle} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}
@@ -97,7 +109,7 @@ export default function ContactScreen() {
             chevron={false}
             title="إرسال رسالة"
             subtitle={CONTACT_PHONE_AR}
-            icon={<WhatsappGlyph />}
+            icon={<WhatsappRingGlyph spec={WHATSAPP_RING.contact} />}
             onPress={onWhatsApp}
           />
           <ListRowCard
@@ -134,6 +146,7 @@ export default function ContactScreen() {
             />
             <Pressable
               onPress={submit}
+              accessibilityRole="button"
               style={({ pressed }) => [
                 styles.submitBtn,
                 { opacity: pressed ? 0.85 : 1 },
@@ -165,6 +178,7 @@ function Field({
   keyboardType?: 'default' | 'email-address' | 'numeric';
   autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }) {
+  const inputLine = useInputLineHeight();
   return (
     <View style={styles.fieldGroup}>
       <Text style={styles.fieldLabel}>{label}</Text>
@@ -172,13 +186,16 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={KhazainColors.ink400}
+        placeholderTextColor={KhazainColors.inkSubtle}
         textAlign="right"
         multiline={multi}
         keyboardType={keyboardType}
         autoCapitalize={autoCapitalize}
         style={[
           styles.fieldInput,
+          // The message wraps and keeps its leading; one-line fields release it
+          // once text is enlarged.
+          !multi && inputLine,
           // `TEXTAREA` — 311 x 106 at the same radius.
           multi && {
             minHeight: 106,
@@ -188,24 +205,6 @@ function Field({
         ]}
       />
     </View>
-  );
-}
-
-/**
- * The whatsapp row's chip. Node 2106:2598 `DIV-52` holds an INSTANCE named
- * `Yu` — a 28pt disc filled `#9F9178` behind a navy hairline, with nothing
- * inside it — the same unfinished placeholder the More root carries, so the
- * app keeps its own mark. The email row beside it does have a real glyph, and
- * that one comes from the file.
- */
-function WhatsappGlyph() {
-  return (
-    <Svg width={CONTACT_GLYPH} height={CONTACT_GLYPH} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M10 2.5a7.5 7.5 0 00-6.5 11.2L2.5 17.5l3.9-1a7.5 7.5 0 103.6-14zm-2.7 4.7c.3 0 .6.3.9.7l.4 1.4-.8.8c.4 1 1.4 2 2.4 2.4l.8-.8 1.4.4c.4.3.7.6.7 1 0 .9-.9 1.7-1.8 1.7-2.7 0-5.4-2.7-5.4-5.4 0-1 .8-1.8 1.7-1.8z"
-        fill={KhazainColors.navy800}
-      />
-    </Svg>
   );
 }
 
@@ -241,8 +240,11 @@ const styles = StyleSheet.create({
   // More screen is 18 or 14.
   formTitle: {
     ...textStyle('bodyTitle', { color: KhazainColors.inkTitle, textAlign: 'center' }),
-    // `DIV-126` starts at 293, the title at 309, and `FORM-127` at 342.
-    marginBottom: -4,
+    // `DIV-126` starts at 293, the title at 309, and `FORM-127` at 342. The
+    // role's line box exceeds the file's 21 by 2 x TITLE_BOX_EXCESS; the extra
+    // is pulled back on both sides, and below it keeps the original -4.
+    marginTop: -TITLE_BOX_EXCESS,
+    marginBottom: -4 - TITLE_BOX_EXCESS,
   },
   fieldGroup: {
     // `LABEL-129` ends at 362 and `INPUT` starts at 370.
@@ -263,6 +265,8 @@ const styles = StyleSheet.create({
   // `BUTTON-143` — 311 x 45 at radius 8, `#184B76`, its label in the body
   // face at 14. Not the 14pt radius and 15pt bold label the app had.
   submitBtn: {
+    // formCard gap 16 + 6 = 22 from the textarea to the button.
+    marginTop: 6,
     minHeight: 45,
     borderRadius: 8,
     backgroundColor: KhazainColors.navy800,

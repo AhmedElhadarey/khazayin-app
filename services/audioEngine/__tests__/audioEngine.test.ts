@@ -473,7 +473,7 @@ describe('restoreLastLecture', () => {
       expect.objectContaining({ id: 'ABC/002.mp3', title: 'ح2', reciter: 'شيخ', durationSec: 900 }),
       180 / 900,
     );
-    expect(mockSetVisible).toHaveBeenCalledWith(true);
+    expect(mockSetVisible).not.toHaveBeenCalled(); // never overrides the Mushaf's hide
     expect(mockSetIsPlaying).not.toHaveBeenCalled(); // stays paused
   });
 

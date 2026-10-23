@@ -8,47 +8,67 @@ import {
   SurahRow,
   surahNotesBlock,
 } from '@/components/khazain';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
+import { inlineHeaderHeight } from '@/components/khazain/primitives/InlineHeader';
+import {
+  AyatSegments,
+  MushafChrome,
+  MushafMetaStrip,
+  SurahCartouche,
+  useMushafChromeGate,
+  useReduceMotion,
+} from '@/components/khazain/mushaf';
 import { SurahEndSuggestions } from '@/components/khazain/recommendations';
+import { useScreenReaderOn } from '@/components/khazain/recommendations/useScreenReaderOn';
 import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
 import { releaseMiniPlayerOnBlur } from '@/services/mushafPlayerVisibility';
 import { signalCountNow } from '@/services/recommendations/signalCount';
 import { useRecommendationInputsStore } from '@/store/recommendationInputsStore';
-import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_ROW } from '@/constants/layout';
 import { insetColumn, mushafSheetWidth, mushafType } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
 import {
   ayahCharOffset,
   ayahScrollY,
+  indexExit,
   findSurahIdForPage,
   normalizeAyahParam,
   normalizeSurahParam,
   segmentCharLength,
   segmentForAyah,
-  surahMetaLine,
   type TextLine,
 } from '@/services/mushafNavigation';
 import { ReadingPlaceController, currentKeyEntry } from '@/services/mushafAnchor';
 import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
+import {
+  chromeBottomPad,
+  metaTopPad,
+  mushafAccessibilityActions,
+} from '@/services/mushafChrome';
+import {
+  BOOKMARK_COPY,
+  bookmarkJumpAnnouncement,
+  bookmarkTarget,
+  readingPosition,
+  saveMushafBookmark,
+} from '@/services/mushafBookmark';
+import { announce } from '@/services/a11yAnnounce';
+import { useMushafBookmarkStore } from '@/store/mushafBookmarkStore';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
-import {
-  surahName,
-  surahStartPage,
-  toArabicDigits,
-} from '@/constants/progress';
+import { surahName, surahStartPage } from '@/constants/progress';
 import { useFontScale, useSurahsStore, useAyatStore, useLinkedNotes } from '@/store';
 import { usePlayerStore } from '@/store/playerStore';
 import { useProgressStore } from '@/store/progressStore';
 import { getRepos, progressRepo } from '@/db';
 import * as Haptics from 'expo-haptics';
-import { LinearGradient } from 'expo-linear-gradient';
 import { takeAyahNoteParams } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, type AppStateStatus, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppState, type AccessibilityActionEvent, type AppStateStatus, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
 
 // Once per app session: when the user opens the Mushaf index with no surah
@@ -57,14 +77,20 @@ import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaI
 // retrigger the auto-jump within the same app session.
 let _autoResumeFired = false;
 
-// Node 2349:982 has no reading surface of its own — the frame carries only the
-// header, the meta line and the footer, all on the same `#F8F2ED` the rest of
-// the app uses. The parchment the app used to paint here, and the gold footer
-// under it, were this screen's own invention and read as a different product.
+// Frame 2349:829 is the page itself (the prototype's start); 2349:982 is the
+// same page with the header, meta line and footer over a 24% black scrim.
+// The frame ground is the shared `#F8F2ED`; the text column sits on an ivory
+// sheet. The parchment and gold footer the app used to paint here were this
+// screen's own invention and read as a different product.
 const MUSHAF_BG = KhazainColors.pageBg;
 
-/** Space kept above a linked ayah when scrolling to it, so it is not flush with the header. */
+/** Least space kept above a linked ayah when scrolling to it, so it is not flush with the header. */
 const AYAH_SCROLL_HEADROOM = 80;
+/** Clearance between the header overlay and a linked ayah. */
+const AYAH_CHROME_CLEARANCE = 16;
+/** Chrome heights before the first layout: 44 header + 21 meta + 8 pad; the 70 button (the bottom inset is added). */
+const CHROME_TOP_ESTIMATE = 73;
+const CHROME_BOTTOM_ESTIMATE = 70;
 
 export default function MushafScreen() {
   const router = useRouter();
@@ -97,9 +123,11 @@ export default function MushafScreen() {
   // Only fires once per app session and only when no explicit surah was
   // requested via deep link.
   //
-  // Until the lookup settles the screen shows a plain Mushaf surface rather
-  // than the index, so a resuming reader never sees the list flash past on the
-  // way to their surah (node 2349:829).
+  // Until the lookup settles the screen shows a blank sheet rather than the
+  // index, so a resuming reader never sees the list flash past on the way to
+  // their surah. This is a waiting surface in the colour of the page about to
+  // open, not a drawing of frame 2349:829: that frame is the reading page
+  // itself, which cannot be drawn before the surah is known.
   const [resumeChecked, setResumeChecked] = useState(!!params.surah || _autoResumeFired);
   useEffect(() => {
     if (params.surah || _autoResumeFired) {
@@ -145,15 +173,33 @@ export default function MushafScreen() {
     );
   }
   if (!resumeChecked) {
-    // Node 2349:829 — a stable page surface, not the index and not a spinner
-    // over unrelated content.
-    return <SafeAreaView style={[styles.screen, { backgroundColor: MUSHAF_BG }]} edges={['top', 'bottom']} />;
+    return <ResumePlaceholder />;
   }
   return (
     <ListView
       onBack={() => router.back()}
       onPick={(id) => router.push(`/sections/mushaf?surah=${id}` as any)}
     />
+  );
+}
+
+/**
+ * Waiting surface while the saved page is looked up. It draws the same layers
+ * the loaded reader draws (tile, then the sheet in the tablet column), so
+ * nothing in the margins changes when the page opens (MUSHAF-17: placeholder
+ * must equal page). Spec said `<HeaderArt corners="none" />`; this keeps that
+ * and adds the sheet column the reader has.
+ */
+function ResumePlaceholder() {
+  const { width, isTablet, sideInsets } = useResponsiveLayout();
+  const column = isTablet ? insetColumn(width, mushafSheetWidth(width), sideInsets) : undefined;
+  return (
+    <View style={styles.screen}>
+      <HeaderArt corners="none" />
+      <View style={[styles.resumeColumn, column]}>
+        <View style={styles.resumeSheet} />
+      </View>
+    </View>
   );
 }
 
@@ -168,9 +214,13 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
   // container, not a wrapper around the ScrollView, so the side insets still
   // scroll (design 2026-10-22 §3.3).
   const { columnStyle } = useResponsiveLayout();
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
 
   return (
     <SafeAreaView style={styles.listScreen} edges={['top', 'bottom']}>
+      {/* Frame 2207:17898: tile 2207:17899 plus the single corner. */}
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'search', fontScale)} />
       <View style={columnStyle}>
         <InlineHeader title="قراءة القرآن" onBack={onBack} />
       </View>
@@ -220,8 +270,29 @@ function ReadingView({
   // user's font values back unchanged (mushafType / mushafSheetWidth).
   const { width, isTablet, sideInsets } = useResponsiveLayout();
   const sheetWidth = mushafSheetWidth(width);
-  const type = mushafType(width, ayatFontSize, ayatLineHeight);
+  const type = useMemo(
+    () => mushafType(width, ayatFontSize, ayatLineHeight),
+    [width, ayatFontSize, ayatLineHeight],
+  );
   const sheetColumn = isTablet ? insetColumn(width, sheetWidth, sideInsets) : undefined;
+
+  // ---- Tap-to-show chrome (design 2026-10-23 D3) ---------------------------
+  // Up on every visit, down only on a tap, back on the next. A screen reader
+  // pins it up; Reduce Motion removes the fade. The gate is
+  // `useMushafChromeGate`, called below once `place` exists.
+  const insets = useSafeAreaInsets();
+  const screenReaderOn = useScreenReaderOn();
+  const reduceMotion = useReduceMotion();
+  const scrollYRef = useRef(0);
+  // Measured heights include the safe areas; the estimate keeps the first
+  // frame from jumping by the header's height.
+  const [chromeTop, setChromeTop] = useState(insets.top + CHROME_TOP_ESTIMATE);
+  const [chromeBottom, setChromeBottom] = useState(chromeBottomPad(insets.bottom) + CHROME_BOTTOM_ESTIMATE);
+  const chromeTopRef = useRef(chromeTop);
+  useEffect(() => {
+    chromeTopRef.current = chromeTop;
+  }, [chromeTop]);
+  const [scrollViewH, setScrollViewH] = useState(0);
 
   // The meta line shows the surah's first page (frame 2349:982); reading is tracked per page below.
   const surahNumber = useMemo(() => Number(surahId), [surahId]);
@@ -282,6 +353,15 @@ function ReadingView({
     tracking.retainPages(segments.map((s) => s.page));
   }, [tracking, segments]);
 
+  // Pages are tracked over the band the chrome leaves clear, the same band the
+  // reader had before the page went full-bleed (the ScrollView sat between the
+  // header and the footer). The chrome is up at the start of every visit, so
+  // counting text hidden under it would credit pages nobody could read; the
+  // scroll offset is shifted by the header height to match (see onScroll).
+  useEffect(() => {
+    tracking.setViewportHeight(Math.max(0, scrollViewH - chromeTop - chromeBottom));
+  }, [tracking, scrollViewH, chromeTop, chromeBottom]);
+
   useEffect(() => {
     fetchAyat();
   }, [fetchAyat]);
@@ -304,6 +384,14 @@ function ReadingView({
     const y = place.takeScrollRequest();
     if (y != null) scrollRef.current?.scrollTo({ y, animated: false });
   }, [place]);
+  const {
+    chromeShown,
+    setChromeShown,
+    pageTouchHandlers,
+    scrollStateHandlers,
+    consumeTouch,
+    noteLongPress,
+  } = useMushafChromeGate(screenReaderOn, { onUserScrollBegin: () => place.onUserScrollBegin() });
 
   const tryScroll = useCallback(() => {
     if (targetAyah == null) {
@@ -328,7 +416,9 @@ function ReadingView({
       offset: ayahCharOffset(segment.ayat, targetAyah),
       expectedLength: segmentCharLength(segment.ayat),
     });
-    const toY = Math.max(0, y - AYAH_SCROLL_HEADROOM);
+    // The header overlay covers the top `chromeTop`; keep the ayah just below it.
+    const headroom = Math.max(AYAH_SCROLL_HEADROOM, chromeTopRef.current + AYAH_CHROME_CLEARANCE);
+    const toY = Math.max(0, y - headroom);
     scrollRef.current?.scrollTo({ y: toY, animated: false });
     scrolledAyahRef.current = targetAyah;
     scrolledPreciseRef.current = precise;
@@ -410,6 +500,37 @@ function ReadingView({
     [router, surahId],
   );
 
+  // Stable for the ayah tree: a chrome toggle changes none of these.
+  const a11yActions = useMemo(
+    () => mushafAccessibilityActions(chromeShown, screenReaderOn),
+    [chromeShown, screenReaderOn],
+  );
+  const onA11yAction = useCallback(
+    (e: AccessibilityActionEvent) => {
+      if (e.nativeEvent.actionName === 'showControls') setChromeShown(true);
+      if (e.nativeEvent.actionName === 'hideControls') setChromeShown(false);
+      if (e.nativeEvent.actionName === 'addSurahNote') takeAyahNote(undefined);
+    },
+    [setChromeShown, takeAyahNote],
+  );
+  const onSegmentLayout = useCallback(
+    (page: number, { y, height }: { y: number; height: number }, key: string) => {
+      tracking.setSegmentLayout(page, y, height);
+      layoutsRef.current.set(page, { key, y, height });
+      place.onSegmentLayout(page, { y, height }, Date.now());
+      flushPlace();
+      tryScroll();
+    },
+    [tracking, place, flushPlace, tryScroll],
+  );
+  const onSegmentTextLayout = useCallback(
+    (page: number, lines: TextLine[], key: string) => {
+      linesRef.current.set(page, { key, lines });
+      tryScroll();
+    },
+    [tryScroll],
+  );
+
   // Revelation type comes from the surah catalogue. The old comment here said
   // the store "is already cached from the index, so this costs nothing" — true
   // only if the reader was reached by tapping through the index. It is not:
@@ -423,131 +544,187 @@ function ReadingView({
     fetchSurahs();
   }, [fetchSurahs]);
   const surahRecord = surahs.find((s) => s.id === surahId);
-  const metaLine = surahMetaLine({
-    revelationType: surahRecord?.revelationType,
-    ayahCount: ayat.length > 0 ? ayat.length : surahRecord?.ayahCount,
-    page: currentPage,
-  });
-  const ayahCountLabel = ayat.length > 0 ? `${toArabicDigits(ayat.length)} آية` : '';
+  // The catalogue's count is the surah's; `ayat.length` is only what the store
+  // loaded (a fixture holds 5 for Al-Baqarah), so it is the fallback (MUSHAF-08).
+  const ayahCount = surahRecord?.ayahCount ?? (ayat.length > 0 ? ayat.length : undefined);
+  const metaParts = { revelationType: surahRecord?.revelationType, ayahCount, page: currentPage };
+  const { fontScale: windowFontScale } = useWindowDimensions();
+
+  // ---- Footer: index, go to bookmark, save bookmark (MUSHAF-12) --------------
+  // The footer lives in MushafChrome, a sibling of the page's touch gate, so a
+  // press here never reaches the page's touch gate (`pageTouchHandlers`) and cannot toggle the chrome.
+  const bookmark = useMushafBookmarkStore((s) => s.bookmark);
+  const navigation = useNavigation();
+  const onGoToIndex = useCallback(() => {
+    const state = navigation.getState();
+    if (state && indexExit(state.routes, state.index) === 'back') router.back();
+    else router.replace('/sections/mushaf' as any);
+  }, [navigation, router]);
+  const onSaveBookmark = useCallback(() => {
+    const layouts = new Map<number, { y: number; height: number }>();
+    for (const [page, entry] of layoutsRef.current) {
+      const current = currentKeyEntry(entry, typeKey);
+      if (current) layouts.set(page, current);
+    }
+    const at = readingPosition({
+      scrollY: scrollYRef.current,
+      topInset: chromeTopRef.current,
+      bodyY: bodyYRef.current,
+      segments,
+      layouts,
+      lines: (page) => currentKeyEntry(linesRef.current.get(page), typeKey)?.lines,
+    });
+    if (at) saveMushafBookmark({ surahId, ...at });
+  }, [segments, surahId, typeKey]);
+  const onGoToBookmark = useCallback(() => {
+    const target = bookmarkTarget(bookmark, surahId);
+    if (!target) return;
+    // A jump moves the page without a new screen, so nothing else tells a
+    // screen reader where it landed.
+    if (target.kind === 'jump') {
+      jumpToAyah(target.ayah);
+      announce(bookmarkJumpAnnouncement(target.ayah));
+    } else router.replace(`/sections/mushaf?surah=${target.surah}&ayah=${target.ayah}` as any);
+  }, [bookmark, surahId, jumpToAyah, router]);
+  const footerActions: Record<
+    MushafFooterSlot,
+    { onPress: () => void; disabled?: boolean; hint?: string }
+  > = {
+    index: { onPress: onGoToIndex },
+    goToBookmark: {
+      onPress: onGoToBookmark,
+      disabled: bookmark == null,
+      hint: bookmark == null ? BOOKMARK_COPY.noBookmark : undefined,
+    },
+    // Before the ayat load there is no position to save (readingPosition is null).
+    saveBookmark: {
+      onPress: onSaveBookmark,
+      disabled: segments.length === 0,
+      hint: segments.length === 0 ? BOOKMARK_COPY.notReady : undefined,
+    },
+  };
 
   return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <View style={[styles.headerBg, { backgroundColor: MUSHAF_BG }]}>
-        {/* The sheet column, not the reading column: the title sits over the
-            page it names rather than over a different-width block. */}
-        <View style={sheetColumn}>
-          <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
-          <Text style={styles.subtitle}>{metaLine}</Text>
-        </View>
-      </View>
-      <ScrollView
-        ref={scrollRef}
-        contentContainerStyle={[styles.pageContent, sheetColumn]}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={250}
-        onLayout={(e) => tracking.setViewportHeight(e.nativeEvent.layout.height)}
-        onScrollBeginDrag={() => place.onUserScrollBegin()}
-        onMomentumScrollBegin={() => place.onUserScrollBegin()}
-        onScroll={(e) => {
-          tracking.onScroll(e.nativeEvent.contentOffset.y, Date.now());
-          place.onScroll(e.nativeEvent.contentOffset.y, Date.now(), typeKey);
-          flushPlace();
-        }}
+    <View style={styles.screen}>
+      {/* 2349:829 carries the tile only. The sheet is opaque, so on a phone it
+          covers the tile; it shows in the tablet margins around the sheet. */}
+      <HeaderArt corners="none" />
+      <View
+        style={styles.pageArea}
+        {...pageTouchHandlers}
       >
-        <View style={styles.ornamentWrap}>
-          <LinearGradient
-            colors={['#F3E0B6', '#EAD19A']}
-            start={{ x: 0.5, y: 0 }}
-            end={{ x: 0.5, y: 1 }}
-            style={StyleSheet.absoluteFillObject}
-          />
-          <View style={styles.ornamentInnerFrame} />
-          <Text style={styles.basmala}>﷽</Text>
-          <Text style={styles.surahMeta}>
-            {ayahCountLabel
-              ? `سورة ${displayName} · ${ayahCountLabel}`
-              : `سورة ${displayName}`}
-          </Text>
-        </View>
-        <View
-          onLayout={(e) => {
-            bodyYRef.current = e.nativeEvent.layout.y;
-            place.setBodyY(e.nativeEvent.layout.y);
-            tracking.setBodyY(e.nativeEvent.layout.y);
-            tryScroll();
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={[styles.pageContent, sheetColumn]}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={250}
+          onLayout={(e) => setScrollViewH(e.nativeEvent.layout.height)}
+          {...scrollStateHandlers}
+          onScroll={(e) => {
+            scrollYRef.current = e.nativeEvent.contentOffset.y;
+            tracking.onScroll(e.nativeEvent.contentOffset.y + chromeTop, Date.now());
+            place.onScroll(e.nativeEvent.contentOffset.y, Date.now(), typeKey);
+            flushPlace();
           }}
         >
-          <AsyncContent
-            status={ayatStatus}
-            error={ayatError}
-            onRetry={refreshAyat}
-            skeleton={<SkeletonRowList count={5} />}
-            emptyMessage="لا توجد آيات لهذه السورة"
+          {/* The sheet starts at the content origin, so the body's layout y is
+              still a scroll offset. It pads for the chrome overlay at both ends. */}
+          <View
+            style={[
+              styles.sheet,
+              { paddingTop: chromeTop + 4, paddingBottom: chromeBottom + 16 },
+            ]}
           >
-            {segments.map((segment) => (
-              <Text
-                key={segment.page}
-                onLayout={(e) => {
-                  const { y, height } = e.nativeEvent.layout;
-                  tracking.setSegmentLayout(segment.page, y, height);
-                  layoutsRef.current.set(segment.page, { key: typeKey, y, height });
-                  place.onSegmentLayout(segment.page, { y, height }, Date.now());
-                  flushPlace();
-                  tryScroll();
-                }}
-                onTextLayout={(e) => {
-                  linesRef.current.set(segment.page, { key: typeKey, lines: e.nativeEvent.lines });
-                  tryScroll();
-                }}
-                style={[
-                  styles.ayatBody,
-                  { fontSize: type.fontSize, lineHeight: type.lineHeight },
-                ]}
-                accessibilityActions={[{ name: 'addSurahNote', label: 'إضافة ملاحظة على السورة' }]}
-                onAccessibilityAction={(e) => {
-                  if (e.nativeEvent.actionName === 'addSurahNote') takeAyahNote(undefined);
-                }}
+            <SurahCartouche
+              surahNumber={surahNumber}
+              name={displayName}
+              ayahCount={ayahCount}
+              basmalaType={{ fontSize: type.fontSize, lineHeight: type.lineHeight }}
+            />
+            <View
+              onTouchEnd={ayatStatus === 'success' ? undefined : consumeTouch}
+              onLayout={(e) => {
+                bodyYRef.current = e.nativeEvent.layout.y;
+                place.setBodyY(e.nativeEvent.layout.y);
+                tracking.setBodyY(e.nativeEvent.layout.y);
+                tryScroll();
+              }}
+            >
+              <AsyncContent
+                status={ayatStatus}
+                error={ayatError}
+                onRetry={refreshAyat}
+                skeleton={<SkeletonRowList count={5} />}
+                emptyMessage="لا توجد آيات لهذه السورة"
               >
-                {segment.ayat.map((a, i) => (
-                  <React.Fragment key={a.number}>
-                    <Text
-                      onLongPress={() => takeAyahNote(a.number)}
-                      suppressHighlighting
-                      style={a.number === targetAyah ? styles.ayahHighlight : undefined}
-                    >
-                      {a.text}
-                    </Text>
-                    <AyahNum n={String(a.number)} />
-                    {i < segment.ayat.length - 1 ? ' ' : ''}
-                  </React.Fragment>
-                ))}
-              </Text>
-            ))}
-          </AsyncContent>
-        </View>
-        {/* Outside the measured body wrapper above, so the page-segment offsets
-            the reading tracker uses are unaffected. */}
-        <SurahNotesFooter
-          surahId={surahId}
-          onOpenNote={(id) =>
-            router.push({ pathname: '/note-editor' as any, params: { id } })
-          }
-          onJump={jumpToAyah}
-        />
-        {ayatStatus === 'success' ? <SurahEndSuggestions surahNumber={surahNumber} /> : null}
-      </ScrollView>
-      {/* Physical left → right: الفهرس، الانتقال للعلامة، حفظ علامة
-          (MUSHAF_FOOTER_ORDER, Figma node 2349:982). */}
-      <View style={[styles.footer, sheetColumn]}>
-        {MUSHAF_FOOTER_ORDER.map((slot) => (
-          <MushafBtn
-            key={slot}
-            label={FOOTER_BUTTONS[slot].label}
-            icon={FOOTER_BUTTONS[slot].icon()}
-          />
-        ))}
+                <AyatSegments
+                  segments={segments}
+                  type={type}
+                  targetAyah={targetAyah}
+                  typeKey={typeKey}
+                  accessibilityActions={a11yActions}
+                  onSegmentLayout={onSegmentLayout}
+                  onSegmentTextLayout={onSegmentTextLayout}
+                  onA11yAction={onA11yAction}
+                  noteLongPress={noteLongPress}
+                  takeAyahNote={takeAyahNote}
+                />
+              </AsyncContent>
+            </View>
+            {/* Outside the measured body wrapper above, so the page-segment offsets
+                the reading tracker uses are unaffected. */}
+            <View onTouchEnd={consumeTouch}>
+              <SurahNotesFooter
+                surahId={surahId}
+                onOpenNote={(id) =>
+                  router.push({ pathname: '/note-editor' as any, params: { id } })
+                }
+                onJump={jumpToAyah}
+              />
+              {ayatStatus === 'success' ? <SurahEndSuggestions surahNumber={surahNumber} /> : null}
+            </View>
+          </View>
+        </ScrollView>
       </View>
-    </SafeAreaView>
+      <MushafChrome
+        visible={chromeShown}
+        screenReaderOn={screenReaderOn}
+        reduceMotion={reduceMotion}
+        onTopHeight={(h) => setChromeTop((prev) => (Math.abs(prev - h) < 0.5 ? prev : h))}
+        onBottomHeight={(h) => setChromeBottom((prev) => (Math.abs(prev - h) < 0.5 ? prev : h))}
+        top={
+          // The sheet column, not the reading column: the title sits over the
+          // page it names rather than over a different-width block.
+          <View style={[styles.headerBlock, sheetColumn]}>
+            <InlineHeader title={`سورة ${displayName}`} onBack={onBack} />
+            {/* DIV-47 (2349:994): see MushafMetaStrip for the wrap rules. */}
+            <MushafMetaStrip
+              parts={metaParts}
+              paddingTop={metaTopPad(inlineHeaderHeight(windowFontScale))}
+            />
+          </View>
+        }
+        // 2349:982 carries the corner only (2349:919), no tile. It is laid from
+        // the top of the block, safe area included, as the frame places it.
+        topArt={<HeaderArt corners="single" tile={false} />}
+        bottom={
+          // Physical left → right: الفهرس، الانتقال للعلامة، حفظ علامة
+          // (MUSHAF_FOOTER_ORDER, Figma node 2349:982).
+          <View style={[styles.footer, sheetColumn]}>
+            {MUSHAF_FOOTER_ORDER.map((slot) => (
+              <MushafBtn
+                key={slot}
+                label={FOOTER_BUTTONS[slot].label}
+                icon={FOOTER_BUTTONS[slot].icon()}
+                onPress={footerActions[slot].onPress}
+                disabled={footerActions[slot].disabled}
+                hint={footerActions[slot].hint}
+              />
+            ))}
+          </View>
+        }
+      />
+    </View>
   );
 }
 
@@ -588,24 +765,34 @@ function SurahNotesFooter({
   );
 }
 
-function AyahNum({ n }: { n: string }) {
-  return (
-    <Text style={styles.ayahNum}>
-      {'  '}
-      {n}
-      {'  '}
-    </Text>
-  );
-}
-
-function MushafBtn({ label, icon }: { label: string; icon: React.ReactNode }) {
+function MushafBtn({
+  label,
+  icon,
+  onPress,
+  disabled,
+  hint,
+}: {
+  label: string;
+  icon: React.ReactNode;
+  onPress: () => void;
+  disabled?: boolean;
+  hint?: string;
+}) {
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityLabel={label}
-      style={({ pressed }) => [styles.footerBtn, { opacity: pressed ? 0.7 : 1 }]}
+      accessibilityHint={hint}
+      accessibilityState={{ disabled: !!disabled }}
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.footerBtn,
+        label.includes(' ') ? null : styles.footerBtnOneWord,
+        { opacity: disabled ? 0.4 : pressed ? 0.7 : 1 },
+      ]}
     >
-      {icon}
+      <View style={styles.footerIconBox}>{icon}</View>
       <Text style={styles.footerBtnLabel}>{label}</Text>
     </Pressable>
   );
@@ -618,98 +805,65 @@ function FooterGlyph({ name }: { name: FigmaIconName }) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: MUSHAF_BG },
+  resumeColumn: { flex: 1 },
+  resumeSheet: { flex: 1, backgroundColor: KhazainColors.mushafSheet },
   listScreen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  searchBlock: {
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.searchPaddingTop,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom,
+  },
   surahList: {
     paddingHorizontal: 16,
-    paddingTop: 8,
+    paddingTop: PAGE_CHROME.listAfterSearch,
     // node 2207:17898 steps 66 over a 60 row.
     gap: CARD_DENSITY.lectureListGap,
   },
-  headerBg: {
+  headerBlock: {
     paddingBottom: 8,
   },
-  // `DIV-47` — "صفحة ١ من ٦٠٤ • ٧ آيات • مكية", TheMixArab Regular 14 in
-  // `#5F5345`, centred under the title rather than pinned to the right.
-  subtitle: {
-    ...textStyle('bodyCompact', { color: KhazainColors.ink500, textAlign: 'center' }),
+  // Full-bleed: the chrome floats over it, so nothing here moves when it fades.
+  pageArea: { flex: 1 },
+  pageContent: { flexGrow: 1 },
+  sheet: {
+    flexGrow: 1,
     paddingHorizontal: 16,
-    paddingTop: 6,
-  },
-  pageContent: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 16 },
-  ornamentWrap: {
-    borderWidth: 2,
-    borderColor: KhazainColors.gold500,
-    borderRadius: 8,
-    padding: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-    position: 'relative',
-    marginBottom: 14,
-    overflow: 'hidden',
-  },
-  ornamentInnerFrame: {
-    position: 'absolute',
-    top: 4,
-    left: 4,
-    right: 4,
-    bottom: 4,
-    borderWidth: 1,
-    borderColor: KhazainColors.gold600,
-    borderRadius: 6,
-    opacity: 0.6,
-  },
-  basmala: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 20,
-    fontWeight: '700',
-    color: KhazainColors.navy900,
-    writingDirection: 'rtl',
-  },
-  surahMeta: {
-    fontFamily: 'Amiri',
-    fontSize: 12,
-    color: KhazainColors.gold600,
-    marginTop: 3,
-    writingDirection: 'rtl',
-  },
-  ayatBody: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    lineHeight: 48,
-    color: KhazainColors.ink900,
-    fontWeight: '700',
-    textAlign: 'justify',
-    writingDirection: 'rtl',
+    backgroundColor: KhazainColors.mushafSheet,
   },
   noteHint: {
     ...textStyle('caption', { color: KhazainColors.ink400, textAlign: 'center' }),
     paddingTop: 16,
-  },
-  ayahHighlight: { backgroundColor: KhazainColors.cream200 },
-  ayahNum: {
-    fontSize: 14,
-    color: KhazainColors.gold600,
-    fontFamily: 'Amiri-Bold',
   },
   // `btn` — three radius-8 buttons on the page ground, no rule above them.
   footer: {
     ...PHYSICAL_ROW,
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingBottom: 8,
-    backgroundColor: MUSHAF_BG,
   },
+  // Vertical auto-layout: padding [8,12], itemSpacing 4, radius 8, a 32x32
+  // icon box and the label. The caption role is 12 on an 18 line (1.5 floor;
+  // the file's 12/16 is unreachable): 8 + 32 + 4 + 18 + 8 = 70.
+  //
+  // The buttons are content-sized and the row has room to spare at the
+  // default scale; at 320dp x 1.7 they outgrew it and «حفظ علامة» ran off the
+  // screen. So a button may shrink, and its label wraps across the button's
+  // full width (stretched, not shrink-wrapped: Android 15). A one-word label
+  // has nowhere to wrap, so its button keeps its width (footerBtnOneWord);
+  // shrinking it broke «الفهرس» into «الفهر / س».
   footerBtn: {
-    height: 68,
+    minHeight: 70,
+    flexShrink: 1,
+    minWidth: 0,
     alignItems: 'center',
-    justifyContent: 'center',
     gap: 4,
+    paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 8,
   },
-  footerBtnLabel: textStyle('caption', {
-    color: KhazainColors.ink500,
-    textAlign: 'center',
-  }),
+  footerBtnOneWord: { flexShrink: 0 },
+  footerIconBox: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
+  footerBtnLabel: {
+    ...textStyle('caption', { color: KhazainColors.ink500, textAlign: 'center' }),
+    alignSelf: 'stretch',
+  },
 });

@@ -16,12 +16,23 @@
  * `sectionTitle`, `body` — and gets family, weight, size and line height
  * together, so the pairing cannot drift again.
  *
+ * ## Weight lives in the face, not in `fontWeight`
+ *
+ * Every role sets `fontWeight: '400'`. A registered custom family is a single
+ * static face: iOS ignores `fontWeight` for it, and Android maps a bold weight
+ * to the empty BOLD slot and falls back to the system bold (a different
+ * typeface). `TheSansArabic` is therefore the Bold file and `TheMixArab` the
+ * Regular file (see `constants/fonts.ts`). NEVER pair a registered family with
+ * a bold `fontWeight`, anywhere, including a parent `<Text>` whose nested
+ * children inherit it; pick the weight-specific family with `fontFace()`.
+ * `__tests__/fontWeightGuard.test.ts` enforces this.
+ *
  * ## Two things this scale deliberately does not do
  *
  * **It does not resolve the licensed-font gap.** `TheSansArabic` and
- * `TheMixArab` both still resolve to `NotoSansArabic-VF.ttf` through
- * `FONT_SUBSTITUTIONS`, so the display/body contrast the design is built on is
- * still not visible. `typographyParityResolved()` reports that. When the
+ * `TheMixArab` still resolve to static Noto Sans Arabic faces through
+ * `FONT_SUBSTITUTIONS` (Noto Sans Arabic Bold and Regular), so the faces differ
+ * in weight but not in design. `typographyParityResolved()` reports that. When the
  * licensed files arrive, nothing here changes — only `constants/fonts.ts`.
  *
  * **It does not set the design's smallest sizes.** The Prophet hero's body is
@@ -30,6 +41,8 @@
  * them at their stated size would be illegible on a real device, so body roles
  * floor at `MIN_BODY_SIZE`. Any role that had to be raised says so.
  */
+
+import type { RegisteredFontFamily } from './fonts';
 
 /**
  * Smallest size we will set live Arabic text at. Below roughly this, Arabic
@@ -72,6 +85,10 @@ export type TextRole =
   | 'body'
   | 'bodyCompact'
   | 'caption'
+  | 'captionLoose'
+  | 'bodyCompactLoose'
+  // TheSansArabic Bold, taller leading.
+  | 'cardTitleLoose'
   // Amiri — standing in for the design's calligraphy.
   | 'calligraphyTitle'
   | 'calligraphyBody';
@@ -79,7 +96,7 @@ export type TextRole =
 export type RoleTextStyle = {
   fontFamily: string;
   fontSize: number;
-  fontWeight: '400' | '700';
+  fontWeight: '400';
   lineHeight: number;
 };
 
@@ -131,17 +148,17 @@ const leading = (fontSize: number, stated: number) =>
  * by `leading` so the marks are not cropped.
  */
 export const TEXT_ROLES: Readonly<Record<TextRole, RoleTextStyle>> = Object.freeze({
-  displayLarge: { fontFamily: DISPLAY_FAMILY, fontSize: 32, fontWeight: '700', lineHeight: leading(32, 42) },
-  display: { fontFamily: DISPLAY_FAMILY, fontSize: 28, fontWeight: '700', lineHeight: leading(28, 38) },
-  screenTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 24, fontWeight: '700', lineHeight: leading(24, 32) },
+  displayLarge: { fontFamily: DISPLAY_FAMILY, fontSize: 32, fontWeight: '400', lineHeight: leading(32, 42) },
+  display: { fontFamily: DISPLAY_FAMILY, fontSize: 28, fontWeight: '400', lineHeight: leading(28, 38) },
+  screenTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 24, fontWeight: '400', lineHeight: leading(24, 32) },
   /** The Quran hero's `القرآن حــياة`, the one place the design sets 20. */
-  heroTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 20, fontWeight: '700', lineHeight: leading(20, 28) },
+  heroTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 20, fontWeight: '400', lineHeight: leading(20, 28) },
   /** Home's `العلماء والمشايخ` / `الكتب العلمية` row headings. */
-  sectionTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 16, fontWeight: '700', lineHeight: leading(16, 24) },
-  cardTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 14, fontWeight: '700', lineHeight: leading(14, 20) },
+  sectionTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 16, fontWeight: '400', lineHeight: leading(16, 24) },
+  cardTitle: { fontFamily: DISPLAY_FAMILY, fontSize: 14, fontWeight: '400', lineHeight: leading(14, 20) },
   /** Nav labels, quick chips, `عرض الكل`. */
-  label: { fontFamily: DISPLAY_FAMILY, fontSize: 12, fontWeight: '700', lineHeight: leading(12, 16) },
-  labelSmall: { fontFamily: DISPLAY_FAMILY, fontSize: 10, fontWeight: '700', lineHeight: leading(10, 14) },
+  label: { fontFamily: DISPLAY_FAMILY, fontSize: 12, fontWeight: '400', lineHeight: leading(12, 16) },
+  labelSmall: { fontFamily: DISPLAY_FAMILY, fontSize: 10, fontWeight: '400', lineHeight: leading(10, 14) },
 
   /**
    * The contact form's own heading — node 2106:2598 `DIV-126`, the one place
@@ -164,8 +181,14 @@ export const TEXT_ROLES: Readonly<Record<TextRole, RoleTextStyle>> = Object.free
     lineHeight: leading(MIN_BODY_SIZE, 18),
   },
 
-  calligraphyTitle: { fontFamily: CALLIGRAPHY_FAMILY, fontSize: 16, fontWeight: '700', lineHeight: leading(16, 18.5) },
-  calligraphyBody: { fontFamily: CALLIGRAPHY_FAMILY, fontSize: 14, fontWeight: '700', lineHeight: leading(14, 20) },
+  // Loose variants: same family and size as the base role, taller leading, for
+  // the places the design sets 24pt leading under small text. Base roles unchanged.
+  captionLoose: { fontFamily: BODY_FAMILY, fontSize: MIN_BODY_SIZE, fontWeight: '400', lineHeight: 24 },
+  bodyCompactLoose: { fontFamily: BODY_FAMILY, fontSize: 14, fontWeight: '400', lineHeight: 24 },
+  cardTitleLoose: { fontFamily: DISPLAY_FAMILY, fontSize: 14, fontWeight: '400', lineHeight: 24 },
+
+  calligraphyTitle: { fontFamily: CALLIGRAPHY_FAMILY, fontSize: 16, fontWeight: '400', lineHeight: leading(16, 18.5) },
+  calligraphyBody: { fontFamily: CALLIGRAPHY_FAMILY, fontSize: 14, fontWeight: '400', lineHeight: leading(14, 20) },
 });
 
 /** RTL text direction, spread by every role. There is no LTR copy in this app. */
@@ -184,4 +207,25 @@ export function textStyle(
   overrides?: { color?: string; textAlign?: 'right' | 'center' | 'left' },
 ) {
   return { ...RTL, ...TEXT_ROLES[role], ...overrides };
+}
+
+/**
+ * Family for an ad-hoc weight, for the few sites a role does not cover.
+ *
+ * 700 is the design's display face (`TheSansArabic`, the Bold file), 600 the
+ * SemiBold face, 400 the prose face (`TheMixArab`, the Regular file). It always
+ * returns `fontWeight: '400'` because the weight is in the face; spread it into
+ * a style instead of writing `fontWeight: '700'`.
+ *
+ * Amiri sites do not use this: `Amiri-Bold` is already bold, so they just drop
+ * their `fontWeight`. 600 maps to `NotoSansArabic-SemiBold`, which has no
+ * proprietary alias yet (see `FONT_SUBSTITUTIONS`).
+ */
+export function fontFace(weight: 400 | 600 | 700): {
+  fontFamily: RegisteredFontFamily;
+  fontWeight: '400';
+} {
+  const fontFamily: RegisteredFontFamily =
+    weight === 700 ? DISPLAY_FAMILY : weight === 600 ? 'NotoSansArabic-SemiBold' : BODY_FAMILY;
+  return { fontFamily, fontWeight: '400' };
 }

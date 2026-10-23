@@ -35,37 +35,43 @@ export function ScholarCard({
   const l = scholarCardLayout(cardWidth);
 
   return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={name}
-      style={({ pressed }) => [
-        styles.card,
-        {
-          width: cardWidth,
-          height: l.cardHeight,
-          borderRadius: l.radius,
-          transform: [{ scale: pressed ? 0.97 : 1 }],
-        },
-      ]}
-    >
-      <View style={[styles.stripe, l.stripe]} />
-      <Image
-        source={HONORIFIC}
-        style={[styles.layer, l.honorific]}
-        contentFit="fill"
-        cachePolicy="memory-disk"
-        transition={0}
-      />
-      <View style={[styles.layer, styles.nameBox, l.name]}>
+    // The bookmark is the Pressable's sibling, not its child: a Pressable is one
+    // accessibility element on iOS, so a nested save could not be reached and
+    // its label leaked into the card's (as DawahPoster, f4ad707).
+    <View style={[styles.frame, { width: cardWidth, height: l.cardHeight }]}>
+      <Pressable
+        onPress={onPress}
+        // A card with no action is not announced as a button that does nothing.
+        accessibilityRole={onPress ? 'button' : undefined}
+        accessibilityLabel={name}
+        style={({ pressed }) => [
+          styles.card,
+          {
+            width: cardWidth,
+            height: l.cardHeight,
+            borderRadius: l.radius,
+            transform: [{ scale: pressed && onPress ? 0.97 : 1 }],
+          },
+        ]}
+      >
+        <View style={[styles.stripe, l.stripe, { borderRadius: l.stripeRadius }]} />
         <Image
-          source={nameArt}
-          style={[styles.layer, l.nameArt]}
+          source={HONORIFIC}
+          style={[styles.layer, l.honorific]}
           contentFit="fill"
           cachePolicy="memory-disk"
           transition={0}
         />
-      </View>
+        <View style={[styles.layer, styles.nameBox, l.name]}>
+          <Image
+            source={nameArt}
+            style={[styles.layer, l.nameArt]}
+            contentFit="fill"
+            cachePolicy="memory-disk"
+            transition={0}
+          />
+        </View>
+      </Pressable>
       <View style={styles.bookmarkSlot} pointerEvents="box-none">
         <BookmarkButton
           type="scholar"
@@ -74,11 +80,16 @@ export function ScholarCard({
           variant="dark"
         />
       </View>
-    </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  // Not clipped: the stripe overhangs the card's top edge and the shadow
+  // spreads past it.
+  frame: {
+    position: 'relative',
+  },
   card: {
     backgroundColor: KhazainColors.navy,
     // Figma: 3.17796px 0.79449px 12.7118px rgba(20, 64, 100, 0.24)
@@ -109,5 +120,9 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 6,
     right: 6,
+    // Android stacks siblings by elevation before order, so without matching
+    // the card's the save would draw under it. A view with no background
+    // casts no shadow, so this only orders the two.
+    elevation: 3,
   },
 });

@@ -4,7 +4,7 @@
  * mutate the engine's inputs, and the engine stays deterministic.
  */
 import { PAGES_PER_QURAN } from '@/constants/progress';
-import { TEXT_ROLES } from '@/constants/typography';
+import { LIST_ROW_TEXT } from '@/constants/layout';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -40,21 +40,20 @@ export const LISTEN_LIMIT = 50;
 /** One page-read row per Mushaf page, so the read query can never exceed it (§4.3). */
 export const PAGE_READ_LIMIT = PAGES_PER_QURAN;
 
-/** RibbonCard's ribbon variant: 4pt vertical padding plus a 1pt border, top and bottom. */
-const SLOT_CHROME = 2 * (4 + 1);
-/** RibbonCard's titleBlock gap, once between each of its three lines. */
-const SLOT_LINE_GAPS = 2 * 2;
-
 /**
- * One typical row: one line each of caption reason, title and caption meta.
- * Derived from the type scale so the skeleton, hint and items share one
- * height and the sections below do not move on the swap (§6.5). A title that
- * wraps grows its row past the slot; sizing for that worst case instead left a
- * blank band under every section of one-line rows.
- * `__tests__/recommendationSlotHeight.test.ts` pins this to RibbonCard.
+ * One typical row: a pretitle (reason), a title and a meta line. Every
+ * number is RibbonCard's own (LIST_ROW_TEXT), so the skeleton, hint and items
+ * share one height and the sections below do not move on the swap (§6.5). A
+ * title that wraps grows its row past the slot; sizing for that worst case
+ * instead left a blank band under every section of one-line rows.
+ * `__tests__/listRowMetrics.test.tsx` pins this to a rendered RibbonCard.
  */
 export const RECOMMENDATION_SLOT_HEIGHT =
-  TEXT_ROLES.caption.lineHeight * 2 + TEXT_ROLES.bodyCompact.lineHeight + SLOT_LINE_GAPS + SLOT_CHROME;
+  LIST_ROW_TEXT.subtitleLineHeight +
+  LIST_ROW_TEXT.titleLineHeight +
+  LIST_ROW_TEXT.titleGap +
+  LIST_ROW_TEXT.subtitleLineHeight +
+  2 * (LIST_ROW_TEXT.paddingVertical + LIST_ROW_TEXT.borderWidth);
 
 /** Kill switch (§7.7). */
 export const RECOMMENDATIONS_ENABLED = true;

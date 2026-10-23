@@ -10,6 +10,7 @@
 import {
   computeNextWirdReminder,
   describeWirdReminder,
+  formatNextWirdReminder,
   isWirdReminderArmed,
   shouldSuppressWirdNotification,
 } from '@/services/wirdReminder';
@@ -97,11 +98,11 @@ describe('T-WR-CAPTION — describeWirdReminder', () => {
     expect(blocked.caption).not.toBe(off.caption);
   });
 
-  it('T-WRC-6: armed + goal met ⇒ caption says غدًا, never اليوم', () => {
+  it('T-WRC-6: armed + goal met ⇒ caption says غداً, never اليوم', () => {
     const r = describeWirdReminder(new Date(2026, 9, 21, 9, 0), { hour: 20, minute: 0 },
       { enabled: true, permission: 'granted', goalMetToday: true });
     expect(r.armed).toBe(true);
-    expect(r.caption).toContain('غدًا');
+    expect(r.caption).toContain('غداً');
     expect(r.caption).not.toContain('اليوم');
   });
 });
@@ -163,5 +164,17 @@ describe('T-SUP shouldSuppressWirdNotification', () => {
     expect(shouldSuppressWirdNotification({ category: 'wird-daily', localDay: '2026-10-22' }, S)).toBe(false);
     expect(shouldSuppressWirdNotification({ category: 'prayer-fajr', localDay: '2026-10-21' }, S)).toBe(false);
     expect(shouldSuppressWirdNotification(null, S)).toBe(false);
+  });
+});
+
+describe('formatNextWirdReminder wording (LIBRARY-12)', () => {
+  const now = new Date(2026, 9, 23, 6, 0);
+  const time = { hour: 8, minute: 0 };
+  it('defaults to the settings prefix and names the hour', () => {
+    expect(formatNextWirdReminder(now, time)).toContain('التذكير القادم: اليوم الساعة');
+  });
+  it('takes a prefix: the Library card says «التذكير التالي: غداً الساعة ٨:٠٠ ص»', () => {
+    const label = formatNextWirdReminder(now, time, true, 'التذكير التالي');
+    expect(label.replace(/[\u2066\u2069]/g, '')).toBe('التذكير التالي: غداً الساعة ٨:٠٠ ص');
   });
 });

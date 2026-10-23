@@ -9,14 +9,16 @@ import {
   PHYSICAL_BOX,
   RESERVED_COLUMNS,
   SCREEN_BOTTOM_BREATHING,
+  PAGE_CHROME,
 } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import type { Lecture } from '@/types/content';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
+import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { railListGeometry } from '@/constants/responsive';
 
@@ -46,8 +48,11 @@ export function RailedLectureList({
   const { columnStyle, isTablet, reading } = useResponsiveLayout();
   const rail = railListGeometry({ isTablet, reading });
 
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'search', fontScale)} />
       <InlineHeader title={title} onBack={() => router.back()} style={columnStyle} />
       <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
@@ -62,7 +67,7 @@ export function RailedLectureList({
             <LectureCard
               id={item.id}
               category={item.category}
-              compact
+              variant="rail"
               iconNode={badge(CARD_DENSITY.lectureBadgeDisc)}
               title={item.title}
               scholar={item.scholar}
@@ -82,13 +87,17 @@ export function RailedLectureList({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  searchBlock: {
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.searchPaddingTop,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom,
+  },
   body: {
     // PHYSICAL_BOX pins the rail's `right` offset and the list's reserved
     // `paddingRight`; without it forceRTL swaps both to the left.
     ...PHYSICAL_BOX,
     flex: 1,
-    paddingTop: 8,
+    paddingTop: PAGE_CHROME.listAfterSearch,
     position: 'relative',
   },
   listContent: {
@@ -97,7 +106,7 @@ const styles = StyleSheet.create({
   },
   rail: {
     position: 'absolute',
-    top: 8,
+    top: PAGE_CHROME.railTop,
     bottom: 0,
     // The right offset (`LETTER_INDEX_EDGE`) is set at render time from
     // `railListGeometry`: 16 on phones, the column's edge on tablets.

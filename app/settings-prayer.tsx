@@ -13,13 +13,15 @@
  * `expo-notifications`): every side effect goes through a service module.
  */
 
+import { PillButton } from '@/components/khazain/primitives';
+import { SheetHandle } from '@/components/khazain/sheets';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { CALCULATION_METHOD_IDS, PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
@@ -35,6 +37,7 @@ import type {
   NotificationCategoryId,
   PrayerId,
 } from '@/types/settings';
+import { showNotice } from '@/services/notice';
 
 // Prayer id → registry category id, so the five Arabic prayer names come from
 // the single source already used by the notifications screen (no new names).
@@ -70,7 +73,7 @@ function formatCoord(n: number): string {
 // (Linking.openSettings can reject on some OEMs; fall back to an Arabic Alert).
 function openOsSettings() {
   Linking.openSettings().catch(() => {
-    Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+    showNotice('خطأ', 'تعذّر فتح الإعدادات.');
   });
 }
 
@@ -112,7 +115,7 @@ export default function SettingsPrayerScreen() {
       if (outcome === 'permission-denied') {
         promptLocationPermission();
       } else if (outcome === 'unavailable') {
-        Alert.alert('تعذّر تحديد الموقع', 'تأكّد من تفعيل خدمة الموقع وحاول مرة أخرى.');
+        showNotice('تعذّر تحديد الموقع', 'تأكّد من تفعيل خدمة الموقع وحاول مرة أخرى.');
       }
       // 'updated' → nothing to alert; the store re-renders this screen.
     } finally {
@@ -129,7 +132,7 @@ export default function SettingsPrayerScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
-        <View style={styles.handle} />
+        <SheetHandle />
       </View>
       <Text style={styles.title}>مواقيت الصلاة</Text>
       <ScrollView
@@ -168,21 +171,13 @@ export default function SettingsPrayerScreen() {
             <Text style={styles.locationValue}>{locationLabel}</Text>
             <Text style={styles.locationLabelText}>الموقع الحالي</Text>
           </View>
-          <Pressable
+          <PillButton
+            variant="navy"
+            label={busy ? 'جارٍ التحديد…' : 'تحديد موقعي'}
             onPress={onLocate}
             disabled={busy}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: busy }}
-            accessibilityLabel="تحديد موقعي"
-            style={({ pressed }) => [
-              styles.locateBtn,
-              { opacity: busy ? 0.6 : pressed ? 0.85 : 1 },
-            ]}
-          >
-            <Text style={styles.locateBtnLabel}>
-              {busy ? 'جارٍ التحديد…' : 'تحديد موقعي'}
-            </Text>
-          </Pressable>
+            style={styles.locateBtn}
+          />
         </View>
 
         {/* 3. Calculation method. */}
@@ -266,18 +261,12 @@ function CheckMark() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   handleWrap: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
-  handle: {
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(40,30,19,0.18)',
-  },
   title: {
     ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
   },
-  body: { ...PHYSICAL_BOX, paddingHorizontal: 16, gap: 8 },
+  body: { ...PHYSICAL_BOX, paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 8 },
   sectionTitle: {
     ...textStyle('sectionTitle', { color: KhazainColors.navy900 }),
     marginTop: 12,
@@ -295,7 +284,7 @@ const styles = StyleSheet.create({
   emptyState: {
     ...PHYSICAL_BOX,
     paddingVertical: 20,
-    alignItems: 'flex-end',
+    alignItems: 'stretch',
     gap: 6,
   },
   emptyTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
@@ -313,13 +302,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(141,107,52,0.12)',
   },
   timeName: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
-  timeValue: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-  },
+  timeValue: textStyle('sectionTitle', { color: KhazainColors.navy800 }),
   locationRow: {
     // Physical left -> right: value, label.
     ...PHYSICAL_ROW,
@@ -330,16 +313,7 @@ const styles = StyleSheet.create({
   },
   locationLabelText: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
   locationValue: textStyle('body', { color: KhazainColors.ink700 }),
-  locateBtn: {
-    backgroundColor: KhazainColors.navy800,
-    borderRadius: 999,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    marginTop: 4,
-  },
-  locateBtnLabel: textStyle('sectionTitle', { color: '#fff' }),
+  locateBtn: { width: '100%', marginBottom: 12, marginTop: 4 },
   selectRow: {
     // Physical left -> right: tick, label.
     ...PHYSICAL_ROW,
@@ -356,10 +330,9 @@ const styles = StyleSheet.create({
     ...textStyle('body', { color: KhazainColors.ink900 }),
     flex: 1,
   },
-  selectLabelActive: {
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-  },
+  // sectionTitle (bold 16/24), not cardTitle: the chosen label keeps its neighbours' size.
+  // Deviates from NOFRAME-33's wording because the wording's role was the wrong size.
+  selectLabelActive: textStyle('sectionTitle', { color: KhazainColors.navy800 }),
   caption: {
     ...textStyle('bodyCompact', { color: KhazainColors.ink700 }),
     paddingHorizontal: 4,

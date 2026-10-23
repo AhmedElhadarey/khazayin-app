@@ -39,16 +39,20 @@ const ROOT = path.resolve(__dirname, '..');
  */
 const PINNED_SCREENS = [
   'app/settings-about.tsx',
-  'app/settings-font-size.tsx',
+  'app/settings-notifications.tsx',
+  'components/khazain/library/WirdHistory.tsx',
+  'components/khazain/library/WirdSuggestionBanner.tsx',
+  'components/khazain/library/WirdStartRow.tsx',
+  'components/khazain/library/InsightRow.tsx',
+  'components/khazain/library/MySavedSection.tsx',
+  'components/khazain/library/EmptyInProgressCard.tsx',
+  'components/khazain/primitives/ToastOverlay.tsx',
   'app/settings-prayer.tsx',
-  'app/settings-qiraa.tsx',
-  'app/settings-reciter.tsx',
   'app/settings-wird-goal.tsx',
   'app/settings-wird-reminder.tsx',
   'app/note-editor.tsx',
   'app/notes-viewer.tsx',
   'app/content-search.tsx',
-  'app/share-sheet.tsx',
   'app/(tabs)/more/settings-progress.tsx',
   'app/(tabs)/more/settings.tsx',
   'app/(tabs)/more/community/index.tsx',
@@ -69,6 +73,9 @@ const PINNED_SCREENS = [
   'app/(tabs)/sections/discussion/[lectureId].tsx',
   'app/community-report-sheet.tsx',
   'components/khazain/settings/SettingsSection.tsx',
+  // The shared single-choice row used by the qira'a, reciter, wird-goal and
+  // font-size sheets, which no longer hand-roll it.
+  'components/khazain/settings/ChoiceRow.tsx',
   // Onboarding. Not in the original sweep because it is the one flow the
   // captures never reached: the persisted `onboardingComplete` flag meant a
   // installed-once emulator always booted past it. A release build on a
@@ -83,6 +90,17 @@ const PINNED_SCREENS = [
   'components/khazain/onboarding/PreviewButton.tsx',
 ] as const;
 
+/**
+ * Screens that left PINNED_SCREENS because they now compose the shared
+ * ChoiceRow (which carries the pin) but must still not rely on auto-flip.
+ */
+const NO_AUTOFLIP_SCREENS = [
+  'app/share-sheet.tsx',
+  'app/settings-font-size.tsx',
+  'app/settings-qiraa.tsx',
+  'app/settings-reciter.tsx',
+] as const;
+
 /** Strip `//` and `/* *\/` comments so a prose mention of a banned rule passes. */
 function code(file: string): string {
   return fs
@@ -94,7 +112,7 @@ function code(file: string): string {
 describe('the physical RTL contract holds on every hand-authored screen', () => {
   it.each(PINNED_SCREENS)('%s imports the contract', (file) => {
     const src = code(file);
-    expect(src).toMatch(/PHYSICAL_(BOX|ROW)/);
+    expect(src).toMatch(/(PHYSICAL|READING)_(BOX|ROW)/);
   });
 
   it.each(PINNED_SCREENS)('%s does not reach for row-reverse', (file) => {
@@ -102,6 +120,14 @@ describe('the physical RTL contract holds on every hand-authored screen', () => 
     // only reads correctly if the container is LTR, which under forceRTL it is
     // not. PHYSICAL_ROW states the order instead of inferring it.
     expect(code(file)).not.toMatch(/flexDirection:\s*'row-reverse'/);
+  });
+});
+
+describe('screens built on ChoiceRow still avoid auto-flip', () => {
+  it.each(NO_AUTOFLIP_SCREENS)('%s has no row-reverse and no I18nManager branch', (file) => {
+    const src = code(file);
+    expect(src).not.toMatch(/flexDirection:\s*'row-reverse'/);
+    expect(src).not.toMatch(/I18nManager/);
   });
 });
 
@@ -116,7 +142,7 @@ describe('no unpinned container claims a physical edge', () => {
       /padding(?:Right|Left):\s*\d/.test(src) ||
       /alignItems:\s*'flex-end'/.test(src);
     if (!usesPhysicalEdge) return;
-    expect(src).toMatch(/\.\.\.PHYSICAL_(BOX|ROW)/);
+    expect(src).toMatch(/\.\.\.(PHYSICAL|READING)_(BOX|ROW)/);
   });
 });
 
@@ -206,5 +232,86 @@ describe('PostRow and Composer', () => {
     expect(COMPOSER_ORDER).toEqual(['send', 'field']);
     expect(Object.isFrozen(COMMUNITY_POST_ORDER)).toBe(true);
     expect(Object.isFrozen(COMPOSER_ORDER)).toBe(true);
+  });
+});
+
+describe('Library blocks keep their text on the physical right', () => {
+  const lib = code('app/(tabs)/library.tsx');
+  /** The body of `name: { ... }` in a StyleSheet literal. */
+  const block = (src: string, name: string) => {
+    const at = src.search(new RegExp(`\\n  ${name}: \\{`));
+    expect(at).toBeGreaterThan(-1);
+    return src.slice(at, src.indexOf('\n  },', at));
+  };
+
+  it.each(['quickNoteCard', 'recentBlock', 'card', 'noteBody', 'wirdCard', 'sectionTitleBox'])(
+    'library.tsx styles.%s pins its direction',
+    (name) => {
+      expect(block(lib, name)).toMatch(/\.\.\.PHYSICAL_BOX/);
+    },
+  );
+
+  it('does not pin the whole ScrollView content', () => {
+    const scroll = lib.slice(lib.indexOf('<ScrollView'), lib.indexOf('</ScrollView>'));
+    expect(scroll).not.toMatch(/PHYSICAL_BOX/);
+  });
+
+  it('AudioProgressCard pins the card and authors its rows physically', () => {
+    const src = code('components/khazain/library/AudioProgressCard.tsx');
+    expect(block(src, 'card')).toMatch(/\.\.\.PHYSICAL_BOX/);
+    expect(block(src, 'topRow')).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(block(src, 'actions')).toMatch(/\.\.\.PHYSICAL_ROW/);
+    expect(src).not.toMatch(/flexDirection:\s*'row'/);
+  });
+
+  it('EmptyInProgressCard is a READING_ROW authored disc, text, action', () => {
+    const src = code('components/khazain/library/EmptyInProgressCard.tsx');
+    expect(block(src, 'card')).toMatch(/\.\.\.READING_ROW/);
+    const iDisc = src.indexOf('<LatticeDisc />');
+    const iText = src.indexOf('styles.title');
+    const iCta = src.indexOf('styles.cta');
+    expect(iDisc).toBeGreaterThan(-1);
+    expect(iDisc).toBeLessThan(iText);
+    expect(iText).toBeLessThan(iCta);
+  });
+
+  it('InsightRow is a READING_ROW with stretch chips (no shrink-wrapped titles)', () => {
+    const src = code('components/khazain/library/InsightRow.tsx');
+    expect(block(src, 'row')).toMatch(/\.\.\.READING_ROW/);
+    expect(block(src, 'chip')).toMatch(/alignItems: 'stretch'/);
+    const order = ['أطول سلسلة', 'أعلى يوم', 'هذا الشهر'].map((t) => src.indexOf(`title="${t}"`));
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+  });
+
+  it('SearchGroupHeader pins its wrapper (shared with Search and Library)', () => {
+    const src = code('components/khazain/search/SearchGroupHeader.tsx');
+    expect(block(src, 'wrap')).toMatch(/\.\.\.PHYSICAL_BOX/);
+  });
+
+  it('MySavedSection authors its header row physically', () => {
+    const src = code('components/khazain/library/MySavedSection.tsx');
+    expect(block(src, 'headerRow')).toMatch(/\.\.\.PHYSICAL_ROW/);
+  });
+});
+
+describe('screens without a frame pin their blocks (T24)', () => {
+  const blk = (src: string, name: string) => {
+    const at = src.search(new RegExp(`\\n  ${name}: \\{`));
+    expect(at).toBeGreaterThan(-1);
+    return src.slice(at, src.indexOf('\n  },', at));
+  };
+
+  it('settings-notifications pins body, noteCard and banner, and stretches the banner', () => {
+    const src = code('app/settings-notifications.tsx');
+    for (const n of ['body', 'noteCard', 'banner']) {
+      expect(blk(src, n)).toMatch(/\.\.\.PHYSICAL_BOX/);
+    }
+    expect(blk(src, 'banner')).toMatch(/alignItems:\s*'stretch'/);
+    expect(src).not.toMatch(/alignItems:\s*'flex-end'/);
+  });
+
+  it('MySavedSection pins its row container', () => {
+    const src = code('components/khazain/library/MySavedSection.tsx');
+    expect(blk(src, 'rowContainer')).toMatch(/\.\.\.PHYSICAL_BOX/);
   });
 });

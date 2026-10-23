@@ -10,8 +10,8 @@ import { RibbonCard } from '../primitives/RibbonCard';
 // One recommendation, on Home and in the Mushaf end block (design §6.3, §6.4):
 // [RibbonCard, dismiss button] as SIBLINGS, authored in reading order inside a
 // READING_ROW, so the card sits at the physical right and the button at the
-// physical left (RECOMMENDATION_ROW_ORDER). Screen readers reach the card's texts, then the
-// button. No `save`: long-press does nothing here (S5/C3).
+// physical left (RECOMMENDATION_ROW_ORDER). Screen readers reach the card, one button named
+// reason، title، meta, then the dismiss button. No `save`: long-press does nothing here (S5/C3).
 
 export function RecommendationRow({
   rec,

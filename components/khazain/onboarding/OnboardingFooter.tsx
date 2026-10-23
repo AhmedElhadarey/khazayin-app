@@ -2,8 +2,9 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { PillButton } from '@/components/khazain/primitives';
-import { PHYSICAL_ROW } from '@/constants/layout';
+import { MIN_TOUCH_TARGET, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 
 type Props = {
   /** Current step index (0-based). */
@@ -49,7 +50,8 @@ export function OnboardingFooter({
           onPress={onSkip}
           accessibilityRole="button"
           accessibilityLabel="تخطّي الإعداد والانتقال إلى التطبيق"
-          hitSlop={8}
+          hitSlop={{ left: 8, right: 8 }}
+          style={styles.link}
         >
           <Text style={styles.linkText}>تخطّي</Text>
         </Pressable>
@@ -58,7 +60,8 @@ export function OnboardingFooter({
             onPress={onBack}
             accessibilityRole="button"
             accessibilityLabel="رجوع إلى الخطوة السابقة"
-            hitSlop={8}
+            hitSlop={{ left: 8, right: 8 }}
+            style={styles.link}
           >
             <Text style={styles.linkText}>رجوع</Text>
           </Pressable>
@@ -81,14 +84,12 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     alignItems: 'center',
     justifyContent: 'space-between',
-    minHeight: 28,
+    minHeight: MIN_TOUCH_TARGET,
   },
-  linkText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '600',
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+  link: {
+    minHeight: MIN_TOUCH_TARGET,
+    minWidth: MIN_TOUCH_TARGET,
+    justifyContent: 'center',
   },
+  linkText: textStyle('cardTitle', { color: KhazainColors.inkSubtle }),
 });

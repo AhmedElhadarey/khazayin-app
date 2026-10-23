@@ -160,12 +160,32 @@ export const Shadows = {
 // The legacy Colors/Shadows exports above remain for existing screens.
 // =====================================================================
 
+/**
+ * `hex` (#RRGGBB) at `alpha` as an `rgba()` string. For derived tints so a
+ * translucent colour names the token it comes from instead of repeating its
+ * channels as a literal.
+ */
+export function withAlpha(hex: `#${string}`, alpha: number): string {
+  if (!(alpha >= 0 && alpha <= 1)) throw new Error(`withAlpha expects alpha in 0..1, got ${alpha}`);
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) throw new Error(`withAlpha expects #RRGGBB, got ${hex}`);
+  const [r, g, b] = [m[1], m[2], m[3]].map((h) => parseInt(h, 16));
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+/** The one destructive/error red; `danger` and `dangerBorder` derive from it. */
+const DANGER = '#B43838';
+/** Calligraphy gold; `sheetStroke` derives from it. */
+const GOLD_CALLIGRAPHY = '#D7B995';
+
 export const KhazainColors = {
   // Surfaces
   pageBg: '#F8F2ED',
   cardBg: '#FCFAF8',
   cardBorder: 'rgba(141, 107, 52, 0.10)',
   iconChipBg: 'rgba(215, 185, 149, 0.16)',
+  /** The 1pt top stroke of the qiraat list sheet (frame 2457:954). */
+  sheetStroke: withAlpha(GOLD_CALLIGRAPHY, 0.16),
 
   // Cream scale
   cream50: '#FCFAF8',
@@ -191,7 +211,7 @@ export const KhazainColors = {
   gold200: '#E8C78A',
   goldAccent: '#A88051',
   goldBar: '#C1A584',
-  goldCalligraphy: '#D7B995', // calligraphy stroke colour on navy ribbon cards (ScholarCard / BookCard)
+  goldCalligraphy: GOLD_CALLIGRAPHY, // calligraphy stroke colour on navy ribbon cards (ScholarCard / BookCard)
   navPill: '#C1A584',
   navPillBg: 'rgba(215, 185, 149, 0.16)',
   navLabel: '#F1E7DD',
@@ -221,11 +241,27 @@ export const KhazainColors = {
   ink500: '#5F5345',
   inkPlaceholder: '#988671',
   ink400: '#988671',
+  /** Input placeholder grey — the Library quick-note field (node 2031:4659). */
+  placeholder: '#9CA3AF',
   inkCount: '#184B76',
+  /** Prophet hero body copy (node 2007:479 family), a warm brown rather than the navy. */
+  inkBrown: '#5F482D',
+  /** Queen card body copy (node 2812:1401). */
+  queenBody: '#B07F4B',
   inkArrow: '#281E13',
+
+  // Destructive actions and form errors. The one red in the app; the legacy
+  // `Colors.light.error` (#D94040) and two screen-local reds are retired.
+  danger: DANGER,
+  dangerBorder: withAlpha(DANGER, 0.18),
 
   // Accent
   teal600: '#2E6B6B',
+
+  // Mushaf reading page (frame 2349:829): black text on an ivory sheet. The
+  // frame ground around the sheet stays `pageBg`.
+  mushafInk: '#000000',
+  mushafSheet: '#FBFAEE',
 
   // Skeleton placeholder (navy at ~8% opacity on cream pageBg)
   skeleton: 'rgba(24,75,118,0.08)',
@@ -264,7 +300,21 @@ export const KhazainShadows = {
     // without the separator the 2026-09-09 audit found around every card.
     elevation: 1,
   },
+  /**
+   * `boxShadow` (New Architecture) takes CSS semantics, which is what the file
+   * states; `elevation: 1` drew a grey Android outline the file does not
+   * have. Android < API 28 draws no outset shadow; that is accepted. Apply to
+   * a View style only — Text ignores it.
+   */
   input: {
+    boxShadow: '0px 4px 16px rgba(0,0,0,0.08)',
+  },
+  /**
+   * The floating bookmark bubble on Home posters (translucent fill). It keeps
+   * the legacy shadow it had before `input` moved to `boxShadow`, so GLOBAL-13
+   * only changes the search pills and list rows.
+   */
+  floatingBubble: {
     shadowColor: '#000',
     shadowOpacity: 0.08,
     shadowRadius: 16,
@@ -277,11 +327,7 @@ export const KhazainShadows = {
    * is a much tighter one than `card`.
    */
   listRow: {
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    boxShadow: '0px 1px 2px rgba(0,0,0,0.05)',
   },
   press: {
     shadowColor: '#34240C',

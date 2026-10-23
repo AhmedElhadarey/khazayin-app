@@ -38,10 +38,10 @@ flattened export.
 
 | Layer | Source | Display |
 |---|---|---|
-| Gradient | measured off the frame export | vertical linear, `#D8BFA1` → `#F4E7DA` @52% → `#D8BE9D` |
-| Pattern | `images/e2364e38…` 1934² | tile 735 × 735 pt, repeated |
+| Gradient | stated stops (2001:888 / 2007:511) | vertical linear, `#D9C0A1` → `#F8EDE1` @55.3% → `#D8BE9D` (stated; was measured `#D8BFA1`/`#F4E7DA`@52%/`#D8BE9D`). Step 4 fades to `#E5D5C1`/`#F8EDE1`/`#E5D5C1` |
+| Pattern | `images/e2364e38…` 1934² | 1040 pt, first tile at (-149, -93.5), repeated on larger screens (was 735 from 0,0) |
 | Emblem | frame `images/1ddc58b3…` 681×945 + calligraphy `images/201c4e64…` 445×527 + tagline `images/d8d88636…` 433×58 | 131 × 181 pt, screen centre |
-| Wordmark | `images/61202191…` 738×117 | 220 × 35 pt, centred, 24 pt above the bottom edge |
+| Wordmark | node 2183:4304, 72 SOLID `#7F613D` vectors | SVG path, 220 × 35.06 pt, centred, 24 pt above the bottom edge (was a fitted raster `images/61202191…`) |
 
 Derivations that were fitted rather than read off:
 
@@ -55,18 +55,20 @@ Derivations that were fitted rather than read off:
 - **The light rim.** The flattened export carries a rim the frame layer does not. It is
   recovered as the alpha the export holds beyond the frame's own alpha, painted `#FDF9F3`
   and laid underneath.
-- **Wordmark colour.** The `.fig` ships the wordmark as a pale cream layer for use on navy;
-  the splash paints it gold. The recolour is a per-channel linear ramp fitted against the
-  frame export over 5182 opaque pixels, so the calligraphy's own shading survives instead
-  of flattening to a single colour.
-- **Pattern scale.** Autocorrelation is unusable here — the pattern's amplitude is ±7/255,
-  below the frame's own dither. Two independent methods agree instead: the ratio of median
-  strapwork band widths (reference 22 px @2x vs tile 30 px) gives a 709 pt tile, and a
-  matched high-pass correlation over scale and phase peaks at 735 pt (r = 0.40, an interior
-  optimum). 735 pt is used.
-- **Pattern origin.** Figma's tiling origin is not the frame's top-left. The tile is rolled
-  by the fitted phase so the app can tile from (0, 0) and still reproduce the frame; a
-  cyclic roll of a seamless tile stays seamless.
+- **Pattern scale and origin — superseded 2026-10-23 (735 was wrong).** The estimate
+  above (735 pt, tiled from 0,0, rolled by a fitted phase) was fitted from a flattened
+  export. The file states it: node 2001:889 (the same in all four Splash frames) is
+  690 × 853 at (-149, -1), image STRETCH with paint transform m00 0.6633, m11 0.8206,
+  m12 0.0890, so the image is 690/0.6633 = 1040 pt wide, 853/0.8206 = 1039.5 pt tall, with its
+  top-left at x = -149, y = -1 - (0.0890/0.8206) × 853 = -93.5. The 735 tile made the
+  strapwork 0.707× too small. The asset is now unrolled, 1040 px (@2x: 1400 px), and
+  `launchTiming.PATTERN_ORIGIN` places it. Regenerate with `node scripts/figma/extract-splash.js`.
+- **OVERLAY approximation.** The node is blend mode OVERLAY; React Native has no blend
+  modes, so the blend is baked: colour overlay(G, s) at the source alpha, where G is the
+  stated steps 1–3 gradient sampled at each row's frame y. Exact on the 393 × 852 frame.
+- **Wordmark.** Superseded: the wordmark is the file's 72 SOLID `#7F613D` vectors
+  (node 2183:4304), generated as an SVG path (`launch/generated/launchWordmark.ts`), not a
+  fitted raster.
 
 **Verification.** The four layers were recomposed into a full 393×852 frame and diffed
 against the Figma export: **mean absolute difference 5.99 / 255 (2.4%)**, worst pixel 223 at
@@ -117,14 +119,21 @@ where the overlay never mounts.
 
 ## Assets
 
-Written to `assets/khazain/splash/` as lossless WebP (724 KB total, down from 2.0 MB as
-PNG). Pattern ships at 1x/2x only — it is a soft 29%-opacity texture, so 2x upsamples
-invisibly on a 3x screen while a 3x tile of that size costs 741 KB alone. Emblem and
-wordmark ship 1x/2x/3x.
+Written to `assets/khazain/splash/`. Emblem ships 1x/2x/3x as lossless WebP. The pattern
+(updated 2026-10-23) ships 1x/2x as near-lossless WebP at quality 60 (within 2 levels of
+lossless): 1040 px and 1400 px (about 1.35 px/pt at @2x). The wordmark raster is gone; it is
+an SVG path.
 
-The generator is not checked in: it depends on `sharp`, which is not a project dependency
-(it resolves only as a hoisted transitive install). Every measurement it applies is recorded
-above, so the assets can be regenerated from `docs/KHAZAYIN.fig` without it.
+Why 1400 px and not the 1934 px source: a 1934 px RGBA bitmap decodes to about 15 MB, against
+7.8 MB at 1400 px, and low-end Android (Realme Note 50 class) pays that decode on the launch
+path. The texture is low-contrast (about 29% alpha, +-7/255 amplitude), so the upsample is
+not visible.
+
+The OVERLAY bake is exact for steps 1-3 at 852 pt height and within about 5/255 elsewhere,
+where the gradient stretches differently.
+
+The generator is checked in at `scripts/figma/extract-splash.js`. `sharp` is a
+devDependency. `--check` verifies the generated wordmark module, and a jest test runs it.
 
 ## Not covered
 

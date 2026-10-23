@@ -212,13 +212,12 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: 'Amiri-Bold',
     fontSize: 14,
-    fontWeight: '700',
     color: KhazainColors.ink900,
     writingDirection: 'rtl',
     textAlign: 'right',
   },
   reciter: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 12,
     fontWeight: '400',
     color: KhazainColors.ink500,

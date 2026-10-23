@@ -43,7 +43,7 @@ import type {
   DawahPoster,
   SectionEntry,
   MoreRow,
-  LibraryFilter,
+  LibraryFilterChip,
 } from '../types/content';
 import type {
   ContentResult,
@@ -119,7 +119,7 @@ export interface ContentService {
   navigation: {
     listSections(opts?: CacheOpts): Promise<ContentResult<SectionEntry[]>>;
     listMoreRows(opts?: CacheOpts): Promise<ContentResult<MoreRow[]>>;
-    listLibraryFilters(opts?: CacheOpts): Promise<ContentResult<LibraryFilter[]>>;
+    listLibraryFilters(opts?: CacheOpts): Promise<ContentResult<LibraryFilterChip[]>>;
   };
 
   books: {

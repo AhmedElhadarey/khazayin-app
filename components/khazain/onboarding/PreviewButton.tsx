@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Pressable, StyleSheet } from 'react-native';
 
-import { PauseIcon, PlayIcon } from '@/components/khazain/icons';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { MIN_TOUCH_TARGET, PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import type { PreviewStatus } from '@/store/previewStore';
@@ -15,10 +15,12 @@ type Props = {
 /**
  * Play/stop control for a reciter's Al-Fatiha preview (onboarding, design
  * 2026-10-21 §4.3). A sibling of the row's radio, so VoiceOver reaches it as
- * its own focus stop. The play glyph is not mirrored.
+ * its own focus stop. The play glyph is the file's `Play` (node 2001:15652),
+ * mirrored like all 16 of its instances; `Pause` is 2001:15578. This screen has
+ * no frame of its own.
  *
- * The active state draws `PauseIcon` although the action is "stop" (the label
- * says إيقاف): `components/khazain/icons` has no stop glyph, and a preview is
+ * The active state draws `Pause` although the action is "stop" (the label
+ * says إيقاف): the file has no stop glyph, and a preview is
  * never resumed, so pause/stop read the same here.
  */
 export function PreviewButton({ reciterName, status, onPress }: Props): React.ReactElement {
@@ -37,9 +39,9 @@ export function PreviewButton({ reciterName, status, onPress }: Props): React.Re
       {status === 'loading' ? (
         <ActivityIndicator size="small" color={KhazainColors.navy800} />
       ) : status === 'playing' ? (
-        <PauseIcon size={18} color={KhazainColors.cardBg} />
+        <FigmaIcon name="Pause" size={18} color={KhazainColors.cardBg} />
       ) : (
-        <PlayIcon size={18} color={KhazainColors.navy800} />
+        <FigmaIcon name="Play" size={18} color={KhazainColors.navy800} mirrored />
       )}
     </Pressable>
   );
@@ -48,7 +50,6 @@ export function PreviewButton({ reciterName, status, onPress }: Props): React.Re
 const styles = StyleSheet.create({
   button: {
     // Pinned per the onboarding RTL contract (__tests__/rtlPhysicalContract.test.ts).
-    // The play glyph is an SVG and is never mirrored.
     ...PHYSICAL_BOX,
     width: MIN_TOUCH_TARGET,
     height: MIN_TOUCH_TARGET,

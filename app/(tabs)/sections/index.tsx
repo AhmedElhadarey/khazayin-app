@@ -7,7 +7,7 @@ import {
   SkeletonTileGrid,
 } from '@/components/khazain';
 import { SECTION_ICONS, SectionIconKey } from '@/components/khazain/icons/sections';
-import { HeaderArt } from '@/components/khazain/patterns';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PAGE_CHROME, PHYSICAL_BOX, READING_GRID } from '@/constants/layout';
 import {
   GRID_GAP,
@@ -24,8 +24,9 @@ import type { SectionEntry } from '@/types/content';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { showNotice } from '@/services/notice';
 
 export default function SectionsScreen() {
   const router = useRouter();
@@ -41,7 +42,7 @@ export default function SectionsScreen() {
     if (s.route) {
       router.push(s.route as any);
     } else {
-      Alert.alert(s.title, 'قريباً بإذن الله');
+      showNotice(s.title, 'قريباً بإذن الله');
     }
   };
 
@@ -50,9 +51,10 @@ export default function SectionsScreen() {
   const pad = tabletGutterPadding(width, sideInsets);
   const tileWidth = gridItemWidth(width, sectionGridColumns(width));
 
+  const insets = useSafeAreaInsets();
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <HeaderArt inset={sideInsets.right + gutter} />
+      <HeaderArt inset={sideInsets.right + gutter} bandHeight={headerBandHeight(insets.top, 'root')} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }]}
         showsVerticalScrollIndicator={false}
@@ -133,7 +135,7 @@ const styles = StyleSheet.create({
   h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
   searchBlock: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: PAGE_CHROME.rootSearchPaddingBottom,
   },
   list: {
     paddingHorizontal: 16,

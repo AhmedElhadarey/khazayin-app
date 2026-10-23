@@ -6,15 +6,16 @@ import {
   SearchPill,
   SkeletonRibbonList,
 } from '@/components/khazain';
-import { CARD_DENSITY } from '@/constants/layout';
+import { CARD_DENSITY, PAGE_CHROME } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useProphetLecturesStore } from '@/store';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
+import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Page 25: رسول الله ﷺ — paginated list of lecture cards.
@@ -35,8 +36,11 @@ export default function ProphetScreen() {
 
   useEffect(() => { fetch(); }, [fetch]);
 
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'search', fontScale)} />
       <InlineHeader title="رسول الله ﷺ" onBack={() => router.back()} style={columnStyle} />
       <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />
@@ -78,10 +82,14 @@ export default function ProphetScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  searchBlock: {
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.searchPaddingTop,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom,
+  },
   list: {
     paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingTop: PAGE_CHROME.cardListAfterSearch,
     gap: CARD_DENSITY.lectureListGap,
   },
 });

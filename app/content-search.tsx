@@ -1,4 +1,4 @@
-import { InlineHeader, SearchPill, SkeletonRowList } from '@/components/khazain';
+import { InlineHeader, PillButton, SearchPill, SkeletonRowList } from '@/components/khazain';
 import {
   RecentSearchRow,
   SearchGroupHeader,
@@ -247,7 +247,12 @@ function EmptyState({
             <>
               {/* Physical left -> right: the clear action, then the heading. */}
               <View style={styles.recentsHeaderRow}>
-                <Pressable onPress={onClearAllRecents} hitSlop={8}>
+                <Pressable
+                  onPress={onClearAllRecents}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="مسح البحث الأخير"
+                >
                   <Text style={styles.clearAllText}>مسح</Text>
                 </Pressable>
                 <Text style={styles.recentsTitle}>البحث الأخير</Text>
@@ -334,9 +339,7 @@ function NoResults({
         <Text style={styles.suggestionsTitle}>مقترحات</Text>
         <SuggestionChips onPick={onPickSuggestion} />
       </View>
-      <Pressable onPress={onSections} style={styles.sectionsButton} hitSlop={8}>
-        <Text style={styles.sectionsButtonText}>الأقسام</Text>
-      </Pressable>
+      <PillButton variant="navy" label="الأقسام" onPress={onSections} style={styles.noResultsAction} />
     </View>
   );
 }
@@ -362,7 +365,7 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   recentsTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
-  clearAllText: textStyle('cardTitle', { color: KhazainColors.gold200 }),
+  clearAllText: textStyle('cardTitle', { color: KhazainColors.goldAccent }),
 
   suggestionsTitle: {
     ...textStyle('sectionTitle', { color: KhazainColors.ink900 }),
@@ -386,12 +389,5 @@ const styles = StyleSheet.create({
     ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle, textAlign: 'center' }),
     marginTop: 8,
   },
-  sectionsButton: {
-    marginTop: 24,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    backgroundColor: KhazainColors.gold200,
-    borderRadius: 999,
-  },
-  sectionsButtonText: textStyle('cardTitle', { color: KhazainColors.cream50 }),
+  noResultsAction: { marginTop: 24, minWidth: 160 },
 });

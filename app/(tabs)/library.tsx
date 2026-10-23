@@ -16,8 +16,9 @@ import {
   TrendSparkline,
   WirdHistory,
   WirdSuggestionBanner,
+  WirdStartRow,
 } from '@/components/khazain/library';
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PAGE_CHROME, PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import {
   LIBRARY_PROGRESS_STAT_ORDER,
   LIBRARY_SUMMARY_CARD_ORDER,
@@ -27,16 +28,29 @@ import {
   type LibrarySummaryCardKey,
   visibleLibrarySections,
 } from '@/constants/libraryPresentation';
-import { juzCompletedSubtitle, lecturesListenedSubtitle, pagesReadSubtitle } from '@/services/libraryStats';
-import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
+import {
+  filterChipCount,
+  juzCompletedSubtitle,
+  lecturesListenedSubtitle,
+  lastReadingLabel,
+  notesSubtitle,
+  pagesReadSubtitle,
+  remindersSubtitle,
+  streakSubtitle,
+  wirdHighlightLabel,
+} from '@/services/libraryStats';
+import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { FormatButton } from '@/components/khazain/primitives/FormatButton';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import {
+  AUDIOBOOK_CARD_GAP,
   FILTER_CHIP,
   LIBRARY_CARD_RADIUS,
   LIBRARY_DESIGN,
+  LIBRARY_SEARCH_MARGIN_BELOW,
   LIBRARY_SECTION_GAP,
   NOTE_FIELD,
   QUICK_NOTE_CARD,
@@ -59,20 +73,40 @@ import {
 } from '@/services/wirdHistory';
 import { useLibraryFiltersStore, useSavedStore, useSettingsStore } from '@/store';
 import { describeWirdReminder } from '@/services/wirdReminder';
-import { setWirdReminderEnabled } from '@/services/wirdReminderToggle';
+import { setCategoryEnabled } from '@/services/notificationCategoryToggle';
+import {
+  audiobookCardsFor,
+  buildSmartReminders,
+  enabledFromMap,
+  runSingleFlight,
+} from '@/services/libraryView';
+import type { NotificationCategoryId } from '@/types/settings';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useProgressStore } from '@/store/progressStore';
 import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { getRepos, progressRepo } from '@/db';
+import type { LectureSession } from '@/db/types';
 import { lectureNoteParamsFromSession } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
-import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import React, { useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Linking,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EmptyState } from '@/components/khazain/state';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
+import { showNotice } from '@/services/notice';
 
 function surahNameForPage(page: number): { name: string; surahNumber: number } | null {
   if (!Number.isInteger(page) || page < 1 || page > 604) return null;
@@ -84,27 +118,20 @@ function surahNameForPage(page: number): { name: string; surahNumber: number } |
   return null;
 }
 
-function lastReadingLabel(trend: { localDay: string; pagesRead: number }[]): string {
-  for (let i = trend.length - 1; i >= 0; i -= 1) {
-    if (trend[i].pagesRead > 0) {
-      if (i === trend.length - 1) return 'آخر قراءة: اليوم';
-      if (i === trend.length - 2) return 'آخر قراءة: أمس';
-      return `آخر قراءة: قبل ${toArNum(trend.length - 1 - i)} أيام`;
-    }
-  }
-  return 'لم تبدأ القراءة بعد';
-}
+const HISTORY_WEEKS_INITIAL = 12;
+const HISTORY_WEEKS_STEP = 12;
+const HISTORY_WEEKS_MAX = 52;
 
 /** `DIV-46` draws its stat glyph at 22.2 x 21.3 inside a 40pt chip. */
 const STAT_GLYPH = 22;
-/** `BUTTON-113` draws its toolbar mark at 16.7 x 16 inside a 32pt button. */
-const FORMAT_GLYPH = 16;
 
 export default function LibraryScreen() {
   const { columnStyle } = useResponsiveLayout();
   const controls = useWindowControlsInset();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const notes = useNotesStore((s) => s.notes);
+  const oneLine = useLineClamp(1);
   const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
 
   const [filter, setFilter] = useState<LibraryFilter>('all');
@@ -112,9 +139,6 @@ export default function LibraryScreen() {
   // Wird completion history (US5). Loaded lazily when the السجل pill is active.
   // The window defaults to 12 weeks and grows via the "show more" affordance so
   // multi-year grids are never eagerly rendered.
-  const HISTORY_WEEKS_INITIAL = 12;
-  const HISTORY_WEEKS_STEP = 12;
-  const HISTORY_WEEKS_MAX = 52;
   const [historyWeeks, setHistoryWeeks] = useState(HISTORY_WEEKS_INITIAL);
   const [history, setHistory] = useState<{
     byWeekday: WeekdayCompletion[];
@@ -126,13 +150,16 @@ export default function LibraryScreen() {
   // the scheduler reads), not in local component state. Toggling here persists
   // the preference AND re-arms/cancels the wird reminder horizon (T047).
   //
-  // Routed through `setWirdReminderEnabled` so this toggle has the SAME
-  // permission semantics as the one in settings-notifications. Without it, a
+  // Routed through `setCategoryEnabled` (which delegates the wird category to
+  // `setWirdReminderEnabled`) so every switch here has the SAME permission
+  // semantics as the ones in settings-notifications. Without it, a
   // user who has denied notification permission could switch this on: the
   // preference would persist, the card would render a next-reminder time, and
   // the scheduler would silently arm nothing — the card would be
   // advertising a reminder that can never fire.
-  const wirdReminderOn = useSettingsStore((s) => s.notifications['wird-daily']);
+  const notificationsMap = useSettingsStore((s) => s.notifications);
+  const isCategoryOn = enabledFromMap(NOTIFICATION_CATEGORIES, notificationsMap);
+  const wirdReminderOn = isCategoryOn('wird-daily');
   const wirdReminderTime = useSettingsStore((s) => s.wirdReminderTime);
   const notificationPermission = useNotificationPermission();
   // Once today's goal is met, today's reminder is cancelled, so the caption
@@ -143,26 +170,39 @@ export default function LibraryScreen() {
     permission: notificationPermission,
     goalMetToday,
   });
-  const onToggleWirdReminder = (next: boolean) => {
-    void setWirdReminderEnabled(next).then((outcome) => {
-      if (outcome === 'permission-denied') {
-        Alert.alert(
-          'إذن الإشعارات مطلوب',
-          'لتفعيل التذكير، يرجى السماح بالإشعارات من إعدادات النظام.',
-          [
-            { text: 'إلغاء', style: 'cancel' },
-            {
-              text: 'فتح الإعدادات',
-              onPress: () => {
-                Linking.openSettings().catch(() => {
-                  Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
-                });
-              },
-            },
-          ],
-        );
-      }
-    });
+  // One in-flight change per category: a second tap while the permission
+  // prompt or horizon re-arm is still running is ignored, and a failure leaves
+  // the switch where it was.
+  const pendingToggles = useRef(new Set<NotificationCategoryId>());
+  const onToggleCategory = (id: NotificationCategoryId, next: boolean) => {
+    runSingleFlight(
+      pendingToggles.current,
+      id,
+      () =>
+        setCategoryEnabled(id, next).then((outcome) => {
+          if (outcome === 'permission-denied') {
+            Alert.alert(
+              'إذن الإشعارات مطلوب',
+              'لتفعيل التذكير، يرجى السماح بالإشعارات من إعدادات النظام.',
+              [
+                { text: 'إلغاء', style: 'cancel' },
+                {
+                  text: 'فتح الإعدادات',
+                  onPress: () => {
+                    Linking.openSettings().catch(() => {
+                      showNotice('خطأ', 'تعذّر فتح الإعدادات.');
+                    });
+                  },
+                },
+              ],
+            );
+          }
+        }),
+      (err) => {
+        // The switch stays where it was; only surface the cause in development.
+        if (__DEV__) console.warn('[library] category toggle failed', id, err);
+      },
+    );
   };
 
   useEffect(() => {
@@ -198,6 +238,7 @@ export default function LibraryScreen() {
   const todayPct = useWirdStore((s) => s.todayPct);
   const wirdTarget = useWirdStore((s) => s.target);
   const inProgressLecture = useProgressStore((s) => s.inProgressLecture);
+  const recentCompletedLecture = useProgressStore((s) => s.recentCompletedLecture);
   const completedLectureCount = useProgressStore((s) => s.completedLectureCount);
   const totalPagesRead = useProgressStore((s) => s.totalPagesRead);
   const completedJuzCount = useProgressStore((s) => s.completedJuzCount);
@@ -233,6 +274,9 @@ export default function LibraryScreen() {
   }, [filter, historyWeeks, dbFailed, todayPct, bestDayPages]);
 
   const lastSurah = surahNameForPage(lastReadPage);
+  // The data model holds a page, not an ayah, so the page stays; with no
+  // reading history the line is hidden rather than repeating the line above.
+  const wirdHighlight = wirdHighlightLabel(lastSurah?.name ?? null, lastReadPage, trendLast28, totalPagesRead);
   const monthDeltaPct =
     pagesLastMonth > 0
       ? ((pagesThisMonth - pagesLastMonth) / pagesLastMonth) * 100
@@ -240,27 +284,35 @@ export default function LibraryScreen() {
         ? 100
         : 0;
 
-  // US5: the 'history' (السجل) pill is now live and renders <WirdHistory/>.
-  // Override mock counts with real values from savedStore + notesStore.
-  const realFilters = filters
-    .map((f) => ({
-      ...f,
-      count:
-        f.id === 'all' ? toArNum(savedCount + notes.length) :
-        f.id === 'saved' ? toArNum(savedCount) :
-        f.id === 'notes' ? toArNum(notes.length) :
-        f.count,
-    }));
+  // One card per shipped reminder; a card is armed only when the OS permits it
+  // (see `buildSmartReminders`), and the stat card counts exactly those. The
+  // wird preference is subscribed above (`wirdReminderOn`), which is what
+  // re-renders this on a toggle.
+  const smartReminders = buildSmartReminders({
+    categories: NOTIFICATION_CATEGORIES,
+    isEnabled: isCategoryOn,
+    permission: notificationPermission,
+    now: new Date(),
+    wirdTime: wirdReminderTime,
+    goalMetToday,
+    trend: trendLast28,
+    totalPagesRead,
+    onToggle: onToggleCategory,
+  });
+  const armedReminderCount = smartReminders.filter((r) => r.armed).length;
 
-  // Reminder categories that are both shipped and switched on. Derived from the
-  // notification registry, so the Library never advertises a reminder that has
-  // no scheduler behind it.
-  // Subscribe to the notifications slice so the list re-renders on a toggle;
-  // `isCategoryEnabled` owns the backfill semantics for unregistered ids.
-  useSettingsStore((st) => st.notifications);
-  const activeReminders = NOTIFICATION_CATEGORIES.filter(
-    (category) => category.available && isCategoryEnabled(category.id),
-  );
+  // US5: the 'history' (السجل) pill is now live and renders <WirdHistory/>.
+  // Override mock counts with real values from savedStore + notesStore, and
+  // تذكيراتي with the armed-reminder count the stat card shows.
+  const realFilters = filters.map((f) => ({
+    ...f,
+    count: filterChipCount(f.id, {
+      saved: savedCount,
+      notes: notes.length,
+      completed: completedLectureCount,
+      reminders: armedReminderCount,
+    }),
+  }));
 
   // expo-router typed routes haven't regenerated for the new modals yet — cast to any.
   const openNewNote = (seedTitle?: string) =>
@@ -274,32 +326,22 @@ export default function LibraryScreen() {
     reminders: (
       <StatCard
         title="تذكيراتي"
-        subtitle={
-          activeReminders.length === 0
-            ? 'لا تذكيرات نشطة'
-            : `${toArNum(activeReminders.length)} تذكيرات نشطة`
-        }
-        icon={<FigmaIcon name="LibraryReminders" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+        subtitle={remindersSubtitle(armedReminderCount)}
+        icon={<FigmaIcon name="LibraryReminders" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
     quranWird: (
       <StatCard
         title="ورد القرآن"
-        subtitle={
-          currentStreak === 0
-            ? 'لم تبدأ بعد'
-            : currentStreak === 1
-              ? 'يوم واحد متتالي'
-              : `${toArNum(currentStreak)} يوم متتالي`
-        }
-        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+        subtitle={streakSubtitle(currentStreak)}
+        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
     notes: (
       <StatCard
         title="ملاحظاتي"
-        subtitle={`${toArNum(notes.length)} ملاحظة`}
-        icon={<FigmaIcon name="LibraryNotes" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+        subtitle={notesSubtitle(notes.length)}
+        icon={<FigmaIcon name="LibraryNotes" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
   };
@@ -309,45 +351,53 @@ export default function LibraryScreen() {
   const progressStatCards: Record<LibraryProgressStatKey, React.ReactNode> = {
     lectures: (
       <StatCard
-        title="محاضرات مسموعة"
+        title="المحاضرات"
         subtitle={lecturesListenedSubtitle(listenedLectureCount, completedLectureCount)}
         icon={<HeadphonesGlyph size={STAT_GLYPH} />}
       />
     ),
     juz: (
       <StatCard
-        title="الأجزاء المكتملة"
+        title="الأجزاء"
         subtitle={juzCompletedSubtitle(completedJuzCount)}
-        icon={<FigmaIcon name="SectionQuran" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+        icon={<FigmaIcon name="SectionQuran" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
     pages: (
       <StatCard
-        title="صفحات مقروءة"
+        title="الصفحات"
         subtitle={pagesReadSubtitle(totalPagesRead)}
-        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.navy800} />}
+        icon={<FigmaIcon name="LibraryWird" size={STAT_GLYPH} color={KhazainColors.goldAccent} />}
       />
     ),
   };
 
-  const audiobookProgressCard = inProgressLecture ? (
+  // The data model has no episode position or series length, so the card's
+  // «الحلقة n من m» meta is omitted until it can be stated truthfully.
+  // Hands the lecture to the player store with its starting position. The
+  // position goes in through `setTrack`'s initial progress, which restores it
+  // WITHOUT firing a lecture tick (a tick would rewrite position and
+  // last-listened as if the reader had listened).
+  const showLectureInPlayer = (lecture: LectureSession, fromStart: boolean) => {
+    const player = usePlayerStore.getState();
+    player.setTrack(
+      {
+        id: lecture.lectureId,
+        title: lecture.title,
+        reciter: lecture.author,
+        durationSec: lecture.durationSec,
+      },
+      !fromStart && lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0,
+    );
+    player.setVisible(true);
+  };
+
+  const inProgressCard = inProgressLecture ? (
     (() => {
       const lecture = inProgressLecture;
       const pct = lecture.durationSec > 0
         ? Math.min(100, Math.round((lecture.positionSec / lecture.durationSec) * 100))
         : 0;
-      const resume = () => {
-        usePlayerStore.getState().setTrack({
-          id: lecture.lectureId,
-          title: lecture.title,
-          reciter: lecture.author,
-          durationSec: lecture.durationSec,
-        });
-        usePlayerStore.getState().setProgress(
-          lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0,
-        );
-        usePlayerStore.getState().setVisible(true);
-      };
       return (
         <AudioProgressCard
           title={lecture.title}
@@ -356,7 +406,7 @@ export default function LibraryScreen() {
           subtitle={`${toArNum(pct)}٪ مكتمل`}
           primaryLabel="متابعة"
           secondaryLabel="إضافة ملاحظة"
-          onPrimary={resume}
+          onPrimary={() => showLectureInPlayer(lecture, false)}
           onSecondary={() => {
             // Linked to the saved second. A session whose id is not an episode
             // id cannot be linked, so it keeps the old title-seeded note.
@@ -367,8 +417,38 @@ export default function LibraryScreen() {
         />
       );
     })()
+  ) : null;
+
+  // The most recently finished lecture: full track, gold «مراجعة».
+  const completedCard = recentCompletedLecture ? (
+    <AudioProgressCard
+      variant="completed"
+      title={recentCompletedLecture.title}
+      author={recentCompletedLecture.author}
+      pct={100}
+      subtitle="مكتمل"
+      primaryLabel="مراجعة"
+      secondaryLabel="عرض الملاحظات"
+      onPrimary={() => showLectureInPlayer(recentCompletedLecture, true)}
+      onSecondary={() => router.push('/notes-viewer' as any)}
+    />
+  ) : null;
+
+  // Under المكتمل the section is the completed card alone (or an empty state);
+  // otherwise it shows whichever real cards exist, and the empty card only when
+  // there is neither an in-progress nor a completed lecture.
+  const audiobookView = audiobookCardsFor(filter, inProgressLecture, recentCompletedLecture);
+  const audiobookProgressCard = audiobookView.empty ? (
+    audiobookView.empty === 'completed' ? (
+      <EmptyState message="لا توجد محاضرات مكتملة بعد" />
+    ) : (
+      <EmptyInProgressCard onBrowse={() => router.push('/(tabs)/sections/scholar' as any)} />
+    )
   ) : (
-    <EmptyInProgressCard onBrowse={() => router.push('/(tabs)/sections/scholar' as any)} />
+    <View style={styles.audiobookStack}>
+      {audiobookView.inProgress ? inProgressCard : null}
+      {audiobookView.completed ? completedCard : null}
+    </View>
   );
 
   // Rendered from LIBRARY_SECTION_ORDER so the reference hierarchy is a
@@ -432,40 +512,28 @@ export default function LibraryScreen() {
               <Text style={styles.wirdTitle}>ورد القرآن اليومي</Text>
             </View>
           </View>
-          {/* Physical left → right: "بدء الورد", then the reading summary. */}
-          <View style={styles.wirdActions}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="بدء الورد"
-              onPress={() =>
-                router.push({
-                  pathname: '/(tabs)/sections/mushaf' as any,
-                  params: lastSurah ? { surah: String(lastSurah.surahNumber) } : {},
-                })
-              }
-              style={({ pressed }) => [styles.startBtn, { opacity: pressed ? 0.85 : 1 }]}
-            >
-              <Text style={styles.startBtnLabel}>بدء الورد</Text>
-            </Pressable>
-            <View style={{ flex: 1 }} />
-            <View>
-              <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28)}</Text>
-              <Text style={styles.wirdHighlight}>
-                {lastSurah
-                  ? `سورة ${lastSurah.name} — صفحة ${toArNum(lastReadPage)}`
-                  : 'لم تبدأ القراءة بعد'}
-              </Text>
-            </View>
-          </View>
+          <WirdStartRow
+            style={styles.wirdActions}
+            meta={lastReadingLabel(trendLast28, totalPagesRead)}
+            highlight={wirdHighlight}
+            onStart={() =>
+              router.push({
+                pathname: '/(tabs)/sections/mushaf' as any,
+                params: lastSurah ? { surah: String(lastSurah.surahNumber) } : {},
+              })
+            }
+          />
           {/* Physical left → right: the toggle, then its label. */}
           <View style={styles.reminderInline}>
-            <Toggle on={reminder.armed} onChange={onToggleWirdReminder} label="التذكير اليومي" />
-            <View style={{ flex: 1 }} />
+            <Toggle on={reminder.armed} onChange={(next) => onToggleCategory('wird-daily', next)} label="التذكير اليومي" />
             <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
           </View>
           {/* The design has no frame for a blocked reminder, so this line is
               drawn only when there is something the reader has to act on. */}
-          {reminder.caption ? (
+          {/* Product decision: the frame draws no line under the toggle, so the
+              caption shows only when the reminder is NOT armed (off, or the OS
+              permission is missing). The reminder card carries «التذكير التالي». */}
+          {reminder.caption && !reminder.armed ? (
             <Text style={styles.wirdReminderNext}>{reminder.caption}</Text>
           ) : null}
         </View>
@@ -495,31 +563,25 @@ export default function LibraryScreen() {
               <Text style={styles.noteSaveLabel}>حفظ</Text>
             </Pressable>
             <View style={{ flex: 1 }} />
-            <FormatBtn>
-              <FigmaIcon name="NoteListFormat" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
-            </FormatBtn>
-            <FormatBtn>
-              <FigmaIcon name="NoteItalic" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
-            </FormatBtn>
-            <FormatBtn>
-              <FigmaIcon name="NoteBold" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
-            </FormatBtn>
+            <FormatButton mark="NoteListFormat" accessibilityLabel="قائمة" />
+            <FormatButton mark="NoteItalic" accessibilityLabel="مائل" />
+            <FormatButton mark="NoteBold" accessibilityLabel="عريض" />
           </View>
           <View style={styles.recentBlock}>
             <Text style={styles.recentHeader}>آخر الملاحظات</Text>
             {notes.length === 0 ? (
               <Text style={styles.recentEmpty}>لا توجد ملاحظات بعد</Text>
             ) : (
-              notes.slice(0, 3).map((n) => (
+              notes.slice(0, 3).map((n, i) => (
                 <Pressable
                   key={n.id}
                   accessibilityRole="button"
                   accessibilityLabel={n.title}
                   onPress={() => openExistingNote(n.id)}
-                  style={styles.recentRow}
+                  style={[styles.recentRow, i > 0 && styles.recentRowGap]}
                 >
                   <Text style={styles.recentTime}>{formatRelativeAr(n.updatedAt)}</Text>
-                  <Text style={styles.recentTitle} numberOfLines={1}>
+                  <Text style={styles.recentTitle} numberOfLines={oneLine}>
                     {n.title}
                   </Text>
                 </Pressable>
@@ -553,14 +615,16 @@ export default function LibraryScreen() {
                 accessibilityRole="button"
                 accessibilityState={{ selected: active }}
                 accessibilityLabel={f.label}
-                onPress={() => setFilter(f.id as LibraryFilter)}
+                onPress={() => setFilter(f.id)}
                 style={[styles.filterPill, active && styles.filterPillActive]}
               >
                 {/* The frame sets the label at 14 and the count at 12, with a
                     12pt gap — physical left → right: count, then label. */}
-                <Text style={[styles.filterCount, active && styles.filterLabelActive]}>
-                  {f.count}
-                </Text>
+                {f.count ? (
+                  <Text style={[styles.filterCount, active && styles.filterLabelActive]}>
+                    {f.count}
+                  </Text>
+                ) : null}
                 <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
                   {f.label}
                 </Text>
@@ -571,25 +635,29 @@ export default function LibraryScreen() {
       </AsyncContent>
     ),
 
+    // The file draws the قوائم التشغيل chip but the app has no playlists yet, so
+    // the chip opens an honest empty state instead of being a no-op.
+    playlists: (
+      <View style={styles.block}>
+        <EmptyState message="لا توجد قوائم تشغيل بعد" />
+      </View>
+    ),
+
     savedList: <MySavedSection />,
 
     audiobookProgress: (
       <>
-        <Text style={styles.sectionTitle}>تقدم الكتب المسموعة</Text>
-        <View style={styles.block}>{audiobookProgressCard}</View>
+        <SectionTitle>تقدم الكتب المسموعة</SectionTitle>
+        <View style={styles.blockAfterTitle}>{audiobookProgressCard}</View>
       </>
     ),
 
     smartReminders: (
       <>
-        <Text style={styles.sectionTitle}>التذكيرات الذكية</Text>
+        <SectionTitle paddingBottom={12}>التذكيرات الذكية</SectionTitle>
         <View style={styles.block}>
           <ReminderList
-            reminders={activeReminders.map((c) => ({
-              id: c.id,
-              labelAr: c.labelAr,
-              descriptionAr: c.descriptionAr,
-            }))}
+            reminders={smartReminders}
             onManage={() => router.push('/settings-notifications' as any)}
           />
         </View>
@@ -646,7 +714,7 @@ export default function LibraryScreen() {
       />
     ) : null,
 
-    // Physical left → right: محاضرات مسموعة، الأجزاء المكتملة، صفحات مقروءة.
+    // Physical left → right: المحاضرات، الأجزاء، الصفحات.
     progressStats: (
       <View style={styles.statsRow}>
         {LIBRARY_PROGRESS_STAT_ORDER.map((key) => (
@@ -658,6 +726,7 @@ export default function LibraryScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
+      <HeaderArt corners="pair" smallCorner="library" bandHeight={headerBandHeight(insets.top, 'root')} />
       <ScrollView
         contentContainerStyle={[{ paddingBottom: 24 }, columnStyle]}
         showsVerticalScrollIndicator={false}
@@ -673,16 +742,21 @@ export default function LibraryScreen() {
 // ── Small inline components / glyphs ──
 
 /**
- * A button in the quick-note toolbar — nodes `BUTTON-113` / `BUTTON-116` /
- * `BUTTON-119` on 2031:4659, all 32 at radius 16 on `#FCFAF8`. The file draws
- * all three marks, including the bold and italic ones the app had been setting
- * as styled letters.
+ * A block heading. The wrapper is pinned so the title's right alignment is the
+ * physical right: a bare right-aligned Text in an unpinned RTL container lands
+ * on the physical left.
  */
-function FormatBtn({ children }: { children: React.ReactNode }) {
+function SectionTitle({
+  children,
+  paddingBottom = 8,
+}: {
+  children: string;
+  paddingBottom?: number;
+}) {
   return (
-    <Pressable style={({ pressed }) => [formatStyles.btn, { opacity: pressed ? 0.75 : 1 }]}>
-      {children}
-    </Pressable>
+    <View style={[styles.sectionTitleBox, { paddingBottom }]}>
+      <Text style={styles.sectionTitle}>{children}</Text>
+    </View>
   );
 }
 
@@ -691,7 +765,7 @@ function HeadphonesGlyph({ size = 16 }: { size?: number }) {
     <Svg width={size} height={size} viewBox="0 0 20 20" fill="none">
       <Path
         d="M4 10V8a6 6 0 0112 0v2M4 10v3a2 2 0 002 2h1v-5H4zm12 0v3a2 2 0 01-2 2h-1v-5h3z"
-        stroke={KhazainColors.navy800}
+        stroke={KhazainColors.goldAccent}
         strokeWidth={1.5}
       />
     </Svg>
@@ -705,46 +779,41 @@ const styles = StyleSheet.create({
     ...PHYSICAL_BOX,
     paddingHorizontal: LIBRARY_DESIGN.sideMargin,
     paddingTop: 8,
-    paddingBottom: 16,
+    // h1 keeps its 28pt line; 12 below it puts the field where the frame does.
+    paddingBottom: 12,
     alignItems: 'flex-end',
   },
   // The frame sets the page title in the body face, not the display face:
   // TheMixArab Regular 18 in ink, where every heading below it is
   // TheSansArabic Bold.
   h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
-  searchBlock: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, paddingBottom: 8 },
+  // The search field ends at y=128 and the stat cards start at 160: a 32 gap.
+  searchBlock: {
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom + LIBRARY_SEARCH_MARGIN_BELOW,
+  },
+  // No frame covers the failure banner; geometry is the Library contract.
   dbErrorBanner: {
-    marginHorizontal: 14,
+    ...PHYSICAL_BOX,
+    marginHorizontal: LIBRARY_DESIGN.sideMargin,
     marginBottom: 14,
     padding: 14,
-    borderRadius: 14,
-    backgroundColor: KhazainColors.cream100,
+    borderRadius: LIBRARY_CARD_RADIUS,
+    backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.25)',
-    alignItems: 'center',
+    borderColor: KhazainColors.hairline,
+    alignItems: 'stretch',
     gap: 10,
   },
-  dbErrorText: {
-    fontSize: 13,
-    color: KhazainColors.ink700,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
+  dbErrorText: textStyle('bodyCompact', { color: KhazainColors.ink700, textAlign: 'center' }),
   dbErrorBtn: {
+    alignSelf: 'center',
     paddingVertical: 8,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
   },
-  dbErrorBtnLabel: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
+  dbErrorBtnLabel: textStyle('cardTitle', { color: KhazainColors.pageBg, textAlign: 'center' }),
   statsRow: {
     ...PHYSICAL_ROW,
     gap: STAT_CARD.gap,
@@ -752,6 +821,10 @@ const styles = StyleSheet.create({
     marginBottom: LIBRARY_SECTION_GAP,
   },
   block: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, marginBottom: LIBRARY_SECTION_GAP },
+  audiobookStack: { gap: AUDIOBOOK_CARD_GAP },
+  // The audiobook block sits 16 above the next block title (LIBRARY-20), not
+  // the 40 that separates two top-level sections.
+  blockAfterTitle: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, marginBottom: 16 },
   sparklineBlock: {
     marginTop: 12,
     alignItems: 'stretch',
@@ -759,6 +832,7 @@ const styles = StyleSheet.create({
   // Every card in the frame is a flat fill with a 1pt hairline. None of them
   // casts a shadow, so none is drawn with one.
   card: {
+    ...PHYSICAL_BOX,
     padding: 16,
     borderRadius: LIBRARY_CARD_RADIUS,
     backgroundColor: KhazainColors.cardBg,
@@ -770,6 +844,7 @@ const styles = StyleSheet.create({
   // The frame's vertical rhythm inside the card: 16 above the 48pt ring, 14
   // to the 36pt button row, 14 to the toggle, 12 below.
   wirdCard: {
+    ...PHYSICAL_BOX,
     paddingHorizontal: WIRD_CARD.padding,
     paddingTop: 16,
     paddingBottom: 12,
@@ -779,32 +854,14 @@ const styles = StyleSheet.create({
   // Physical left → right: progress ring, then the reading summary.
   wirdTop: { ...PHYSICAL_ROW, alignItems: 'center', gap: 14 },
   wirdTitle: textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
-  wirdMeta: textStyle('cardTitle', { color: KhazainColors.inkTitle }),
-  wirdHighlight: {
-    ...textStyle('label', { color: KhazainColors.ink500 }),
-    marginTop: 4,
-  },
-  // Physical left → right: بدء الورد, spacer, daily-reminder toggle.
-  wirdActions: {
-    ...PHYSICAL_ROW,
-    marginTop: 14,
-    alignItems: 'flex-start',
-  },
-  startBtn: {
-    height: 36,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: KhazainColors.navy800,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  startBtnLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
+  // The start button and reading summary row; its layout lives in WirdStartRow.
+  wirdActions: { marginTop: 14 },
   reminderInline: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
     marginTop: 14,
   },
-  reminderInlineLabel: textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  reminderInlineLabel: { flex: 1, ...textStyle('cardTitle', { color: KhazainColors.ink500 }) },
   wirdReminderNext: {
     ...textStyle('label', { color: KhazainColors.gold600 }),
     marginTop: 8,
@@ -816,6 +873,7 @@ const styles = StyleSheet.create({
   // The frame inverts the usual pairing here: the card takes the page colour
   // and the field inside it is the lighter surface.
   quickNoteCard: {
+    ...PHYSICAL_BOX,
     padding: QUICK_NOTE_CARD.padding,
     paddingTop: 17,
     paddingBottom: QUICK_NOTE_CARD.paddingBottom,
@@ -825,6 +883,7 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.hairline,
   },
   noteBody: {
+    ...PHYSICAL_BOX,
     backgroundColor: KhazainColors.cardBg,
     borderRadius: NOTE_FIELD.radius,
     borderWidth: 1,
@@ -833,7 +892,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingTop: 12,
   },
-  noteBodyPlaceholder: textStyle('cardTitle', { color: KhazainColors.ink400 }),
+  noteBodyPlaceholder: textStyle('cardTitle', { color: KhazainColors.placeholder }),
   // Physical left → right: حفظ, spacer, then the format buttons at the right.
   noteToolbar: {
     ...PHYSICAL_ROW,
@@ -850,36 +909,48 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   noteSaveLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
-  // DIV-122 carries no rule; the design separates the block with space.
+  // The recent-notes block opens with a 1pt hairline rule, 12 below the
+  // toolbar and 13 above its heading. The last row ends flush with the card's
+  // 24pt bottom padding, so the block carries no bottom padding of its own.
   recentBlock: {
+    ...PHYSICAL_BOX,
     marginTop: 12,
-    paddingBottom: 16,
+    paddingTop: 13,
+    borderTopWidth: 1,
+    borderTopColor: KhazainColors.hairlineFaint,
   },
   recentHeader: {
     ...textStyle('cardTitle', { color: KhazainColors.ink500 }),
     marginBottom: 8,
   },
   // Physical left → right: relative time, then the note title at the right.
-  // DIV-127/134: each recent note is its own 36pt card, not a bare row.
+  // DIV-127/134: each recent note is its own 36pt card, not a bare row. 36 is a
+  // floor (as in note-editor), so an enlarged title wraps and the card grows.
   recentRow: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    justifyContent: 'space-between',
-    height: 36,
-    marginBottom: RECENT_NOTE_ROW.gap,
+    minHeight: RECENT_NOTE_ROW.height,
     paddingHorizontal: 8,
+    // Inside the 36 at the default scale (21 + 8); only a wrapped title uses it.
+    paddingVertical: 4,
+    // Keeps a long title off the time, as in note-editor; a short one is unmoved.
+    gap: 8,
     borderRadius: RECENT_NOTE_ROW.radius,
     backgroundColor: KhazainColors.cardBg,
   },
-  recentTitle: textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  // Between rows only, so the last row ends on the card's bottom padding.
+  recentRowGap: { marginTop: RECENT_NOTE_ROW.gap },
+  // Full width, right-aligned by the role: a shrink-wrapped Arabic title loses
+  // its last word on Android 15, and an unclamped one needs a bounded width.
+  recentTitle: {
+    flex: 1,
+    minWidth: 0,
+    ...textStyle('cardTitle', { color: KhazainColors.ink500 }),
+  },
   recentTime: textStyle('label', { color: KhazainColors.ink500 }),
   recentEmpty: {
-    color: KhazainColors.ink400,
-    fontSize: 12,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-    paddingVertical: 6,
+    ...textStyle('caption', { color: KhazainColors.ink400 }),
+    paddingTop: 6,
   },
   filtersRow: {
     gap: FILTER_CHIP.gap,
@@ -902,34 +973,14 @@ const styles = StyleSheet.create({
   filterLabel: textStyle('cardTitle', { color: KhazainColors.ink500 }),
   filterCount: textStyle('label', { color: KhazainColors.ink500 }),
   filterLabelActive: { color: KhazainColors.pageBg },
-  sectionTitle: {
-    ...textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
+  sectionTitleBox: {
+    ...PHYSICAL_BOX,
     paddingHorizontal: LIBRARY_DESIGN.sideMargin,
-    paddingBottom: 8,
   },
+  sectionTitle: textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
   historyLoading: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.ink400,
-    writingDirection: 'rtl',
-    textAlign: 'center',
+    ...textStyle('caption', { color: KhazainColors.ink400, textAlign: 'center' }),
     paddingVertical: 24,
   },
 });
 
-const formatStyles = StyleSheet.create({
-  // BUTTON-113/116/119: 32 x 32 discs on the card's lighter surface.
-  btn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: KhazainColors.cardBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    fontFamily: 'System',
-    fontSize: 13,
-    color: KhazainColors.ink700,
-  },
-});

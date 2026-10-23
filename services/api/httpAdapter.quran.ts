@@ -24,6 +24,7 @@ export const quranAdapter: ContentService['quran'] = {
     return { data: result.data.items, etag: result.etag };
   },
 
+  // Contract: `Ayah.text` carries no basmala prefix (see `Ayah` in types/content.ts).
   async listAyahs(surahId, opts?: CacheOpts) {
     const result = await request<Paged<Ayah>>({
       path: `/v1/surahs/${surahId}/ayat`,

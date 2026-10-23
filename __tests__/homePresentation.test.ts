@@ -1,10 +1,12 @@
 import {
   HOME_QUICK_CHIPS,
   HOME_SECTION_GAP,
+  homeHeaderBand,
+  homeSectionGap,
   HOME_SECTION_ORDER,
   type HomeSectionKey,
 } from '@/constants/homePresentation';
-import { CONTENT_MAX_WIDTH, responsiveCarouselCardWidth } from '@/constants/layout';
+import { CONTENT_MAX_WIDTH, HEADER_BAND, responsiveCarouselCardWidth } from '@/constants/layout';
 
 /**
  * The Home screen renders straight from HOME_SECTION_ORDER, so this array is
@@ -39,14 +41,21 @@ describe('Home section order', () => {
   it('uses one vertical rhythm between sections', () => {
     expect(HOME_SECTION_GAP).toBe(24);
   });
+
+  it('closes the search-to-Quran-hero gap to the 16 the file states (HOME-14)', () => {
+    expect(homeSectionGap('quranHero')).toBe(16);
+    expect(homeSectionGap('prophetHero')).toBe(24);
+    expect(homeSectionGap('queen')).toBe(24);
+    expect(homeSectionGap('dawah')).toBe(24);
+  });
 });
 
 describe('Home quick chips', () => {
   it('lists the three Figma chips in physical left-to-right order', () => {
     expect(HOME_QUICK_CHIPS.map((chip) => chip.label)).toEqual([
-      'كتب صوتية',
-      'برامج إذاعية',
       'حصريات خزائن الرحمن',
+      'برامج إذاعية',
+      'كتب صوتية',
     ]);
   });
 
@@ -58,9 +67,9 @@ describe('Home quick chips', () => {
   it('routes every chip at a real section screen', () => {
     // The audit found chips that rendered but went nowhere.
     expect(HOME_QUICK_CHIPS.map((chip) => [chip.id, chip.route])).toEqual([
-      ['audiobooks', '/sections/audiobooks'],
-      ['radio', '/sections/radio'],
       ['exclusive', '/sections/exclusive'],
+      ['radio', '/sections/radio'],
+      ['audiobooks', '/sections/audiobooks'],
     ]);
   });
 });
@@ -81,5 +90,37 @@ describe('Home carousel width', () => {
     expect(responsiveCarouselCardWidth(CONTENT_MAX_WIDTH, 'scholar')).toBe(
       responsiveCarouselCardWidth(1024, 'scholar'),
     );
+  });
+});
+
+describe('Featured dawah posters', () => {
+  // The scroll axis runs right-to-left, so the poster after the focused one
+  // sits on its LEFT. The file shows «هدايات» left of centre and
+  // «موعظة الصباح» right of it (HOME-17).
+  it('orders the home posters so the next one lands on the left', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { FEATURED_DAWAH } = require('@/data/content/dawah');
+    expect(FEATURED_DAWAH.map((p: { id: string }) => p.id)).toEqual([
+      'home-laylat',
+      'home-helal',
+      'home-mawiza',
+    ]);
+  });
+});
+
+describe('Home header band', () => {
+  // Frame 2001:940's header is 110 tall under the status bar around a 102pt
+  // content (54 row + 8 + 40 pill): 8pt of its own below.
+  it('is the frame’s 110 at the design header height', () => {
+    expect(homeHeaderBand(47, 102)).toBe(47 + 110);
+    expect(homeHeaderBand(0, 102)).toBe(HEADER_BAND.home);
+  });
+
+  it('grows with the header at large text instead of leaving tile showing under it', () => {
+    expect(homeHeaderBand(47, 118)).toBe(47 + 118 + 8);
+  });
+
+  it('never shrinks below the frame', () => {
+    expect(homeHeaderBand(0, 90)).toBe(110);
   });
 });

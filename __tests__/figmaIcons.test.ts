@@ -78,7 +78,7 @@ describe('the generated icon set', () => {
     // The extractor cannot reach a raster paint, and a placeholder is not an
     // icon. Both are decisions, so both are written down rather than inferred
     // from the set being short.
-    const skipped = MANIFEST.notDrawn as ReadonlyArray<{ name: string; node: string; why: string }>;
+    const skipped = MANIFEST.notDrawn as readonly { name: string; node: string; why: string }[];
     expect(skipped.length).toBeGreaterThan(0);
     for (const s of skipped) {
       expect(s.node).toMatch(/^\d+:\d+$/);
@@ -143,6 +143,124 @@ describe('the generated icon set', () => {
       const y = Number(first.d.match(/^M[-\d.]+ ([-\d.]+)/)![1]);
       expect(y).toBeLessThan(1);
     });
+  });
+
+  // MORE-04: an instance override that clears a pre-outlined vuesax vector's
+  // fill and sets a stroke means "the outline, in this colour". The stroke of
+  // that already-outlined ring is ~2 units wide and printed as a solid block.
+  describe('an override that swaps a pre-outlined fill for a stroke colour', () => {
+    const { collectPaths } = require('../scripts/figma/vector.js');
+    const blobOf = (pts: readonly (readonly [number, number])[]) => {
+      const b = Buffer.alloc(pts.length * 9 + 1);
+      let o = 0;
+      pts.forEach(([x, y], i) => {
+        b.writeUInt8(i === 0 ? 1 : 2, o); o += 1;
+        b.writeFloatLE(x, o); o += 4;
+        b.writeFloatLE(y, o); o += 4;
+      });
+      b.writeUInt8(0, o);
+      return { bytes: b };
+    };
+    const navy = { type: 'SOLID', visible: true, color: { r: 0, g: 0, b: 1, a: 1 } };
+    const grey = { type: 'SOLID', visible: true, color: { r: 0.5, g: 0.5, b: 0.5, a: 1 } };
+    const g = (localID: number) => ({ sessionID: 1, localID });
+
+    const run = (overrideFill: unknown[] | undefined) => {
+      const master = { guid: g(10), type: 'SYMBOL', size: { x: 24, y: 24 } };
+      const vec = {
+        guid: g(11), type: 'VECTOR', size: { x: 24, y: 24 },
+        transform: { m00: 1, m01: 0, m02: 0, m10: 0, m11: 1, m12: 0 },
+        fillPaints: [grey],
+        fillGeometry: [{ commandsBlob: 0, windingRule: 'ODD' }],
+      };
+      const inst = {
+        guid: g(12), type: 'INSTANCE', size: { x: 20, y: 20 },
+        symbolData: {
+          symbolID: g(10),
+          symbolOverrides: [{
+            guidPath: { guids: [g(11)] },
+            ...(overrideFill ? { fillPaints: overrideFill } : {}),
+            strokePaints: [navy],
+          }],
+        },
+        derivedSymbolData: [{
+          guidPath: { guids: [g(11)] },
+          strokeGeometry: [{ commandsBlob: 1, windingRule: 'NONZERO' }],
+        }],
+      };
+      const nodes = [master, vec, inst];
+      const byGuid = Object.assign(
+        new Map(nodes.map((n) => [`${n.guid.sessionID}:${n.guid.localID}`, n])),
+        { blobs: [blobOf([[1, 1], [9, 1], [9, 9]]), blobOf([[0, 0], [30, 0], [30, 30]])] },
+      );
+      const childrenOf = (k: string) => (k === '1:10' ? [vec] : []);
+      return collectPaths(inst, { byGuid, childrenOf });
+    };
+
+    it('draws the thin outline ring in the stroke colour, not the thick stroke of it', () => {
+      const paths = run([]);
+      expect(paths).toHaveLength(1);
+      expect(paths[0].d).toBe('M1 1L9 1L9 9Z');
+      expect(paths[0].fill).toBe('#0000FF');
+      expect(paths[0].fillRule).toBe('evenodd');
+    });
+
+    it('still draws the stroke outline when the fill was not cleared', () => {
+      const paths = run(undefined);
+      expect(paths.map((p: { d: string }) => p.d)).toEqual(['M1 1L9 1L9 9Z', 'M0 0L30 0L30 30Z']);
+    });
+  });
+
+  describe('the manifest options bare, crop and exclude', () => {
+    const { collectPaths } = require('../scripts/figma/vector.js');
+    const blob = (() => {
+      const b = Buffer.alloc(9 * 3 + 1);
+      [[1, 10, 10], [2, 20, 10], [2, 20, 20]].forEach(([op, x, y], i) => {
+        b.writeUInt8(op, i * 9);
+        b.writeFloatLE(x, i * 9 + 1);
+        b.writeFloatLE(y, i * 9 + 5);
+      });
+      return { bytes: b };
+    })();
+    const g = (localID: number) => ({ sessionID: 2, localID });
+    const paint = (r: number) => [{ type: 'SOLID', visible: true, color: { r, g: 0, b: 0, a: 1 } }];
+    const shape = (id: number, r: number) => ({
+      type: 'VECTOR', guid: g(id), size: { x: 30, y: 30 },
+      transform: { m00: 1, m01: 0, m02: 0, m10: 0, m11: 1, m12: 0 },
+      fillPaints: paint(r), fillGeometry: [{ commandsBlob: 0, windingRule: 'NONZERO' }],
+    });
+    const root = { ...shape(1, 0), type: 'FRAME', size: { x: 60, y: 60 } };
+    const kids = [shape(2, 1), shape(3, 0.5)];
+    const run = (opts: object) => {
+      const byGuid = Object.assign(new Map(), { blobs: [blob] });
+      return collectPaths(root, { byGuid, childrenOf: (k: string) => (k === '2:1' ? kids : []) }, opts);
+    };
+
+    it('bare drops the root\'s own paint and keeps the contents', () => {
+      expect(run({})).toHaveLength(3);
+      expect(run({ bare: true })).toHaveLength(2);
+    });
+
+    it('crop moves the origin to the rectangle', () => {
+      expect(run({ bare: true, crop: { x: 4, y: 6, width: 20, height: 20 } })[0].d)
+        .toBe('M6 4L16 4L16 14Z');
+    });
+
+    it('exclude skips a subtree by guid', () => {
+      const paths = run({ bare: true, exclude: ['2:2'] });
+      expect(paths).toHaveLength(1);
+      expect(paths[0].fill).toBe('#800000');
+    });
+  });
+
+  it('draws the archive book as a thin outline, not a solid block', () => {
+    // The ring is an outer and an inner contour (wound opposite ways, so the
+    // inside is left open) about 1.25pt apart; its stroke outline spans the
+    // whole box and rendered as a solid navy slab.
+    const [ring] = FIGMA_ICONS.MoreArchive.paths;
+    expect(ring.d.match(/M/g)).toHaveLength(2);
+    expect(ring.d).toContain('M7.04 2.5'); // the inner contour exists
+    expect(ring.fill).toBe('#184B76');
   });
 
   // The generator is the only writer of `figmaIcons.ts`. If someone edits the
@@ -216,7 +334,7 @@ describe('the header art the frames lay over the page', () => {
   it('draws the file\'s art rather than the prototype\'s CSS tile', () => {
     const src = fs.readFileSync(path.join(ROOT, 'components/khazain/patterns/HeaderArt.tsx'), 'utf8');
     expect(src).toContain('pattern-geometric-on-page.png');
-    expect(src).toContain('ornament-corner-on-page.png');
+    expect(src).toContain('ornament-corner-overlay.png');
     // No opacity is guessed: the blend is resolved at build time.
     expect(src).not.toMatch(/opacity[:=]\s*\{?[\d.]/);
   });
@@ -230,12 +348,65 @@ describe('the header art the frames lay over the page', () => {
       // 2031:5675 is a tab root and carries the pair of corner motifs; the
       // 22-10 device audit caught it painting a bare ground.
       'app/(tabs)/sections/index.tsx',
+      // 2031:4659 is the other tab root with the pair and the library corner.
+      'app/(tabs)/library.tsx',
+      // 2207:17898 (index) and 2349:829 / 2349:982 (reader) lay the art too.
+      'app/(tabs)/sections/mushaf.tsx',
     ];
     for (const file of screens) {
       const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
       expect([file, src.includes('OrnamentPattern')]).toEqual([file, false]);
       expect([file, src.includes('HeaderArt')]).toEqual([file, true]);
     }
+  });
+
+  // Every frame below carries `Vector Smart Object` and `Shape 2 copy`, and paints
+  // its StatusBar + Header opaque above the tile. Band kind follows the frame's
+  // `Frame 4header` (137 = search, 81 = inline, 155 = home); a pushed screen has the
+  // single corner, a tab root the pair. Qiraat (2457:954) has none of it.
+  it('mounts the header art on every screen whose frame has it, with that frame\'s band', () => {
+    const sub = (f: string) => `app/(tabs)/sections/${f}.tsx`;
+    const cases: [string, 'search' | 'inline' | 'home', 'single' | 'pair'][] = [
+      ['app/(tabs)/index.tsx', 'home', 'pair'], // 2001:940
+      [sub('reciter'), 'search', 'single'], // 2031:6193, 2102:3187
+      [sub('reciter/[id]'), 'search', 'single'], // 2207:5270
+      [sub('scholar'), 'search', 'single'], // 2102:2975
+      [sub('scholar/[id]'), 'search', 'single'], // 2510:1990
+      [sub('prophet'), 'search', 'single'], // 2465:1911
+      [sub('queen'), 'search', 'single'], // 2589:1772
+      [sub('books'), 'search', 'single'], // 2597:2552
+      [sub('radio'), 'search', 'single'], // 2606:3830
+      ['components/khazain/sections/RailedLectureList.tsx', 'search', 'single'], // 2869:2088, 2869:2306
+      [sub('dawah'), 'inline', 'single'], // 2120:942
+      [sub('dawah/[month]'), 'inline', 'single'], // 2120:1857
+    ];
+    for (const [file, kind, corners] of cases) {
+      const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
+      expect([file, src.includes('OrnamentPattern')]).toEqual([file, false]);
+      expect([file, src.includes('<HeaderArt')]).toEqual([file, true]);
+      // Home's band follows the measured header (homeHeaderBand), not a font scale.
+      const band =
+        kind === 'home'
+          ? 'homeHeaderBand(insets.top, headerHeight)'
+          : `headerBandHeight(insets.top, '${kind}', fontScale)`;
+      expect([file, src.includes(band)]).toEqual([file, true]);
+      if (corners === 'single') expect([file, src.includes('corners="single"')]).toEqual([file, true]);
+      else expect([file, src.includes('smallCorner="home"')]).toEqual([file, true]);
+    }
+    const qiraat = fs.readFileSync(path.join(ROOT, sub('qiraat')), 'utf8');
+    expect(qiraat.includes('HeaderArt')).toBe(false);
+  });
+
+  it('insets the scholar detail header art to the title (gutter + 16 in split pane, 16 otherwise)', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'app/(tabs)/sections/scholar/[id].tsx'), 'utf8');
+    expect(src).toMatch(/inset=\{\(splitPadding\?\.paddingRight \?\? 0\) \+ 16\}/);
+  });
+
+  it('lays the Library root band (2031:4659) as the first child of the screen', () => {
+    const src = fs.readFileSync(path.join(ROOT, 'app/(tabs)/library.tsx'), 'utf8');
+    expect(src).toMatch(
+      /<SafeAreaView[^>]*>\s*<HeaderArt corners="pair" smallCorner="library" bandHeight=\{headerBandHeight\(insets\.top, 'root'\)\} \/>/,
+    );
   });
 });
 
@@ -268,6 +439,7 @@ describe('the consumers draw each mark the way the file instances it', () => {
     for (const file of [
       'components/khazain/sections/ReciterSurahRow.tsx',
       'components/khazain/primitives/MiniPlayer.tsx',
+      'components/khazain/onboarding/PreviewButton.tsx',
     ]) {
       expect(read(file)).toMatch(/name="Play"[^/>]*mirrored/);
     }
@@ -287,6 +459,11 @@ describe('the consumers draw each mark the way the file instances it', () => {
       /name="Pause"[^/>]*/,
     )?.[0] ?? '';
     expect(pause).not.toMatch(/mirrored/);
+    const preview = read('components/khazain/onboarding/PreviewButton.tsx').match(
+      /name="Pause"[^/>]*/,
+    )?.[0] ?? '';
+    expect(preview).toMatch(/name="Pause"/);
+    expect(preview).not.toMatch(/mirrored/);
   });
 
   it('applies the flip as an SVG transform, not an RN style transform', () => {
@@ -294,5 +471,159 @@ describe('the consumers draw each mark the way the file instances it', () => {
     // entitled to have an opinion about it. An SVG `<G transform>` is not.
     const src = read('components/khazain/icons/FigmaIcon.tsx');
     expect(src).toMatch(/<G transform=\{mirrored \? `translate\(\$\{icon\.width\},0\) scale\(-1,1\)`/);
+  });
+});
+
+/**
+ * T07 — the marks the Home chips, header bell, dawah badge, exclusive seal,
+ * audiobooks ticks and the WhatsApp rings used to approximate.
+ */
+describe('the icon set carries the marks the 2026-10-23 audit found missing', () => {
+  const read = (rel: string) => fs.readFileSync(path.join(ROOT, rel), 'utf8');
+  const exists = (rel: string) => fs.existsSync(path.join(ROOT, rel));
+
+  it('has the chip badges and the header bell', () => {
+    for (const name of ['HomeAudio', 'HomeBadgeAudiobooks', 'HomeBadgeExclusive', 'Notification'] as const) {
+      expect([name, name in FIGMA_ICONS]).toEqual([name, true]);
+    }
+    // The chip badge is 24.94 x 24 (2093:1760 / 1768 / 1775); the bell is 24.
+    for (const name of ['HomeAudio', 'HomeBadgeAudiobooks', 'HomeBadgeExclusive'] as const) {
+      expect(FIGMA_ICONS[name].width).toBeCloseTo(24.94, 1);
+      expect(FIGMA_ICONS[name].height).toBe(24);
+    }
+    expect(FIGMA_ICONS.Notification.width).toBe(24);
+    // Body at 40%, then the clapper and the stem at full strength.
+    const dims: (number | undefined)[] = FIGMA_ICONS.Notification.paths
+      .map((p) => (p as { fillOpacity?: number }).fillOpacity);
+    expect(dims[0]).toBeCloseTo(0.4, 2);
+    expect(dims.slice(1).every((o) => o === undefined)).toBe(true);
+  });
+
+  it('draws the white mic WITH its foot and the book WITH its speaker, as the chips do', () => {
+    // disc + glyph + hairline ring: three paths, the glyph the only white one.
+    for (const name of ['HomeAudio', 'HomeBadgeAudiobooks'] as const) {
+      const fills = FIGMA_ICONS[name].paths.map((p) => p.fill);
+      expect([name, fills]).toEqual([name, ['#184B75', '#FFFFFF', '#184B75']]);
+    }
+    // The exclusive badge is disc + ring only; the seal and the word are rasters.
+    expect(FIGMA_ICONS.HomeBadgeExclusive.paths.map((p) => p.fill)).toEqual(['#184B75', '#184B75']);
+  });
+
+  it('ships the navy حصري word next to the seal it is written over', () => {
+    expect(exists('assets/figma/seal-khazain.png')).toBe(true);
+    expect(exists('assets/figma/seal-word-hasri.png')).toBe(true);
+    const { WANTED } = require('../scripts/figma/extract-images.js');
+    const entry = WANTED.find((w: { name: string }) => w.name === 'seal-word-hasri.png');
+    expect(entry.hash).toMatch(/^9beec0fa/);
+    expect(entry.from).toContain('2093:1763');
+  });
+
+  it('adds the two audiobook side ticks to the book, without the disc', () => {
+    const icon: FigmaIcon = FIGMA_ICONS.SectionAudiobooks;
+    expect(icon.node).toBe('2365:1605'); // the DIV-58, not just quran-03
+    // The book and ticks only: the 16% tinted disc is drawn by the card.
+    expect(icon.paths.some((p) => p.fill === '#D7B995')).toBe(false);
+    expect(icon.paths).toHaveLength(5); // three book paths + two ticks
+    // Symmetric about the disc centre (32): the book (13..51) keeps its place.
+    expect(icon.width).toBe(44);
+    expect(icon.height).toBe(38);
+    // The ticks sit at disc x 12 and 49-50 => 2..4 and 38..40 in the crop.
+    const xs = icon.paths.slice(3).map((p) => Number(p.d.match(/^M([-\d.]+)/)![1]));
+    expect(xs.some((x) => x > 1.5 && x < 4.5)).toBe(true);
+    expect(xs.some((x) => x > 37.5 && x < 40.5)).toBe(true);
+  });
+
+  it('splits the exclusive badge into disc and letters so the seal can sit between', () => {
+    expect(FIGMA_ICONS.BadgeExclusive.paths).toHaveLength(2); // tinted disc + #A88051 disc
+    expect(FIGMA_ICONS.BadgeExclusiveLetters.paths).toHaveLength(4);
+    expect(FIGMA_ICONS.BadgeExclusiveLetters.node).toBe('2869:2452');
+    expect(FIGMA_ICONS.BadgeExclusiveLetters.width).toBeCloseTo(8.77, 2);
+    expect(FIGMA_ICONS.BadgeExclusiveLetters.monochrome).toBe(true);
+  });
+
+  it('paints the exclusive badge disc, then the seal raster, then the letters on top', () => {
+    const src = read('components/khazain/primitives/LectureBadges.tsx');
+    const disc = src.indexOf('name="BadgeExclusive"');
+    const seal = src.indexOf('seal-khazain.png');
+    const letters = src.indexOf('name="BadgeExclusiveLetters"');
+    expect(disc).toBeGreaterThan(-1);
+    expect(seal).toBeGreaterThan(disc);
+    expect(letters).toBeGreaterThan(seal);
+    expect(src).toMatch(/contentFit="fill"/);
+  });
+
+  it('pins the seal at 26.3 x 30 at (5,5) of the 40 badge, letters at (16.32,17.35)', () => {
+    const { EXCLUSIVE_SEAL } = require('../components/khazain/primitives/LectureBadges');
+    expect(EXCLUSIVE_SEAL.seal.left).toBe(5);
+    expect(EXCLUSIVE_SEAL.seal.top).toBe(5);
+    expect(EXCLUSIVE_SEAL.seal.width).toBeCloseTo(26.3, 1);
+    expect(EXCLUSIVE_SEAL.seal.height).toBe(30);
+    expect(EXCLUSIVE_SEAL.letters.left).toBeCloseTo(16.32, 2);
+    expect(EXCLUSIVE_SEAL.letters.top).toBeCloseTo(17.35, 2);
+    expect(Object.isFrozen(EXCLUSIVE_SEAL)).toBe(true);
+  });
+
+  it('exports the framed dawah badge, not the hand-drawn one that shadowed it', () => {
+    const index = read('components/khazain/primitives/index.ts');
+    expect(index).toMatch(/MoonMountainBadge,?[\s\S]*from '\.\/LectureBadges'/);
+    expect(index).not.toContain("from './MoonMountainBadge'");
+    expect(exists('components/khazain/primitives/MoonMountainBadge.tsx')).toBe(false);
+  });
+
+  it('stretches the section حصرى seal to its 42 x 47 box', () => {
+    const src = read('components/khazain/icons/sections.tsx');
+    expect(src).toMatch(/contentFit="fill"/);
+    expect(src).not.toMatch(/contentFit="contain"/);
+  });
+
+  it('draws the Home المزيد pill with the stemmed arrow instance', () => {
+    const src = read('components/khazain/home/SmallMoreButton.tsx');
+    expect(src).toMatch(/<FigmaIcon[^>]*name="ArrowLeftStick"[^>]*size=\{8\}/);
+    expect(src).toContain('#FDF9F2');
+    expect(src).not.toMatch(/<Svg[\s>]/);
+    expect(src).not.toMatch(/bare chevron/i);
+  });
+
+  it('draws the Home header bell from the notification-bing instance at 24', () => {
+    const src = read('components/khazain/home/HomeHeader.tsx');
+    expect(src).toMatch(/<FigmaIcon[^>]*name="Notification"[^>]*size=\{24\}/);
+    expect(src).not.toMatch(/<Svg[\s>]/);
+    expect(src).not.toContain('BellGlyph');
+  });
+
+  it('draws the Home quick chips from the file\'s badges, with the seal on the exclusive one', () => {
+    const home = read('app/(tabs)/index.tsx');
+    for (const name of ['HomeBadgeAudiobooks', 'HomeAudio', 'HomeBadgeExclusive']) {
+      expect(home).toContain(`name="${name}"`);
+    }
+    expect(home).toContain('seal-khazain.png');
+    expect(home).toContain('seal-word-hasri.png');
+    for (const gone of ['StarGlyph', 'MicGlyph', 'HeadphonesGlyph']) {
+      expect(home).not.toContain(gone);
+    }
+    // The badge art carries its own disc and ring, so the chip adds no paint.
+    const chip = read('components/khazain/home/QuickChip.tsx');
+    expect(chip).not.toContain('iconBg');
+    expect(chip).not.toMatch(/borderWidth:\s*1/);
+  });
+
+  it('places the seal 21.6 x 24.6 at (0.3,-0.6) and the word 10.8 x 5.4 at (8.1,9) in the badge', () => {
+    const { QUICK_CHIP_SEAL } = require('../components/khazain/home/quickChipSeal');
+    expect(QUICK_CHIP_SEAL.seal).toEqual({ left: 0.3, top: -0.6, width: 21.6, height: 24.6 });
+    expect(QUICK_CHIP_SEAL.word).toEqual({ left: 8.1, top: 9, width: 10.8, height: 5.4 });
+  });
+
+  it('rings the WhatsApp glyph as the two Yu instances do', () => {
+    const { WHATSAPP_RING } = require('../components/khazain/icons/whatsappRing');
+    // More root: Yu 16 with a 1pt ring, glyph 18 x 0.4. Contact: Yu 28, 1.75pt, 18 x 0.7.
+    expect(WHATSAPP_RING.more).toEqual({ ring: 16, border: 1, glyph: 7.2 });
+    expect(WHATSAPP_RING.contact).toEqual({ ring: 28, border: 1.75, glyph: 12.6 });
+    const more = read('app/(tabs)/more/index.tsx');
+    expect(more).toContain('WhatsappRingGlyph');
+    expect(more).toContain('WHATSAPP_RING.more');
+    const contact = read('app/(tabs)/more/contact.tsx');
+    expect(contact).toContain('WHATSAPP_RING.contact');
+    expect(contact).not.toMatch(/react-native-svg/);
+    expect(contact).not.toMatch(/unfinished placeholder/i);
   });
 });

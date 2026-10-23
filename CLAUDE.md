@@ -237,9 +237,19 @@ conductor/                        ← track-based workflow history (see below)
 Every family the app may reference lives in **`constants/fonts.ts`**, and
 `app/_layout.tsx` has exactly one `useFonts(FONT_ASSET_MODULES)` call. Registered:
 - `Amiri` / `Amiri-Bold` (static)
-- `NotoSansArabic` / `NotoNaskhArabic` (variable TTF)
+- `NotoSansArabic` / `NotoSansArabic-SemiBold` / `NotoSansArabic-Bold` — static
+  faces cut from the former variable font (`scripts/fonts/README.md`)
+- `NotoNaskhArabic` (variable TTF)
 - `TheSansArabic` and `TheMixArab` — **aliases** mapped by `FONT_SUBSTITUTIONS`
-  to `NotoSansArabic-VF.ttf` until the licensed files arrive.
+  to `NotoSansArabic-Bold.ttf` and `NotoSansArabic-Regular.ttf` until the
+  licensed files arrive.
+
+**The weight lives in the face.** A family registered through expo-font is one
+face: iOS ignores `fontWeight` on it and Android falls back to the system bold
+(Noto Naskh) for an empty BOLD slot. So every role in `constants/typography.ts`
+is `fontWeight: '400'`; pick a heavier face with `fontFace(600 | 700)`, never
+`fontWeight: '700'` next to a registered family. `__tests__/fontWeightGuard.test.ts`
+fails on that pairing.
 
 This is option 2 of the old note: the proprietary names now resolve to a real
 face instead of silently falling back to the platform Arabic font.

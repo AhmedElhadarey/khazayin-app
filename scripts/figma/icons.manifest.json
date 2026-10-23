@@ -32,7 +32,7 @@
     { "name": "SectionScholars",   "node": "2465:1896", "from": "2031:5675 card 3 — العلماء والمشايخ" },
     { "name": "SectionBooks",      "node": "2355:1458", "from": "2031:5675 card 4 — الكتب العلمية" },
     { "name": "SectionQueen",      "node": "2589:2458", "from": "2031:5675 card 5 — أنتِ ملكة" },
-    { "name": "SectionAudiobooks", "node": "2365:1606", "from": "2031:5675 card 6 — كتب صوتية" },
+    { "name": "SectionAudiobooks", "node": "2365:1605", "bare": true, "crop": { "x": 10, "y": 13, "width": 44, "height": 38 }, "from": "2031:5675 card 6 — كتب صوتية. The quran-03 book (2365:1606, 38x38 at 13,13 in the 64 disc) PLUS the two 1x5 side ticks (2365:1611/1612) that sit beside it as siblings. `bare` drops the disc fill the card draws itself; the crop is symmetric about the disc centre so the book keeps its exact position when the mark is centred." },
     { "name": "SectionRadio",      "node": "2355:1483", "from": "2031:5675 card 8 — برامج إذاعية" },
     { "name": "SectionDawah",      "node": "2599:2864", "from": "2031:5675 card 9 — تصميمات دعوية" },
     { "name": "SectionExclusive",  "node": "2355:1478", "from": "2031:5675 card 7 — حصريات خزائن الرحمن. The gold disc and its sparkles; the word حصرى over them is a raster paint the walk skips, overlaid from assets/figma/seal-khazain.png." },
@@ -40,7 +40,7 @@
     { "name": "MoreWeb",        "node": "2106:2219", "from": "2102:2711 row 1 — الموقع الإلكتروني" },
     { "name": "MoreYoutube",    "node": "2106:2237", "from": "2102:2711 row 2 — قنوات اليوتيوب" },
     { "name": "MoreTelegram",   "node": "2106:2255", "from": "2102:2711 row 3 — قنوات التليجرام" },
-    { "name": "MoreWhatsapp",   "node": "2548:1405", "from": "2102:2711 row 4 — قنوات الواتساب. The glyph inside the `Yu` instance; the instance also draws a thin ring of its own, which the app's squircle chip replaces." },
+    { "name": "MoreWhatsapp",   "node": "2548:1405", "from": "2102:2711 row 4 — قنوات الواتساب. The glyph inside the `Yu` instance (2548:1404). The ring the instance draws around it is rebuilt by components/khazain/icons/WhatsappRingGlyph.tsx at the sizes whatsappRing.ts records." },
     { "name": "MoreSoundcloud", "node": "2548:1451", "from": "2102:2711 row 5 — ساوند كلاود" },
     { "name": "MoreArchive",    "node": "2558:1325", "from": "2102:2711 row 6 — الارشيف" },
     { "name": "MoreContact",    "node": "2106:2273", "from": "2102:2711 row 7 — تواصل معنا" },
@@ -55,7 +55,8 @@
     { "name": "BadgeQuill",     "node": "2869:2011", "from": "`DIV-58` on 2102:2975 — العلماء والمشايخ" },
     { "name": "BadgeAudioWave", "node": "2869:2156", "from": "`DIV-58` on 2869:2088 — كتب صوتية" },
     { "name": "BadgeMoonMountain", "node": "2606:3777", "from": "`DIV-58` on 2120:942 — تصميمات دعوية" },
-    { "name": "BadgeExclusive", "node": "2869:2374", "from": "`DIV-58` on 2869:2306 — حصريات. Disc and letterforms; the word حصرى over them is a raster paint, overlaid from assets/figma/seal-khazain.png." },
+    { "name": "BadgeExclusive", "node": "2869:2374", "exclude": ["2869:2452"], "from": "`DIV-58` on 2869:2306 — حصريات. The tinted ring disc and the #A88051 disc only. The raster حصرى seal is painted over it (assets/figma/seal-khazain.png) and the letterforms 2869:2452 over that — see BadgeExclusiveLetters." },
+    { "name": "BadgeExclusiveLetters", "node": "2869:2452", "from": "Frame 2869:2449 child 2869:2452 — the 8.77x5.69 letterforms written on the white band of the seal, #A88051. Painted ABOVE the seal raster, at (11.32,12.35) inside the 30pt Frame 5 which sits at (5,5) in the 40pt badge." },
     { "name": "SurahStar",      "node": "2207:5706", "from": "`DIV-79` on 2207:5270 / 2207:17898 — the 36pt surah row badge, without its index numeral" },
 
     { "name": "LibraryReminders",   "node": "2095:1608", "from": "2031:4659 `DIV-46` — the تذكيراتي stat card" },
@@ -73,13 +74,17 @@
     { "name": "DawahShare",     "node": "2548:1111", "from": "`Share` — 2120:1857 `DIV-144`, the poster's left action" },
     { "name": "DawahDownload",  "node": "2001:11252", "from": "vuesax/bulk/document-download — 2120:1857 `DIV-144`, the right action" },
 
-    { "name": "HomeAudio",      "node": "2093:1775", "from": "2001:940 `audio` — the حصريات carousel mark" }
+    { "name": "HomeAudio",      "node": "2093:1775", "from": "2093:1772 `audio` — the برامج إذاعية quick-chip badge: navy disc, white studio mic with its foot (2093:1777), hairline ring. 24.94x24." },
+    { "name": "HomeBadgeAudiobooks", "node": "2093:1768", "from": "2093:1765 `audio book` — the كتب صوتية quick-chip badge: navy disc, white closed book with speaker and sound waves (2093:1770), hairline ring. 24.94x24." },
+    { "name": "HomeBadgeExclusive", "node": "2093:1760", "from": "2093:1757 `audio book` — the حصريات خزائن الرحمن quick-chip badge: navy disc and hairline ring only. The white seal (2093:1762) and the navy word حصري (2093:1763) are raster paints overlaid from assets/figma." },
+
+    { "name": "Notification", "node": "2001:16791", "from": "2001:16819 `Frame 3` — vuesax/bulk/notification-bing instance at 24x24 in the Home header bell chip; the instance recolours the body (40%), clapper and stroke to #184B76." }
   ],
   "notDrawn": [
     {
-      "name": "HomeAudioBook",
-      "node": "2093:1760",
-      "why": "Same raster حصرى wordmark as SectionExclusive, over a gold disc. Extracted as an image asset rather than as vector."
+      "name": "HomeExclusiveSeal",
+      "node": "2093:1762",
+      "why": "The white خزائن الرحمن stamp (21.6x24.6) and the navy word حصري (2093:1763, 10.8x5.4) on the Home حصريات chip badge are raster IMAGE paints. HomeBadgeExclusive carries the disc and ring; the two images come from assets/figma/seal-khazain.png and seal-word-hasri.png."
     },
     {
       "name": "SectionExclusiveSeal",

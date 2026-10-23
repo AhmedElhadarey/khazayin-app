@@ -1,9 +1,10 @@
+import { READING_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { LatticeDisc } from './LatticeDisc';
 import { LIST_CARD } from './libraryLayout';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
 
 /**
  * Empty-state variant of AudioProgressCard. Surfaces when the user has no
@@ -16,17 +17,9 @@ export function EmptyInProgressCard({
 }) {
   return (
     <View style={styles.card}>
-      <View style={styles.cover}>
-        <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
-          <Path
-            d="M4 12V9a8 8 0 0116 0v3M4 12v4a2 2 0 002 2h2v-7H4zm16 0v4a2 2 0 01-2 2h-2v-7h4z"
-            stroke={KhazainColors.gold500}
-            strokeWidth={1.6}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-        </Svg>
-      </View>
+      {/* Reading order (first child at the physical right, and first announced):
+          disc, text, then the action at the left. */}
+      <LatticeDisc />
       <View style={{ flex: 1 }}>
         <Text style={styles.title}>لا توجد محاضرة قيد الاستماع</Text>
         <Text style={styles.subtitle}>
@@ -36,6 +29,7 @@ export function EmptyInProgressCard({
       {onBrowse ? (
         <Pressable
           onPress={onBrowse}
+          accessibilityRole="button"
           style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.85 : 1 }]}
         >
           <Text style={styles.ctaLabel}>تصفّح المحاضرات</Text>
@@ -47,24 +41,15 @@ export function EmptyInProgressCard({
 
 const styles = StyleSheet.create({
   card: {
-    padding: 16,
+    paddingVertical: 17,
+    paddingHorizontal: 12,
     borderRadius: LIST_CARD.radius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: KhazainColors.hairlineFaint,
-    flexDirection: 'row',
+    ...READING_ROW,
     alignItems: 'center',
     gap: 12,
-  },
-  cover: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
-    backgroundColor: KhazainColors.cream100,
-    borderWidth: 1,
-    borderColor: KhazainColors.gold400,
-    alignItems: 'center',
-    justifyContent: 'center',
   },
   title: textStyle('cardTitle', { color: KhazainColors.inkHeading }),
   subtitle: {
@@ -72,12 +57,21 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cta: {
-    height: 36,
+    minHeight: 36,
+    paddingVertical: 6,
+    // Definite width: a shrink-wrapped Arabic label can lose its last word on Android 15+.
+    flexBasis: '40%',
+    flexShrink: 1,
+    maxWidth: '45%',
     paddingHorizontal: 16,
     borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
+  ctaLabel: {
+    ...textStyle('cardTitle', { color: KhazainColors.pageBg }),
+    alignSelf: 'stretch',
+    textAlign: 'center',
+  },
 });

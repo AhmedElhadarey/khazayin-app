@@ -5,7 +5,7 @@ import { PillButton } from '@/components/khazain/primitives';
 import { AsyncContent } from '@/components/khazain/state/AsyncContent';
 import { COMMUNITY_COPY } from '@/constants/communityCopy';
 import { PHYSICAL_BOX, RTL_TEXT } from '@/constants/layout';
-import { Colors, KhazainColors } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { usePostWait } from '@/hooks/usePostWait';
@@ -310,6 +310,5 @@ const styles = StyleSheet.create({
   body: { ...PHYSICAL_BOX, gap: 12 },
   // The composer, fixed above the keyboard; the reading column applies on tablets.
   inputRow: { ...PHYSICAL_BOX, paddingHorizontal: 16, paddingVertical: 12 },
-  // Legacy palette: the Khazain tokens carry no error colour.
-  error: { ...RTL_TEXT, ...textStyle('label', { color: Colors.light.error }) },
+  error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

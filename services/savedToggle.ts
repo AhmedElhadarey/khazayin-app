@@ -14,7 +14,8 @@
  *
  * Imports the stores directly (not the @/store barrel) so tests stay off SQLite.
  */
-import { AccessibilityInfo, type AccessibilityActionEvent, type PressableProps } from 'react-native';
+import type { AccessibilityActionEvent, PressableProps } from 'react-native';
+import { announce } from '@/services/a11yAnnounce';
 import { useSavedStore } from '@/store/savedStore';
 import { useToastStore } from '@/store/toastStore';
 import type { Lecture, SavedSnapshot, SavedType } from '@/types/content';
@@ -35,6 +36,35 @@ export const SAVED_COPY = Object.freeze({
   unsaveHint: 'اضغط مطوّلاً للإزالة من المحفوظات',
   savedValue: 'محفوظة',
 });
+
+/**
+ * The label of a standalone bookmark, named by its item: a bookmark is its own
+ * screen-reader element, so a bare «إزالة من المحفوظات» would not say what it
+ * removes. Row custom actions keep the bare copy; the row names the item.
+ */
+export function bookmarkLabel(saved: boolean, snapshot: SavedSnapshot): string {
+  const base = saved ? SAVED_COPY.unsaveLabel : SAVED_COPY.saveLabel;
+  const name = snapshotName(snapshot);
+  return name ? `${base}: ${name}` : base;
+}
+
+/** The display name of a saved item, per snapshot kind. */
+function snapshotName(snapshot: SavedSnapshot): string {
+  switch (snapshot.type) {
+    case 'surah':
+    case 'scholar':
+      return snapshot.name;
+    case 'book':
+    case 'lecture':
+    case 'dawah':
+      return snapshot.title;
+    default: {
+      // A new snapshot kind must decide here what names it.
+      const unhandled: never = snapshot;
+      return unhandled;
+    }
+  }
+}
 
 export const SAVE_TOAST_MS = 3000;
 export const UNSAVE_TOAST_MS = 5000;
@@ -71,13 +101,9 @@ export type SaveGestureProps = Pick<
   'onLongPress' | 'accessibilityActions' | 'onAccessibilityAction' | 'accessibilityHint' | 'accessibilityValue'
 >;
 
-function announce(message: string): void {
-  // Queued (iOS) so it doesn't cut off the screen reader confirming the action.
-  if (typeof AccessibilityInfo.announceForAccessibilityWithOptions === 'function') {
-    AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
-  } else {
-    AccessibilityInfo.announceForAccessibility(message);
-  }
+/** Announces the outcome of a toggle; the toast has no live region. */
+export function announceSaveResult(nowSaved: boolean): void {
+  announce(nowSaved ? SAVED_COPY.saved : SAVED_COPY.removed);
 }
 
 /**
@@ -97,7 +123,7 @@ export function saveGestureProps(saved: boolean, onToggle: () => boolean): SaveG
     onAccessibilityAction: (e: AccessibilityActionEvent) => {
       if (e.nativeEvent.actionName !== SAVE_ACTION_NAME) return;
       const nowSaved = onToggle();
-      announce(nowSaved ? SAVED_COPY.saved : SAVED_COPY.removed);
+      announceSaveResult(nowSaved);
     },
     accessibilityHint: saved ? SAVED_COPY.unsaveHint : SAVED_COPY.saveHint,
     accessibilityValue: { text: saved ? SAVED_COPY.savedValue : undefined },

@@ -49,7 +49,6 @@ const COLUMN_SCREENS: ColumnSpec[] = [
     blocks: true,
     rail: true,
   },
-  { file: `${S}/qiraat.tsx`, scroll: 1 },
   { file: `${S}/dawah.tsx`, scroll: 1, header: true, blocks: true },
   { file: `${S}/reciter/[id].tsx`, scroll: 1, header: true, blocks: true },
   { file: `${S}/dawah/[month].tsx`, scroll: 1, header: true, blocks: true },

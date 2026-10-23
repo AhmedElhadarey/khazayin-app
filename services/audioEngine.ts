@@ -519,6 +519,9 @@ export function restoreLastLecture(): void {
     },
     initialProgress,
   );
-  usePlayerStore.getState().setVisible(true);
+  // Visibility is deliberately not touched: `isVisible` defaults to true and
+  // only the Mushaf hides it. This runs after hydration, which on a cold start
+  // is after the Mushaf took focus, so forcing it true here re-showed the
+  // MiniPlayer over the reader (MUSHAF-05).
   // isPlaying deliberately left false — resume is user-initiated.
 }

@@ -2,6 +2,9 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KhazainColors } from '@/constants/theme';
 import { toArabicDigits as toAr } from '@/constants/progress';
+import { textStyle } from '@/constants/typography';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { LIBRARY_CARD_RADIUS, LIBRARY_DESIGN, LIBRARY_SECTION_GAP } from './libraryLayout';
 
 /**
  * Non-blocking gold-bordered banner that surfaces when the adaptive wird
@@ -27,71 +30,59 @@ export function WirdSuggestionBanner({
       </Text>
       <View style={styles.actions}>
         <Pressable
-          onPress={onDismiss}
-          style={({ pressed }) => [styles.dismissBtn, { opacity: pressed ? 0.85 : 1 }]}
-        >
-          <Text style={styles.dismissLabel}>لاحقًا</Text>
-        </Pressable>
-        <Pressable
           onPress={onAccept}
+          accessibilityRole="button"
           style={({ pressed }) => [styles.acceptBtn, { opacity: pressed ? 0.85 : 1 }]}
         >
           <Text style={styles.acceptLabel}>قبول</Text>
+        </Pressable>
+        <Pressable
+          onPress={onDismiss}
+          accessibilityRole="button"
+          style={({ pressed }) => [styles.dismissBtn, { opacity: pressed ? 0.85 : 1 }]}
+        >
+          <Text style={styles.dismissLabel}>لاحقًا</Text>
         </Pressable>
       </View>
     </View>
   );
 }
 
+// No frame covers this banner, so its geometry is the Library contract: the
+// 16pt side margin, the shared card radius, 8pt buttons, hairline/accent
+// colours from the palette.
 const styles = StyleSheet.create({
   banner: {
-    marginHorizontal: 14,
-    marginBottom: 12,
+    ...PHYSICAL_BOX,
+    marginHorizontal: LIBRARY_DESIGN.sideMargin,
+    marginBottom: LIBRARY_SECTION_GAP,
     padding: 14,
-    borderRadius: 14,
-    backgroundColor: KhazainColors.cream50,
-    borderWidth: 1.5,
-    borderColor: KhazainColors.gold500,
+    borderRadius: LIBRARY_CARD_RADIUS,
+    backgroundColor: KhazainColors.cardBg,
+    borderWidth: 1,
+    borderColor: KhazainColors.goldAccent,
     gap: 10,
   },
-  message: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    fontWeight: '600',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-    lineHeight: 22,
-  },
+  message: textStyle('bodyCompact', { color: KhazainColors.navy800 }),
+  // Physical left → right: accept, then dismiss at the right edge.
   actions: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
+    justifyContent: 'flex-end',
     gap: 8,
     alignItems: 'center',
   },
   dismissBtn: {
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: 14,
-    borderRadius: 10,
-    backgroundColor: KhazainColors.cream100,
+    borderRadius: 8,
+    backgroundColor: KhazainColors.iconChipBg,
   },
-  dismissLabel: {
-    color: KhazainColors.ink700,
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '700',
-    writingDirection: 'rtl',
-  },
+  dismissLabel: textStyle('label', { color: KhazainColors.ink700 }),
   acceptBtn: {
-    paddingVertical: 7,
+    paddingVertical: 8,
     paddingHorizontal: 16,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
   },
-  acceptLabel: {
-    color: '#fff',
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '700',
-    writingDirection: 'rtl',
-  },
+  acceptLabel: textStyle('label', { color: KhazainColors.pageBg }),
 });

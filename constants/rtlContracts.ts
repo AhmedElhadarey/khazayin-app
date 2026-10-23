@@ -84,6 +84,29 @@ export const MUSHAF_FOOTER_ORDER = Object.freeze([
 ] as const);
 export type MushafFooterSlot = (typeof MUSHAF_FOOTER_ORDER)[number];
 
+/**
+ * Mushaf surah cartouche, physical left -> right. The page image
+ * (docs/KHAZAYIN.fig images/02f06fab…) shows «آياتها ١٧٦» at the left and
+ * «ترتيبها ٤» at the right.
+ */
+export const CARTOUCHE_PHYSICAL_ORDER = Object.freeze(['ayahs', 'name', 'order'] as const);
+export type CartoucheSlot = (typeof CARTOUCHE_PHYSICAL_ORDER)[number];
+
+/**
+ * Mushaf reader meta strip (DIV-47, 2349:994), physical left -> right. The
+ * frame's children run مكية, ٧ آيات, صفحة ١ من ٦٠٤ in reading order, so the
+ * revelation type sits at the physical right.
+ */
+export const MUSHAF_META_PHYSICAL_ORDER = Object.freeze(['page', 'ayahs', 'revelation'] as const);
+export type MushafMetaSlot = (typeof MUSHAF_META_PHYSICAL_ORDER)[number];
+
+/**
+ * The same strip in reading order — the reverse of the physical order, pinned
+ * by `mushafPresentation.test.ts`. The strip is a `READING_GRID`, so its
+ * children are authored in this order and a wrap moves the part read last.
+ */
+export const MUSHAF_META_READING_ORDER = Object.freeze(['revelation', 'ayahs', 'page'] as const);
+
 /** The alphabet rail is pinned to the physical right edge on every screen. */
 export const LETTER_INDEX_EDGE = 'right';
 

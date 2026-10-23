@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
+import { PillButton } from '@/components/khazain/primitives';
+import { SheetHandle } from '@/components/khazain/sheets';
 import {
-  Alert,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
-import Svg, { Path } from 'react-native-svg';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { useRouter } from 'expo-router';
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
+import { ChoiceRow } from '@/components/khazain/settings';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import {
@@ -22,7 +23,9 @@ import {
   type JuzPreset,
 } from '@/constants/progress';
 import { presetToPages } from '@/db/helpers/wirdPresets';
+import { pageCountLabel } from '@/services/libraryStats';
 import { useWirdStore } from '@/store/wirdStore';
+import { showNotice } from '@/services/notice';
 
 // Labels use the traditional ḥizb family (جزء → حزب = ½ juz → ربع الحزب = ⅛ juz),
 // NOT juz fractions.
@@ -59,7 +62,7 @@ export default function SettingsWirdGoalScreen() {
       await setTarget(draftPages);
       router.back();
     } catch {
-      Alert.alert(
+      showNotice(
         'قيمة غير صالحة',
         'الرجاء إدخال عدد صفحات بين ١ و ٦٠٤.',
       );
@@ -69,7 +72,7 @@ export default function SettingsWirdGoalScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
-        <View style={styles.handle} />
+        <SheetHandle />
       </View>
       <Text style={styles.title}>هدف الورد اليومي</Text>
       <ScrollView
@@ -111,14 +114,7 @@ export default function SettingsWirdGoalScreen() {
       <View style={styles.footer}>
         {/* The rule spans the sheet; the button sits in the reading column. */}
         <View style={[styles.footerInner, columnStyle]}>
-          <Pressable
-            onPress={apply}
-            accessibilityRole="button"
-            accessibilityLabel="تطبيق"
-            style={({ pressed }) => [styles.applyBtn, { opacity: pressed ? 0.85 : 1 }]}
-          >
-            <Text style={styles.applyBtnLabel}>تطبيق</Text>
-          </Pressable>
+          <PillButton variant="navy" label="تطبيق" onPress={apply} style={styles.applyBtn} />
         </View>
       </View>
     </SafeAreaView>
@@ -136,79 +132,34 @@ function PresetRow({
   selected: boolean;
   onPress: () => void;
 }) {
+  const oneLine = useLineClamp(1);
   return (
-    <Pressable
+    <ChoiceRow
+      selected={selected}
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      style={({ pressed }) => [
-        styles.row,
-        KhazainShadows.card,
-        selected ? styles.rowSelected : null,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
+      accessibilityLabel={`${label}، ${pageCountLabel(pages)}`}
     >
-      {selected ? (
-        <Svg width={18} height={18} viewBox="0 0 18 18">
-          <Path
-            d="M4 9.5l3.5 3.5L14 5.5"
-            stroke={KhazainColors.goldAccent}
-            strokeWidth={2.2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </Svg>
-      ) : null}
-      <Text style={styles.rowPages}>{`${toArNum(pages)} صفحة`}</Text>
-      <Text style={styles.rowLabel} numberOfLines={1}>
+      <Text style={styles.rowPages}>{pageCountLabel(pages)}</Text>
+      <Text style={styles.rowLabel} numberOfLines={oneLine}>
         {label}
       </Text>
-    </Pressable>
+    </ChoiceRow>
   );
 }
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   handleWrap: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
-  handle: {
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(40,30,19,0.18)',
-  },
   title: {
     ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
   },
-  body: { paddingHorizontal: 16, gap: 16 },
+  body: { paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 16 },
   list: { gap: 8 },
-  row: {
-    // Physical left -> right: tick, page count, label.
-    ...PHYSICAL_ROW,
-    alignItems: 'center',
-    gap: 12,
-    minHeight: 56,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
-  },
-  rowSelected: {
-    borderColor: KhazainColors.goldAccent,
-    borderWidth: 1.5,
-  },
   rowLabel: {
     flex: 1,
-    fontFamily: 'Amiri-Bold',
-    fontWeight: '700',
-    fontSize: 16,
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   },
   rowPages: textStyle('bodyCompact', { color: KhazainColors.ink500 }),
   customBlock: { ...PHYSICAL_BOX, gap: 8 },
@@ -229,7 +180,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'Amiri-Bold',
     fontSize: 22,
-    fontWeight: '700',
     color: KhazainColors.ink900,
     writingDirection: 'rtl',
     paddingVertical: 4,
@@ -239,16 +189,9 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(141,107,52,0.12)',
+    borderTopColor: KhazainColors.cardBorder,
     backgroundColor: KhazainColors.pageBg,
   },
-  footerInner: { paddingHorizontal: 16 },
-  applyBtn: {
-    backgroundColor: KhazainColors.navy800,
-    borderRadius: 999,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  applyBtnLabel: textStyle('sectionTitle', { color: '#fff' }),
+  footerInner: { paddingHorizontal: SHEET_CHROME.paddingHorizontal },
+  applyBtn: { width: '100%' },
 });

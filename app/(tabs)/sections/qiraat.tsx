@@ -1,102 +1,29 @@
-import { AsyncContent, ReciterRow, SkeletonRibbonList } from '@/components/khazain';
-import { CARD_DENSITY } from '@/constants/layout';
-import { textStyle } from '@/constants/typography';
-import { KhazainColors } from '@/constants/theme';
-import { DEFAULT_SETTINGS } from '@/constants/settings';
-import { useQiratStore, useSettingsStore } from '@/store';
+import { runQiraatRedirect } from '@/services/reciterNavigation';
 import { useRouter } from 'expo-router';
-import React, { useEffect } from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useEffect, useRef } from 'react';
 
-// Page 16: آختر القراءة — 10 qira'at rows (bottom-sheet style).
-// Each row uses ReciterRow without subtitle.
-// Data sourced from useQiratStore (content service layer).
-
-export default function QiraatScreen() {
-  const { columnStyle } = useResponsiveLayout();
+// Legacy route, kept for deep links (`khazayinapp://sections/qiraat`) and the
+// capture harness. The qiraat list is now a root-level bottom sheet
+// (app/qiraat-sheet.tsx). This screen swaps itself for the reciter screen on
+// the Qiraa tab, then pushes the sheet over it, so a cold link lands on a
+// sheet over the reciter list instead of an empty stack.
+//
+// Known limitation: a warm link while the reciter screen is already open
+// leaves two reciter entries in the sections stack (the replace swaps this
+// screen for a second reciter), so back from the first sheet close lands on a
+// duplicate reciter screen. Cold links are unaffected.
+export default function QiraatRedirect() {
   const router = useRouter();
-  const { data, status, error, fetch, refresh } = useQiratStore();
-  const defaultQiraaId = useSettingsStore((s) => s.defaultQiraaId);
-  const setDefaultQiraa = useSettingsStore((s) => s.setDefaultQiraa);
+  const done = useRef(false);
 
   useEffect(() => {
-    fetch();
-  }, [fetch]);
+    if (done.current) return;
+    done.current = true;
+    runQiraatRedirect({
+      replace: (href) => router.replace(href as any),
+      push: (href) => router.push(href as any),
+    });
+  }, [router]);
 
-  // Stale-id fallback (track 002): if the persisted default no longer exists
-  // in the current qiraat list (e.g., content service removed it), silently
-  // revert to the foundation default so the highlight stays consistent.
-  useEffect(() => {
-    if (data.length === 0) return;
-    if (!data.some((q) => q.id === defaultQiraaId)) {
-      setDefaultQiraa(DEFAULT_SETTINGS.defaultQiraaId);
-    }
-  }, [data, defaultQiraaId, setDefaultQiraa]);
-
-  return (
-    <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      {/* sheet-like handle + centered title */}
-      <View style={styles.handleWrap}>
-        <View style={styles.handle} />
-      </View>
-      <Text style={styles.title}>اختر القراءة</Text>
-      <ScrollView
-        contentContainerStyle={[styles.list, { paddingBottom: 32 }, columnStyle]}
-        showsVerticalScrollIndicator={false}
-      >
-        <AsyncContent
-          status={status}
-          error={error}
-          onRetry={refresh}
-          skeleton={<SkeletonRibbonList count={10} />}
-          emptyMessage="لا توجد قراءات متاحة"
-        >
-          {/* The gap has to sit on a view of our own: AsyncContent renders its
-              children inside a wrapper, so a `gap` on the scroll container
-              never reaches the rows and they stacked flush against each
-              other, strokes touching. */}
-          <View style={styles.rows}>
-            {data.map((q) => (
-              <ReciterRow
-                key={q.id}
-                title={q.name}
-                isDefault={q.id === defaultQiraaId}
-                onPress={() => router.back()}
-              />
-            ))}
-          </View>
-        </AsyncContent>
-      </ScrollView>
-    </SafeAreaView>
-  );
+  return null;
 }
-
-const styles = StyleSheet.create({
-  screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  handleWrap: {
-    alignItems: 'center',
-    paddingTop: 8,
-    paddingBottom: 4,
-  },
-  // Node 2457:954 draws this screen as a sheet: a 36 x 4 `#D9D6D3` grabber
-  // under the top edge, then a centred title in the body face at 16.
-  handle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: KhazainColors.hairlineWarm,
-  },
-  title: {
-    ...textStyle('body', { color: KhazainColors.inkTitle, textAlign: 'center' }),
-    paddingTop: 6,
-    paddingBottom: 12,
-  },
-  list: {
-    paddingHorizontal: 16,
-  },
-  rows: {
-    gap: CARD_DENSITY.lectureListGap,
-  },
-});

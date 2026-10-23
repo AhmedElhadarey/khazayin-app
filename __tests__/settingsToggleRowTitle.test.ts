@@ -10,7 +10,9 @@ describe('SettingsToggleRow title', () => {
   it('lets the title wrap to two lines instead of truncating at one', () => {
     const title = source.match(/<Text style=\{styles\.title\}([^>]*)>/);
     expect(title).not.toBeNull();
-    expect(title![1]).toMatch(/numberOfLines=\{2\}/);
+    // Two lines at the default text size, through useLineClamp (unclamped when enlarged).
+    expect(title![1]).toMatch(/numberOfLines=\{twoLines\}/);
+    expect(source).toMatch(/const twoLines = useLineClamp\(2\);/);
   });
 
   it('does not shrink-wrap the text column (Android 15 line-break mismatch)', () => {

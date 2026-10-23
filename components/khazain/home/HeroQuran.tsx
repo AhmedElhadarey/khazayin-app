@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { textStyle } from '@/constants/typography';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { HeroShell } from './HeroShell';
 import { SmallMoreButton } from './SmallMoreButton';
@@ -28,8 +29,16 @@ const LAYERS = [
 /** Sampled from the artwork's flat ground. */
 const GROUND = '#EBE1D0';
 
-/** The design aligns the title, subtitle and pill on the column's trailing edge. */
-const TRAILING_INSET = 5.8;
+/**
+ * The title frame (2093:1655) is a horizontal auto-layout: the title, 3.83 to
+ * its right a 2 x 26 navy bar (2093:1657, radius 0.96), the pair ending flush
+ * with the column's trailing edge.
+ */
+const TITLE_BAR = { width: 2, height: 26, radius: 0.96, gap: 3.83 };
+
+/** Gaps in the column (measured against frame 2093:1655): title → subtitle, subtitle → المزيد pill. */
+const SUBTITLE_GAP = 5.8;
+const PILL_GAP = 8;
 
 const SUBTITLE = 'اقْتَرَبَ فَثَمَّ حَيَاة مع القرآن لَمْ تَحْيَهَا بُعْد !';
 
@@ -52,7 +61,9 @@ export function HeroQuran({
       designHeight={DESIGN.height}
       column={COLUMN}
       accessibilityLabel="القرآن حياة"
+      accessibilityHint={SUBTITLE}
       onPress={onPress ?? onMore}
+      onMore={onMore ?? onPress}
       fill={fill}
     >
       {(scale) => (
@@ -65,19 +76,29 @@ export function HeroQuran({
             ~18% of the screen to ~46%, which read as "the hero is too big".
             Pinned at 1 so the composition holds; the surrounding UI still
             scales to the app-wide 1.2 ceiling. */}
+          {/* The row spans the column and the title takes whatever the bar
+            leaves, so the title is never sized to its own content: a
+            shrink-wrapped Arabic Text can lose its last word on Android 15+. */}
+          <View style={[styles.titleRow, { gap: TITLE_BAR.gap * scale }]}>
+            <Text style={styles.title} maxFontSizeMultiplier={1}>
+              القرآن حــياة
+            </Text>
+            <View
+              style={{
+                width: TITLE_BAR.width * scale,
+                height: TITLE_BAR.height * scale,
+                borderRadius: TITLE_BAR.radius * scale,
+                backgroundColor: KhazainColors.navy,
+              }}
+            />
+          </View>
           <Text
-            style={[styles.title, { marginRight: TRAILING_INSET * scale }]}
-            maxFontSizeMultiplier={1}
-          >
-            القرآن حــياة
-          </Text>
-          <Text
-            style={[styles.subtitle, { marginTop: 5.8 * scale }]}
+            style={[styles.subtitle, { marginTop: SUBTITLE_GAP * scale }]}
             maxFontSizeMultiplier={1}
           >
             {SUBTITLE}
           </Text>
-          <View style={[styles.pillRow, { marginTop: 8 * scale }]}>
+          <View importantForAccessibility="no-hide-descendants" style={[styles.pillRow, { marginTop: PILL_GAP * scale }]}>
             <SmallMoreButton onPress={onMore ?? onPress} />
           </View>
         </>
@@ -87,11 +108,20 @@ export function HeroQuran({
 }
 
 const styles = StyleSheet.create({
+  titleRow: {
+    // Physical order [title][bar]; the bar is the trailing (right) edge.
+    ...PHYSICAL_ROW,
+    alignSelf: 'stretch',
+    alignItems: 'center',
+  },
   title: {
-    ...textStyle('heroTitle', { color: KhazainColors.navy }),
+    ...textStyle('heroTitle', { color: KhazainColors.navy, textAlign: 'right' }),
+    flexGrow: 1,
+    flexShrink: 1,
   },
   subtitle: {
-    ...textStyle('caption', { color: KhazainColors.navy }),
+    // Figma sets the subtitle in the gold accent, centred under the title.
+    ...textStyle('caption', { color: KhazainColors.goldAccent, textAlign: 'center' }),
   },
   pillRow: {
     alignItems: 'flex-end',

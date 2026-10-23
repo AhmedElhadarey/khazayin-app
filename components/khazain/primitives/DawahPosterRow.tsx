@@ -2,6 +2,7 @@ import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -35,37 +36,46 @@ export function DawahPosterRow({
   onShare?: () => void;
   onDownload?: () => void;
 }) {
+  const oneLine = useLineClamp(1);
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
+    // The actions are the opener's siblings, not its children: a Pressable is
+    // one accessibility element on iOS, so nested share / download buttons
+    // could not be reached (as the Home cards, b62b865).
+    <View style={styles.row}>
       {/* Physical left — action icons (share + download) */}
       <View style={styles.actions}>
         <Pressable
           onPress={onShare}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 4 }}
-          accessibilityLabel="مشاركة"
+          accessibilityRole="button"
+          accessibilityLabel={`مشاركة: ${title}`}
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <FigmaIcon name="DawahShare" size={ACTION_GLYPH} color={KhazainColors.ink700} />
+          <FigmaIcon name="DawahShare" size={ACTION_GLYPH} color={KhazainColors.inkTitle} />
         </Pressable>
         <Pressable
           onPress={onDownload}
-          hitSlop={{ top: 12, bottom: 12, left: 4, right: 12 }}
-          accessibilityLabel="تنزيل"
+          // 8 on the right: the opener starts one gap away and must not lose taps.
+          hitSlop={{ top: 12, bottom: 12, left: 4, right: 8 }}
+          accessibilityRole="button"
+          accessibilityLabel={`تنزيل: ${title}`}
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
-          <FigmaIcon name="DawahDownload" size={ACTION_GLYPH} color={KhazainColors.ink700} />
+          <FigmaIcon name="DawahDownload" size={ACTION_GLYPH} color={KhazainColors.inkTitle} />
         </Pressable>
       </View>
 
-      {/* Centre — title */}
+      {/* Centre and physical right — title and poster open the poster. The
+          hitSlop gives back the row's inset, which used to be tappable. */}
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        hitSlop={{ top: 7, bottom: 7, right: CARD_DENSITY.lectureCardPaddingHorizontal }}
+        style={({ pressed }) => [styles.open, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+      >
       <View style={styles.titleWrap}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={oneLine}>
           {title}
         </Text>
       </View>
@@ -85,7 +95,8 @@ export function DawahPosterRow({
           />
         ) : null}
       </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 
@@ -100,8 +111,18 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: KhazainColors.hairlineWarm,
-    paddingVertical: 8,
+    // 1 + 7 + 73 + 7 + 1 = 89.
+    paddingVertical: 7,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
+    alignItems: 'center',
+    gap: 8,
+  },
+  // Title and poster, 8 apart as when the row held all three directly.
+  open: {
+    ...PHYSICAL_ROW,
+    flex: 1,
+    minWidth: 0,
+    alignSelf: 'stretch',
     alignItems: 'center',
     gap: 8,
   },
@@ -116,13 +137,19 @@ const styles = StyleSheet.create({
     width: POSTER_W,
     height: POSTER_H,
   },
+  // Full width, never shrink-wrapped: Android 15+ breaks lines by ink bounds
+  // while RN 0.81 measures by advances, so a shrink-wrapped Arabic title loses
+  // its last word. The title right-aligns itself through its role (RTL_TEXT).
   titleWrap: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'flex-end',
+    alignItems: 'stretch',
     justifyContent: 'center',
   },
-  title: textStyle('cardTitle', { color: KhazainColors.inkTitle }),
+  title: {
+    ...textStyle('cardTitle', { color: KhazainColors.inkTitle }),
+    alignSelf: 'stretch',
+  },
   // The two icons are 20pt and 8 apart, so their hitSlop is asymmetric: each
   // reaches out to the row's edge but stops short of its neighbour, or taps in
   // the band between them would resolve by z-order.

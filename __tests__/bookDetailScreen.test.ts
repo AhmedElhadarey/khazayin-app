@@ -83,8 +83,8 @@ describe('BookCard accessibility', () => {
   });
 
   it('still names the book when the title is calligraphy art and the card is not one element', () => {
-    // Home's rail cards have no onPress and render the title as an image
-    // (app/(tabs)/index.tsx): without this the name would not be read at all.
+    // A card with no onPress whose title is an image (the cover, should it
+    // get art) is not one element: without this the name would not be read at all.
     expect(src).toMatch(/<Image[\s\S]*?accessible=\{onPress === undefined\}[\s\S]*?accessibilityLabel=\{name\}[\s\S]*?\/>/);
   });
 });

@@ -4,6 +4,9 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { READING_ROW } from '@/constants/layout';
+import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 
 /**
  * ToastOverlay — global toast surface. Mounted once in app/_layout.tsx as
@@ -22,6 +25,7 @@ export function ToastOverlay() {
   const current = useToastStore((s) => s.current);
   const dismiss = useToastStore((s) => s.dismiss);
   const playerVisible = usePlayerStore((s) => s.isVisible);
+  const twoLines = useLineClamp(2);
 
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
@@ -84,15 +88,18 @@ export function ToastOverlay() {
             KhazainShadows.card,
           ]}
         >
+          {/* Reading order (badge, message, action); READING_ROW puts the first
+              child at the physical right, so it renders action | message | badge. */}
           {isAchievement ? <CheckmarkBadge /> : null}
           <Text
             style={[styles.message, isAchievement && styles.messageAchievement]}
-            numberOfLines={2}
+            numberOfLines={twoLines}
           >
             {current.message}
           </Text>
           {current.action ? (
             <Pressable
+              accessibilityRole="button"
               onPress={() => {
                 current.action!.onPress();
                 dismiss();
@@ -141,7 +148,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: KhazainRadius.lg,
-    flexDirection: 'row',
+    ...READING_ROW,
     alignItems: 'center',
     gap: 12,
   },
@@ -165,25 +172,12 @@ const styles = StyleSheet.create({
   },
   message: {
     flex: 1,
-    color: KhazainColors.cream50,
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    ...textStyle('bodyCompact', { color: KhazainColors.cream50 }),
   },
-  messageAchievement: {
-    color: KhazainColors.navy800,
-    fontWeight: '700',
-  },
+  messageAchievement: textStyle('cardTitle', { color: KhazainColors.navy800 }),
   actionBtn: {
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
-  actionLabel: {
-    color: KhazainColors.gold200,
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '700',
-  },
+  actionLabel: textStyle('cardTitle', { color: KhazainColors.gold200 }),
 });

@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import type { Note } from '@/store/notesStore';
 
 import { linkedNoteRow, noteRowA11y } from './linkedNotesModel';
@@ -24,6 +25,7 @@ type Props = {
  * so a screen without notes keeps its Figma layout.
  */
 export function LinkedNotesSection({ title, notes, onOpenNote, onOpenSource, flush }: Props) {
+  const oneLine = useLineClamp(1);
   if (notes.length === 0) return null;
   return (
     <View style={[styles.box, flush && styles.flush]}>
@@ -40,11 +42,11 @@ export function LinkedNotesSection({ title, notes, onOpenNote, onOpenSource, flu
             style={styles.row}
           >
             {/* Physical left -> right: time, then title + source label. */}
-            <Text style={styles.time} numberOfLines={1}>
+            <Text style={styles.time} numberOfLines={oneLine}>
               {row.time}
             </Text>
             <View style={styles.column}>
-              <Text style={styles.noteTitle} numberOfLines={1}>
+              <Text style={styles.noteTitle} numberOfLines={oneLine}>
                 {row.title}
               </Text>
               {row.label ? (

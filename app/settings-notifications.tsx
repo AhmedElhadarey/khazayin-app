@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { SheetHandle } from '@/components/khazain/sheets';
 import {
   Alert,
   AppState,
@@ -12,10 +13,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { ClockGlyph, NotificationsGlyph } from '@/components/khazain/settings/SettingsGlyphs';
 import { useRouter } from 'expo-router';
+import { PHYSICAL_BOX, SHEET_CHROME } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { SettingsToggleRow, SettingsValueRow } from '@/components/khazain/settings';
 import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
 import { getPermissionAsync, type PermissionStatus } from '@/services/notificationScheduler';
@@ -23,13 +25,14 @@ import { formatClockTime, isWirdReminderArmed } from '@/services/wirdReminder';
 import { setWirdReminderEnabled } from '@/services/wirdReminderToggle';
 import { useSettingsStore } from '@/store';
 import { useWirdStore } from '@/store/wirdStore';
+import { showNotice } from '@/services/notice';
 
 // Guarded open of OS settings — Linking.openSettings() can reject on some
 // platforms/OEMs; match the project's external-action convention (try/catch +
 // Arabic Alert fallback) instead of a floating rejection (T5.3).
 function openOsSettings() {
   Linking.openSettings().catch(() => {
-    Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+    showNotice('خطأ', 'تعذّر فتح الإعدادات.');
   });
 }
 
@@ -109,7 +112,7 @@ export default function SettingsNotificationsScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
-        <View style={styles.handle} />
+        <SheetHandle />
       </View>
       <Text style={styles.title}>الإشعارات</Text>
       <ScrollView
@@ -133,7 +136,7 @@ export default function SettingsNotificationsScreen() {
                   key={cat.id}
                   title={cat.labelAr}
                   description="قريبًا"
-                  icon={<BellIcon />}
+                  icon={<NotificationsGlyph />}
                   value={false}
                   onValueChange={() => undefined}
                   disabled
@@ -149,7 +152,7 @@ export default function SettingsNotificationsScreen() {
                   key={cat.id}
                   title={cat.labelAr}
                   description={cat.descriptionAr}
-                  icon={<BellIcon />}
+                  icon={<NotificationsGlyph />}
                   // NOT `enabled` — the stored preference alone. `wird-daily` is
                   // `defaultOn: true`, so on a fresh install this rendered ON
                   // while nothing was scheduled and the Library card correctly
@@ -171,7 +174,7 @@ export default function SettingsNotificationsScreen() {
                 key={cat.id}
                 title={cat.labelAr}
                 description={cat.descriptionAr}
-                icon={<BellIcon />}
+                icon={<NotificationsGlyph />}
                 value={enabled}
                 onValueChange={(next) => setNotificationEnabled(cat.id, next)}
                 disabled={false}
@@ -186,7 +189,7 @@ export default function SettingsNotificationsScreen() {
           <SettingsValueRow
             title="وقت تذكير الورد"
             value={formatClockTime(wirdReminderTime)}
-            icon={<ClockIcon />}
+            icon={<ClockGlyph />}
             onPress={() => router.push('/settings-wird-reminder' as any)}
           />
         ) : null}
@@ -206,20 +209,11 @@ export default function SettingsNotificationsScreen() {
   );
 }
 
-function ClockIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={9} stroke={c} strokeWidth={1.5} />
-      <Path d="M12 7v5l3.5 2" stroke={c} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
-
 function PermissionDeniedBanner({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       style={({ pressed }) => [
         styles.banner,
         KhazainShadows.card,
@@ -234,55 +228,36 @@ function PermissionDeniedBanner({ onPress }: { onPress: () => void }) {
   );
 }
 
-function BellIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M6 16V11a6 6 0 0112 0v5l1.5 2H4.5L6 16z"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-      <Path d="M10 20a2 2 0 004 0" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
-      <Circle cx={12} cy={5} r={1.2} fill={c} />
-    </Svg>
-  );
-}
-
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   handleWrap: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
-  handle: {
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(40,30,19,0.18)',
-  },
   title: {
     ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 12,
   },
-  body: { paddingHorizontal: 16, gap: 16 },
+  body: { ...PHYSICAL_BOX, paddingHorizontal: SHEET_CHROME.paddingHorizontal, gap: 16 },
   list: { gap: 8 },
   noteCard: {
+    ...PHYSICAL_BOX,
     backgroundColor: KhazainColors.cream100,
-    borderRadius: 14,
+    // md on purpose: a note, not a card.
+    borderRadius: KhazainRadius.md,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.18)',
+    borderColor: KhazainColors.cardBorder,
     padding: 14,
     gap: 8,
   },
   noteText: textStyle('caption', { color: KhazainColors.ink700 }),
   banner: {
-    backgroundColor: '#FCE9D6',
+    ...PHYSICAL_BOX,
+    backgroundColor: KhazainColors.cream200,
     borderWidth: 1,
     borderColor: KhazainColors.gold500,
-    borderRadius: 16,
+    borderRadius: KhazainRadius.lg,
     paddingVertical: 14,
     paddingHorizontal: 16,
-    alignItems: 'flex-end',
+    alignItems: 'stretch',
     gap: 4,
   },
   bannerTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),

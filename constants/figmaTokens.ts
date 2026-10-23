@@ -19,6 +19,10 @@ export const FIGMA_TOKENS = Object.freeze({
   inkTitle: '#281E13',
   goldBar: '#C1A584',
   goldAccent: '#A88051',
+  /** Prophet hero body copy. */
+  inkBrown: '#5F482D',
+  /** Queen card body copy. */
+  queenBody: '#B07F4B',
   activeTabFill: 'rgba(215, 185, 149, 0.16)',
   activeTabIndicator: '#C1A584',
 

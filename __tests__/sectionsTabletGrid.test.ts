@@ -10,6 +10,13 @@ import React from 'react';
 import { SectionTile } from '../components/khazain/primitives/SectionTile';
 import { listRowAccessibilityLabel } from '../constants/rtlContracts';
 
+// SectionTile is called as a plain function below, outside a renderer, so its
+// one hook is pinned to the default-scale rule.
+jest.mock('@/hooks/useLineClamp', () => {
+  const actual = jest.requireActual('@/hooks/useLineClamp');
+  return { ...actual, useLineClamp: (lines: number) => actual.lineClampFor(lines, 1) };
+});
+
 const read = (rel: string) => fs.readFileSync(path.join(__dirname, '..', rel), 'utf8');
 
 describe('Sections screen wiring', () => {

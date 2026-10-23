@@ -37,13 +37,19 @@ export type Lookup<T> = Record<string, T>;
 export interface Surah {
   id: string;           // zero-padded, e.g. "001"
   number: number;       // 1..114
-  displayNumber: string; // Arabic-Indic, two-digit, e.g. "٠١" — shown in the surah-list index badge
+  displayNumber: string; // Arabic-Indic, two-digit, e.g. "٠١" — search and saved snapshots only; the badge renders toArabicDigits(number)
   name: string;         // e.g. "البقرة"
   meta: string;         // e.g. "مكية • 286 آية"
   revelationType: 'meccan' | 'medinan';
   ayahCount: number;
 }
 
+/**
+ * One ayah of a surah. `text` must NOT carry a Tanzil-style basmala prefix
+ * («بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ») on ayah 1: the reader draws the
+ * basmala itself (SurahCartouche), except for surahs 1 (where it IS ayah 1)
+ * and 9 (which has none). A prefixed text would print it twice.
+ */
 export interface Ayah {
   surahId: string;
   number: number;       // ayah number within surah
@@ -149,9 +155,12 @@ export interface MoreRow {
   isExternal?: boolean;
 }
 
+/** The Library filter-chip ids. `history` is the السجل view; `reminders` is تذكيراتي. */
+export type LibraryFilterId = 'all' | 'saved' | 'notes' | 'completed' | 'playlist' | 'reminders' | 'history';
+
 /** One chip in the Library filter bar. */
-export interface LibraryFilter {
-  id: string;
+export interface LibraryFilterChip {
+  id: LibraryFilterId;
   label: string;
   /** Display count shown alongside the label in the filter pill (e.g. "١٢").
    *  Optional — screens that don't render a count can ignore it. */

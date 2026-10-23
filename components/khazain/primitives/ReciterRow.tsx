@@ -1,4 +1,4 @@
-import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, LIST_ROW_TEXT, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import {
   listRowAccessibilityLabel,
@@ -6,6 +6,7 @@ import {
   type ReciterRowSlot,
 } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FigmaIcon } from '../icons/FigmaIcon';
@@ -32,21 +33,22 @@ export function ReciterRow({
   onPress?: () => void;
   isDefault?: boolean;
 }) {
+  const oneLine = useLineClamp(1);
   const slots: Record<ReciterRowSlot, React.ReactNode> = {
     // `vuesax/bulk/arrow-right` at 20, mirrored — 10 instances on 2457:954 and
     // 7 on 2031:6193, every one of them carrying `transform.m00: -1`. This
     // replaces a hand-drawn stroked chevron, which was both the wrong shape
     // (an outline where the file draws a filled wedge) and the wrong size.
     disclosure: (
-      <FigmaIcon name="Back" size={20} color={KhazainColors.navy800} mirrored />
+      <FigmaIcon name="Back" size={20} color={KhazainColors.inkTitle} mirrored />
     ),
     text: (
       <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, subtitle ? styles.titleWithSubtitle : null]} numberOfLines={oneLine}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={styles.subtitle} numberOfLines={1}>
+          <Text style={styles.subtitle} numberOfLines={oneLine}>
             {subtitle}
           </Text>
         ) : null}
@@ -78,12 +80,13 @@ const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
     minHeight: CARD_DENSITY.reciterRowMinHeight,
-    paddingVertical: 4,
+    // 1 + 3 + 48 + 3 + 1 = 56: the 24 + 4 + 20 text column fills the row.
+    paddingVertical: LIST_ROW_TEXT.paddingVertical,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
     gap: 8,
     borderRadius: CARD_DENSITY.reciterRowRadius,
     backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
+    borderWidth: LIST_ROW_TEXT.borderWidth,
     borderColor: KhazainColors.hairlineWarm,
     alignItems: 'center',
   },
@@ -98,10 +101,13 @@ const styles = StyleSheet.create({
   textCol: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'flex-end',
-    gap: 2,
+    // Full width, not shrink-wrapped (Android 15); text styles are right-aligned.
+    alignItems: 'stretch',
+    alignSelf: 'stretch',
+    gap: 0,
   },
   // `H3-145` is TheMixArab Regular 14, `P-148` TheMixArab Regular 12.
-  title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
-  subtitle: textStyle('caption', { color: KhazainColors.ink500 }),
+  title: textStyle('bodyCompactLoose', { color: KhazainColors.inkTitle }),
+  titleWithSubtitle: { marginBottom: LIST_ROW_TEXT.titleGap },
+  subtitle: { ...textStyle('caption', { color: KhazainColors.ink500 }), lineHeight: LIST_ROW_TEXT.subtitleLineHeight },
 });

@@ -12,18 +12,19 @@ import {
   SkeletonCardList,
   SkeletonPosterList,
 } from '@/components/khazain';
+import { HeaderArt } from '@/components/khazain/patterns';
 import { RtlCarousel } from '@/components/khazain/primitives';
 import { RecommendedSection } from '@/components/khazain/recommendations/RecommendedSection';
 import {
-  HOME_HERO_TOP_GAP,
   HOME_QUICK_CHIPS,
   type HomeQuickChip,
-  HOME_SECTION_GAP,
   HOME_SECTION_ORDER,
   type HomeSectionKey,
+  homeHeaderBand,
+  homeSectionGap,
   homeTabletRows,
 } from '@/constants/homePresentation';
-import { PHYSICAL_ROW, READING_ROW, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW, READING_ROW, SCREEN_BOTTOM_BREATHING } from '@/constants/layout';
 import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
 import { carouselVisibleCount, dawahStageWidth } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -33,6 +34,7 @@ import {
   useFeaturedDawahStore,
   useScholarsStore,
 } from '@/store';
+import { startLecturePlayback } from '@/services/lecturePlayback';
 import { signalCountNow } from '@/services/recommendations/signalCount';
 import { watchSignals } from '@/services/recommendations/watchSignals';
 import { openSearch } from '@/services/searchNavigation';
@@ -41,10 +43,13 @@ import { useRecommendationInputsStore } from '@/store/recommendationInputsStore'
 import { useSavedStore } from '@/store/savedStore';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { InteractionManager, ScrollView, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import Svg, { Path, Rect } from 'react-native-svg';
+import { Image } from 'expo-image';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { QUICK_CHIP_BADGE_SIZE } from '@/components/khazain/home/QuickChip';
+import { QUICK_CHIP_SEAL } from '@/components/khazain/home/quickChipSeal';
 
 // The scholar's name as calligraphy, keyed by scholar id; ids must match
 // data/content/scholars.ts, and only scholars with art are featured here.
@@ -79,6 +84,8 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, isTablet, homeColumnStyle } = useResponsiveLayout();
+  // The header's real height, seeded with the design's 102 (54 row + 8 + 40 pill).
+  const [headerHeight, setHeaderHeight] = useState(102);
 
   const goToSections = () => router.push('/sections');
 
@@ -161,7 +168,11 @@ export default function HomeScreen() {
   // Rendered from HOME_SECTION_ORDER so the running order lives in one place
   // and is asserted by __tests__/homePresentation.test.ts.
   const sections: Record<HomeSectionKey, React.ReactNode> = {
-    header: <HomeHeader onSearchOpen={openSearch} />,
+    header: (
+      <View onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}>
+        <HomeHeader onSearchOpen={openSearch} />
+      </View>
+    ),
 
     quranHero: (
       <View style={styles.heroPad}>
@@ -189,7 +200,14 @@ export default function HomeScreen() {
             {featuredScholars
               .slice(0, carouselVisibleCount(width, 'scholar', featuredScholars.length))
               .map((s) => (
-              <ScholarCard key={s.id} id={s.id} nameArt={NAME_ART_BY_ID[s.id]} name={s.name} />
+              <ScholarCard
+                key={s.id}
+                id={s.id}
+                nameArt={NAME_ART_BY_ID[s.id]}
+                name={s.name}
+                // The same destination as the Sections scholar list.
+                onPress={() => router.push(`/sections/scholar/${s.id}` as any)}
+              />
             ))}
           </RtlCarousel>
         </AsyncContent>
@@ -208,7 +226,14 @@ export default function HomeScreen() {
         >
           <RtlCarousel contentContainerStyle={styles.scrollerPad}>
             {bookLectures.slice(0, carouselVisibleCount(width, 'book', bookLectures.length)).map((b) => (
-              <BookCard key={b.id} id={b.id} name={b.title} titleArt={BOOK_TITLE_ART} />
+              <BookCard
+                key={b.id}
+                id={b.id}
+                name={b.title}
+                titleArt={BOOK_TITLE_ART}
+                // The same action as the Sections books list.
+                onPress={() => startLecturePlayback(b)}
+              />
             ))}
           </RtlCarousel>
         </AsyncContent>
@@ -255,7 +280,7 @@ export default function HomeScreen() {
     // In the pair the cards grow to the taller one's height.
     quranHero: <HeroQuran onMore={goToSections} fill />,
     prophetHero: <HeroProphet onMore={goToSections} fill />,
-    queen,
+    queen: <QueenCard onMore={goToSections} fill />,
     quickChips: <View style={styles.quickChipsCell}>{quickChips}</View>,
   };
 
@@ -265,6 +290,18 @@ export default function HomeScreen() {
     // sits, so it would jump as it landed (launch design R6).
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <StatusBar style="dark" backgroundColor={KhazainColors.pageBg} />
+      {/* 2001:940 lays the tile, the corner pair (the small one rotated 20.8deg) and
+          the opaque 155pt header over the page. Drawn behind the scroll because the
+          app's header scrolls with the page while the frame's header is fixed
+          (FIXED_WHEN_CHILD_OF_SCROLLING_FRAME); the band's height follows the
+          measured header so large text never leaves tile showing under it. The
+          title sits in the Home column, whose right edge is the column's border
+          plus the 16pt page padding. */}
+      <HeaderArt
+        smallCorner="home"
+        inset={(homeColumnStyle.borderRightWidth ?? 0) + 16}
+        bandHeight={homeHeaderBand(insets.top, headerHeight)}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.container,
@@ -278,7 +315,11 @@ export default function HomeScreen() {
               typeof row === 'string' && sections[row] == null ? null : (
                 <View
                   key={typeof row === 'string' ? row : row.join('+')}
-                  style={index === 0 ? undefined : styles.sectionGap}
+                  style={
+                    index === 0
+                      ? undefined
+                      : { marginTop: homeSectionGap(typeof row === 'string' ? row : row[0]) }
+                  }
                 >
                   {typeof row === 'string' ? (
                     sections[row]
@@ -297,7 +338,10 @@ export default function HomeScreen() {
             )
           : HOME_SECTION_ORDER.map((key, index) =>
               sections[key] == null ? null : (
-                <View key={key} style={index === 0 ? undefined : styles.sectionGap}>
+                <View
+                  key={key}
+                  style={index === 0 ? undefined : { marginTop: homeSectionGap(key) }}
+                >
                   {sections[key]}
                 </View>
               ),
@@ -309,53 +353,44 @@ export default function HomeScreen() {
 
 // Keyed by the chip id, not its Arabic label: renaming a label in
 // HOME_QUICK_CHIPS must not silently drop the glyph.
+//
+// Each badge is one node in the file — navy disc, white glyph, hairline ring —
+// so it is drawn whole (24.94 x 24) from the generated set rather than as a
+// glyph centred in a CSS circle. `audio book` 2093:1768, `audio` 2093:1775 and
+// 2093:1760.
 const QUICK_CHIP_GLYPH: Record<HomeQuickChip['id'], React.ReactNode> = {
-  audiobooks: <HeadphonesGlyph />,
-  radio: <MicGlyph />,
-  exclusive: <StarGlyph />,
+  audiobooks: <FigmaIcon name="HomeBadgeAudiobooks" />,
+  radio: <FigmaIcon name="HomeAudio" />,
+  exclusive: <ExclusiveChipBadge />,
 };
 
-// ── Quick-chip badge glyphs (small inline SVGs, ported verbatim from home.jsx) ────
-
-function StarGlyph() {
+/**
+ * حصريات خزائن الرحمن: the disc and ring are vector, the white seal and the
+ * navy word حصري laid over it are raster paints (see `quickChipSeal.ts`).
+ */
+function ExclusiveChipBadge() {
+  const { seal, word } = QUICK_CHIP_SEAL;
   return (
-    <Svg width={14} height={14} viewBox="0 0 16 16" fill="none">
-      <Path
-        d="M8 1.5l1.85 3.75 4.15.6-3 2.9.7 4.1L8 10.9 4.3 12.85 5 8.75 2 5.85l4.15-.6L8 1.5z"
-        fill="#D7B995"
+    <View style={styles.exclusiveBadge}>
+      <FigmaIcon name="HomeBadgeExclusive" />
+      <Image
+        source={require('@/assets/figma/seal-khazain.png')}
+        style={{ position: 'absolute', ...seal }}
+        contentFit="fill"
+        cachePolicy="memory-disk"
       />
-    </Svg>
-  );
-}
-
-function MicGlyph() {
-  return (
-    <Svg width={10} height={14} viewBox="0 0 10 14" fill="none">
-      <Rect x={3} y={0.5} width={4} height={8} rx={2} fill="#fff" />
-      <Path
-        d="M1 7a4 4 0 0 0 8 0M5 11v2"
-        stroke="#fff"
-        strokeWidth={1.2}
-        strokeLinecap="round"
+      <Image
+        source={require('@/assets/figma/seal-word-hasri.png')}
+        style={{ position: 'absolute', ...word }}
+        contentFit="fill"
+        cachePolicy="memory-disk"
       />
-    </Svg>
-  );
-}
-
-function HeadphonesGlyph() {
-  return (
-    <Svg width={14} height={14} viewBox="0 0 14 14" fill="none">
-      <Path
-        d="M1 8V7a6 6 0 0 1 12 0v1M1 8v2a1.5 1.5 0 0 0 1.5 1.5H3V8H1zm12 0v2a1.5 1.5 0 0 1-1.5 1.5H11V8h2z"
-        stroke="#fff"
-        strokeWidth={1.2}
-        strokeLinejoin="round"
-      />
-    </Svg>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  exclusiveBadge: { ...PHYSICAL_BOX, ...QUICK_CHIP_BADGE_SIZE },
   screen: {
     flex: 1,
     backgroundColor: KhazainColors.pageBg,
@@ -363,12 +398,8 @@ const styles = StyleSheet.create({
   container: {
     paddingTop: 0,
   },
-  sectionGap: {
-    marginTop: HOME_SECTION_GAP,
-  },
   heroPad: {
     paddingHorizontal: 16,
-    marginTop: HOME_HERO_TOP_GAP,
   },
   // Tablet only: two sections side by side, the first on the physical right.
   pairRow: {
@@ -376,7 +407,6 @@ const styles = StyleSheet.create({
     gap: 12,
     alignItems: 'stretch',
     paddingHorizontal: 16,
-    marginTop: HOME_HERO_TOP_GAP,
   },
   pairCell: {
     flex: 1,
@@ -386,7 +416,7 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     gap: 12,
     paddingTop: 11,
-    paddingBottom: 4,
+    paddingBottom: 2,
   },
   scrollerPad: {
     paddingHorizontal: 16,
@@ -400,6 +430,6 @@ const styles = StyleSheet.create({
     // Owns the breathing room for QuickChip's floating badge (top:-11)
     // and bottom navy stripe (bottom:-2) so siblings can't clip them (G8).
     paddingTop: 11,
-    paddingBottom: 4,
+    paddingBottom: 2,
   },
 });

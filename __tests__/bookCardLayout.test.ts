@@ -7,6 +7,10 @@ import {
 const REF = BOOK_CARD_DESIGN.width;
 
 describe('book card layout', () => {
+  it('rounds the stripe to three quarters of half its height (HOME-21)', () => {
+    expect(bookCardLayout(REF).stripeRadius).toBeCloseTo(1.45, 2);
+  });
+
   it('reproduces the design card at the reference width', () => {
     const l = bookCardLayout(REF);
     expect(l.cardHeight).toBeCloseTo(81, 2);

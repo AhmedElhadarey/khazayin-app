@@ -52,10 +52,11 @@ export function SparkleSectionIcon({ size = 47 }: Props) {
       <FigmaIcon name="SectionExclusive" size={size} />
       <Image
         source={require('@/assets/figma/seal-khazain.png')}
-        // `حصرى` is 42 x 47 at the frame's origin — flush left, full height.
+        // `حصرى` is a 42 x 47 STRETCH paint at the frame's origin — flush left,
+        // full height, so it fills the box rather than fitting inside it.
         // PHYSICAL_BOX above is what keeps `left` meaning left under forceRTL.
         style={{ position: 'absolute', left: 0, top: 0, width: 42 * scale, height: 47 * scale }}
-        contentFit="contain"
+        contentFit="fill"
         // A bundled asset, so this never needs a round trip after first paint.
         cachePolicy="memory-disk"
       />

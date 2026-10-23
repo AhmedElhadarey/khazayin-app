@@ -37,14 +37,21 @@ export type HeroLayer = {
 
 export type HeroShellProps = {
   /** Fills the card at any height, so it must be the patterned ground alone. */
-  background: ImageSource;
+  background?: ImageSource;
+  /**
+   * A drawn ground instead of (or under) an image, e.g. a gradient. Fills the
+   * card at any height.
+   */
+  backdrop?: React.ReactNode;
+  /** Overrides the shared hero shadow where the file states another. */
+  shadow?: Pick<ViewStyle, 'shadowColor' | 'shadowOffset' | 'shadowOpacity' | 'shadowRadius' | 'elevation'>;
   /**
    * Flat colour behind the background image, sampled from the artwork. It
    * covers the frame before the image decodes, and on Android an
    * elevation shadow over a transparent card renders as a grey band.
    */
   backgroundColor: string;
-  layers: HeroLayer[];
+  layers: readonly HeroLayer[];
   designWidth: number;
   /** The card's minimum height; text is free to push it past this. */
   designHeight: number;
@@ -53,12 +60,23 @@ export type HeroShellProps = {
   /** Text column, in design units, from the card's physical left edge. */
   column: { left: number; width: number; top: number; bottom: number };
   accessibilityLabel: string;
+  /** The card's copy, read after the label so VoiceOver users get what sighted users see. */
+  accessibilityHint?: string;
   onPress?: () => void;
+  /**
+   * The nested المزيد pill. A button inside an accessible Pressable is not
+   * reachable by VoiceOver / TalkBack, so it is also exposed as a custom action.
+   */
+  onMore?: () => void;
   children: (scale: number) => React.ReactNode;
 };
 
+const HERO_ACTIONS = [{ name: 'activate' }, { name: 'more', label: 'المزيد' }];
+
 export function HeroShell({
   background,
+  backdrop,
+  shadow,
   backgroundColor,
   layers,
   designWidth,
@@ -66,7 +84,9 @@ export function HeroShell({
   fill,
   column,
   accessibilityLabel,
+  accessibilityHint,
   onPress,
+  onMore,
   children,
 }: HeroShellProps) {
   const [width, setWidth] = useState(0);
@@ -100,10 +120,17 @@ export function HeroShell({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityHint={accessibilityHint}
+      accessibilityActions={HERO_ACTIONS}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === 'more') (onMore ?? onPress)?.();
+        else if (e.nativeEvent.actionName === 'activate') onPress?.();
+      }}
       style={({ pressed }) => [
         styles.card,
         PHYSICAL_BOX,
         KhazainShadows.hero,
+        shadow,
         fill && styles.fill,
         {
           backgroundColor,
@@ -117,14 +144,17 @@ export function HeroShell({
         },
       ]}
     >
-      <Image
-        source={background}
-        style={StyleSheet.absoluteFill}
-        contentFit="cover"
-        contentPosition="top"
-        cachePolicy="memory-disk"
-        transition={0}
-      />
+      {backdrop}
+      {background ? (
+        <Image
+          source={background}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+          contentPosition="top"
+          cachePolicy="memory-disk"
+          transition={0}
+        />
+      ) : null}
       {/* Nothing is placed until the first layout gives a width to scale by. */}
       {scale > 0
         ? layers.map((layer, i) => (

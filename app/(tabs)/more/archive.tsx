@@ -4,15 +4,15 @@ import {
   HeadphonesSectionIcon,
   ScholarSectionIcon,
 } from '@/components/khazain/icons/sections';
-import { HeaderArt } from '@/components/khazain/patterns';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { ARCHIVE_ROWS, type ArchiveRow } from '@/data/content/archive';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Node 2558:1334. The three cards are `DIV-59` — the Sections root's card at a
@@ -31,12 +31,14 @@ const GLYPH_BY_ID: Record<ArchiveRow['id'], React.ReactNode> = {
 };
 
 export default function ArchiveScreen() {
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt />
+      <HeaderArt bandHeight={headerBandHeight(insets.top, 'search', fontScale)} />
       <InlineHeader title="الأرشيف" onBack={() => router.back()} style={columnStyle} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }, columnStyle]}

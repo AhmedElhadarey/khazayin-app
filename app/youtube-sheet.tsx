@@ -1,11 +1,13 @@
 import { SheetRow, SheetShell } from '@/components/khazain/sheets';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
-import Svg, { Path, Rect } from 'react-native-svg';
+import { Linking, StyleSheet, Text, View } from 'react-native';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { showNotice } from '@/services/notice';
 
-// Featured channels per Figma page-38. Real YouTube URLs to be supplied by the
+// Featured channels (no Figma frame for this sheet). Real YouTube URLs to be supplied by the
 // foundation; falls back to a friendly Arabic alert if a link cannot be opened.
 const ITEMS: { title: string; url: string }[] = [
   { title: 'قناة الشيخ محمد العريفي', url: 'https://youtube.com/@MohammadAlarefe' },
@@ -26,7 +28,7 @@ export default function YouTubeSheet() {
       await Linking.openURL(url);
       close();
     } catch {
-      Alert.alert('يوتيوب', 'تعذّر فتح الرابط على هذا الجهاز.');
+      showNotice('يوتيوب', 'تعذّر فتح الرابط على هذا الجهاز.');
     }
   };
 
@@ -36,7 +38,7 @@ export default function YouTubeSheet() {
         {ITEMS.map((it) => (
           <SheetRow
             key={it.title}
-            icon={<PlayGlyph />}
+            icon={<YoutubeMark />}
             title={it.title}
             onPress={() => open(it.url)}
           />
@@ -47,14 +49,10 @@ export default function YouTubeSheet() {
   );
 }
 
-function PlayGlyph() {
-  // YouTube-style "play in rounded rect" badge in white inside the navy disc.
-  return (
-    <Svg width={14} height={14} viewBox="0 0 20 20" fill="none">
-      <Rect x={2} y={5} width={16} height={10} rx={2} fill="#FF3B30" />
-      <Path d="M9 8l3.5 2-3.5 2V8z" fill="#fff" />
-    </Svg>
-  );
+function YoutubeMark() {
+  // `MoreYoutube` (node 2106:2237), the mark the More row draws; cream50 on the
+  // navy disc. The sheet has no frame of its own.
+  return <FigmaIcon name="MoreYoutube" size={18} color={KhazainColors.cream50} />;
 }
 
 const styles = StyleSheet.create({
@@ -64,12 +62,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   more: {
-    textAlign: 'center',
+    ...textStyle('caption', { color: KhazainColors.goldAccent, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 4,
-    fontSize: 12,
-    color: KhazainColors.gold500,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
   },
 });

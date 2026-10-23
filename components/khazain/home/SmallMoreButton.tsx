@@ -1,13 +1,14 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import { FigmaIcon } from '../icons/FigmaIcon';
 import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 
 // Compact "المزيد" button used inside hero and queen cards.
-// 4px vertical × 19px horizontal padding, bg navy, radius 4, tiny left-pointing chevron.
-// Port of design_source/app/home.jsx MoreButton / QueenMoreBtn.
+// 4px vertical × 19px horizontal padding, bg navy, radius 4, the file's 8pt stemmed arrow (vuesax/outline/arrow-left-stick, #FDF9F2) —
+// instances 2093:1660 / 2031:707 / 2812:1403, none of them mirrored.
+// Pill frames 2093:1660 (Quran), 2031:707 (Prophet) and 2812:1402 (queen card).
 export function SmallMoreButton({ onPress }: { onPress?: () => void }) {
   return (
     <Pressable
@@ -17,15 +18,7 @@ export function SmallMoreButton({ onPress }: { onPress?: () => void }) {
       accessibilityLabel="المزيد"
       style={({ pressed }) => [styles.btn, { opacity: pressed ? 0.85 : 1 }]}
     >
-      <Svg width={8} height={8} viewBox="0 0 8 8">
-        <Path
-          d="M5 1.5 L2 4 L5 6.5"
-          stroke="#FDF9F2"
-          strokeWidth={1}
-          fill="none"
-          strokeLinecap="round"
-        />
-      </Svg>
+      <FigmaIcon name="ArrowLeftStick" size={8} color="#FDF9F2" />
       <Text style={styles.label}>المزيد</Text>
     </Pressable>
   );

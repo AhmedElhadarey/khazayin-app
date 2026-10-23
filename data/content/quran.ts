@@ -21,38 +21,39 @@ import type { Ayah, Lookup, Qiraat, Reciter, Surah } from '../../types/content';
 
 export const SURAHS: Surah[] = [
   // From mushaf.tsx (first 9, ids converted to western digits, ayah counts as numbers).
-  // displayNumber is the Arabic-Indic two-digit numeral shown in the index badge.
-  { id: '001', number: 1,   displayNumber: '٠١', name: 'سورة الفاتحة',   meta: 'مكية · ٧ آيات',    revelationType: 'meccan',  ayahCount: 7   },
-  { id: '002', number: 2,   displayNumber: '٠٢', name: 'سورة البقرة',    meta: 'مدنية · ٢٨٦ آية', revelationType: 'medinan', ayahCount: 286 },
-  { id: '003', number: 3,   displayNumber: '٠٣', name: 'سورة آل عمران',  meta: 'مدنية · ٢٠٠ آية', revelationType: 'medinan', ayahCount: 200 },
-  { id: '004', number: 4,   displayNumber: '٠٤', name: 'سورة النساء',    meta: 'مدنية · ١٧٦ آية', revelationType: 'medinan', ayahCount: 176 },
-  { id: '005', number: 5,   displayNumber: '٠٥', name: 'سورة المائدة',   meta: 'مدنية · ١٢٠ آية', revelationType: 'medinan', ayahCount: 120 },
-  { id: '006', number: 6,   displayNumber: '٠٦', name: 'سورة الأنعام',   meta: 'مكية · ١٥٤ آية',  revelationType: 'meccan',  ayahCount: 154 },
-  { id: '007', number: 7,   displayNumber: '٠٧', name: 'سورة الأعراف',   meta: 'مكية · ٢٠٤ آية',  revelationType: 'meccan',  ayahCount: 204 },
-  { id: '008', number: 8,   displayNumber: '٠٨', name: 'سورة الأنفال',   meta: 'مدنية · ٧٥ آية',  revelationType: 'medinan', ayahCount: 75  },
-  { id: '009', number: 9,   displayNumber: '٠٩', name: 'سورة التوبة',    meta: 'مدنية · ١٢٩ آية', revelationType: 'medinan', ayahCount: 129 },
+  // displayNumber is the two-digit Arabic-Indic numeral; it only feeds search and
+  // saved snapshots now. The index badge renders toArabicDigits(number), unpadded.
+  { id: '001', number: 1,   displayNumber: '٠١', name: 'سورة الفاتحة',   meta: 'مكية • ٧ آيات',    revelationType: 'meccan',  ayahCount: 7   },
+  { id: '002', number: 2,   displayNumber: '٠٢', name: 'سورة البقرة',    meta: 'مدنية • ٢٨٦ آية', revelationType: 'medinan', ayahCount: 286 },
+  { id: '003', number: 3,   displayNumber: '٠٣', name: 'سورة آل عمران',  meta: 'مدنية • ٢٠٠ آية', revelationType: 'medinan', ayahCount: 200 },
+  { id: '004', number: 4,   displayNumber: '٠٤', name: 'سورة النساء',    meta: 'مدنية • ١٧٦ آية', revelationType: 'medinan', ayahCount: 176 },
+  { id: '005', number: 5,   displayNumber: '٠٥', name: 'سورة المائدة',   meta: 'مدنية • ١٢٠ آية', revelationType: 'medinan', ayahCount: 120 },
+  { id: '006', number: 6,   displayNumber: '٠٦', name: 'سورة الأنعام',   meta: 'مكية • ١٥٤ آية',  revelationType: 'meccan',  ayahCount: 154 },
+  { id: '007', number: 7,   displayNumber: '٠٧', name: 'سورة الأعراف',   meta: 'مكية • ٢٠٤ آية',  revelationType: 'meccan',  ayahCount: 204 },
+  { id: '008', number: 8,   displayNumber: '٠٨', name: 'سورة الأنفال',   meta: 'مدنية • ٧٥ آية',  revelationType: 'medinan', ayahCount: 75  },
+  { id: '009', number: 9,   displayNumber: '٠٩', name: 'سورة التوبة',    meta: 'مدنية • ١٢٩ آية', revelationType: 'medinan', ayahCount: 129 },
   // Extended to 30 with authentic data
-  { id: '010', number: 10,  displayNumber: '١٠', name: 'سورة يونس',      meta: 'مكية · ١٠٩ آيات', revelationType: 'meccan',  ayahCount: 109 },
-  { id: '011', number: 11,  displayNumber: '١١', name: 'سورة هود',       meta: 'مكية · ١٢٣ آية',  revelationType: 'meccan',  ayahCount: 123 },
-  { id: '012', number: 12,  displayNumber: '١٢', name: 'سورة يوسف',      meta: 'مكية · ١١١ آية',  revelationType: 'meccan',  ayahCount: 111 },
-  { id: '013', number: 13,  displayNumber: '١٣', name: 'سورة الرعد',     meta: 'مدنية · ٤٣ آية',  revelationType: 'medinan', ayahCount: 43  },
-  { id: '014', number: 14,  displayNumber: '١٤', name: 'سورة إبراهيم',   meta: 'مكية · ٥٢ آية',   revelationType: 'meccan',  ayahCount: 52  },
-  { id: '015', number: 15,  displayNumber: '١٥', name: 'سورة الحجر',     meta: 'مكية · ٩٩ آية',   revelationType: 'meccan',  ayahCount: 99  },
-  { id: '016', number: 16,  displayNumber: '١٦', name: 'سورة النحل',     meta: 'مكية · ١٢٨ آية',  revelationType: 'meccan',  ayahCount: 128 },
-  { id: '017', number: 17,  displayNumber: '١٧', name: 'سورة الإسراء',   meta: 'مكية · ١١١ آية',  revelationType: 'meccan',  ayahCount: 111 },
-  { id: '018', number: 18,  displayNumber: '١٨', name: 'سورة الكهف',     meta: 'مكية · ١١٠ آيات', revelationType: 'meccan',  ayahCount: 110 },
-  { id: '019', number: 19,  displayNumber: '١٩', name: 'سورة مريم',      meta: 'مكية · ٩٨ آية',   revelationType: 'meccan',  ayahCount: 98  },
-  { id: '020', number: 20,  displayNumber: '٢٠', name: 'سورة طه',        meta: 'مكية · ١٣٥ آية',  revelationType: 'meccan',  ayahCount: 135 },
-  { id: '021', number: 21,  displayNumber: '٢١', name: 'سورة الأنبياء',  meta: 'مكية · ١١٢ آية',  revelationType: 'meccan',  ayahCount: 112 },
-  { id: '022', number: 22,  displayNumber: '٢٢', name: 'سورة الحج',      meta: 'مدنية · ٧٨ آية',  revelationType: 'medinan', ayahCount: 78  },
-  { id: '023', number: 23,  displayNumber: '٢٣', name: 'سورة المؤمنون',  meta: 'مكية · ١١٨ آية',  revelationType: 'meccan',  ayahCount: 118 },
-  { id: '024', number: 24,  displayNumber: '٢٤', name: 'سورة النور',     meta: 'مدنية · ٦٤ آية',  revelationType: 'medinan', ayahCount: 64  },
-  { id: '025', number: 25,  displayNumber: '٢٥', name: 'سورة الفرقان',   meta: 'مكية · ٧٧ آية',   revelationType: 'meccan',  ayahCount: 77  },
-  { id: '026', number: 26,  displayNumber: '٢٦', name: 'سورة الشعراء',   meta: 'مكية · ٢٢٧ آية',  revelationType: 'meccan',  ayahCount: 227 },
-  { id: '027', number: 27,  displayNumber: '٢٧', name: 'سورة النمل',     meta: 'مكية · ٩٣ آية',   revelationType: 'meccan',  ayahCount: 93  },
-  { id: '028', number: 28,  displayNumber: '٢٨', name: 'سورة القصص',     meta: 'مكية · ٨٨ آية',   revelationType: 'meccan',  ayahCount: 88  },
-  { id: '029', number: 29,  displayNumber: '٢٩', name: 'سورة العنكبوت',  meta: 'مكية · ٦٩ آية',   revelationType: 'meccan',  ayahCount: 69  },
-  { id: '030', number: 30,  displayNumber: '٣٠', name: 'سورة الروم',     meta: 'مكية · ٦٠ آية',   revelationType: 'meccan',  ayahCount: 60  },
+  { id: '010', number: 10,  displayNumber: '١٠', name: 'سورة يونس',      meta: 'مكية • ١٠٩ آيات', revelationType: 'meccan',  ayahCount: 109 },
+  { id: '011', number: 11,  displayNumber: '١١', name: 'سورة هود',       meta: 'مكية • ١٢٣ آية',  revelationType: 'meccan',  ayahCount: 123 },
+  { id: '012', number: 12,  displayNumber: '١٢', name: 'سورة يوسف',      meta: 'مكية • ١١١ آية',  revelationType: 'meccan',  ayahCount: 111 },
+  { id: '013', number: 13,  displayNumber: '١٣', name: 'سورة الرعد',     meta: 'مدنية • ٤٣ آية',  revelationType: 'medinan', ayahCount: 43  },
+  { id: '014', number: 14,  displayNumber: '١٤', name: 'سورة إبراهيم',   meta: 'مكية • ٥٢ آية',   revelationType: 'meccan',  ayahCount: 52  },
+  { id: '015', number: 15,  displayNumber: '١٥', name: 'سورة الحجر',     meta: 'مكية • ٩٩ آية',   revelationType: 'meccan',  ayahCount: 99  },
+  { id: '016', number: 16,  displayNumber: '١٦', name: 'سورة النحل',     meta: 'مكية • ١٢٨ آية',  revelationType: 'meccan',  ayahCount: 128 },
+  { id: '017', number: 17,  displayNumber: '١٧', name: 'سورة الإسراء',   meta: 'مكية • ١١١ آية',  revelationType: 'meccan',  ayahCount: 111 },
+  { id: '018', number: 18,  displayNumber: '١٨', name: 'سورة الكهف',     meta: 'مكية • ١١٠ آيات', revelationType: 'meccan',  ayahCount: 110 },
+  { id: '019', number: 19,  displayNumber: '١٩', name: 'سورة مريم',      meta: 'مكية • ٩٨ آية',   revelationType: 'meccan',  ayahCount: 98  },
+  { id: '020', number: 20,  displayNumber: '٢٠', name: 'سورة طه',        meta: 'مكية • ١٣٥ آية',  revelationType: 'meccan',  ayahCount: 135 },
+  { id: '021', number: 21,  displayNumber: '٢١', name: 'سورة الأنبياء',  meta: 'مكية • ١١٢ آية',  revelationType: 'meccan',  ayahCount: 112 },
+  { id: '022', number: 22,  displayNumber: '٢٢', name: 'سورة الحج',      meta: 'مدنية • ٧٨ آية',  revelationType: 'medinan', ayahCount: 78  },
+  { id: '023', number: 23,  displayNumber: '٢٣', name: 'سورة المؤمنون',  meta: 'مكية • ١١٨ آية',  revelationType: 'meccan',  ayahCount: 118 },
+  { id: '024', number: 24,  displayNumber: '٢٤', name: 'سورة النور',     meta: 'مدنية • ٦٤ آية',  revelationType: 'medinan', ayahCount: 64  },
+  { id: '025', number: 25,  displayNumber: '٢٥', name: 'سورة الفرقان',   meta: 'مكية • ٧٧ آية',   revelationType: 'meccan',  ayahCount: 77  },
+  { id: '026', number: 26,  displayNumber: '٢٦', name: 'سورة الشعراء',   meta: 'مكية • ٢٢٧ آية',  revelationType: 'meccan',  ayahCount: 227 },
+  { id: '027', number: 27,  displayNumber: '٢٧', name: 'سورة النمل',     meta: 'مكية • ٩٣ آية',   revelationType: 'meccan',  ayahCount: 93  },
+  { id: '028', number: 28,  displayNumber: '٢٨', name: 'سورة القصص',     meta: 'مكية • ٨٨ آية',   revelationType: 'meccan',  ayahCount: 88  },
+  { id: '029', number: 29,  displayNumber: '٢٩', name: 'سورة العنكبوت',  meta: 'مكية • ٦٩ آية',   revelationType: 'meccan',  ayahCount: 69  },
+  { id: '030', number: 30,  displayNumber: '٣٠', name: 'سورة الروم',     meta: 'مكية • ٦٠ آية',   revelationType: 'meccan',  ayahCount: 60  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -95,6 +96,15 @@ export const QIRAAT: Qiraat[] = [
 // RECITERS
 // ---------------------------------------------------------------------------
 
+// The three style labels are written with escapes: the .fig stores the shadda
+// BEFORE the vowel mark, and editors/IMEs may reorder literal marks on save.
+/** المصحف المجوَّد — node 2457:943 (…0648 0651 064E 062F). */
+const LABEL_MUJAWWAD = 'المصحف المجو\u0651\u064Eد';
+/** المصحف المرتَّل — node 2457:950 (…062A 0651 064E 0644). */
+const LABEL_MURATTAL = 'المصحف المرت\u0651\u064Eل';
+/** المصحف المعلِّم — node 2457:953 (…0644 0651 0650 0645). */
+const LABEL_MUALLIM = 'المصحف المعل\u0651\u0650م';
+
 /**
  * Reciters, distributed across the 4 tab styles.
  *
@@ -112,21 +122,21 @@ export const QIRAAT: Qiraat[] = [
  * implying a source that does not exist.
  */
 export const RECITERS: Reciter[] = [
-  { id: 'r1',  name: 'الشيخ عبد الباسط عبد الصمد',    style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
-  { id: 'r2',  name: 'الشيخ محمود خليل الحصري',        style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
-  { id: 'r8',  name: 'الشيخ مصطفى إسماعيل',            style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
-  { id: 'r9',  name: 'الشيخ أبو العينين شعيشع',        style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
-  { id: 'r10', name: 'الشيخ محمود علي البنا',          style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
-  { id: 'r11', name: 'الشيخ الشحات محمد أنور',         style: 'tajweed',  styleLabel: 'المصحف المجوّد'  },
-  { id: 'r3',  name: 'الشيخ محمد صديق المنشاوي',       style: 'murattal', styleLabel: 'المصحف المرتل'  },
-  { id: 'r4',  name: 'الشيخ عبد الرحمن السديس',        style: 'murattal', styleLabel: 'المصحف المرتل'  },
-  { id: 'r5',  name: 'الشيخ سعد الغامدي',              style: 'murattal', styleLabel: 'المصحف المرتل'  },
-  { id: 'r12', name: 'الشيخ مشاري راشد العفاسي',       style: 'murattal', styleLabel: 'المصحف المرتل'  },
-  { id: 'r13', name: 'الشيخ أحمد بن علي العجمي',       style: 'murattal', styleLabel: 'المصحف المرتل'  },
-  { id: 'r14', name: 'الشيخ ياسر الدوسري',             style: 'murattal', styleLabel: 'المصحف المرتل'  },
-  { id: 'r6',  name: 'الشيخ محمد أيوب',                style: 'muallam',  styleLabel: 'المصحف المعلّم' },
-  { id: 'r15', name: 'الشيخ عبد الله بصفر',            style: 'muallam',  styleLabel: 'المصحف المعلّم' },
-  { id: 'r16', name: 'الشيخ خليفة الطنيجي',            style: 'muallam',  styleLabel: 'المصحف المعلّم' },
+  { id: 'r1',  name: 'الشيخ عبد الباسط عبد الصمد',    style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r2',  name: 'الشيخ محمود خليل الحصري',        style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r8',  name: 'الشيخ مصطفى إسماعيل',            style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r9',  name: 'الشيخ أبو العينين شعيشع',        style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r10', name: 'الشيخ محمود علي البنا',          style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r11', name: 'الشيخ الشحات محمد أنور',         style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r3',  name: 'الشيخ محمد صديق المنشاوي',       style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r4',  name: 'الشيخ عبد الرحمن السديس',        style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r5',  name: 'الشيخ سعد الغامدي',              style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r12', name: 'الشيخ مشاري راشد العفاسي',       style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r13', name: 'الشيخ أحمد بن علي العجمي',       style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r14', name: 'الشيخ ياسر الدوسري',             style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r6',  name: 'الشيخ محمد أيوب',                style: 'muallam',  styleLabel: LABEL_MUALLIM },
+  { id: 'r15', name: 'الشيخ عبد الله بصفر',            style: 'muallam',  styleLabel: LABEL_MUALLIM },
+  { id: 'r16', name: 'الشيخ خليفة الطنيجي',            style: 'muallam',  styleLabel: LABEL_MUALLIM },
   { id: 'r7',  name: 'الشيخ ماهر المعيقلي',            style: 'qiraat',   styleLabel: 'قراءات'          },
 ];
 
@@ -134,10 +144,10 @@ export const RECITERS: Reciter[] = [
 // RECITER_TABS
 // ---------------------------------------------------------------------------
 
-/** From reciter.tsx:19-25. */
+/** Tab strip of frame 2031:6193. */
 export const RECITER_TABS: { key: string; label: string }[] = [
-  { key: 'tajweed',  label: 'المصحف المجوّد'  },
-  { key: 'murattal', label: 'المصحف المرتل'  },
-  { key: 'muallam',  label: 'المصحف المعلّم' },
+  { key: 'tajweed',  label: LABEL_MUJAWWAD  },
+  { key: 'murattal', label: LABEL_MURATTAL  },
+  { key: 'muallam',  label: LABEL_MUALLIM },
   { key: 'qiraat',   label: 'قراءات'          },
 ];

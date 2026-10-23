@@ -37,7 +37,7 @@ describe('Mushaf reader page tracking wiring', () => {
   });
 
   it('forwards every layout and scroll measurement', () => {
-    expect(src).toMatch(/setSegmentLayout\(\s*segment\.page/);
+    expect(src).toMatch(/setSegmentLayout\(\s*page/);
     expect(src).toMatch(/setBodyY\(/);
     expect(src).toMatch(/setViewportHeight\(/);
     expect(src).toMatch(/onScroll\(\s*e\.nativeEvent\.contentOffset\.y/);

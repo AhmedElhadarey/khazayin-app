@@ -1,7 +1,9 @@
 import { BookmarkIcon } from '@/components/khazain/icons';
 import { BookmarkButton } from '@/components/khazain/primitives';
 import { SearchGroupHeader, SearchResultRow } from '@/components/khazain/search';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { groupSavedItems, SAVED_EMPTY_COPY } from '@/constants/savedPresentation';
+import { toArabicDigits } from '@/constants/progress';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { rowPropsForSavedItem } from '@/services/search';
@@ -32,10 +34,11 @@ export function MySavedSection() {
   return (
     <View style={styles.wrap}>
       <View style={styles.headerRow}>
-        <Text style={styles.title}>محفوظاتي</Text>
+        {/* Physical left → right: the count, then the title at the right. */}
         <View style={styles.totalCountChip}>
-          <Text style={styles.totalCountText}>{items.length}</Text>
+          <Text style={styles.totalCountText}>{toArabicDigits(items.length)}</Text>
         </View>
+        <Text style={styles.title}>محفوظاتي</Text>
       </View>
       {groups.map((g) => (
         <View key={g.type}>
@@ -60,16 +63,16 @@ function SavedRow({ item }: { item: SavedItem }) {
         title={props.title}
         subtitle={props.subtitle}
         meta={props.meta}
+        accessory={
+          <BookmarkButton
+            type={item.type}
+            entityId={item.entityId}
+            snapshot={item.snapshot}
+            variant="light"
+          />
+        }
         onPress={() => router.push(props.route as never)}
       />
-      <View style={styles.rowBookmarkSlot} pointerEvents="box-none">
-        <BookmarkButton
-          type={item.type}
-          entityId={item.entityId}
-          snapshot={item.snapshot}
-          variant="light"
-        />
-      </View>
     </View>
   );
 }
@@ -93,7 +96,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   headerRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingBottom: 8,
@@ -103,19 +106,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 999,
-    backgroundColor: KhazainColors.cream100,
-    borderWidth: 1,
-    borderColor: KhazainColors.gold200,
+    backgroundColor: KhazainColors.iconChipBg,
   },
-  totalCountText: textStyle('label', { color: KhazainColors.gold200 }),
+  totalCountText: textStyle('label', { color: KhazainColors.ink500 }),
   rowContainer: {
-    position: 'relative',
-  },
-  rowBookmarkSlot: {
-    position: 'absolute',
-    top: '50%',
-    left: 16,
-    marginTop: -16,
+    ...PHYSICAL_BOX,
   },
   emptyWrap: {
     alignItems: 'center',

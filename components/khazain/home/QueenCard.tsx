@@ -1,43 +1,158 @@
 import React from 'react';
-import { Pressable, StyleSheet } from 'react-native';
-import { Image } from 'expo-image';
-import { KhazainRadius, KhazainShadows } from '@/constants/theme';
+import { StyleSheet, Text, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { PHYSICAL_ROW } from '@/constants/layout';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import { HeroShell } from './HeroShell';
+import { SmallMoreButton } from './SmallMoreButton';
 
-const CARD = require('@/assets/khazain/home/hero-queen-card.webp');
+const WATERMARK = require('@/assets/khazain/home/queen-watermark.webp');
+const CROWN = require('@/assets/khazain/home/queen-crown.webp');
+const EMBLEM = require('@/assets/khazain/home/queen-emblem.webp');
 
-// "أنتِ ملكة" card — flattened single image cropped from the page-05 render.
-// Crown-on-pillow art, title, subtitle copy, and المزيد pill are all baked in.
+// Figma node 2812:1392 «أنتِ ملكة», card 361 x 96, radius 16.
 //
-// The export carried the page background as a margin — 18px above the card and
-// 74 below — so the card drew a dead strip of #F8F2ED along its bottom edge.
-// The asset is now cropped to the card itself, and the aspect below is the
-// design's (Figma node 2001:940 states 361 x 96) rather than the export's.
-export function QueenCard({ onPress, onMore }: { onPress?: () => void; onMore?: () => void }) {
-  const handle = onPress ?? onMore;
+// This used to be one flattened raster with the copy baked in. It is now the
+// file's own layers, bottom to top, on the shared HeroShell:
+//   ground      GRADIENT_LINEAR, left to right, #EDE0D1 → #F1E8DD at 0.5529 → #EDE0D1
+//   watermark   2812:1393, pink calligraphy, LUMINOSITY at 0.08 (baked, see below)
+//   crown art   2812:1396, the crown on its pillow, clipped by mask 2812:1395
+//   emblem      2815:1402, the «أنتِ ملكة» calligraphy in teal/gold gradients
+//   copy        2812:1397, live text with the 2 x 15 gold bar and the المزيد pill
+//
+// Raster layers are cut and baked by scripts/figma/extract-images.js (crown,
+// watermark) and extract-queen-emblem.js (emblem, rendered from the file's
+// vectors). React Native has no blend modes, so the watermark's LUMINOSITY blend
+// is pre-composited against the card's own ground with its 0.08 opacity in the
+// alpha channel; drawn at full opacity it reproduces the design.
+const DESIGN = { width: 361, height: 96 };
+// Copy frame 2812:1397: 120 wide at (157, 6), 84 tall inside a 96 card (6 below).
+const COLUMN = { left: 157, width: 120, top: 6, bottom: 6 };
+
+// Crown art grounded at the bottom (the mask ends 0.45 above the card's edge),
+// the watermark and emblem hang from the top, so extra height from live copy
+// shows as ground rather than stretching any art.
+// Boxes, in design units: watermark 2812:1393 (276,-73, 123 x 186) cut to the
+// card (85 x 96 visible); crown 2812:1396 clipped by mask 2812:1395 (0,3 .. 95.55,
+// so 0.45 above the bottom); emblem 2815:1402 (294,6, 54.57 x 82.47).
+const LAYERS = [
+  { source: WATERMARK, left: 276, top: 0, width: 85, height: 96 },
+  { source: CROWN, left: 0, bottom: 0.45, width: 298.79, height: 92.55 },
+  { source: EMBLEM, left: 294, top: 6, width: 54.57, height: 82.47 },
+];
+
+/**
+ * The card's ground (frame 2812:1392's GRADIENT_LINEAR). The watermark is baked
+ * against these same stops by scripts/figma/extract-images.js (`QUEEN.gradient`);
+ * `__tests__/queenCard.test.tsx` fails if the two drift apart.
+ */
+export const QUEEN_GROUND = Object.freeze({
+  colors: ['#EDE0D1', '#F1E8DD', '#EDE0D1'],
+  locations: [0, 0.5528846383094788, 1],
+} as const);
+
+/** Frame 2812:1398 (51 x 16): the title, 4 to its right a 2 x 15 #D7B995 bar (radius 4). */
+const TITLE_BAR = { width: 2, height: 15, radius: 4, gap: 4 };
+
+/** The card's DROP_SHADOW effect (2812:1392): #000 at 25%, blur 4, offset (0, 4). */
+const SHADOW = {
+  shadowColor: '#000',
+  shadowOpacity: 0.25,
+  shadowRadius: 4,
+  shadowOffset: { width: 0, height: 4 },
+  elevation: 4,
+} as const;
+
+/** The copy frame 2812:1397 is a vertical auto-layout with a 4 gap. */
+const COLUMN_GAP = 4;
+
+const BODY =
+  'مَلِكةٌ أنتِ لا سِواكِ وفي قُربك من ربك: هُداكِ فأعدَدنا لكِ هذا المحتوى النَّدِي لتَصنعي جِيلًا على هَدي النبي ﷺ';
+
+export function QueenCard({
+  onPress,
+  onMore,
+  fill,
+}: {
+  onPress?: () => void;
+  onMore?: () => void;
+  /** Grow to the height of the row this card shares (tablet pair). */
+  fill?: boolean;
+}) {
   return (
-    <Pressable
-      onPress={handle}
-      accessibilityRole="button"
-      accessibilityLabel="أنتِ ملكة، اضغط للمزيد"
-      style={({ pressed }) => [
-        styles.card,
-        KhazainShadows.hero,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
+    <HeroShell
+      backdrop={
+        <LinearGradient
+          colors={QUEEN_GROUND.colors}
+          locations={QUEEN_GROUND.locations}
+          start={{ x: 0, y: 0.5 }}
+          end={{ x: 1, y: 0.5 }}
+          style={StyleSheet.absoluteFill}
+          pointerEvents="none"
+        />
+      }
+      backgroundColor={QUEEN_GROUND.colors[0]}
+      shadow={SHADOW}
+      layers={LAYERS}
+      designWidth={DESIGN.width}
+      designHeight={DESIGN.height}
+      column={COLUMN}
+      accessibilityLabel="أنتِ ملكة"
+      accessibilityHint={BODY}
+      onPress={onPress ?? onMore}
+      onMore={onMore ?? onPress}
+      fill={fill}
     >
-      <Image source={CARD} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={0} />
-    </Pressable>
+      {(scale) => (
+        <>
+          {/* Pinned at 1 like the other heroes: the card's art is a fixed
+            proportion of its width, so the copy must not scale with the
+            system font and re-wrap the composition. The title takes the width
+            the bar leaves instead of sizing to its content, so it cannot lose
+            its last word on Android 15+. */}
+          <View style={[styles.titleRow, { gap: TITLE_BAR.gap * scale }]}>
+            <Text style={styles.title} maxFontSizeMultiplier={1}>
+              أنتِ ملكة
+            </Text>
+            <View
+              style={{
+                width: TITLE_BAR.width * scale,
+                height: TITLE_BAR.height * scale,
+                borderRadius: TITLE_BAR.radius * scale,
+                backgroundColor: KhazainColors.goldCalligraphy,
+              }}
+            />
+          </View>
+          <Text style={[styles.body, { marginTop: COLUMN_GAP * scale }]} maxFontSizeMultiplier={1}>
+            {BODY}
+          </Text>
+          <View importantForAccessibility="no-hide-descendants" style={[styles.pillRow, { marginTop: COLUMN_GAP * scale }]}>
+            <SmallMoreButton onPress={onMore ?? onPress} />
+          </View>
+        </>
+      )}
+    </HeroShell>
   );
 }
 
 const styles = StyleSheet.create({
-  card: {
-    aspectRatio: 361 / 96,
-    borderRadius: KhazainRadius.lg,
-    overflow: 'hidden',
+  titleRow: {
+    // Physical order [title][bar]; the bar is the trailing (right) edge.
+    ...PHYSICAL_ROW,
+    alignSelf: 'stretch',
+    alignItems: 'center',
   },
-  image: {
-    width: '100%',
-    height: '100%',
+  title: {
+    ...textStyle('label', { color: KhazainColors.navy, textAlign: 'right' }),
+    flexGrow: 1,
+    flexShrink: 1,
+  },
+  body: {
+    // Figma sets 8pt; live text floors at MIN_BODY_SIZE, so the card grows.
+    ...textStyle('caption', { color: KhazainColors.queenBody, textAlign: 'right' }),
+  },
+  pillRow: {
+    alignItems: 'flex-end',
   },
 });

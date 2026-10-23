@@ -1,6 +1,8 @@
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
+import { SheetHandle } from '@/components/khazain/sheets';
 import { sheetColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { linkedNoteRow, NoteRefLink, noteRowA11y } from '@/components/khazain/notes';
@@ -12,7 +14,7 @@ import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// Bottom-sheet styled notes viewer (Figma page-08).
+// Bottom-sheet styled notes viewer (no Figma frame; contract: SHEET_CHROME + Library note contracts).
 // Visual contract:
 //   - Top: grey handle pill, then centered title "عرض الملاحظات"
 //   - Vertical list of one-line note rows: title (right) + relative time (left)
@@ -39,14 +41,20 @@ export default function NotesViewer() {
     });
 
   return (
-    <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
+    <View style={styles.backdrop}>
+      {/* Backdrop — an empty sibling behind the sheet, as in SheetShell. A
+          Pressable around the sheet made it ONE accessibility element on iOS:
+          VoiceOver saw «إغلاق» and none of the notes. */}
       <Pressable
-        onPress={() => {}}
-        style={[styles.sheetOuter, sheetColumn(width, sideInsets)]}
-      >
+        accessibilityRole="button"
+        accessibilityLabel="إغلاق"
+        onPress={close}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={[styles.sheetOuter, sheetColumn(width, sideInsets)]}>
         <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
           <View style={styles.handleWrap}>
-            <View style={styles.handle} />
+            <SheetHandle />
           </View>
           <Text style={styles.sheetTitle}>عرض الملاحظات</Text>
 
@@ -75,8 +83,8 @@ export default function NotesViewer() {
             />
           )}
         </SafeAreaView>
-      </Pressable>
-    </Pressable>
+      </View>
+    </View>
   );
 }
 
@@ -89,6 +97,7 @@ function NoteRow({
   onPress: () => void;
   onOpenSource: () => void;
 }) {
+  const oneLine = useLineClamp(1);
   const row = linkedNoteRow(note);
   return (
     <Pressable
@@ -102,11 +111,11 @@ function NoteRow({
       ]}
     >
       {/* Physical left -> right: relative time, then title + source link. */}
-      <Text style={styles.rowTime} numberOfLines={1}>
+      <Text style={styles.rowTime} numberOfLines={oneLine}>
         {row.time}
       </Text>
       <View style={styles.rowColumn}>
-        <Text style={styles.rowTitle} numberOfLines={1}>
+        <Text style={styles.rowTitle} numberOfLines={oneLine}>
           {row.title}
         </Text>
         {row.label ? (
@@ -120,13 +129,13 @@ function NoteRow({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(20,30,30,0.35)',
+    backgroundColor: SHEET_CHROME.backdrop,
     justifyContent: 'flex-end',
   },
   sheetOuter: {
     backgroundColor: KhazainColors.pageBg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: SHEET_CHROME.topRadius,
+    borderTopRightRadius: SHEET_CHROME.topRadius,
     maxHeight: '88%',
     minHeight: '50%',
     overflow: 'hidden',
@@ -136,12 +145,6 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     alignItems: 'center',
   },
-  handle: {
-    width: 48,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(120,100,80,0.25)',
-  },
   sheetTitle: {
     ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 4,
@@ -149,7 +152,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     ...PHYSICAL_BOX,
-    paddingHorizontal: 18,
+    paddingHorizontal: SHEET_CHROME.paddingHorizontal,
     paddingBottom: 12,
   },
   row: {
@@ -164,7 +167,7 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.cardBorder,
   },
   rowColumn: { flex: 1, gap: 2 },
-  rowTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+  rowTitle: textStyle('cardTitle', { color: KhazainColors.ink900 }),
   rowTime: textStyle('caption', { color: KhazainColors.ink400 }),
   empty: {
     alignItems: 'center',

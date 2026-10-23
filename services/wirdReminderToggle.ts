@@ -31,7 +31,7 @@ export type WirdToggleOutcome = 'enabled' | 'disabled' | 'permission-denied';
  * a second `requestPermissionsAsync` resolves straight back to `denied` without
  * any UI. Recovery is via system settings, which the calling screens offer.
  */
-async function ensurePermission(): Promise<boolean> {
+export async function ensurePermission(): Promise<boolean> {
   let permission = await getPermissionAsync();
   if (permission === 'undetermined') {
     permission = await requestPermissionAsync();

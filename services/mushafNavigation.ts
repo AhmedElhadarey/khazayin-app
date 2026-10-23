@@ -6,6 +6,7 @@
  * on nothing, and the transition must never fall back to an unrelated screen.
  */
 import { SURAH_START_PAGES, toArabicDigits } from '@/constants/progress';
+import { MUSHAF_META_READING_ORDER, type MushafMetaSlot } from '@/constants/rtlContracts';
 
 export const MUSHAF_PAGE_COUNT = 604;
 export const LAST_SURAH = 114;
@@ -51,29 +52,90 @@ const REVELATION_LABEL: Record<string, string> = {
 };
 
 /**
- * The reader's metadata strip — revelation type, ayah count, page — in the
- * order node 2349:982 shows them. Unknown parts are omitted rather than
- * printed as a placeholder, because a wrong ayah count is worse than none.
+ * «٧ آيات»: the file's plural. 3-10 (mod 100) takes the plural, 2 the dual and
+ * everything else the singular noun after the digits («١١ آية»).
  */
-export function surahMetaLine(parts: {
+export function ayahCountLabel(n: number): string {
+  if (n === 2) return 'آيتان';
+  const r = n % 100;
+  const noun = r >= 3 && r <= 10 ? 'آيات' : 'آية';
+  return `${toArabicDigits(n)} ${noun}`;
+}
+
+export type MetaParts = {
   revelationType?: string;
   ayahCount?: number;
   page: number;
-}): string {
-  const segments: string[] = [];
-  const revelation = parts.revelationType
-    ? REVELATION_LABEL[parts.revelationType]
-    : undefined;
-  if (revelation) segments.push(revelation);
-  if (parts.ayahCount && parts.ayahCount > 0) {
-    segments.push(`${toArabicDigits(parts.ayahCount)} آية`);
+};
+
+/** The known parts of the metadata strip, keyed by slot. Unknown parts are absent. */
+function metaTexts(parts: MetaParts): Partial<Record<MushafMetaSlot, string>> {
+  const out: Partial<Record<MushafMetaSlot, string>> = {};
+  const revelation = parts.revelationType ? REVELATION_LABEL[parts.revelationType] : undefined;
+  if (revelation) out.revelation = revelation;
+  if (parts.ayahCount && parts.ayahCount > 0) out.ayahs = ayahCountLabel(parts.ayahCount);
+  out.page = `صفحة ${toArabicDigits(parts.page)} من ${toArabicDigits(MUSHAF_PAGE_COUNT)}`;
+  return out;
+}
+
+/** The known parts, in reading order (right to left). */
+function metaPartsInReadingOrder(parts: MetaParts): { slot: MushafMetaSlot; text: string }[] {
+  const t = metaTexts(parts);
+  const out: { slot: MushafMetaSlot; text: string }[] = [];
+  for (const slot of MUSHAF_META_READING_ORDER) {
+    const text = t[slot];
+    if (text) out.push({ slot, text });
   }
-  segments.push(
-    `صفحة ${toArabicDigits(parts.page)} من ${toArabicDigits(MUSHAF_PAGE_COUNT)}`,
-  );
-  // Node 2349:982 separates the parts with `•`. The middle dot this used
-  // before is easily read as a `٠` between two Arabic-Indic numerals.
-  return segments.join(' • ');
+  return out;
+}
+
+/**
+ * The strip as one screen-reader label: the parts in reading order, joined by
+ * the Arabic comma so the «•» glyph is not read out.
+ */
+export function surahMetaA11yLabel(parts: MetaParts): string {
+  return metaPartsInReadingOrder(parts)
+    .map((p) => p.text)
+    .join('، ');
+}
+
+export type MetaRowItem = { slot: MushafMetaSlot; text: string; leadingDot: boolean };
+
+/**
+ * DIV-47 (2349:994) as separate children for a `READING_GRID`, in reading
+ * order (`MUSHAF_META_READING_ORDER`): revelation type, ayah count, page.
+ * Unknown parts are omitted rather than printed as a placeholder, because a
+ * wrong ayah count is worse than none. Every part after the first owns the
+ * `•` that introduces it, so line 1 never ends on a bullet; whether that dot
+ * is drawn once the strip wraps is `metaDotsVisible`'s call.
+ */
+export function surahMetaRow(parts: MetaParts): MetaRowItem[] {
+  return metaPartsInReadingOrder(parts).map((p, i) => ({ ...p, leadingDot: i > 0 }));
+}
+
+/** Two parts share a flex line when their boxes overlap by more than this. */
+const SAME_LINE_OVERLAP_PT = 1;
+
+/**
+ * Which parts of the wrapped meta strip draw their leading `•`, from each
+ * part's measured box (`undefined` until it is measured). A part draws its dot
+ * only on the same line as the part read before it, so no wrapped line starts
+ * with a bullet. Lines are compared by vertical overlap, not equal `y`: a
+ * centred line holding a taller part (its own text wrapped) puts the shorter
+ * part lower. Unmeasured pairs keep the dot, so the first frame is the
+ * unwrapped strip. The first part never has a dot.
+ */
+export function metaDotsVisible(
+  frames: readonly ({ y: number; height: number } | undefined)[],
+): boolean[] {
+  return frames.map((frame, i) => {
+    if (i === 0) return false;
+    const before = frames[i - 1];
+    if (!frame || !before) return true;
+    const overlap =
+      Math.min(frame.y + frame.height, before.y + before.height) - Math.max(frame.y, before.y);
+    return overlap > SAME_LINE_OVERLAP_PT;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -105,11 +167,36 @@ export function segmentForAyah(segments: readonly SegmentLike[], n: number): num
   return segments.findIndex((s) => s.ayat.some((a) => a.number === n));
 }
 
+/** U+06DD ARABIC END OF AYAH: Amiri draws the medallion round the digits that follow. */
+export const END_OF_AYAH = '\u06DD';
+
 /**
- * The marker rendered after each ayah's text. Must match `AyahNum` in
- * app/(tabs)/sections/mushaf.tsx (two spaces, the number, two spaces).
+ * The marker rendered after each ayah's text: a no-break space (so the medallion
+ * never wraps away from its ayah), the end-of-ayah sign and the Arabic-Indic
+ * digits. The single-space separator between ayat follows it, so the segment
+ * ends on the last marker. `AyahNum` in
+ * components/khazain/mushaf/AyatSegments.tsx renders exactly this string, and
+ * the offsets below count it, so deep-link scroll precision depends on it
+ * staying the one source.
  */
-export const ayahMarker = (n: number): string => `  ${n}  `;
+export const ayahMarker = (n: number): string => `\u00A0${END_OF_AYAH}${toArabicDigits(n)}`;
+
+/** A navigator route as `getState()` returns it; params are untyped there. */
+type RouteLike = Readonly<{ name: string; params?: Readonly<object> }>;
+
+/**
+ * What the footer Index button does. `replace` would turn [..., list, reader]
+ * into [..., list, list], so when the screen below is the Mushaf list (the
+ * mushaf route with no `surah`) it goes back to it. Anything else (auto-resume
+ * and deep links, where nothing useful is below) replaces.
+ */
+export function indexExit(routes: readonly RouteLike[], index: number): 'back' | 'replace' {
+  const below = routes[index - 1];
+  if (!below || below.name !== 'mushaf') return 'replace';
+  const params = below.params;
+  const surah = params && 'surah' in params ? params.surah : undefined;
+  return typeof surah === 'string' && surah !== '' ? 'replace' : 'back';
+}
 
 /**
  * Characters before ayah `n` in a segment's rendered string: for every earlier
@@ -145,7 +232,7 @@ export function lineYForOffset(lines: readonly TextLine[], offset: number): numb
 }
 
 /** Summed line lengths may differ from the expected length by this share. */
-const LINE_LENGTH_TOLERANCE = 0.05;
+export const LINE_LENGTH_TOLERANCE = 0.05;
 
 /**
  * Scroll `y` (before any top margin) of an ayah. Uses the measured line when

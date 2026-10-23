@@ -45,6 +45,7 @@ import { KhazainColors } from '@/constants/theme';
 import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { fontFace } from '@/constants/typography';
 
 // Dev-only smoke-render route for the Foundations track.
 // Open /foundations-sandbox in Expo Go. Delete this file once Track 1 is accepted.
@@ -131,7 +132,7 @@ export default function FoundationsSandbox() {
           <IconChip bg={KhazainColors.heroHeaderBg}>
             <ShareIcon size={18} color={KhazainColors.navy800} />
           </IconChip>
-          <IconChip onPress={() => {}}>
+          <IconChip onPress={() => {}} accessibilityLabel="تجربة">
             <BookmarkIcon size={18} color={KhazainColors.navy800} />
           </IconChip>
         </View>
@@ -247,7 +248,7 @@ const styles = StyleSheet.create({
     color: KhazainColors.navy900,
   },
   p: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 14,
     color: KhazainColors.ink500,
     lineHeight: 22,
@@ -265,8 +266,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   patternLabel: {
-    fontFamily: 'TheSansArabic',
-    fontWeight: '600',
+    ...fontFace(700),
     color: KhazainColors.cream100,
     fontSize: 13,
   },
@@ -299,7 +299,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   iconLabel: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 9,
     color: KhazainColors.ink500,
   },

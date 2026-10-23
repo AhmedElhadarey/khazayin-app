@@ -1,14 +1,15 @@
 import { AsyncContent, InlineHeader, MoonMountainBadge, SkeletonCardList } from '@/components/khazain';
-import { HeaderArt } from '@/components/khazain/patterns';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useDawahMonthsStore } from '@/store';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useLineClamp } from '@/hooks/useLineClamp';
 
 // JSX order is [text, badge]. Want text on left, badge on right.
 
@@ -28,9 +29,12 @@ export default function DawahScreen() {
     router.push(`/sections/dawah/${id}` as any);
   };
 
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
+  const oneLine = useLineClamp(1);
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt corners="single" />
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline', fontScale)} />
       <InlineHeader title="تصميمات دعوية" onBack={() => router.back()} style={columnStyle} />
       <ScrollView
         contentContainerStyle={[styles.list, { paddingBottom: 24 }, columnStyle]}
@@ -51,6 +55,9 @@ export default function DawahScreen() {
             <Pressable
               key={g.id}
               onPress={() => openDetail(g.id)}
+              accessibilityRole="button"
+              // Reading order: the title, then the count drawn at the left.
+              accessibilityLabel={`${g.title}، ${g.count}`}
               style={({ pressed }) => [
                 styles.row,
                 { transform: [{ scale: pressed ? 0.98 : 1 }] },
@@ -61,7 +68,7 @@ export default function DawahScreen() {
               <View style={styles.countBlock}>
                 <Text style={styles.count}>{g.count}</Text>
               </View>
-              <Text style={styles.title} numberOfLines={1}>
+              <Text style={styles.title} numberOfLines={oneLine}>
                 {g.title}
               </Text>
               <MoonMountainBadge size={CARD_DENSITY.lectureBadgeDisc} />
@@ -93,7 +100,8 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
     borderColor: KhazainColors.hairlineWarm,
-    paddingVertical: 8,
+    // 1 + 7 + 40 + 7 + 1 = 56.
+    paddingVertical: 7,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
     alignItems: 'center',
     gap: 8,

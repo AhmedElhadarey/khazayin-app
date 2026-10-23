@@ -2,6 +2,7 @@ import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp, useTextEnlarged } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -13,6 +14,10 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 //
 // Physical left → right: disclosure, current value, title, icon chip — pinned
 // by PHYSICAL_ROW.
+//
+// Once text is enlarged (no clamp) the value moves under the title, as the
+// `more` rows beside it carry their subtitle: a value column that keeps its
+// width left the title one glyph wide at 320dp x 1.7.
 
 type Props = {
   title: string;
@@ -24,6 +29,8 @@ type Props = {
 };
 
 export function SettingsValueRow({ title, value, icon, onPress, expanded }: Props) {
+  const oneLine = useLineClamp(1);
+  const stacked = useTextEnlarged();
   return (
     <Pressable
       onPress={onPress}
@@ -33,15 +40,18 @@ export function SettingsValueRow({ title, value, icon, onPress, expanded }: Prop
       style={({ pressed }) => [styles.card, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
     >
       <FigmaIcon name="DisclosureCircle" size={24} color={KhazainColors.navy800} />
-      <View style={styles.valueWrap}>
-        <Text style={styles.value} numberOfLines={1}>
-          {value}
-        </Text>
-      </View>
+      {stacked ? null : (
+        <View style={styles.valueWrap}>
+          <Text style={styles.value} numberOfLines={oneLine}>
+            {value}
+          </Text>
+        </View>
+      )}
       <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={oneLine}>
           {title}
         </Text>
+        {stacked ? <Text style={styles.valueStacked}>{value}</Text> : null}
       </View>
       <View style={styles.iconChip}>{icon}</View>
     </Pressable>
@@ -55,6 +65,9 @@ const styles = StyleSheet.create({
     // The same 16 the rows beside it use.
     gap: 16,
     minHeight: CARD_DENSITY.moreCardHeight,
+    // The `more` rows' inset: the 48 chip + 24 stays inside the 82, so it only
+    // shows once the stacked text grows the card.
+    paddingVertical: CARD_DENSITY.moreCardPaddingVertical,
     paddingHorizontal: CARD_DENSITY.moreCardPaddingHorizontal,
     borderRadius: CARD_DENSITY.moreCardRadius,
     backgroundColor: KhazainColors.cardBg,
@@ -83,4 +96,5 @@ const styles = StyleSheet.create({
     ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
     maxWidth: 140,
   },
+  valueStacked: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
 });

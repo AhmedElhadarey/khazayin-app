@@ -51,3 +51,14 @@ describe('dawah coverflow layout', () => {
     expect(sidePadding + slot / 2).toBeCloseTo(REF / 2, 6);
   });
 });
+
+describe('dawah poster dimming', () => {
+  it('applies no opacity once a slot is measured (every step of the design is 1) (HOME-16)', () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const src = require('fs').readFileSync(
+      require('path').join(__dirname, '..', 'components/khazain/home/DawahCarousel.tsx'),
+      'utf8',
+    );
+    expect(src).not.toMatch(/opacity:\s*interpolate/);
+  });
+});

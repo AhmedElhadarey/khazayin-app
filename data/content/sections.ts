@@ -12,7 +12,7 @@
  * Track: khazain-content-service_20260506  Phase 1 / T1.5
  */
 
-import type { LibraryFilter, Lookup, MoreRow, SectionEntry } from '../../types/content';
+import type { LibraryFilterChip, Lookup, MoreRow, SectionEntry } from '../../types/content';
 import type { CommunityMode } from '../../services/community/gate';
 
 // ---------------------------------------------------------------------------
@@ -193,10 +193,18 @@ export const MORE_EXTERNAL_URLS: Lookup<string> = {
 // LIBRARY_FILTERS — filter pills (library.tsx)
 // ---------------------------------------------------------------------------
 
-/** `count` matches the original inline mock values from library.tsx:17-21. */
-export const LIBRARY_FILTERS: LibraryFilter[] = [
-  { id: 'all',      label: 'الكل',            count: '١٢' },
-  { id: 'saved',    label: 'المحفوظات',        count: '١٨' },
-  { id: 'playlist', label: 'قوائم التشغيل',   count: '٥'  },
-  { id: 'history',  label: 'السجل',           count: ''   },
+/**
+ * Chip set, in the file's order (right to left). The counts of الكل / المحفوظات / ملاحظاتي / المكتمل /
+ * تذكيراتي are real and filled in by the Library from its stores; the rest carry none, so
+ * the chip renders its label alone (no fabricated number). The file also draws
+ * المفضلة between ملاحظاتي and تذكيراتي; it has no data model, so it is absent.
+ */
+export const LIBRARY_FILTERS: LibraryFilterChip[] = [
+  { id: 'all',       label: 'الكل',            count: '' },
+  { id: 'saved',     label: 'المحفوظات',        count: '' },
+  { id: 'playlist',  label: 'قوائم التشغيل' },
+  { id: 'completed', label: 'المكتمل',          count: '' },
+  { id: 'notes',     label: 'ملاحظاتي',         count: '' },
+  { id: 'reminders', label: 'تذكيراتي',         count: '' },
+  { id: 'history',   label: 'السجل' },
 ];

@@ -8,7 +8,7 @@ import {
   SkeletonRibbonList,
   seriesIdsOf,
 } from '@/components/khazain';
-import { CARD_DENSITY, READING_ROW } from '@/constants/layout';
+import { CARD_DENSITY, READING_ROW, PAGE_CHROME } from '@/constants/layout';
 import { toArabicDigits } from '@/constants/progress';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -22,8 +22,9 @@ import { notesForLectureSeries, useNotesStore } from '@/store/notesStore';
 import { openSearch } from '@/services/searchNavigation';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo } from 'react';
-import { FlatList, ScrollView, StyleSheet, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
+import { FlatList, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 // Page 28: كل الشرح — full-screen list of lecture RibbonCards for a single scholar.
 // Header shows the scholar name in big Naskh display + "فضيلة الشيخ" pretitle,
@@ -92,8 +93,15 @@ export default function ScholarDetailScreen() {
     <ScholarDiscussionsEntry scholarId={id ?? ''} style={splitPane ? undefined : styles.entryPad} />
   );
 
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <HeaderArt
+        corners="single"
+        bandHeight={headerBandHeight(insets.top, 'search', fontScale)}
+        inset={(splitPadding?.paddingRight ?? 0) + 16}
+      />
       <View style={splitPadding ?? undefined}>
         <InlineHeader title="كل الشرح" onBack={() => router.back()} />
       </View>
@@ -202,7 +210,11 @@ const styles = StyleSheet.create({
     ...textStyle('bodyLarge', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     marginTop: 2,
   },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  searchBlock: {
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.searchPaddingTop,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom,
+  },
   entryPad: { paddingHorizontal: 16, paddingBottom: 8 },
   splitBody: { ...READING_ROW, flex: 1 },
   panel: { width: SPLIT_SIDE },

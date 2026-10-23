@@ -1,7 +1,8 @@
-import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, LIST_ROW_TEXT, PHYSICAL_ROW } from '@/constants/layout';
 import { LECTURE_CARD_ORDER, type LectureCardSlot } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { lectureSaveTarget } from '@/services/savedToggle';
 import type { Lecture } from '@/types/content';
 import React from 'react';
@@ -19,7 +20,7 @@ import { useSaveGesture } from './useSaveGesture';
 // 64 tall at radius 16, `#FCFAF8` behind a 1pt `#D9D6D3` hairline, inset 8, and
 // — like every card in these frames — casting no shadow at all.
 //
-// `compact` is the shape the two rail lists use (2869:2088, 2869:2306): 56
+// `variant="rail"` is the shape the two rail lists use (2869:2088, 2869:2306): 56
 // tall at radius 20 with no stroke, because the rail supplies the edge.
 // `pretitleSmall` renders an optional pretitle line above the title (e.g. "فضيلة الشيخ").
 // `iconNode` lets each section slot a different glyph badge.
@@ -36,7 +37,7 @@ export function LectureCard({
   scholar,
   duration,
   pretitleSmall,
-  compact,
+  variant,
   onPress,
 }: {
   id: string;
@@ -46,13 +47,23 @@ export function LectureCard({
   scholar?: string;
   duration?: string;
   pretitleSmall?: string;
-  compact?: boolean;
+  /**
+   * `rail` is the Audiobooks / Exclusive row (2869:2158, 2869:2367): the
+   * compact shape with the badge and ONE line of text, vertically centred.
+   * The scholar and duration are not drawn there; they stay in the
+   * accessibility label so a screen reader still gets them.
+   */
+  variant?: 'rail';
   onPress?: () => void;
 }) {
-  // `compact` changes the card's shape and clamps the title to one line — the
+  const rail = variant === 'rail';
+  // `rail` changes the card's shape and clamps the title to one line — the
   // rail lists are single-line in the file. It no longer forks the text
   // styles: both frames set the same faces and sizes.
-  const heightStyle = compact ? styles.cardCompact : styles.card;
+  const heightStyle = rail ? styles.cardRail : styles.card;
+  // Figma clamps at the default text size; enlarged text wraps (useLineClamp).
+  const oneLine = useLineClamp(1);
+  const titleLines = useLineClamp(rail ? 1 : 2);
 
   const saveTarget = lectureSaveTarget({ id, title, scholar, duration, category });
   const { saved, gestureProps } = useSaveGesture(saveTarget);
@@ -62,31 +73,43 @@ export function LectureCard({
     // frames draw no bookmark, so the unsaved row stays exactly as they do;
     // saving is a long-press (useSaveGesture).
     meta:
-      duration || saved ? (
+      (!rail && duration) || saved ? (
         <View style={styles.endCluster}>
-          {duration ? <Text style={styles.duration}>{duration}</Text> : null}
+          {!rail && duration ? <Text style={styles.duration}>{duration}</Text> : null}
           {saved ? (
-            <BookmarkButton
-              type={saveTarget.type}
-              entityId={saveTarget.entityId}
-              snapshot={saveTarget.snapshot}
-              variant="light"
-            />
+            // Hidden from screen readers, as on SurahRow: the row carries the
+            // saved state and the unsave action, and TalkBack would otherwise
+            // focus this nested button on its own, before the row.
+            <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+              <BookmarkButton
+                type={saveTarget.type}
+                entityId={saveTarget.entityId}
+                snapshot={saveTarget.snapshot}
+                variant="light"
+              />
+            </View>
           ) : null}
         </View>
       ) : null,
     text: (
-      <View style={styles.textBlock}>
-        {pretitleSmall ? (
-          <Text style={styles.pretitle} numberOfLines={1}>
+      <View
+        // Rail: full width, not shrink-wrapped (Android 15 line-breaking), and
+        // centred on the row's cross axis.
+        style={[styles.textBlock, rail ? styles.textBlockRail : styles.textBlockCard]}
+      >
+        {pretitleSmall && !rail ? (
+          <Text style={styles.pretitle} numberOfLines={oneLine}>
             {pretitleSmall}
           </Text>
         ) : null}
-        <Text style={styles.title} numberOfLines={compact ? 1 : 2}>
+        <Text
+          style={[styles.title, rail ? null : styles.titleCard, !rail && scholar ? styles.titleCardWithScholar : null]}
+          numberOfLines={titleLines}
+        >
           {title}
         </Text>
-        {scholar ? (
-          <Text style={styles.scholar} numberOfLines={1}>
+        {scholar && !rail ? (
+          <Text style={[styles.scholar, styles.scholarCard]} numberOfLines={oneLine}>
             {scholar}
           </Text>
         ) : null}
@@ -100,6 +123,10 @@ export function LectureCard({
     <Pressable
       onPress={onPress}
       {...gestureProps}
+      // Named in reading order on both variants: without a label iOS joins the
+      // children in physical order and reads the duration first.
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={[title, scholar, duration].filter(Boolean).join('، ')}
       style={({ pressed }) => [
         styles.cardBase,
         heightStyle,
@@ -126,10 +153,13 @@ const styles = StyleSheet.create({
   card: {
     minHeight: CARD_DENSITY.lectureCardMinHeight,
     borderRadius: CARD_DENSITY.lectureCardRadius,
-    borderWidth: 1,
+    borderWidth: LIST_ROW_TEXT.borderWidth,
     borderColor: KhazainColors.hairlineWarm,
+    // 1 + 7 + 48 + 7 + 1 = 64, and the disc sits 8 from the outer edge.
+    paddingVertical: 8 - LIST_ROW_TEXT.borderWidth,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal - LIST_ROW_TEXT.borderWidth,
   },
-  cardCompact: {
+  cardRail: {
     minHeight: CARD_DENSITY.reciterRowMinHeight,
     borderRadius: CARD_DENSITY.railRowRadius,
   },
@@ -142,15 +172,24 @@ const styles = StyleSheet.create({
   textBlock: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'flex-end',
+    // Full width, not shrink-wrapped (Android 15 line-breaking); the text
+    // styles carry textAlign 'right' (RTL_TEXT).
+    alignItems: 'stretch',
+    alignSelf: 'stretch',
     gap: 2,
   },
+  textBlockCard: { gap: 0 },
+  textBlockRail: { justifyContent: 'center' },
   // `H3-145` is TheMixArab Regular 14 and `P-148` TheMixArab Regular 12 in
   // every one of these frames — the body face, not the calligraphic one the
   // app had been reaching for.
   pretitle: textStyle('caption', { color: KhazainColors.ink500 }),
   title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   scholar: textStyle('caption', { color: KhazainColors.ink500 }),
+  // The bordered card only (2465:1911 `DIV-139`): title box 8..32, subtitle 36..56.
+  titleCard: textStyle('bodyCompactLoose', { color: KhazainColors.inkTitle }),
+  titleCardWithScholar: { marginBottom: LIST_ROW_TEXT.titleGap },
+  scholarCard: { lineHeight: LIST_ROW_TEXT.subtitleLineHeight },
   endCluster: {
     ...PHYSICAL_ROW,
     alignItems: 'center',

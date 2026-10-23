@@ -5,7 +5,7 @@ import { PillButton } from '@/components/khazain/primitives';
 import { AsyncContent } from '@/components/khazain/state/AsyncContent';
 import { COMMUNITY_COPY } from '@/constants/communityCopy';
 import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, READING_GRID, RTL_TEXT } from '@/constants/layout';
-import { Colors, KhazainColors, KhazainRadius } from '@/constants/theme';
+import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { KhazainConfig } from '@/constants/config';
 import { useCommunityAccess, useCommunityGuard } from '@/hooks/useCommunityGuard';
@@ -19,7 +19,6 @@ import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -32,6 +31,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
+import { showNotice } from '@/services/notice';
+import { useInputLineHeight } from '@/hooks/useLineClamp';
 
 const GUIDELINES_ROUTE = '/(tabs)/more/community/guidelines';
 const CREATE_ROUTE = '/(tabs)/more/community/create';
@@ -68,6 +69,7 @@ export default function CommunityHubScreen() {
 }
 
 function Intro() {
+  const inputLine = useInputLineHeight();
   const router = useRouter();
   const existingName = useCommunityLocalStore((s) => s.profile?.displayName ?? '');
   const [name, setName] = useState(existingName);
@@ -81,7 +83,7 @@ function Intro() {
     openPrivacyPolicy({
       url: KhazainConfig.privacyPolicyUrl,
       openBrowser: (url) => WebBrowser.openBrowserAsync(url),
-      alert: (title, body) => Alert.alert(title, body),
+      alert: (title, body) => showNotice(title, body),
     });
 
   const submit = async () => {
@@ -140,7 +142,7 @@ function Intro() {
           textAlign="right"
           maxLength={COMMUNITY_LIMITS.displayName.max}
           accessibilityLabel={COMMUNITY_COPY.nameLabel}
-          style={styles.input}
+          style={[styles.input, inputLine]}
         />
         {error ? (
           <Text style={styles.error} accessibilityRole="alert">
@@ -254,8 +256,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
   },
-  // Legacy palette: the Khazain tokens carry no error colour.
-  error: { ...RTL_TEXT, ...textStyle('label', { color: Colors.light.error }) },
+  error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
   acceptRow: { ...PHYSICAL_ROW, alignItems: 'center', justifyContent: 'flex-end', gap: 12, minHeight: 44 },
   acceptLabel: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.ink900 }), flexShrink: 1 },
   box: {

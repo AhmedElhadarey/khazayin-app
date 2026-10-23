@@ -110,6 +110,16 @@ export function createLectureSessionsRepository(
       return row?.n ?? 0;
     },
 
+    async recentCompleted(limit) {
+      const rows = await db.getAllAsync<Row>(
+        `SELECT * FROM khz_lecture_sessions
+           WHERE completed = 1
+           ORDER BY last_listened_at DESC, lecture_id ASC LIMIT ?`,
+        limit,
+      );
+      return rows.map(rowToSession);
+    },
+
     async listenedCount() {
       // Mirrors isListened() in ../helpers/lectureCompletion.
       const row = await db.getFirstAsync<{ n: number }>(

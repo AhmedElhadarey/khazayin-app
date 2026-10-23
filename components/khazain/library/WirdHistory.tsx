@@ -3,6 +3,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KhazainColors } from '@/constants/theme';
 import { toArabicDigits as toAr } from '@/constants/progress';
 import type { HistoryCell, WeekdayCompletion, WirdCellState } from '@/services/wirdHistory';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
+import { LIBRARY_CARD_RADIUS, LIBRARY_DESIGN, LIBRARY_SECTION_GAP } from './libraryLayout';
 
 /**
  * Wird completion-history view (US5). Presentational only — the screen owns the
@@ -97,7 +100,7 @@ export function WirdHistory({
   }
 
   return (
-    <View>
+    <View style={PHYSICAL_BOX}>
       {/* PRIMARY — completion rate by weekday (vertical list; RTL-safe). */}
       <Text style={styles.sectionLabel}>نسبة الإكمال حسب اليوم</Text>
       <View style={styles.card}>
@@ -114,14 +117,14 @@ export function WirdHistory({
               accessible
               accessibilityLabel={a11y}
             >
-              {/* first child = leftmost: percentage. Then bar. Then label (rightmost). */}
-              <Text style={styles.weekdayPct}>{hasData ? pctLabel(bucket.rate) : '—'}</Text>
+              {/* Physical left → right: percentage, bar, label (السبت-first weekday at the right). */}
+              <Text style={styles.weekdayPct} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>{hasData ? pctLabel(bucket.rate) : '—'}</Text>
               <View style={styles.barTrack}>
                 {hasData ? (
                   <View style={[styles.barFill, { width: `${Math.round(bucket.rate * 100)}%` }]} />
                 ) : null}
               </View>
-              <Text style={styles.weekdayLabel}>{label}</Text>
+              <Text style={styles.weekdayLabel} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>{label}</Text>
             </View>
           );
         })}
@@ -134,7 +137,7 @@ export function WirdHistory({
         <View style={styles.gridRow}>
           {COLUMN_ORDER.map((wd) => (
             <View key={wd} style={styles.headerCellWrap}>
-              <Text style={styles.headerCell}>{WEEKDAYS_AR[wd]}</Text>
+              <Text style={styles.headerCell} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>{WEEKDAYS_AR[wd]}</Text>
             </View>
           ))}
         </View>
@@ -147,10 +150,12 @@ export function WirdHistory({
           </View>
         ))}
         {/* Legend — the greyscale key. */}
+        {/* Physical left → right: reading order runs right to left, so the
+            first entry (مكتمل) is the rightmost. */}
         <View style={styles.legendRow}>
-          <LegendItem state="completed" label="مكتمل" />
-          <LegendItem state="missed" label="غير مكتمل" />
           <LegendItem state="no-data" label="لا بيانات" />
+          <LegendItem state="missed" label="غير مكتمل" />
+          <LegendItem state="completed" label="مكتمل" />
         </View>
       </View>
 
@@ -178,9 +183,9 @@ function GridCell({ cell }: { cell: HistoryCell | undefined }) {
     <View style={styles.cellWrap} accessible accessibilityLabel={cellAccessibilityLabel(cell)}>
       <View style={[styles.cell, cellStyleFor(cell.state)]}>
         {cell.state === 'completed' ? (
-          <Text style={styles.cellCheck}>✓</Text>
+          <Text style={styles.cellCheck} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>✓</Text>
         ) : (
-          <Text style={[styles.cellDay, cell.state === 'no-data' && styles.cellDayFaint]}>
+          <Text style={styles.cellDay} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>
             {toAr(d)}
           </Text>
         )}
@@ -197,106 +202,80 @@ function cellStyleFor(state: WirdCellState) {
 
 function LegendItem({ state, label }: { state: WirdCellState; label: string }) {
   return (
+    // Physical left → right: label, then the swatch it names.
     <View style={styles.legendItem}>
+      <Text style={styles.legendLabel}>{label}</Text>
       <View style={[styles.legendSwatch, cellStyleFor(state)]}>
         {state === 'completed' ? <Text style={styles.legendCheck}>✓</Text> : null}
       </View>
-      <Text style={styles.legendLabel}>{label}</Text>
     </View>
   );
 }
 
-const CARD_BORDER = 'rgba(141,107,52,0.1)';
-const OUTLINE = 'rgba(141,107,52,0.35)';
-
+// No frame covers the history view; its geometry is the Library contract
+// (16pt side margin, the shared card radius, 8pt buttons, palette borders).
 const styles = StyleSheet.create({
   emptyCard: {
-    marginHorizontal: 14,
-    marginBottom: 14,
+    ...PHYSICAL_BOX,
+    marginHorizontal: LIBRARY_DESIGN.sideMargin,
+    marginBottom: LIBRARY_SECTION_GAP,
     padding: 20,
-    borderRadius: 16,
-    backgroundColor: KhazainColors.cream50,
+    borderRadius: LIBRARY_CARD_RADIUS,
+    backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: CARD_BORDER,
-    alignItems: 'center',
+    borderColor: KhazainColors.hairline,
+    alignItems: 'stretch',
     gap: 8,
   },
-  emptyTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 16,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
-  emptyBody: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'center',
-    lineHeight: 20,
-  },
+  emptyTitle: textStyle('sectionTitle', { color: KhazainColors.navy800, textAlign: 'center' }),
+  emptyBody: textStyle('caption', { color: KhazainColors.ink500, textAlign: 'center' }),
   sectionLabel: {
-    paddingHorizontal: 18,
+    paddingHorizontal: LIBRARY_DESIGN.sideMargin,
     paddingBottom: 8,
     marginTop: 4,
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('cardTitle', { color: KhazainColors.ink900 }),
   },
   card: {
-    marginHorizontal: 14,
-    marginBottom: 14,
+    ...PHYSICAL_BOX,
+    marginHorizontal: LIBRARY_DESIGN.sideMargin,
+    marginBottom: LIBRARY_SECTION_GAP,
     padding: 14,
-    borderRadius: 16,
-    backgroundColor: KhazainColors.cream50,
+    borderRadius: LIBRARY_CARD_RADIUS,
+    backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: CARD_BORDER,
+    borderColor: KhazainColors.hairline,
   },
   weekdayRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 10,
     paddingVertical: 5,
   },
   weekdayPct: {
     width: 44,
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    textAlign: 'left',
-    writingDirection: 'rtl',
+    ...textStyle('label', { color: KhazainColors.navy800, textAlign: 'left' }),
   },
   barTrack: {
     flex: 1,
     height: 10,
     borderRadius: 6,
-    backgroundColor: KhazainColors.cream100,
+    backgroundColor: KhazainColors.hairline,
     overflow: 'hidden',
   },
   barFill: {
     position: 'absolute',
-    right: 0, // fills from the right (RTL)
+    right: 0, // the track inherits ltr from weekdayRow (it is not pinned itself), so this is the physical right
     top: 0,
     bottom: 0,
     borderRadius: 6,
-    backgroundColor: KhazainColors.gold500,
+    backgroundColor: KhazainColors.goldAccent,
   },
   weekdayLabel: {
     width: 56,
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    color: KhazainColors.ink700,
-    textAlign: 'right',
-    writingDirection: 'rtl',
+    ...textStyle('label', { color: KhazainColors.ink700 }),
   },
   gridRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     gap: 4,
     marginBottom: 4,
   },
@@ -304,13 +283,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  headerCell: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 10,
-    color: KhazainColors.ink400,
-    textAlign: 'center',
-    writingDirection: 'rtl',
-  },
+  headerCell: textStyle('labelSmall', { color: KhazainColors.ink500, textAlign: 'center' }),
   cellWrap: {
     flex: 1,
     aspectRatio: 1,
@@ -322,40 +295,38 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cellCompleted: {
-    backgroundColor: KhazainColors.gold500,
+    backgroundColor: KhazainColors.goldAccent,
   },
   cellMissed: {
     backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: OUTLINE,
+    borderColor: KhazainColors.hairlineWarm,
   },
+  // Hollow, fainter outline than `missed`: no fill, so the digit keeps ink500 contrast.
   cellNoData: {
-    backgroundColor: 'rgba(141,107,52,0.05)',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: KhazainColors.hairlineFaint,
   },
   cellCheck: {
+    // No fontFamily: U+2713 is not in Noto Sans Arabic, so the glyph falls back to the system face, where weight applies.
+    fontWeight: '700', // fontweight-ok: check glyph in the system fallback face, not a registered family
     fontSize: 13,
-    fontWeight: '700',
-    color: KhazainColors.cream50,
-   writingDirection: 'rtl',},
-  cellDay: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 10,
-    color: KhazainColors.ink500,
-   writingDirection: 'rtl',},
-  cellDayFaint: {
-    color: 'rgba(152,134,113,0.5)',
+    color: KhazainColors.pageBg,
+    writingDirection: 'rtl',
   },
+  cellDay: textStyle('labelSmall', { color: KhazainColors.ink500, textAlign: 'center' }),
   legendRow: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     justifyContent: 'center',
     gap: 16,
     marginTop: 10,
     paddingTop: 10,
     borderTopWidth: 1,
-    borderTopColor: CARD_BORDER,
+    borderTopColor: KhazainColors.hairline,
   },
   legendItem: {
-    flexDirection: 'row',
+    ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 5,
   },
@@ -367,29 +338,20 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   legendCheck: {
-    fontSize: 9,
-    fontWeight: '700',
-    color: KhazainColors.cream50,
-   writingDirection: 'rtl',},
-  legendLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 11,
-    color: KhazainColors.ink500,
+    // No fontFamily: U+2713 is not in Noto Sans Arabic, so the glyph falls back to the system face, where weight applies.
+    fontWeight: '700', // fontweight-ok: check glyph in the system fallback face, not a registered family
+    fontSize: 10,
+    color: KhazainColors.pageBg,
     writingDirection: 'rtl',
   },
+  legendLabel: textStyle('label', { color: KhazainColors.ink500 }),
   showMoreBtn: {
     alignSelf: 'center',
     marginBottom: 16,
     paddingVertical: 8,
     paddingHorizontal: 22,
-    borderRadius: 10,
-    backgroundColor: KhazainColors.cream100,
+    borderRadius: 8,
+    backgroundColor: KhazainColors.iconChipBg,
   },
-  showMoreLabel: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    fontWeight: '600',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-  },
+  showMoreLabel: textStyle('cardTitle', { color: KhazainColors.navy800 }),
 });

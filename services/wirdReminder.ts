@@ -13,12 +13,7 @@
 
 import type { TimeOfDay } from '@/types/settings';
 import { toArabicDigits as toArNum } from '@/constants/progress';
-
-// Unicode directional isolates (T117). Times are inherently LTR; wrapping the
-// `٨:٠٠` digits in an isolate stops the bidi algorithm from reordering the
-// segments when they sit inside an RTL `Text`.
-const LRI = '⁦'; // Left-to-Right Isolate
-const PDI = '⁩'; // Pop Directional Isolate
+import { isolateLtr } from '@/services/bidi';
 
 /**
  * The next occurrence of the daily wall-clock `time`: today at that time if it
@@ -67,25 +62,27 @@ export function formatClockTime(time: TimeOfDay): string {
   const hour12 = rawHour === 0 ? 12 : rawHour;
   const minutes = String(time.minute).padStart(2, '0');
   const digits = toArNum(`${hour12}:${minutes}`);
-  return `${LRI}${digits}${PDI} ${period}`;
+  return `${isolateLtr(digits)} ${period}`;
 }
 
 /**
- * The Library card's next-reminder caption, e.g. `التذكير القادم: اليوم ⁦٨:٠٠⁩ م`.
+ * The next-reminder caption, e.g. `التذكير القادم: اليوم الساعة ⁦٨:٠٠⁩ م`. `prefix`
+ * lets the Library's reminder card say «التذكير التالي» from the same wording.
  * Derived purely from `now` + the persisted time + whether today's goal is met.
  */
 export function formatNextWirdReminder(
   now: Date,
   time: TimeOfDay,
   goalMetToday = false,
+  prefix = 'التذكير القادم',
 ): string {
   const next = computeNextWirdReminder(now, time, { goalMetToday });
   const isToday =
     next.getFullYear() === now.getFullYear() &&
     next.getMonth() === now.getMonth() &&
     next.getDate() === now.getDate();
-  const dayWord = isToday ? 'اليوم' : 'غدًا';
-  return `التذكير القادم: ${dayWord} ${formatClockTime(time)}`;
+  const dayWord = isToday ? 'اليوم' : 'غداً';
+  return `${prefix}: ${dayWord} الساعة ${formatClockTime(time)}`;
 }
 
 export type WirdReminderState = Readonly<{

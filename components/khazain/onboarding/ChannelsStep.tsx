@@ -1,10 +1,12 @@
 import React from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { PillButton } from '@/components/khazain/primitives';
 import { ONBOARDING_CHANNELS } from '@/constants/settings';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { showNotice } from '@/services/notice';
 
 /**
  * Onboarding step 3 (track 003, US4): optional community-channel promotion.
@@ -20,7 +22,7 @@ export function ChannelsStep(): React.ReactElement {
       if (!can) throw new Error('cannot open');
       await Linking.openURL(url);
     } catch {
-      Alert.alert(channelName, 'تعذّر فتح الرابط على هذا الجهاز.');
+      showNotice(channelName, 'تعذّر فتح الرابط على هذا الجهاز.');
     }
   };
 
@@ -41,21 +43,18 @@ export function ChannelsStep(): React.ReactElement {
           variant="navy"
           onPress={() => openExternal(ONBOARDING_CHANNELS.telegramUrl, 'تليجرام')}
           style={styles.cta}
-          labelStyle={styles.ctaLabel}
         />
         <PillButton
           label="انضمّ إلى قناة واتساب"
           variant="cream"
           onPress={() => openExternal(ONBOARDING_CHANNELS.whatsappUrl, 'واتساب')}
           style={styles.cta}
-          labelStyle={styles.ctaLabel}
         />
         <PillButton
           label="اشترك في قناة يوتيوب"
           variant="cream"
           onPress={() => openExternal(ONBOARDING_CHANNELS.youtubeUrl, 'يوتيوب')}
           style={styles.cta}
-          labelStyle={styles.ctaLabel}
         />
       </View>
     </ScrollView>
@@ -71,24 +70,11 @@ const styles = StyleSheet.create({
   // hint was clipped behind the footer button. `flexGrow: 1` keeps the centred
   // look whenever the content does fit.
   container: { flexGrow: 1, paddingHorizontal: 24, paddingVertical: 24, justifyContent: 'center', gap: 8 },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
+  title: textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
   subtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    lineHeight: 26,
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'center',
+    ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle, textAlign: 'center' }),
     marginBottom: 16,
   },
   ctaCol: { gap: 12 },
   cta: { width: '100%' },
-  ctaLabel: { fontSize: 15 },
 });

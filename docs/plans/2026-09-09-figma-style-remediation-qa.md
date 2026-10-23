@@ -204,6 +204,7 @@ implying a source that does not exist — these are placeholders for the real
 catalogue, not a curated list.
 
 **E6 — Mushaf transition (`2349:829`).**
+*Correction 2026-10-23: 2349:829 is the reading page itself and 2349:982 is its header-and-footer overlay (24% scrim, 0.3s dissolve on tap), not a loading state.*
 The resume path now holds a stable Mushaf surface instead of flashing the
 index, and the cold-start deep-link crash on that route is fixed. The
 transient frame itself is sub-second and was not captured as a still.

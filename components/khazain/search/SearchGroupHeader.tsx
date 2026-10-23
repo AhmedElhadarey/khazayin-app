@@ -1,4 +1,7 @@
+import { toArabicDigits } from '@/constants/progress';
+import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
@@ -16,7 +19,7 @@ export function SearchGroupHeader({ title, count }: Props) {
   return (
     <View style={styles.wrap}>
       <Text style={styles.title}>
-        {title} ({count})
+        {`${title} (${toArabicDigits(count)})`}
       </Text>
       <View style={styles.rule} />
     </View>
@@ -25,21 +28,16 @@ export function SearchGroupHeader({ title, count }: Props) {
 
 const styles = StyleSheet.create({
   wrap: {
+    // Pinned so the right-aligned title is the physical right, in Search and
+    // in the Library's saved list alike.
+    ...PHYSICAL_BOX,
     paddingTop: 8,
     paddingBottom: 8,
   },
-  title: {
-    fontFamily: 'TheMixArab',
-    fontSize: 16,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
+  title: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
   rule: {
     height: 1,
     marginTop: 4,
-    backgroundColor: KhazainColors.gold200,
-    opacity: 0.5,
+    backgroundColor: KhazainColors.hairlineWarm,
   },
 });

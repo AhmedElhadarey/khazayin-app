@@ -11,59 +11,16 @@
  * Track: khazain-saved_20260511  T9
  */
 
-import { MicBadge, OpenBookBadge, ProphetMedallionBadge, TulipBadge } from '@/components/khazain';
-import { KhazainColors } from '@/constants/theme';
+import { MicBadge, OpenBookBadge, ProphetMedallionBadge, QuillBadge, TulipBadge } from '@/components/khazain';
+import { SurahStar } from '@/components/khazain/primitives/SurahStar';
+import { CARD_DENSITY } from '@/constants/layout';
 import type { Book, Lecture, Scholar, Surah, SavedItem } from '@/types/content';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
 import type { SearchResultGroup } from './searchAll';
 import { searchTargetFor, type SearchTarget } from './searchTarget';
 
-// ---------------------------------------------------------------------------
-// Inline badges shared between search + library
-// ---------------------------------------------------------------------------
-
-/** Surah index circle: cream bg, gold border, gold Arabic-Indic numeral. */
-export function SurahNumberBadge({ displayNumber }: { displayNumber: string }) {
-  return (
-    <View style={badgeStyles.surahBadge}>
-      <Text style={badgeStyles.surahBadgeText} numberOfLines={1}>
-        {displayNumber}
-      </Text>
-    </View>
-  );
-}
-
-/** Scholar medallion: 40px gold disc with the Arabic honorific 'ع'. */
-export function ScholarMedallion() {
-  return (
-    <View style={badgeStyles.scholarBadge}>
-      <Text style={badgeStyles.scholarBadgeText}>ع</Text>
-    </View>
-  );
-}
-
-const badgeStyles = StyleSheet.create({
-  surahBadge: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: KhazainColors.cream100,
-    borderWidth: 1, borderColor: KhazainColors.gold200,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  surahBadgeText: {
-    fontFamily: 'TheSansArabic', fontSize: 14, fontWeight: '700',
-    color: KhazainColors.gold200,
-  },
-  scholarBadge: {
-    width: 40, height: 40, borderRadius: 20,
-    backgroundColor: KhazainColors.gold200,
-    alignItems: 'center', justifyContent: 'center',
-  },
-  scholarBadgeText: {
-    fontFamily: 'TheMixArab', fontSize: 18, fontWeight: '700',
-    color: KhazainColors.cream50,
-  },
-});
+/** Leading badge size. No frame covers search or the Library saved rows. */
+const BADGE = 40;
 
 // ---------------------------------------------------------------------------
 // Row props builder
@@ -95,7 +52,7 @@ export function rowPropsForSearchResult(
   if (group.type === 'surah') {
     const s = item as Surah;
     return {
-      iconNode: <SurahNumberBadge displayNumber={s.displayNumber} />,
+      iconNode: <SurahStar index={s.displayNumber} size={CARD_DENSITY.surahBadgeDisc} />,
       title: s.name,
       subtitle: s.meta,
       target,
@@ -104,7 +61,7 @@ export function rowPropsForSearchResult(
   if (group.type === 'scholar') {
     const s = item as Scholar;
     return {
-      iconNode: <ScholarMedallion />,
+      iconNode: <QuillBadge size={BADGE} />,
       title: s.name,
       target,
     };
@@ -112,7 +69,7 @@ export function rowPropsForSearchResult(
   if (group.type === 'book') {
     const b = item as Book;
     return {
-      iconNode: <OpenBookBadge size={40} />,
+      iconNode: <OpenBookBadge size={BADGE} />,
       title: b.title,
       target,
     };
@@ -135,20 +92,20 @@ export function rowPropsForSavedItem(item: SavedItem): RowProps {
   switch (item.snapshot.type) {
     case 'surah':
       return {
-        iconNode: <SurahNumberBadge displayNumber={item.snapshot.displayNumber} />,
+        iconNode: <SurahStar index={item.snapshot.displayNumber} size={CARD_DENSITY.surahBadgeDisc} />,
         title: item.snapshot.name,
         subtitle: item.snapshot.meta,
         route: '/sections/mushaf',
       };
     case 'scholar':
       return {
-        iconNode: <ScholarMedallion />,
+        iconNode: <QuillBadge size={BADGE} />,
         title: item.snapshot.name,
         route: `/sections/scholar/${item.entityId}`,
       };
     case 'book':
       return {
-        iconNode: <OpenBookBadge size={40} />,
+        iconNode: <OpenBookBadge size={BADGE} />,
         title: item.snapshot.title,
         route: '/sections/books',
       };
@@ -162,7 +119,7 @@ export function rowPropsForSavedItem(item: SavedItem): RowProps {
       };
     case 'dawah':
       return {
-        iconNode: <OpenBookBadge size={40} />,
+        iconNode: <OpenBookBadge size={BADGE} />,
         title: item.snapshot.title,
         subtitle: item.snapshot.body,
         route: '/sections/dawah',
@@ -175,11 +132,11 @@ export function rowPropsForSavedItem(item: SavedItem): RowProps {
 // ---------------------------------------------------------------------------
 
 function lectureIconFor(category: Lecture['category']): React.ReactNode {
-  return category === 'prophet' ? <ProphetMedallionBadge size={40} /> :
-         category === 'queen'   ? <TulipBadge size={40} /> :
-         category === 'radio'   ? <MicBadge size={40} /> :
-         category === 'book'    ? <OpenBookBadge size={40} /> :
-         /* scholar | general */  <OpenBookBadge size={40} />;
+  return category === 'prophet' ? <ProphetMedallionBadge size={BADGE} /> :
+         category === 'queen'   ? <TulipBadge size={BADGE} /> :
+         category === 'radio'   ? <MicBadge size={BADGE} /> :
+         category === 'book'    ? <OpenBookBadge size={BADGE} /> :
+         /* scholar | general */  <OpenBookBadge size={BADGE} />;
 }
 
 function lectureRouteFor(category: Lecture['category']): string {

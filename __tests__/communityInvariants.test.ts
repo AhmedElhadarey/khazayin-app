@@ -424,7 +424,7 @@ describe('discussion screens and the report sheet', () => {
 
   it('declares the report sheet as a transparent fade modal at the root', () => {
     expect(read('app/_layout.tsx')).toMatch(
-      /name="community-report-sheet"\s*options=\{\{[^}]*presentation: 'transparentModal',\s*animation: 'fade'/,
+      /name="community-report-sheet"\s*options=\{SHEET_OPTIONS\}/,
     );
   });
 

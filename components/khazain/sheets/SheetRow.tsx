@@ -1,10 +1,13 @@
 import { PHYSICAL_BOX } from '@/constants/layout';
-import { KhazainColors } from '@/constants/theme';
+import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 
 // Row used inside telegram / youtube / share sheets.
-// Per Figma each row is its own cream rounded card, with a navy circular disc
+// No Figma frame covers these sheets; the contract is theme.ts card tokens.
+// Each row is its own cream rounded card, with a navy circular disc
 // on the RTL-start side (right edge) holding the brand glyph, the title to the
 // left of the disc, and an optional second line for subtitle.
 export function SheetRow({
@@ -21,6 +24,7 @@ export function SheetRow({
   /** Present: the row is one option of a single choice and says whether it is chosen. */
   checked?: boolean;
 }) {
+  const oneLine = useLineClamp(1);
   return (
     <Pressable
       onPress={onPress}
@@ -35,11 +39,11 @@ export function SheetRow({
     >
       <View style={styles.disc}>{icon}</View>
       <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={oneLine}>
           {title}
         </Text>
         {sub ? (
-          <Text style={styles.sub} numberOfLines={1}>
+          <Text style={styles.sub} numberOfLines={oneLine}>
             {sub}
           </Text>
         ) : null}
@@ -55,16 +59,12 @@ const styles = StyleSheet.create({
     // physical right. Unpinned, forceRTL mirrors every one of them to the left.
     ...PHYSICAL_BOX,
     backgroundColor: KhazainColors.cream50,
-    borderRadius: 14,
+    borderRadius: KhazainRadius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.10)',
+    borderColor: KhazainColors.cardBorder,
     paddingHorizontal: 14,
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    ...KhazainShadows.listRow,
   },
   rowShort: {
     minHeight: 56,
@@ -92,20 +92,9 @@ const styles = StyleSheet.create({
   textCol: {
     paddingRight: 56, // disc width 32 + right inset 12 + gap 12
   },
-  title: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  title: textStyle('cardTitle', { color: KhazainColors.ink900 }),
   sub: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 12,
-    color: KhazainColors.ink500,
+    ...textStyle('caption', { color: KhazainColors.ink500 }),
     marginTop: 2,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
 });

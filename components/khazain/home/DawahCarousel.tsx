@@ -27,14 +27,21 @@ import { SCALE_STEPS, clampFocus, dawahLayout, nearestSlot, resolveWrap } from '
 // neighbours down harder, which is what reads as depth.
 //
 // Which poster is focused comes from where each slot actually landed, not
-// from `index * slot`. That arithmetic assumes the scroll axis starts at
-// content x = 0 and runs left to right, and this app forces RTL — but it also
-// pins `direction: 'ltr'` on layout containers, so which way a given
-// ScrollView runs is not something to predict. Measuring sidesteps it: a slot
-// reports its own centre, and the fan is a function of the distance from that
-// to the middle of the viewport.
+// from `index * slot`. That arithmetic would assume the scroll axis starts at
+// content x = 0 and runs left to right. This ScrollView inherits the app's
+// forced RTL, so on native its content starts at the RIGHT edge: slot 0 sits
+// rightmost, and the poster after the focused one sits on its left. (The data
+// order in data/content/dawah.ts relies on that.) Measuring keeps the maths
+// independent of it: a slot reports its own centre, and the fan is a function
+// of the distance from that to the middle of the viewport.
 
-type WrappedEntry = { item: DawahPosterModel; realIndex: number };
+type WrappedEntry = { item: DawahPosterModel; realIndex: number; clone: boolean };
+
+/**
+ * Room under the posters. With the shadow down to the file's 1.22 blur there is
+ * nothing to leave space for, and the posters end the page 24 above the edge.
+ */
+const DAWAH_PAD_BOTTOM = 2;
 
 /** Distances from the focused slot that the fan interpolates between. */
 const STEPS = [-2, -1, 0, 1, 2];
@@ -62,9 +69,9 @@ export function DawahCarousel({
   const wrapped = useMemo<WrappedEntry[]>(() => {
     if (!items || items.length < 2) return [];
     return [
-      { item: items[items.length - 1], realIndex: items.length - 1 },
-      ...items.map((item, i) => ({ item, realIndex: i })),
-      { item: items[0], realIndex: 0 },
+      { item: items[items.length - 1], realIndex: items.length - 1, clone: true },
+      ...items.map((item, i) => ({ item, realIndex: i, clone: false })),
+      { item: items[0], realIndex: 0, clone: true },
     ];
   }, [items]);
 
@@ -148,7 +155,7 @@ export function DawahCarousel({
       <View
         style={{
           paddingTop: KhazainSpacing.x3,
-          paddingBottom: KhazainSpacing.x6,
+          paddingBottom: DAWAH_PAD_BOTTOM,
           alignItems: 'center',
         }}
       >
@@ -187,9 +194,11 @@ export function DawahCarousel({
       style={{ width: stageWidth, alignSelf: 'center' }}
       onMomentumScrollEnd={handleMomentumEnd}
       scrollEventThrottle={16}
+      // No `direction` is pinned here: the inherited RTL is what orders the slots
+      // right-to-left (see the note at the top of the file).
       contentContainerStyle={{
         paddingTop: KhazainSpacing.x3,
-        paddingBottom: KhazainSpacing.x6,
+        paddingBottom: DAWAH_PAD_BOTTOM,
         paddingHorizontal: sidePadding,
         alignItems: 'center',
       }}
@@ -247,11 +256,16 @@ function Slot({
   };
 
   const animatedStyle = useAnimatedStyle(() => {
+    // Hidden until measured. Every branch states `opacity` explicitly: Reanimated
+    // does not reset a key the worklet stops returning, so omitting it after the
+    // measure left the slot stuck at 0 and the carousel drew nothing.
     if (!measured.value) return { opacity: 0 };
     // Distance in slots between this poster and the middle of the viewport.
-    // Scale, opacity and stacking are all symmetric about it.
+    // Scale and stacking are symmetric about it. Opacity is not driven at all:
+    // every poster in the design is fully opaque.
     const d = (centre.value - (scrollX.value + viewportWidth / 2)) / slot;
     return {
+      opacity: 1,
       transform: [
         {
           scale: interpolate(
@@ -261,7 +275,6 @@ function Slot({
           ),
         },
       ],
-      opacity: interpolate(d, STEPS, [0.45, 0.7, 1, 0.7, 0.45], Extrapolation.CLAMP),
       zIndex: Math.round(interpolate(d, STEPS, [0, 5, 100, 5, 0], Extrapolation.CLAMP)),
     };
   });
@@ -269,6 +282,10 @@ function Slot({
   return (
     <Animated.View
       onLayout={handleLayout}
+      // A clone is scenery for the infinite wrap; its real twin is the one a
+      // screen reader should meet, so each poster is announced once.
+      accessibilityElementsHidden={entry.clone}
+      importantForAccessibility={entry.clone ? 'no-hide-descendants' : 'auto'}
       style={[
         { width: slot, height: cardHeight, alignItems: 'center', justifyContent: 'center' },
         animatedStyle,

@@ -6,6 +6,8 @@
  * reorders the screen, and the order is asserted without a renderer.
  */
 
+import { HEADER_BAND } from '@/constants/layout';
+
 export const HOME_SECTION_ORDER = Object.freeze([
   'header',
   'quranHero',
@@ -49,8 +51,18 @@ export function homeTabletRows(order: readonly HomeSectionKey[]): HomeTabletRow[
 /** One vertical rhythm between sections, rather than a per-section margin. */
 export const HOME_SECTION_GAP = 24;
 
-/** Gap between the search field and the first hero. */
-export const HOME_HERO_TOP_GAP = 8;
+/**
+ * Sections whose gap above them is not the shared rhythm. The file puts 16
+ * between the search field and the Quran hero (search 2093:1646 → hero), and 24
+ * everywhere else (Quran → Prophet, books → queen, ...).
+ */
+export const HOME_SECTION_GAP_OVERRIDES: Readonly<Partial<Record<HomeSectionKey, number>>> =
+  Object.freeze({ quranHero: 16 });
+
+/** The gap above a section (or above a tablet row, keyed by its first section). */
+export function homeSectionGap(key: HomeSectionKey): number {
+  return HOME_SECTION_GAP_OVERRIDES[key] ?? HOME_SECTION_GAP;
+}
 
 export type HomeQuickChip = {
   /** Also the slot key for the chip's glyph — see HOME_QUICK_CHIP_GLYPH. */
@@ -59,9 +71,24 @@ export type HomeQuickChip = {
   route: string;
 };
 
-/** Physical left → right, matching the reference frame. */
+/**
+ * Physical left → right, matching the reference frame: the chips' transforms in
+ * frame 2092:1613 put حصريات at x=16, برامج إذاعية at 141 and كتب صوتية at 265.
+ */
 export const HOME_QUICK_CHIPS: readonly HomeQuickChip[] = Object.freeze([
-  { id: 'audiobooks', label: 'كتب صوتية', route: '/sections/audiobooks' },
-  { id: 'radio', label: 'برامج إذاعية', route: '/sections/radio' },
   { id: 'exclusive', label: 'حصريات خزائن الرحمن', route: '/sections/exclusive' },
+  { id: 'radio', label: 'برامج إذاعية', route: '/sections/radio' },
+  { id: 'audiobooks', label: 'كتب صوتية', route: '/sections/audiobooks' },
 ]);
+
+/**
+ * Height of the opaque header band behind Home's header, below the safe-area
+ * inset. Frame 2001:940's header is 110 tall around 102pt of content (54 row +
+ * 8 + 40 search pill), 8pt of its own below, so the band is the measured header
+ * plus that 8 and never less than the frame's 110. Measuring (rather than
+ * passing a font scale) keeps it in step with whatever the header grows to at
+ * large text.
+ */
+export function homeHeaderBand(insetTop: number, headerHeight: number, frameBand: number = HEADER_BAND.home, below = 8): number {
+  return insetTop + Math.max(frameBand, headerHeight + below);
+}

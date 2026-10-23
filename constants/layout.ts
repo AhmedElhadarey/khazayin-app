@@ -1,4 +1,5 @@
-import { KhazainColors } from '@/constants/theme';
+import { KhazainColors, withAlpha } from '@/constants/theme';
+import { TEXT_ROLES } from '@/constants/typography';
 
 // Layout constants for tab screens.
 //
@@ -108,6 +109,22 @@ export function responsiveCarouselCardWidth(
 // Nothing here reads `I18nManager` — these are frozen literals, so physical
 // order cannot change with module-initialization order or platform.
 
+/**
+ * The chrome every default bottom sheet and modal shares: the handle, the top
+ * radius, the scrim and the side padding. There is no Figma frame for these
+ * sheets; this contract is the authority. The qiraat list sheet is the one
+ * exception, because it has a frame (2457:954) and keeps its own geometry in
+ * `SHEET_LIST_GEOMETRY`.
+ */
+export const SHEET_CHROME = Object.freeze({
+  handleWidth: 44,
+  handleHeight: 4,
+  handleColor: withAlpha(KhazainColors.inkTitle, 0.18),
+  topRadius: 24,
+  backdrop: 'rgba(20,15,8,0.45)',
+  paddingHorizontal: 16,
+} as const);
+
 /** Text style base for Arabic copy. */
 export const RTL_TEXT = Object.freeze({
   writingDirection: 'rtl',
@@ -202,19 +219,6 @@ export function contentWidth(width: number): number {
   return columnWidth - horizontalGutter(columnWidth) * 2;
 }
 
-/**
- * `#RRGGBB` → `rgba(r, g, b, a)`. Colours are named once in `KhazainColors`
- * (CLAUDE.md, Theme conventions); the tab bar needs one of them at reduced
- * opacity, and re-typing the literal is how the palette drifts.
- */
-function withAlpha(hex: string, alpha: number): string {
-  const value = hex.replace('#', '');
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 // ---------------------------------------------------------------------------
 // Bottom navigation geometry (Figma node 2031:5675, design spec section 5.2)
 // ---------------------------------------------------------------------------
@@ -230,8 +234,22 @@ export const TAB_BAR = Object.freeze({
   itemRadius: 8,
   /** Translucent gold over navy — not an opaque cream panel. */
   activeFill: KhazainColors.navPillBg,
+  /** Active label (Figma Active?=Yes keeps the label cream). */
   activeInk: KhazainColors.navLabel,
-  inactiveInk: withAlpha(KhazainColors.navLabel, 0.85),
+  /** Active icon: the Active?=Yes variants recolour every path to gold. */
+  activeIcon: KhazainColors.navPill,
+  /** Inactive icon and label: #F1E7DD at full opacity. */
+  inactiveInk: KhazainColors.navLabel,
+  /** The visible corner is the controls row's 24, not the 32 outer symbol. */
+  cornerRadius: 24,
+  /** Phone row padding (Figma 2001:17496); items space-between. */
+  phonePaddingHorizontal: 16,
+  inactiveItemMinWidth: 42,
+  activeItemPaddingHorizontal: 12,
+  /** Extends a 42pt item to a 46pt touch width (>= 44). */
+  touchSlopHorizontal: 2,
+  /** The indicator straddles the bar's top edge, 2pt above the pill. */
+  indicatorTop: -2,
   indicatorWidth: 40,
   indicatorHeight: 4,
   indicatorColor: KhazainColors.navPill,
@@ -258,7 +276,7 @@ export const SEGMENT_TABS = Object.freeze({
    * strip exactly as tall as its content.
    */
   strip: Object.freeze({ flexGrow: 0, flexShrink: 0 } as const),
-  stripPaddingVertical: 6,
+  stripPaddingVertical: 8,
   gap: 8,
   /**
    * Node "\u0661" on 2031:6193 — four 84 x 45 tabs 8 apart fill the 360pt
@@ -347,8 +365,16 @@ export const CARD_DENSITY = Object.freeze({
   moreCardHeight: 82,
   moreCardRadius: 16,
   moreCardPaddingHorizontal: 16,
+  /**
+   * The file draws no vertical inset — the two 21pt lines sit centred in the
+   * 82 — so this only shows once the text outgrows the card at a large font
+   * scale: 12 + 42 + 12 + 2 hairline = 68, inside the 82.
+   */
+  moreCardPaddingVertical: 12,
   /** `DIV-24` — 48 x 48 at radius 16, so it reads as a squircle, not a circle. */
   moreChipSize: 48,
+  /** Node 2102:2711 draws each row glyph at ~20pt in the chip; Settings shares it. */
+  moreGlyphSize: 20,
   moreChipRadius: 16,
   /** Each `margin-wrap` is 94 over an 82 card, and the cards step 94 apart. */
   moreListGap: 12,
@@ -372,6 +398,24 @@ export const CARD_DENSITY = Object.freeze({
   cardElevation: 1,
 } as const);
 
+/**
+ * Text metrics shared by the list rows that use the 24 + 4 + 20 text column
+ * (ReciterRow, RibbonCard's ribbon variant; nodes 2031:6193, 2510:1990): a 24
+ * title, 4, then a 20 subtitle fill the 48pt column. With the ribbon/reciter
+ * row's padding and hairline that is 1 + 3 + 48 + 3 + 1 = 56; the gold ribbon
+ * pulls back out over the padding. The bordered LectureCard (64, node 2465:1911)
+ * shares the column, the hairline and the line heights, but pads 8 - border
+ * instead of `paddingVertical`. The 24 title is the `bodyCompactLoose` role;
+ * the 20 line has no role. Home's recommendation slot derives from this.
+ */
+export const LIST_ROW_TEXT = Object.freeze({
+  paddingVertical: 3,
+  borderWidth: 1,
+  titleLineHeight: TEXT_ROLES.bodyCompactLoose.lineHeight,
+  titleGap: 4,
+  subtitleLineHeight: 20,
+} as const);
+
 // ---------------------------------------------------------------------------
 // Section page chrome
 // ---------------------------------------------------------------------------
@@ -392,7 +436,54 @@ export const PAGE_CHROME = Object.freeze({
    */
   searchHeight: 40,
   searchRadius: 12,
+  /**
+   * InlineHeader is a 44pt row and the pill starts right under it, so the block
+   * has no top padding; 8 below it end the header band (`HEADER_BAND.search`).
+   */
+  searchPaddingTop: 0,
+  searchPaddingBottom: 8,
+  /** Sections root: pill bottom 128, first card 148 (2031:5675). */
+  rootSearchPaddingBottom: 20,
+  /**
+   * First compact row under a search block with no tab strip: 2 below the
+   * `searchPaddingBottom` (10 below the pill). Frames 2207:5270, 2102:2975,
+   * 2869:2088, 2207:17898.
+   */
+  listAfterSearch: 2,
+  /**
+   * First card under the pill on the card lists (Prophet, Queen, Books, Radio):
+   * 4 below the `searchPaddingBottom` (12 below the pill; first card at 141).
+   * Frames 2465:1911, 2589:1772, 2597:2552, 2606:3830.
+   */
+  cardListAfterSearch: 4,
+  /** First row / rail top under the segment tab strip (Reciter): frame 2031:6193. */
+  listAfterTabs: 8,
+  /** Letter rail top inside a body that starts `listAfterSearch` under the pill. */
+  railTop: 4,
 } as const);
+
+/**
+ * Height of each frame family's opaque Header below the 45pt StatusBar (node
+ * `Frame 4header`: 80 / 81 / 136 / 137 / 155 in total). Add the safe-area top inset.
+ */
+export const HEADER_BAND = Object.freeze({
+  /** Frame reference only (More root 2102:2711, 80): `headerBandHeight` derives the app's own. */
+  more: 35,
+  /** Frame reference only (Contact, About, Dawah, 81): the app's row comes from `inlineHeaderHeight`. */
+  inline: 36,
+  /** Library and Sections roots, 2031:4659 / 2031:5675 (136). Frame literal: those titles are not font-scale driven here. */
+  root: 91,
+  /** Sub-screens with a search or tab row: lists, scholars, Archive 2558:1334 (137). */
+  search: 92,
+  /**
+   * Home 2001:940 (155). Frame literal. Home does not use headerBandHeight('home'); its band
+   * is homeHeaderBand (constants/homePresentation.ts), never below this, growing with the
+   * measured header.
+   */
+  home: 110,
+});
+
+export type HeaderBandKind = keyof typeof HEADER_BAND;
 
 /**
  * The alphabet rail — node "DIV-97" on 2031:6193, 2102:2975, 2869:2088 and

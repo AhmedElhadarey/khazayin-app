@@ -10,8 +10,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { COMMUNITY_COPY, muteA11y, postA11y, reportA11y } from '@/constants/communityCopy';
 import { MIN_TOUCH_TARGET, PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { COMMUNITY_POST_ORDER, type CommunityPostSlot } from '@/constants/rtlContracts';
-import { Colors, KhazainColors, KhazainRadius } from '@/constants/theme';
+import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import type { PostDisplayStatus } from '@/types/community';
 
 export type PostRowStatus = PostDisplayStatus;
@@ -68,6 +69,7 @@ export function PostRow({
   const badge =
     status === 'pending' ? COMMUNITY_COPY.pendingBadge : status === 'hidden' ? COMMUNITY_COPY.hiddenBadge : null;
   const initial = [...authorName.trim()][0] ?? '•';
+  const oneLine = useLineClamp(1);
 
   const slots: Record<CommunityPostSlot, React.ReactNode> = {
     actions: (
@@ -104,7 +106,7 @@ export function PostRow({
         accessible
         accessibilityLabel={postA11y({ name: authorName, time: timeLabel, status, body })}
       >
-        <Text style={styles.name} numberOfLines={1}>
+        <Text style={styles.name} numberOfLines={oneLine}>
           {authorName}
         </Text>
         <Text style={styles.time}>{timeLabel}</Text>
@@ -142,8 +144,7 @@ const styles = StyleSheet.create({
   actions: { ...PHYSICAL_BOX, alignItems: 'flex-start', flexShrink: 0 },
   action: { minHeight: MIN_TOUCH_TARGET, minWidth: MIN_TOUCH_TARGET, paddingHorizontal: 6, justifyContent: 'center' },
   actionText: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.navy800 }) },
-  // Legacy palette: the Khazain tokens carry no error colour.
-  actionDanger: { color: Colors.light.error },
+  actionDanger: { color: KhazainColors.danger },
   // alignItems 'flex-end' is the physical right: the box is pinned ltr.
   textCol: { ...PHYSICAL_BOX, flex: 1, minWidth: 0, alignItems: 'flex-end', gap: 2 },
   name: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }) },

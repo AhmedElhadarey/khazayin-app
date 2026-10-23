@@ -7,23 +7,13 @@
  *
  * Imports the stores directly (not the @/store barrel) so tests stay off SQLite.
  */
-import { AccessibilityInfo } from 'react-native';
 import { RECOMMENDATION_COPY } from '@/constants/recommendations';
+import { announce } from '@/services/a11yAnnounce';
 import { useRecommendationsStore } from '@/store/recommendationsStore';
 import { useToastStore } from '@/store/toastStore';
 import type { Recommendation } from './types';
 
 export const DISMISS_TOAST_MS = 5000;
-
-// Mirrors savedToggle.ts announce()
-function announce(message: string): void {
-  // Queued (iOS) so it doesn't cut off the screen reader confirming the action.
-  if (typeof AccessibilityInfo.announceForAccessibilityWithOptions === 'function') {
-    AccessibilityInfo.announceForAccessibilityWithOptions(message, { queue: true });
-  } else {
-    AccessibilityInfo.announceForAccessibility(message);
-  }
-}
 
 export function dismissRecommendation(rec: Pick<Recommendation, 'key'>, opts: { announce: boolean }): void {
   const { key } = rec;

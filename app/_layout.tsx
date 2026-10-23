@@ -1,6 +1,8 @@
 import { LaunchSequence, shouldRunLaunchSequence, useLaunchReveal } from '@/components/khazain/launch';
 import { FONT_ASSET_MODULES } from '@/constants/fonts';
-import { Colors } from '@/constants/theme';
+import { Colors, KhazainColors } from '@/constants/theme';
+import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
+import { PillButton } from '@/components/khazain/primitives/PillButton';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -9,7 +11,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { I18nManager, LogBox, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { I18nManager, LogBox, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import { useHorizonReconcile } from '@/hooks/useHorizonReconcile';
@@ -54,12 +56,11 @@ I18nManager.forceRTL(true);
  * up to 1.2x, so the preference keeps working — it just cannot break a layout.
  * Individual screens may pass a lower value; none may raise it.
  */
-const MAX_FONT_SCALE = 1.2;
 type ScalableText = { defaultProps?: Record<string, unknown> };
 for (const Component of [Text, TextInput] as unknown as ScalableText[]) {
   Component.defaultProps = {
     ...(Component.defaultProps ?? {}),
-    maxFontSizeMultiplier: MAX_FONT_SCALE,
+    maxFontSizeMultiplier: CHROME_MAX_FONT_SCALE,
   };
 }
 if (__DEV__ && process.env.EXPO_PUBLIC_VISUAL_AUDIT === '1') {
@@ -240,6 +241,22 @@ function useSettingsSettled(): boolean {
   }, [hydrated]);
   return hydrated || capped;
 }
+
+/**
+ * Options shared by every root-level sheet route. The root Stack paints an
+ * opaque contentStyle on every screen; a transparentModal must override it or
+ * the page underneath is hidden and the sheet scrim reads as flat grey.
+ * react-native-screens keeps the previous screen attached for
+ * 'transparentModal' (iOS and Android; see the presentation docs in its
+ * native-stack types), so with a transparent content background the page
+ * shows through, dimmed by the sheet's own scrim.
+ */
+const SHEET_OPTIONS = {
+  headerShown: false,
+  presentation: 'transparentModal',
+  animation: 'fade',
+  contentStyle: { backgroundColor: 'transparent' },
+} as const;
 
 function RootLayout() {
   const colorScheme = useColorScheme();
@@ -425,51 +442,31 @@ function RootLayout() {
         />
         <Stack.Screen
           name="note-editor"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="notes-viewer"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="telegram-sheet"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
+        />
+        <Stack.Screen
+          name="qiraat-sheet"
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="youtube-sheet"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="share-sheet"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="community-report-sheet"
-          options={{
-            headerShown: false,
-            presentation: 'transparentModal',
-            animation: 'fade',
-          }}
+          options={SHEET_OPTIONS}
         />
         <Stack.Screen
           name="content-search"
@@ -564,14 +561,7 @@ function RootErrorFallback({ onRetry }: { onRetry: () => void }) {
       <Text style={fallbackStyles.body}>
         نعتذر، حدث خطأ أثناء تشغيل التطبيق. يمكنك إعادة المحاولة.
       </Text>
-      <Pressable
-        onPress={onRetry}
-        accessibilityRole="button"
-        accessibilityLabel="إعادة المحاولة"
-        style={({ pressed }) => [fallbackStyles.button, { opacity: pressed ? 0.85 : 1 }]}
-      >
-        <Text style={fallbackStyles.buttonLabel}>إعادة المحاولة</Text>
-      </Pressable>
+      <PillButton label="إعادة المحاولة" variant="navy" onPress={onRetry} style={fallbackStyles.button} />
     </View>
   );
 }
@@ -582,38 +572,19 @@ const fallbackStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
-    backgroundColor: Colors.light.background,
+    backgroundColor: KhazainColors.pageBg,
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.light.text,
-    textAlign: 'center',
-    writingDirection: 'rtl',
+    ...textStyle('bodyLarge', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     marginBottom: 10,
   },
   body: {
-    fontSize: 14,
-    color: Colors.light.text,
-    textAlign: 'center',
-    writingDirection: 'rtl',
-    lineHeight: 22,
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     marginBottom: 24,
   },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    borderRadius: 12,
-    backgroundColor: Colors.light.primary,
-  },
-  buttonLabel: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
-    writingDirection: 'rtl',
-  },
+  // Full width: PillButton's label fills the pill, and a shrink-wrapped Arabic
+  // label can lose its last word on Android 15+.
+  button: { alignSelf: 'stretch' },
 });
 
 // Wrap the root so Sentry can capture render errors and touch/navigation

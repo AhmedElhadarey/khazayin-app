@@ -1,8 +1,10 @@
 import React from 'react';
-import { Alert, Linking, StyleSheet, View } from 'react-native';
+import { Linking, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
-import Svg, { Path } from 'react-native-svg';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { KhazainColors } from '@/constants/theme';
 import { SheetRow, SheetShell } from '@/components/khazain/sheets';
+import { showNotice } from '@/services/notice';
 
 // Real channel URLs to be supplied by the foundation. Until then we fall back
 // to a generic Telegram URL and surface a friendly Arabic alert when the link
@@ -31,7 +33,7 @@ export default function TelegramSheet() {
       await Linking.openURL(url);
       close();
     } catch {
-      Alert.alert('تليجرام', 'تعذّر فتح الرابط على هذا الجهاز.');
+      showNotice('تليجرام', 'تعذّر فتح الرابط على هذا الجهاز.');
     }
   };
 
@@ -53,18 +55,9 @@ export default function TelegramSheet() {
 }
 
 function TelegramGlyph() {
-  // Telegram paper-plane in cyan tint inside the navy disc.
-  return (
-    <Svg width={14} height={14} viewBox="0 0 20 20" fill="none">
-      <Path
-        d="M2 10l14-7-3 14-4-6-7-1z"
-        fill="#2AABEE"
-        stroke="#2AABEE"
-        strokeWidth={1}
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
+  // `MoreTelegram` (node 2106:2255), the mark the More row draws; cream50 on
+  // the navy disc. The sheet has no frame of its own.
+  return <FigmaIcon name="MoreTelegram" size={18} color={KhazainColors.cream50} />;
 }
 
 const styles = StyleSheet.create({
