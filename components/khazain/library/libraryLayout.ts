@@ -93,3 +93,12 @@ export function statCardWidth(frameWidth: number): number {
  * plus this 24 margin wrap.
  */
 export const LIBRARY_SEARCH_MARGIN_BELOW = 24;
+
+/** The in-progress and completed audiobook cards, 1373 → 1389 in the frame. */
+export const AUDIOBOOK_CARD_GAP = 16;
+
+/**
+ * The smart-reminder cards (node 2031:4659): 12 between cards, 8 from the
+ * description to the next-time line.
+ */
+export const REMINDER_CARD = Object.freeze({ listGap: 12, descriptionToNext: 8 });

@@ -71,21 +71,23 @@ export function formatClockTime(time: TimeOfDay): string {
 }
 
 /**
- * The Library card's next-reminder caption, e.g. `التذكير القادم: اليوم ⁦٨:٠٠⁩ م`.
+ * The next-reminder caption, e.g. `التذكير القادم: اليوم الساعة ⁦٨:٠٠⁩ م`. `prefix`
+ * lets the Library's reminder card say «التذكير التالي» from the same wording.
  * Derived purely from `now` + the persisted time + whether today's goal is met.
  */
 export function formatNextWirdReminder(
   now: Date,
   time: TimeOfDay,
   goalMetToday = false,
+  prefix = 'التذكير القادم',
 ): string {
   const next = computeNextWirdReminder(now, time, { goalMetToday });
   const isToday =
     next.getFullYear() === now.getFullYear() &&
     next.getMonth() === now.getMonth() &&
     next.getDate() === now.getDate();
-  const dayWord = isToday ? 'اليوم' : 'غدًا';
-  return `التذكير القادم: ${dayWord} ${formatClockTime(time)}`;
+  const dayWord = isToday ? 'اليوم' : 'غداً';
+  return `${prefix}: ${dayWord} الساعة ${formatClockTime(time)}`;
 }
 
 export type WirdReminderState = Readonly<{

@@ -1,5 +1,5 @@
 import fs from 'fs';
-import { LIBRARY_SEARCH_MARGIN_BELOW } from '@/components/khazain/library/libraryLayout';
+import { AUDIOBOOK_CARD_GAP, LIBRARY_SEARCH_MARGIN_BELOW, REMINDER_CARD } from '@/components/khazain/library/libraryLayout';
 import { PAGE_CHROME } from '@/constants/layout';
 import path from 'path';
 
@@ -90,5 +90,37 @@ describe('completed lecture card (LIBRARY-10)', () => {
 describe('filter chip rendering (LIBRARY-17)', () => {
   it('renders the count only when there is one', () => {
     expect(lib).toMatch(/\{f\.count \? \(\s*<Text style=\{\[styles\.filterCount/);
+  });
+});
+
+describe('spec-review fixes', () => {
+  it('shows the wird card caption only while the reminder is NOT armed', () => {
+    expect(lib).toMatch(/reminder\.caption && !reminder\.armed/);
+  });
+
+  it('stacks the two audiobook cards 16 apart via the named constant', () => {
+    expect(lib).toMatch(/audiobookStack: \{ gap: AUDIOBOOK_CARD_GAP \}/);
+    expect(AUDIOBOOK_CARD_GAP).toBe(16);
+    expect(REMINDER_CARD.listGap).toBe(12);
+    expect(REMINDER_CARD.descriptionToNext).toBe(8);
+  });
+
+  it('المكتمل shows only the completed card, or an empty state', () => {
+    expect(lib).toMatch(/filter === 'completed'/);
+    expect(lib).toMatch(/لا توجد محاضرات مكتملة بعد/);
+  });
+
+  it('قوائم التشغيل shows the shared empty state', () => {
+    expect(lib).toMatch(/<EmptyState message="لا توجد قوائم تشغيل بعد" \/>/);
+  });
+
+  it('routes every reminder switch through the permission-aware toggle', () => {
+    expect(lib).not.toMatch(/setNotificationEnabled\(c\.id/);
+    expect(lib).toMatch(/setCategoryEnabled/);
+  });
+
+  it('no stale comments naming the old stat titles', () => {
+    expect(lib).not.toMatch(/محاضرات مسموعة، الأجزاء المكتملة/);
+    expect(read('constants/libraryPresentation.ts')).not.toMatch(/محاضرات مسموعة، الأجزاء المكتملة/);
   });
 });

@@ -32,7 +32,7 @@ import {
   filterChipCount,
   juzCompletedSubtitle,
   lecturesListenedSubtitle,
-  nextReminderLabel,
+  lastReadingLabel,
   notesSubtitle,
   pagesReadSubtitle,
   remindersSubtitle,
@@ -47,6 +47,7 @@ import { FormatButton } from '@/components/khazain/primitives/FormatButton';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import {
+  AUDIOBOOK_CARD_GAP,
   FILTER_CHIP,
   LIBRARY_CARD_RADIUS,
   LIBRARY_DESIGN,
@@ -72,8 +73,9 @@ import {
   type WeekdayCompletion,
 } from '@/services/wirdHistory';
 import { useLibraryFiltersStore, useSavedStore, useSettingsStore } from '@/store';
-import { describeWirdReminder } from '@/services/wirdReminder';
-import { setWirdReminderEnabled } from '@/services/wirdReminderToggle';
+import { describeWirdReminder, formatNextWirdReminder } from '@/services/wirdReminder';
+import { setCategoryEnabled } from '@/services/notificationCategoryToggle';
+import type { NotificationCategoryId } from '@/types/settings';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useProgressStore } from '@/store/progressStore';
@@ -94,6 +96,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { EmptyState } from '@/components/khazain/state';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
@@ -106,17 +109,6 @@ function surahNameForPage(page: number): { name: string; surahNumber: number } |
     }
   }
   return null;
-}
-
-function lastReadingLabel(trend: { localDay: string; pagesRead: number }[]): string {
-  for (let i = trend.length - 1; i >= 0; i -= 1) {
-    if (trend[i].pagesRead > 0) {
-      if (i === trend.length - 1) return 'آخر قراءة: اليوم';
-      if (i === trend.length - 2) return 'آخر قراءة: أمس';
-      return `آخر قراءة: قبل ${toArNum(trend.length - 1 - i)} أيام`;
-    }
-  }
-  return 'لم تبدأ القراءة بعد';
 }
 
 /** `DIV-46` draws its stat glyph at 22.2 x 21.3 inside a 40pt chip. */
@@ -151,8 +143,9 @@ export default function LibraryScreen() {
   // the scheduler reads), not in local component state. Toggling here persists
   // the preference AND re-arms/cancels the wird reminder horizon (T047).
   //
-  // Routed through `setWirdReminderEnabled` so this toggle has the SAME
-  // permission semantics as the one in settings-notifications. Without it, a
+  // Routed through `setCategoryEnabled` (which delegates the wird category to
+  // `setWirdReminderEnabled`) so every switch here has the SAME permission
+  // semantics as the ones in settings-notifications. Without it, a
   // user who has denied notification permission could switch this on: the
   // preference would persist, the card would render a next-reminder time, and
   // the scheduler would silently arm nothing — the card would be
@@ -168,8 +161,8 @@ export default function LibraryScreen() {
     permission: notificationPermission,
     goalMetToday,
   });
-  const onToggleWirdReminder = (next: boolean) => {
-    void setWirdReminderEnabled(next).then((outcome) => {
+  const onToggleCategory = (id: NotificationCategoryId, next: boolean) => {
+    void setCategoryEnabled(id, next).then((outcome) => {
       if (outcome === 'permission-denied') {
         Alert.alert(
           'إذن الإشعارات مطلوب',
@@ -261,7 +254,7 @@ export default function LibraryScreen() {
   const lastSurah = surahNameForPage(lastReadPage);
   // The data model holds a page, not an ayah, so the page stays; with no
   // reading history the line is hidden rather than repeating the line above.
-  const wirdHighlight = wirdHighlightLabel(lastSurah?.name ?? null, lastReadPage);
+  const wirdHighlight = wirdHighlightLabel(lastSurah?.name ?? null, lastReadPage, trendLast28);
   const monthDeltaPct =
     pagesLastMonth > 0
       ? ((pagesThisMonth - pagesLastMonth) / pagesLastMonth) * 100
@@ -291,7 +284,7 @@ export default function LibraryScreen() {
   );
 
   // Every shipped reminder gets a card with its own switch. The wird switch
-  // goes through `onToggleWirdReminder` (permission-aware, same as the settings
+  // goes through `onToggleCategory` (permission-aware, same as the settings
   // screen); a card is armed only when the OS permits it, never on the stored
   // preference alone.
   const now = new Date();
@@ -304,17 +297,17 @@ export default function LibraryScreen() {
             descriptionAr: wirdReminderDescription(trendLast28, c.descriptionAr),
             armed: reminder.armed,
             nextLabel: reminder.armed
-              ? nextReminderLabel(now, wirdReminderTime, goalMetToday)
+              ? formatNextWirdReminder(now, wirdReminderTime, goalMetToday, 'التذكير التالي')
               : undefined,
             statusLabel: reminder.armed ? undefined : reminder.caption,
-            onToggle: onToggleWirdReminder,
+            onToggle: (next: boolean) => onToggleCategory(c.id, next),
           }
         : {
             id: c.id,
             labelAr: c.libraryLabelAr ?? c.labelAr,
             descriptionAr: c.descriptionAr,
             armed: isCategoryEnabled(c.id),
-            onToggle: (next: boolean) => useSettingsStore.getState().setNotificationEnabled(c.id, next),
+            onToggle: (next: boolean) => onToggleCategory(c.id, next),
           },
   );
 
@@ -418,7 +411,7 @@ export default function LibraryScreen() {
     })()
   ) : null;
 
-  // The most recently finished lecture: gold accent, full track.
+  // The most recently finished lecture: full track, gold «مراجعة».
   const completedCard = recentCompletedLecture ? (
     <AudioProgressCard
       variant="completed"
@@ -433,10 +426,13 @@ export default function LibraryScreen() {
     />
   ) : null;
 
-  // With nothing in progress and nothing finished the section shows the empty
-  // card; otherwise it shows whichever real cards exist.
+  // Under المكتمل the section is the completed card alone (or an empty state);
+  // otherwise it shows whichever real cards exist, and the empty card only when
+  // there is neither an in-progress nor a completed lecture.
   const audiobookProgressCard =
-    inProgressCard || completedCard ? (
+    filter === 'completed' ? (
+      completedCard ?? <EmptyState message="لا توجد محاضرات مكتملة بعد" />
+    ) : inProgressCard || completedCard ? (
       <View style={styles.audiobookStack}>
         {inProgressCard}
         {completedCard}
@@ -529,13 +525,16 @@ export default function LibraryScreen() {
           </View>
           {/* Physical left → right: the toggle, then its label. */}
           <View style={styles.reminderInline}>
-            <Toggle on={reminder.armed} onChange={onToggleWirdReminder} label="التذكير اليومي" />
+            <Toggle on={reminder.armed} onChange={(next) => onToggleCategory('wird-daily', next)} label="التذكير اليومي" />
             <View style={{ flex: 1 }} />
             <Text style={styles.reminderInlineLabel}>التذكير اليومي</Text>
           </View>
           {/* The design has no frame for a blocked reminder, so this line is
               drawn only when there is something the reader has to act on. */}
-          {reminder.caption ? (
+          {/* Product decision: the frame draws no line under the toggle, so the
+              caption shows only when the reminder is NOT armed (off, or the OS
+              permission is missing). The reminder card carries «التذكير التالي». */}
+          {reminder.caption && !reminder.armed ? (
             <Text style={styles.wirdReminderNext}>{reminder.caption}</Text>
           ) : null}
         </View>
@@ -643,6 +642,14 @@ export default function LibraryScreen() {
       </AsyncContent>
     ),
 
+    // The file draws the قوائم التشغيل chip but the app has no playlists yet, so
+    // the chip opens an honest empty state instead of being a no-op.
+    playlists: (
+      <View style={styles.block}>
+        <EmptyState message="لا توجد قوائم تشغيل بعد" />
+      </View>
+    ),
+
     savedList: <MySavedSection />,
 
     audiobookProgress: (
@@ -714,7 +721,7 @@ export default function LibraryScreen() {
       />
     ) : null,
 
-    // Physical left → right: محاضرات مسموعة، الأجزاء المكتملة، صفحات مقروءة.
+    // Physical left → right: المحاضرات، الأجزاء، الصفحات.
     progressStats: (
       <View style={styles.statsRow}>
         {LIBRARY_PROGRESS_STAT_ORDER.map((key) => (
@@ -821,9 +828,9 @@ const styles = StyleSheet.create({
     marginBottom: LIBRARY_SECTION_GAP,
   },
   block: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, marginBottom: LIBRARY_SECTION_GAP },
+  audiobookStack: { gap: AUDIOBOOK_CARD_GAP },
   // The audiobook block sits 16 above the next block title (LIBRARY-20), not
   // the 40 that separates two top-level sections.
-  audiobookStack: { gap: 8 },
   blockAfterTitle: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, marginBottom: 16 },
   sparklineBlock: {
     marginTop: 12,

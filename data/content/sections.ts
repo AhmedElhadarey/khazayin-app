@@ -194,15 +194,15 @@ export const MORE_EXTERNAL_URLS: Lookup<string> = {
 // ---------------------------------------------------------------------------
 
 /**
- * Chip set, in order. The counts of الكل / المحفوظات / ملاحظاتي / المكتمل are
+ * Chip set, in the file's order (right to left). The counts of الكل / المحفوظات / ملاحظاتي / المكتمل are
  * real and filled in by the Library from its stores; the rest carry none, so
  * the chip renders its label alone (no fabricated number).
  */
 export const LIBRARY_FILTERS: LibraryFilter[] = [
   { id: 'all',       label: 'الكل',            count: '' },
   { id: 'saved',     label: 'المحفوظات',        count: '' },
-  { id: 'notes',     label: 'ملاحظاتي',         count: '' },
-  { id: 'completed', label: 'المكتمل',          count: '' },
   { id: 'playlist',  label: 'قوائم التشغيل' },
+  { id: 'completed', label: 'المكتمل',          count: '' },
+  { id: 'notes',     label: 'ملاحظاتي',         count: '' },
   { id: 'history',   label: 'السجل' },
 ];

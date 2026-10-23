@@ -4,8 +4,6 @@
  * middle dot reads as ٠ between Arabic-Indic digits (see mushafNavigation).
  */
 import { JUZ_PAGE_RANGES, toArabicDigits } from '@/constants/progress';
-import { computeNextWirdReminder, formatClockTime } from '@/services/wirdReminder';
-import type { TimeOfDay } from '@/types/settings';
 
 export type CountForms = { one: string; two: string; few: string; many: string };
 
@@ -80,11 +78,32 @@ export function notesSubtitle(count: number): string {
 }
 
 /**
+ * «آخر قراءة: …» — when the reader last read, from the 28-day trend (the last
+ * point is today). «لم تبدأ القراءة بعد» when no day has pages.
+ */
+export function lastReadingLabel(trend: ReadonlyArray<{ pagesRead: number }>): string {
+  const days = daysSinceLastRead(trend);
+  if (days === null) return NOT_STARTED_LABEL;
+  if (days === 0) return 'آخر قراءة: اليوم';
+  if (days === 1) return 'آخر قراءة: أمس';
+  return `آخر قراءة: قبل ${toArabicDigits(days)} أيام`;
+}
+
+const NOT_STARTED_LABEL = 'لم تبدأ القراءة بعد';
+
+/**
  * The wird card's second line: where the reader stopped. The data model holds a
  * page, not an ayah, so the page number stays (deviation from the file's ayah).
- * Null hides the line when there is no reading history to describe.
+ * Null hides the line when there is no reading history — judged from the trend,
+ * because `lastReadPage` defaults to 1 and would otherwise show «الفاتحة - صفحة ١»
+ * to a reader who has not started.
  */
-export function wirdHighlightLabel(surahName: string | null, page: number): string | null {
+export function wirdHighlightLabel(
+  surahName: string | null,
+  page: number,
+  trend: ReadonlyArray<{ pagesRead: number }>,
+): string | null {
+  if (lastReadingLabel(trend) === NOT_STARTED_LABEL) return null;
   if (!surahName || page <= 0) return null;
   return `سورة ${surahName} - صفحة ${toArabicDigits(page)}`;
 }
@@ -107,22 +126,15 @@ export function wirdReminderDescription(
   const days = daysSinceLastRead(trend);
   if (days === null) return fallback;
   if (days === 0) return 'قرأت وردك اليوم';
-  if (days === 1) return 'آخر قراءة أمس';
-  if (days === 2) return 'لم تقرأ منذ يومين';
-  const lastTwo = days % 100;
-  return lastTwo >= 3 && lastTwo <= 10
-    ? `لم تقرأ منذ ${toArabicDigits(days)} أيام`
-    : `لم تقرأ منذ ${toArabicDigits(days)} يومًا`;
-}
-
-/** «التذكير التالي: اليوم ٨:٠٠ م» — the card's wording of the next armed fire time. */
-export function nextReminderLabel(now: Date, time: TimeOfDay, goalMetToday: boolean): string {
-  const next = computeNextWirdReminder(now, time, { goalMetToday });
-  const isToday =
-    next.getFullYear() === now.getFullYear() &&
-    next.getMonth() === now.getMonth() &&
-    next.getDate() === now.getDate();
-  return `التذكير التالي: ${isToday ? 'اليوم' : 'غدًا'} ${formatClockTime(time)}`;
+  const span =
+    days === 1
+      ? 'يوم واحد'
+      : days === 2
+        ? 'يومين'
+        : days % 100 >= 3 && days % 100 <= 10
+          ? `${toArabicDigits(days)} أيام`
+          : `${toArabicDigits(days)} يومًا`;
+  return `لم تقرأ الورد منذ ${span}. تذكر أن قراءة القرآن نور وشفاء للقلوب`;
 }
 
 /**

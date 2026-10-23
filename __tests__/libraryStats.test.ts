@@ -77,14 +77,19 @@ describe('Library summary-card number agreement (LIBRARY-15)', () => {
 
 describe('wird card highlight line (LIBRARY-16)', () => {
   it('joins surah and page with a spaced hyphen and keeps the page number', () => {
-    expect(wirdHighlightLabel('البقرة', 12)).toBe('سورة البقرة - صفحة ١٢');
+    expect(wirdHighlightLabel('البقرة', 12, trend(0, 2))).toBe('سورة البقرة - صفحة ١٢');
   });
   it('is null when there is no reading history so the line is hidden', () => {
-    expect(wirdHighlightLabel(null, 0)).toBeNull();
+    expect(wirdHighlightLabel(null, 0, trend(0, 2))).toBeNull();
+    // lastReadPage defaults to 1, so a new user must not see «الفاتحة - صفحة ١».
+    expect(wirdHighlightLabel('الفاتحة', 1, trend(0, 0, 0))).toBeNull();
+    expect(wirdHighlightLabel('الفاتحة', 1, [])).toBeNull();
   });
 });
 
-import { daysSinceLastRead, nextReminderLabel, wirdReminderDescription } from '@/services/libraryStats';
+import { daysSinceLastRead, lastReadingLabel, wirdReminderDescription } from '@/services/libraryStats';
+import { filterChipCount } from '@/services/libraryStats';
+import { LIBRARY_FILTERS } from '@/data/content/sections';
 
 const trend = (...pages: number[]) =>
   pages.map((pagesRead, i) => ({ localDay: `2026-10-${String(i + 1).padStart(2, '0')}`, pagesRead }));
@@ -97,36 +102,29 @@ describe('wird reminder card copy (LIBRARY-11, 12)', () => {
     expect(daysSinceLastRead([])).toBeNull();
   });
 
-  it('describes the habit, falling back to the static copy with no history', () => {
+  it('describes the habit with number agreement, falling back with no history', () => {
     const fallback = 'تذكير يومي بقراءة الورد';
+    const tail = '. تذكر أن قراءة القرآن نور وشفاء للقلوب';
     expect(wirdReminderDescription(trend(0, 0), fallback)).toBe(fallback);
     expect(wirdReminderDescription(trend(0, 4), fallback)).toBe('قرأت وردك اليوم');
-    expect(wirdReminderDescription(trend(4, 0), fallback)).toBe('آخر قراءة أمس');
-    expect(wirdReminderDescription(trend(4, 0, 0), fallback)).toBe('لم تقرأ منذ يومين');
-    expect(wirdReminderDescription(trend(4, 0, 0, 0), fallback)).toBe('لم تقرأ منذ ٣ أيام');
-    expect(wirdReminderDescription(trend(4, ...Array(11).fill(0)), fallback)).toBe('لم تقرأ منذ ١١ يومًا');
-  });
-
-  it('names the next reminder «التذكير التالي» with today or tomorrow', () => {
-    const now = new Date(2026, 9, 23, 6, 0);
-    expect(nextReminderLabel(now, { hour: 8, minute: 0 }, false)).toContain('التذكير التالي: اليوم');
-    expect(nextReminderLabel(now, { hour: 8, minute: 0 }, true)).toContain('التذكير التالي: غدًا');
-    expect(nextReminderLabel(now, { hour: 8, minute: 0 }, false)).toContain('٨:٠٠');
+    expect(wirdReminderDescription(trend(4, 0), fallback)).toBe(`لم تقرأ الورد منذ يوم واحد${tail}`);
+    expect(wirdReminderDescription(trend(4, 0, 0), fallback)).toBe(`لم تقرأ الورد منذ يومين${tail}`);
+    expect(wirdReminderDescription(trend(4, 0, 0, 0), fallback)).toBe(`لم تقرأ الورد منذ ٣ أيام${tail}`);
+    expect(wirdReminderDescription(trend(4, ...Array(11).fill(0)), fallback)).toBe(
+      `لم تقرأ الورد منذ ١١ يومًا${tail}`,
+    );
   });
 });
 
-import { filterChipCount } from '@/services/libraryStats';
-import { LIBRARY_FILTERS } from '@/data/content/sections';
-
 describe('Library filter chips (LIBRARY-17)', () => {
   const counts = { saved: 3, notes: 12, completed: 0 };
-  it('carries the file chips plus real notes and completed, السجل last', () => {
+  it('carries the file chips in the file order (right to left), السجل last', () => {
     expect(LIBRARY_FILTERS.map((f) => [f.id, f.label])).toEqual([
       ['all', 'الكل'],
       ['saved', 'المحفوظات'],
-      ['notes', 'ملاحظاتي'],
-      ['completed', 'المكتمل'],
       ['playlist', 'قوائم التشغيل'],
+      ['completed', 'المكتمل'],
+      ['notes', 'ملاحظاتي'],
       ['history', 'السجل'],
     ]);
   });
@@ -140,5 +138,13 @@ describe('Library filter chips (LIBRARY-17)', () => {
     expect(filterChipCount('playlist', counts)).toBe('');
     expect(filterChipCount('history', counts)).toBe('');
     expect(LIBRARY_FILTERS.find((f) => f.id === 'playlist')!.count).toBeUndefined();
+  });
+});
+
+describe('lastReadingLabel', () => {
+  it('says nothing started when no day has pages', () => {
+    expect(lastReadingLabel(trend(0, 0))).toBe('لم تبدأ القراءة بعد');
+    expect(lastReadingLabel(trend(0, 3))).toBe('آخر قراءة: اليوم');
+    expect(lastReadingLabel(trend(3, 0))).toBe('آخر قراءة: أمس');
   });
 });

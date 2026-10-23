@@ -16,7 +16,8 @@ export type AudioCardVariant = 'progress' | 'completed';
  *   position at the left (only when known), the percent at the right.
  *   actions, at the right edge: [ primary | secondary ].
  *
- * `completed` swaps the navy accent for the gold one and fills the track.
+ * `completed` fills the track and turns the primary action gold; the track
+ * itself stays navy.
  */
 export function AudioProgressCard({
   title,
@@ -58,7 +59,7 @@ export function AudioProgressCard({
             {author}
           </Text>
           <View style={styles.track}>
-            <View style={[styles.fill, { width: `${clamped}%`, backgroundColor: accent }]} />
+            <View style={[styles.fill, { width: `${clamped}%` }]} />
           </View>
           {/* Physical left → right: episode position, then the percent. */}
           <View style={styles.meta}>
@@ -129,8 +130,10 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     overflow: 'hidden',
   },
+  // Navy in both variants (node 2098:2285): only the completed primary is gold.
   fill: {
     alignSelf: 'flex-end',
+    backgroundColor: KhazainColors.navy800,
     height: '100%',
   },
   meta: {

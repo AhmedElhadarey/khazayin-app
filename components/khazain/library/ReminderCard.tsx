@@ -1,7 +1,7 @@
-import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
-import { LIST_CARD } from './libraryLayout';
+import { LIST_CARD, REMINDER_CARD } from './libraryLayout';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -28,6 +28,13 @@ export type ReminderSummary = {
 
 /** The armed card's gradient and every other card's flat fill (node 2031:4659). */
 const ARMED_GRADIENT = ['#EEE8E1', '#D8C9B7'] as const;
+/**
+ * The armed card's paint transform runs top-left to bottom-right (node
+ * 2031:4659). Expo's start/end are fractions of the box; on the 360 x 114 card
+ * the file's end point lands at (0.73, 1.99).
+ */
+const GRADIENT_START = { x: 0, y: 0 } as const;
+const GRADIENT_END = { x: 0.73, y: 1.99 } as const;
 
 /**
  * A reminder card (node 2031:4659), a column pinned `ltr`:
@@ -58,14 +65,19 @@ export function ReminderCard({ reminder }: { reminder: ReminderSummary }) {
       {armed && reminder.nextLabel ? (
         <Text style={styles.next}>{reminder.nextLabel}</Text>
       ) : reminder.statusLabel ? (
-        <Text style={styles.description}>{reminder.statusLabel}</Text>
+        <Text style={styles.status}>{reminder.statusLabel}</Text>
       ) : null}
     </>
   );
 
   if (armed) {
     return (
-      <LinearGradient colors={[...ARMED_GRADIENT]} style={[styles.card, styles.cardArmed]}>
+      <LinearGradient
+        colors={[...ARMED_GRADIENT]}
+        start={GRADIENT_START}
+        end={GRADIENT_END}
+        style={[styles.card, styles.cardArmed]}
+      >
         {body}
       </LinearGradient>
     );
@@ -111,7 +123,7 @@ const styles = StyleSheet.create({
     // PHYSICAL_BOX so the manage link's `flex-end` means the physical right,
     // not the RTL end.
     ...PHYSICAL_BOX,
-    gap: CARD_DENSITY.listGap,
+    gap: REMINDER_CARD.listGap,
   },
   card: {
     ...PHYSICAL_BOX,
@@ -119,7 +131,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: LIST_CARD.radius,
     borderWidth: 1,
-    gap: 4,
   },
   cardArmed: { borderColor: KhazainColors.navy800 },
   cardIdle: { backgroundColor: KhazainColors.cardBg, borderColor: KhazainColors.hairline },
@@ -127,7 +138,7 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 4,
+    marginBottom: 8,
   },
   titleGroup: {
     ...PHYSICAL_ROW,
@@ -145,7 +156,14 @@ const styles = StyleSheet.create({
   },
   title: textStyle('cardTitle', { color: KhazainColors.inkHeading }),
   description: textStyle('label', { color: KhazainColors.ink500 }),
-  next: textStyle('label', { color: KhazainColors.navy800 }),
+  status: {
+    ...textStyle('label', { color: KhazainColors.ink500 }),
+    marginTop: REMINDER_CARD.descriptionToNext,
+  },
+  next: {
+    ...textStyle('label', { color: KhazainColors.navy800 }),
+    marginTop: REMINDER_CARD.descriptionToNext,
+  },
   empty: textStyle('cardTitle', { color: KhazainColors.ink500 }),
   manage: {
     alignSelf: 'flex-end',

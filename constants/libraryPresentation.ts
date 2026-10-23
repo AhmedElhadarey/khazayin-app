@@ -29,6 +29,7 @@ export const LIBRARY_REFERENCE_SECTIONS = Object.freeze([
  * chips and the audiobook block — the chip that selects it sits right above.
  */
 export const LIBRARY_EXTENSION_SECTIONS = Object.freeze([
+  'playlists',
   'savedList',
   'wirdHistory',
   'wirdTrend',
@@ -50,6 +51,7 @@ export const LIBRARY_SECTION_ORDER = Object.freeze([
   'dailyWird',
   'quickNote',
   'filters',
+  'playlists',
   'savedList',
   'audiobookProgress',
   'smartReminders',
@@ -74,18 +76,20 @@ export type LibrarySummaryCardKey = (typeof LIBRARY_SUMMARY_CARD_ORDER)[number];
 /**
  * The progress row below the frame (no Figma frame — contract:
  * libraryLayout STAT_CARD + PHYSICAL_ROW). Physical left → right:
- * محاضرات مسموعة، الأجزاء المكتملة، صفحات مقروءة.
+ * المحاضرات، الأجزاء، الصفحات.
  */
 export const LIBRARY_PROGRESS_STAT_ORDER = Object.freeze(['lectures', 'juz', 'pages'] as const);
 
 export type LibraryProgressStatKey = (typeof LIBRARY_PROGRESS_STAT_ORDER)[number];
 
 /** Extensions that render inside the reference run instead of below it. */
-export const LIBRARY_IN_PLACE_EXTENSIONS = Object.freeze(['savedList'] as const);
+export const LIBRARY_IN_PLACE_EXTENSIONS = Object.freeze(['playlists', 'savedList'] as const);
 
 /**
- * The chip ids. `playlist` and `completed` select no section of their own: they
- * narrow the page to the frame furniture (the audiobook cards included).
+ * The chip ids. `playlist` shows the playlists empty state (the file draws the
+ * chip; there is no playlist feature yet) and hides the audiobook cards;
+ * `completed` keeps the audiobook section, which then shows only the completed
+ * card (see library.tsx).
  */
 export type LibraryFilter = 'all' | 'saved' | 'notes' | 'completed' | 'playlist' | 'history';
 
@@ -97,6 +101,8 @@ const SECTION_FILTERS: Partial<Record<LibrarySectionKey, readonly LibraryFilter[
   // Gated before this track and still gated — behaviour preserved.
   quickNote: ['all', 'notes'],
   savedList: ['all', 'saved'],
+  playlists: ['playlist'],
+  audiobookProgress: ['all', 'saved', 'notes', 'completed', 'history'],
   // The added analytics move behind History so they never displace the
   // reference hierarchy on the default view. Nothing else is newly hidden:
   // every other section keeps the visibility it had before this track.

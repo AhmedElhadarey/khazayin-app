@@ -49,6 +49,7 @@ describe('Library reference hierarchy', () => {
   it('keeps the newer metrics rather than deleting them', () => {
     expect([...LIBRARY_EXTENSION_SECTIONS].sort()).toEqual([
       'insights',
+      'playlists',
       'progressStats',
       'savedList',
       'wirdHistory',
@@ -72,7 +73,7 @@ describe('savedList is an in-place extension (LIBRARY-26)', () => {
   it('is not part of the frame but keeps its place between the chips and the audiobook block', () => {
     expect(LIBRARY_REFERENCE_SECTIONS).not.toContain('savedList');
     expect(LIBRARY_EXTENSION_SECTIONS).toContain('savedList');
-    expect(LIBRARY_IN_PLACE_EXTENSIONS).toEqual(['savedList']);
+    expect(LIBRARY_IN_PLACE_EXTENSIONS).toEqual(['playlists', 'savedList']);
     const at = (k: (typeof LIBRARY_SECTION_ORDER)[number]) => LIBRARY_SECTION_ORDER.indexOf(k);
     expect(at('filters')).toBeLessThan(at('savedList'));
     expect(at('savedList')).toBeLessThan(at('audiobookProgress'));
@@ -125,12 +126,12 @@ describe('Library filter visibility', () => {
     expect(isLibrarySectionVisible('quickNote', 'saved')).toBe(false);
   });
 
-  it('keeps the audiobook, reminder, and suggestion sections as visible as before', () => {
+  it('keeps the reminder and suggestion sections as visible as before', () => {
     // These were unconditional before this track; repositioning them must not
     // also hide them.
-    (['audiobookProgress', 'smartReminders', 'wirdSuggestion', 'progressStats'] as const)
+    (['smartReminders', 'wirdSuggestion', 'progressStats'] as const)
       .forEach((key) => {
-        (['all', 'saved', 'notes', 'history'] as LibraryFilter[]).forEach((filter) => {
+        (['all', 'saved', 'notes', 'completed', 'playlist', 'history'] as LibraryFilter[]).forEach((filter) => {
           expect([key, filter, isLibrarySectionVisible(key, filter)]).toEqual([
             key,
             filter,
@@ -165,5 +166,33 @@ describe('Library filter visibility', () => {
         ]);
       });
     });
+  });
+});
+
+describe('chips that select a view of their own (LIBRARY-17)', () => {
+  it('shows the audiobook cards under everything but the playlist view', () => {
+    (['all', 'saved', 'notes', 'completed', 'history'] as LibraryFilter[]).forEach((f) =>
+      expect(isLibrarySectionVisible('audiobookProgress', f)).toBe(true),
+    );
+    expect(isLibrarySectionVisible('audiobookProgress', 'playlist')).toBe(false);
+  });
+
+  it('shows the playlists empty state only under قوائم التشغيل', () => {
+    expect(isLibrarySectionVisible('playlists', 'playlist')).toBe(true);
+    (['all', 'saved', 'notes', 'completed', 'history'] as LibraryFilter[]).forEach((f) =>
+      expect(isLibrarySectionVisible('playlists', f)).toBe(false),
+    );
+  });
+
+  it('places the playlists view right under the chips, before the saved list', () => {
+    const at = (k: (typeof LIBRARY_SECTION_ORDER)[number]) => LIBRARY_SECTION_ORDER.indexOf(k);
+    expect(at('playlists')).toBe(at('filters') + 1);
+    expect(at('playlists')).toBeLessThan(at('savedList'));
+    expect(LIBRARY_EXTENSION_SECTIONS).toContain('playlists');
+  });
+
+  it('hides the note composer and saved list under المكتمل', () => {
+    expect(isLibrarySectionVisible('quickNote', 'completed')).toBe(false);
+    expect(isLibrarySectionVisible('savedList', 'completed')).toBe(false);
   });
 });

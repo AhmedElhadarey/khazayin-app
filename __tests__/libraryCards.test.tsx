@@ -134,11 +134,11 @@ describe('AudioProgressCard structure (T18)', () => {
     expect(secondary.backgroundColor).toBe('rgba(215, 185, 149, 0.16)');
   });
 
-  it('completed: gold primary, full gold track', () => {
+  it('completed: full navy track, gold primary (only the primary is gold)', () => {
     const r = full({ variant: 'completed', subtitle: 'مكتمل', episodeLabel: undefined, pct: 0 });
     const track = r.root.findAll((n) => n.type === 'View' && style(n).height === 6)[0];
     const fill = (track.children as Node[])[0];
-    expect(style(fill)).toMatchObject({ width: '100%', backgroundColor: KhazainColors.goldAccent });
+    expect(style(fill)).toMatchObject({ width: '100%', backgroundColor: KhazainColors.navy800 });
     const actions = rowsOf(r).find((n) => style(n).justifyContent === 'flex-end')!;
     expect(style(buttonsOf(actions)[0]).backgroundColor).toBe(KhazainColors.goldAccent);
   });

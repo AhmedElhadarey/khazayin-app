@@ -64,7 +64,7 @@ describe('ReminderCard', () => {
 
   it('idle: flat card fill and the hairline border; no next-time line', () => {
     const r = render(
-      <ReminderList reminders={[summary({ armed: false, nextLabel: 'التذكير التالي: غدًا', statusLabel: 'التذكير اليومي متوقّف' })]} />,
+      <ReminderList reminders={[summary({ armed: false, nextLabel: 'التذكير التالي: غداً', statusLabel: 'التذكير اليومي متوقّف' })]} />,
     );
     const card = r.root.findAll((n) => n.type === 'View' && style(n).paddingVertical === 17)[0];
     expect(style(card)).toMatchObject({ backgroundColor: KhazainColors.cardBg, borderColor: KhazainColors.hairline });
@@ -80,6 +80,24 @@ describe('ReminderCard', () => {
     expect(grad.props.colors).toEqual(['#EEE8E1', '#D8C9B7']);
     expect(style(grad).borderColor).toBe(KhazainColors.navy800);
     expect(texts(r.root)).toContain('التذكير التالي: اليوم ٨:٠٠ م');
+  });
+
+  it('runs the armed gradient top-left to bottom-right (node paint transform, 360 x 114)', () => {
+    const r = render(<ReminderList reminders={[summary({ armed: true })]} />);
+    const grad = r.root.findAll((n) => Array.isArray(n.props.colors))[0];
+    expect(grad.props.start).toEqual({ x: 0, y: 0 });
+    expect(grad.props.end.x).toBeCloseTo(0.73, 2);
+    expect(grad.props.end.y).toBeCloseTo(1.99, 2);
+  });
+
+  it('spaces the description and next-time line by 8, and the cards by 12', () => {
+    const r = render(
+      <ReminderList reminders={[summary({ armed: true, nextLabel: 'x' }), summary({ id: 'b' })]} />,
+    );
+    const next = r.root.findAll((n) => n.type === 'Text' && style(n).color === KhazainColors.navy800)[0];
+    expect(style(next).marginTop).toBe(8);
+    const list = r.root.findAll((n) => n.type === 'View' && style(n).gap === 12)[0];
+    expect(list).toBeDefined();
   });
 
   it('passes the switch change to onToggle', () => {
@@ -99,7 +117,7 @@ describe('ReminderCard', () => {
 describe('wiring', () => {
   const lib = fs.readFileSync(path.join(__dirname, '..', 'app/(tabs)/library.tsx'), 'utf8');
   it('the wird card switch uses the permission-aware toggle, not the raw preference', () => {
-    expect(lib).toMatch(/onToggle: onToggleWirdReminder/);
+    expect(lib).toMatch(/onToggle: \(next: boolean\) => onToggleCategory\(c\.id, next\)/);
     expect(lib).toMatch(/armed: reminder\.armed/);
     expect(lib).not.toMatch(/setNotificationEnabled\('wird-daily'/);
   });
