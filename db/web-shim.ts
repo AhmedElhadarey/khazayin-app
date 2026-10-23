@@ -365,6 +365,18 @@ export function createWebRepos(): Repos {
       return Object.values(ensure().lectures).filter((l) => l.completed).length;
     },
 
+    async recentCompleted(limit) {
+      await load();
+      return Object.values(ensure().lectures)
+        .filter((l) => l.completed)
+        .sort(
+          (a, b) =>
+            b.lastListenedAt - a.lastListenedAt ||
+            (a.lectureId < b.lectureId ? -1 : a.lectureId > b.lectureId ? 1 : 0),
+        )
+        .slice(0, limit);
+    },
+
     async listenedCount() {
       await load();
       return Object.values(ensure().lectures).filter(isListened).length;

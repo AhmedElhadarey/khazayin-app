@@ -20,6 +20,7 @@ jest.mock('@/db', () => ({
   lectureRepo: {
     upsertSession: jest.fn(async () => ({})),
     findInProgress: jest.fn(async () => null),
+    recentCompleted: jest.fn(async () => []),
     totalListenedSec: jest.fn(async () => 0),
     completedCount: jest.fn(async () => 0),
     listenedCount: () => mockListenedCount(),
