@@ -4,13 +4,14 @@ import { KhazainColors, KhazainRadius } from '@/constants/theme';
 
 type Props = {
   children: React.ReactNode;
-  onPress?: PressableProps['onPress'];
   size?: number;
   bg?: string;
   style?: StyleProp<ViewStyle>;
-  /** Required in practice when `onPress` is set: the chip holds only a glyph. */
-  accessibilityLabel?: string;
-};
+} & (
+  | { onPress?: undefined; accessibilityLabel?: undefined }
+  // The chip holds only a glyph, so a tappable one must be named.
+  | { onPress: PressableProps['onPress']; accessibilityLabel: string }
+);
 
 // 40×40 rounded chip used for header bell and small toolbar buttons.
 export function IconChip({ children, onPress, size = 40, bg, style, accessibilityLabel }: Props) {

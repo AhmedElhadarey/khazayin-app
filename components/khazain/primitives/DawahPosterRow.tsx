@@ -55,7 +55,8 @@ export function DawahPosterRow({
         </Pressable>
         <Pressable
           onPress={onDownload}
-          hitSlop={{ top: 12, bottom: 12, left: 4, right: 12 }}
+          // 8 on the right: the opener starts one gap away and must not lose taps.
+          hitSlop={{ top: 12, bottom: 12, left: 4, right: 8 }}
           accessibilityRole="button"
           accessibilityLabel={`تنزيل: ${title}`}
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}

@@ -132,7 +132,7 @@ export default function FoundationsSandbox() {
           <IconChip bg={KhazainColors.heroHeaderBg}>
             <ShareIcon size={18} color={KhazainColors.navy800} />
           </IconChip>
-          <IconChip onPress={() => {}}>
+          <IconChip onPress={() => {}} accessibilityLabel="تجربة">
             <BookmarkIcon size={18} color={KhazainColors.navy800} />
           </IconChip>
         </View>
