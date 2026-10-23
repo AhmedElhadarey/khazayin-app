@@ -76,17 +76,20 @@ export function LectureCard({
         </View>
       ) : null,
     text: (
-      <View style={styles.textBlock}>
+      <View style={[styles.textBlock, compact ? null : styles.textBlockCard]}>
         {pretitleSmall ? (
           <Text style={styles.pretitle} numberOfLines={1}>
             {pretitleSmall}
           </Text>
         ) : null}
-        <Text style={styles.title} numberOfLines={compact ? 1 : 2}>
+        <Text
+          style={[styles.title, compact ? null : styles.titleCard, !compact && scholar ? styles.titleCardWithScholar : null]}
+          numberOfLines={compact ? 1 : 2}
+        >
           {title}
         </Text>
         {scholar ? (
-          <Text style={styles.scholar} numberOfLines={1}>
+          <Text style={[styles.scholar, compact ? null : styles.scholarCard]} numberOfLines={1}>
             {scholar}
           </Text>
         ) : null}
@@ -128,6 +131,9 @@ const styles = StyleSheet.create({
     borderRadius: CARD_DENSITY.lectureCardRadius,
     borderWidth: 1,
     borderColor: KhazainColors.hairlineWarm,
+    // 1 + 7 + 48 + 7 + 1 = 64, and the disc sits 8 from the outer edge.
+    paddingVertical: 7,
+    paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal - 1,
   },
   cardCompact: {
     minHeight: CARD_DENSITY.reciterRowMinHeight,
@@ -145,12 +151,17 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     gap: 2,
   },
+  textBlockCard: { gap: 0 },
   // `H3-145` is TheMixArab Regular 14 and `P-148` TheMixArab Regular 12 in
   // every one of these frames — the body face, not the calligraphic one the
   // app had been reaching for.
   pretitle: textStyle('caption', { color: KhazainColors.ink500 }),
   title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   scholar: textStyle('caption', { color: KhazainColors.ink500 }),
+  // The bordered card only (2465:1911 `DIV-139`): title box 8..32, subtitle 36..56.
+  titleCard: { lineHeight: 24 },
+  titleCardWithScholar: { marginBottom: 4 },
+  scholarCard: { lineHeight: 20 },
   endCluster: {
     ...PHYSICAL_ROW,
     alignItems: 'center',

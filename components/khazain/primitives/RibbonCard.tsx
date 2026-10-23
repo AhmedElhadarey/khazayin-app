@@ -1,4 +1,4 @@
-import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW, RIBBON_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import type { SaveTarget } from '@/services/savedToggle';
@@ -78,12 +78,21 @@ export function RibbonCard({
 
       {/* Centre — title block, right-aligned */}
       <View style={styles.titleBlock}>
-        {pretitle ? <Text style={styles.pretitle}>{pretitle}</Text> : null}
-        <Text style={styles.title} numberOfLines={2}>
+        {pretitle ? (
+          <Text style={[styles.pretitle, badge ? styles.pretitleBadge : styles.pretitleRibbon]}>{pretitle}</Text>
+        ) : null}
+        <Text
+          style={[
+            styles.title,
+            badge ? styles.titleBadge : styles.titleRibbon,
+            !badge && meta ? styles.titleRibbonWithMeta : null,
+          ]}
+          numberOfLines={2}
+        >
           {title}
         </Text>
         {meta ? (
-          <Text style={styles.meta} numberOfLines={1}>
+          <Text style={[styles.meta, badge ? null : styles.metaRibbon]} numberOfLines={1}>
             {meta}
           </Text>
         ) : null}
@@ -106,21 +115,26 @@ const styles = StyleSheet.create({
   cardWithBadge: {
     minHeight: CARD_DENSITY.scholarRowMinHeight,
     borderRadius: CARD_DENSITY.railRowRadius,
+    // 8 + 48 + 8 = 64. The disc sits 8 from the physical right edge, the
+    // duration 16 from the left (card is a PHYSICAL_ROW, so these are physical).
     paddingVertical: 8,
-    paddingHorizontal: 16,
+    paddingRight: 8,
+    paddingLeft: 16,
   },
   cardWithRibbon: {
     minHeight: CARD_DENSITY.reciterRowMinHeight,
     borderRadius: CARD_DENSITY.reciterRowRadius,
-    borderWidth: 1,
+    borderWidth: RIBBON_ROW.borderWidth,
     borderColor: KhazainColors.hairlineWarm,
-    paddingVertical: 4,
+    // 1 + 3 + 48 + 3 + 1 = 56.
+    paddingVertical: RIBBON_ROW.paddingVertical,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
   },
   ribbon: {
     alignSelf: 'stretch',
-    // The ribbon reaches the card's own edge, past the row's inset.
-    marginVertical: 1,
+    // The ribbon reaches the card's own edge, past the row's inset, and runs
+    // from the border's inner edge to the other (54 in a 56 row).
+    marginVertical: -RIBBON_ROW.paddingVertical,
     marginRight: -CARD_DENSITY.lectureCardPaddingHorizontal,
     width: 12,
     borderTopRightRadius: 11,
@@ -135,11 +149,19 @@ const styles = StyleSheet.create({
     // RN 0.81 measures by advances, so a Text boxed to its advance width loses
     // its last word. Each Text right-aligns itself via textStyle (RTL_TEXT).
     alignItems: 'stretch',
-    gap: 2,
+    gap: 0,
   },
   pretitle: textStyle('caption', { color: KhazainColors.ink500 }),
   title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   meta: textStyle('caption', { color: KhazainColors.ink500 }),
+  // Scholar list (2102:2975): 16/24 title, 12/24 pretitle, both in inkTitle.
+  pretitleBadge: { ...textStyle('caption', { color: KhazainColors.inkTitle }), lineHeight: 24 },
+  titleBadge: textStyle('body', { color: KhazainColors.inkTitle }),
+  // Ribbon rows (2510:1990): 24 title + 4 + 20 meta. A recommendation's reason is 20 too.
+  pretitleRibbon: { lineHeight: RIBBON_ROW.pretitleLineHeight },
+  titleRibbon: { lineHeight: RIBBON_ROW.titleLineHeight },
+  titleRibbonWithMeta: { marginBottom: RIBBON_ROW.titleGap },
+  metaRibbon: { lineHeight: RIBBON_ROW.metaLineHeight },
   duration: {
     ...textStyle('label', { color: KhazainColors.ink500 }),
     flexShrink: 0,

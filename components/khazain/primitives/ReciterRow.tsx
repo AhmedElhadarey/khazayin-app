@@ -38,11 +38,11 @@ export function ReciterRow({
     // replaces a hand-drawn stroked chevron, which was both the wrong shape
     // (an outline where the file draws a filled wedge) and the wrong size.
     disclosure: (
-      <FigmaIcon name="Back" size={20} color={KhazainColors.navy800} mirrored />
+      <FigmaIcon name="Back" size={20} color={KhazainColors.inkTitle} mirrored />
     ),
     text: (
       <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={[styles.title, subtitle ? styles.titleWithSubtitle : null]} numberOfLines={1}>
           {title}
         </Text>
         {subtitle ? (
@@ -78,7 +78,8 @@ const styles = StyleSheet.create({
   row: {
     ...PHYSICAL_ROW,
     minHeight: CARD_DENSITY.reciterRowMinHeight,
-    paddingVertical: 4,
+    // 1 + 3 + 48 + 3 + 1 = 56: the 24 + 4 + 20 text column fills the row.
+    paddingVertical: 3,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
     gap: 8,
     borderRadius: CARD_DENSITY.reciterRowRadius,
@@ -99,9 +100,10 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     alignItems: 'flex-end',
-    gap: 2,
+    gap: 0,
   },
   // `H3-145` is TheMixArab Regular 14, `P-148` TheMixArab Regular 12.
-  title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
-  subtitle: textStyle('caption', { color: KhazainColors.ink500 }),
+  title: { ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }), lineHeight: 24 },
+  titleWithSubtitle: { marginBottom: 4 },
+  subtitle: { ...textStyle('caption', { color: KhazainColors.ink500 }), lineHeight: 20 },
 });

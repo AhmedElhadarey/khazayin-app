@@ -403,6 +403,21 @@ export const PAGE_CHROME = Object.freeze({
  * The selected chip keeps that box and changes only its colours; the 20 x 22
  * r8 chip the frames also contain is a different, unselected state.
  */
+/**
+ * RibbonCard's ribbon variant (node 2510:1990 `DIV-139`): 56 tall, a 1pt
+ * hairline, 3pt padding and a 48pt text column (24 title + 4 + 20 meta). The
+ * gold ribbon runs border-inner-edge to border-inner-edge, so it pulls back
+ * out over the padding. Home's recommendation slot derives from these.
+ */
+export const RIBBON_ROW = Object.freeze({
+  paddingVertical: 3,
+  borderWidth: 1,
+  pretitleLineHeight: 20,
+  titleLineHeight: 24,
+  titleGap: 4,
+  metaLineHeight: 20,
+} as const);
+
 export const LETTER_RAIL = Object.freeze({
   width: 20,
   chipWidth: 16,
