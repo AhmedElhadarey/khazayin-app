@@ -114,9 +114,10 @@ export function LectureCard({
     <Pressable
       onPress={onPress}
       {...gestureProps}
-      {...(rail
-        ? { accessibilityLabel: [title, scholar, duration].filter(Boolean).join('، ') }
-        : null)}
+      // Named in reading order on both variants: without a label iOS joins the
+      // children in physical order and reads the duration first.
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={[title, scholar, duration].filter(Boolean).join('، ')}
       style={({ pressed }) => [
         styles.cardBase,
         heightStyle,
