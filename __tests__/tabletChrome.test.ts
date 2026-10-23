@@ -15,53 +15,16 @@ const src = (rel: string) =>
   fs.readFileSync(path.join(__dirname, "..", rel), "utf8");
 
 describe("headerArtGeometry", () => {
-  it("keeps the phone styles exactly as they were", () => {
-    expect(headerArtGeometry(false, 16)).toEqual({
-      tile: { position: "absolute", left: 0, top: 0, right: 0, height: 549 },
-      cornerLarge: {
-        position: "absolute",
-        left: 84,
-        top: -17,
-        width: 96,
-        height: 94,
-      },
-      cornerSmall: {
-        position: "absolute",
-        left: 356,
-        top: 36,
-        width: 37,
-        height: 36,
-      },
-    });
-  });
-
   it("ignores the inset on phones", () => {
     expect(headerArtGeometry(false, 300)).toEqual(headerArtGeometry(false, 16));
   });
 
   it("anchors the tablet art from the physical right at the page column", () => {
     const g = headerArtGeometry(true, 156);
-    expect(g.tile).toEqual({
-      position: "absolute",
-      top: 0,
-      right: 140,
-      width: 393,
-      height: 549,
-    });
-    expect(g.cornerLarge).toEqual({
-      position: "absolute",
-      right: 353,
-      top: -17,
-      width: 96,
-      height: 94,
-    });
-    expect(g.cornerSmall).toEqual({
-      position: "absolute",
-      right: 140,
-      top: 36,
-      width: 37,
-      height: 36,
-    });
+    // Geometry values are pinned in headerArtGeometry.test.tsx.
+    expect(g.tile).toMatchObject({ position: "absolute", top: -42.5, right: 140, width: 392, height: 392 });
+    expect(g.cornerSmall).toMatchObject({ right: 140, top: 36, width: 37, height: 36 });
+    expect(g.cornerLarge).toHaveProperty("right");
   });
 
   it("defaults the inset to the content edge, 16pt inside the column", () => {
