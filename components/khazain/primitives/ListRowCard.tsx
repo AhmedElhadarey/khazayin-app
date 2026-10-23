@@ -28,6 +28,9 @@ import { FigmaIcon } from '../icons/FigmaIcon';
  *    card in either frame that casts one), inset 16, and a 48pt rounded
  *    *square* chip with no stroke. Both its lines are body face at 14.
  *
+ * At a large font scale the card grows with its text — every variant sets
+ * `minHeight`, never `height` — and the title wraps to two lines.
+ *
  * Physical order (left → right) is disclosure, text, icon badge, driven by
  * LIST_ROW_ORDER inside a PHYSICAL_ROW container so React Native cannot
  * reverse it under forceRTL.
@@ -75,7 +78,10 @@ export function ListRowCard({
     ) : null,
     text: (
       <View style={styles.textCol}>
-        <Text style={isMore ? styles.titleMore : styles.title} numberOfLines={1}>
+        {/* Two lines, not one: at a large font scale a one-line title either
+            ellipsized or, on Android 15, silently lost its last letter
+            («الموقع الإلكترون»). At the default scale every title fits one. */}
+        <Text style={isMore ? styles.titleMore : styles.title} numberOfLines={2}>
           {title}
         </Text>
         {subtitle ? (
@@ -109,6 +115,27 @@ export function ListRowCard({
   );
 }
 
+/**
+ * Room under each line for the glyphs that hang below its line box, cancelled
+ * by an equal negative margin so the row measures exactly as before.
+ *
+ * Android 14+ converts `fontSize` and `lineHeight` through its non-linear font
+ * scale curve, which grows a larger sp value by less. At font scale 1.7 the
+ * 21 line height of a 14 role ends up ~1.26x the glyph size instead of 1.5x,
+ * the half-leading goes negative, and the TextView clips the descenders of its
+ * last line to its own bounds (the dots of ي and the tail of ع were cut off on
+ * the 320dp matrix). Padding is inside that clip; the parent does not clip.
+ */
+const DESCENDER_SLACK = 8;
+const descenderRoom = { paddingBottom: DESCENDER_SLACK, marginBottom: -DESCENDER_SLACK } as const;
+
+/**
+ * The More card's vertical inset. The file draws none — its two 21pt lines sit
+ * centred in the 82 — so this only shows once the text outgrows the card:
+ * 12 + 42 + 12 + 2 hairline = 68, inside the 82, so the default is unchanged.
+ */
+const MORE_CARD_MIN_INSET = 12;
+
 const styles = StyleSheet.create({
   cardBase: {
     ...PHYSICAL_ROW,
@@ -137,6 +164,7 @@ const styles = StyleSheet.create({
   // `card` elevation.
   cardMore: {
     minHeight: CARD_DENSITY.moreCardHeight,
+    paddingVertical: MORE_CARD_MIN_INSET,
     paddingHorizontal: CARD_DENSITY.moreCardPaddingHorizontal,
     borderRadius: CARD_DENSITY.moreCardRadius,
     borderWidth: 1,
@@ -162,24 +190,32 @@ const styles = StyleSheet.create({
     height: CARD_DENSITY.moreChipSize,
     borderRadius: CARD_DENSITY.moreChipRadius,
   },
+  // Full width, never shrink-wrapped (Android 15 breaks lines by ink bounds,
+  // RN 0.81 measures by advances); the text styles carry textAlign 'right'.
+  // Stretched to the card's height too, so it re-centres its own lines.
   textCol: {
     flex: 1,
     minWidth: 0,
+    alignItems: 'stretch',
+    alignSelf: 'stretch',
+    justifyContent: 'center',
   },
-  title: textStyle('sectionTitle', { color: KhazainColors.inkTitle }),
+  title: { ...textStyle('sectionTitle', { color: KhazainColors.inkTitle }), ...descenderRoom },
   // `H3-49` ends at y=186 and `P-52` starts at 192; `P-55` follows 2 later.
   subtitle: {
     ...textStyle('cardTitle', { color: KhazainColors.inkSubtle }),
+    ...descenderRoom,
     marginTop: 6,
   },
   count: {
     ...textStyle('label', { color: KhazainColors.inkCount }),
+    ...descenderRoom,
     marginTop: 2,
   },
   // `H3-18` and `P-21` are both TheMixArab Regular 14, set flush — the first
   // ends at y=146.5 and the second starts there.
-  titleMore: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
-  subtitleMore: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
+  titleMore: { ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }), ...descenderRoom },
+  subtitleMore: { ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }), ...descenderRoom },
 });
 
 const VARIANT_CARD = {
