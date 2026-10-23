@@ -4,10 +4,11 @@ import {
   DISPLAY_FAMILY,
   MIN_BODY_SIZE,
   TEXT_ROLES,
+  fontFace,
   textStyle,
   type TextRole,
 } from '@/constants/typography';
-import { REGISTERED_FONT_FAMILIES } from '@/constants/fonts';
+import { ARABIC_FONT_ASSETS, REGISTERED_FONT_FAMILIES } from '@/constants/fonts';
 import { execFileSync } from 'child_process';
 import path from 'path';
 
@@ -43,10 +44,28 @@ describe('type scale', () => {
     });
   });
 
-  it('pairs TheSansArabic with Bold and nothing else', () => {
-    roles
-      .filter((role) => TEXT_ROLES[role].fontFamily === DISPLAY_FAMILY)
-      .forEach((role) => expect([role, TEXT_ROLES[role].fontWeight]).toEqual([role, '700']));
+  it('resolves TheSansArabic to the Bold face and TheMixArab to Regular', () => {
+    expect(ARABIC_FONT_ASSETS[DISPLAY_FAMILY]).toBe('assets/fonts/NotoSansArabic-Bold.ttf');
+    expect(ARABIC_FONT_ASSETS[BODY_FAMILY]).toBe('assets/fonts/NotoSansArabic-Regular.ttf');
+  });
+
+  it('keeps the weight in the face: every role sets fontWeight 400', () => {
+    roles.forEach((role) => expect([role, TEXT_ROLES[role].fontWeight]).toEqual([role, '400']));
+  });
+
+  it('maps fontFace weights to the weight-specific families', () => {
+    expect(fontFace(700)).toEqual({ fontFamily: 'TheSansArabic', fontWeight: '400' });
+    expect(fontFace(600)).toEqual({ fontFamily: 'NotoSansArabic-SemiBold', fontWeight: '400' });
+    expect(fontFace(400)).toEqual({ fontFamily: 'TheMixArab', fontWeight: '400' });
+  });
+
+  it('offers loose line-height variants that leave the base roles alone', () => {
+    expect(TEXT_ROLES.captionLoose).toMatchObject({ fontSize: 12, lineHeight: 24 });
+    expect(TEXT_ROLES.bodyCompactLoose).toMatchObject({ fontSize: 14, lineHeight: 24 });
+    expect(TEXT_ROLES.cardTitleLoose).toMatchObject({ fontSize: 14, lineHeight: 24 });
+    expect(TEXT_ROLES.caption.lineHeight).toBe(18);
+    expect(TEXT_ROLES.bodyCompact.lineHeight).toBe(21);
+    expect(TEXT_ROLES.cardTitle.lineHeight).toBe(21);
   });
 
   it('pairs TheMixArab with Regular and nothing else', () => {

@@ -1,5 +1,5 @@
 import { execFileSync } from 'child_process';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import path from 'path';
 
 import {
@@ -9,6 +9,47 @@ import {
 } from '@/constants/fonts';
 
 const REPO_ROOT = path.resolve(__dirname, '..');
+
+/** Minimal sfnt reader: table directory, name table (PostScript name), OS/2 weight. */
+function readSfnt(file: string) {
+  const buf = readFileSync(path.join(REPO_ROOT, file));
+  const numTables = buf.readUInt16BE(4);
+  const tables: Record<string, { offset: number; length: number }> = {};
+  for (let i = 0; i < numTables; i += 1) {
+    const rec = 12 + i * 16;
+    tables[buf.toString('latin1', rec, rec + 4)] = {
+      offset: buf.readUInt32BE(rec + 8),
+      length: buf.readUInt32BE(rec + 12),
+    };
+  }
+  let postScriptName: string | null = null;
+  const name = tables.name;
+  if (name) {
+    const count = buf.readUInt16BE(name.offset + 2);
+    const stringOffset = name.offset + buf.readUInt16BE(name.offset + 4);
+    for (let i = 0; i < count; i += 1) {
+      const rec = name.offset + 6 + i * 12;
+      const platform = buf.readUInt16BE(rec);
+      const nameId = buf.readUInt16BE(rec + 6);
+      if (nameId !== 6) continue;
+      const length = buf.readUInt16BE(rec + 8);
+      const start = stringOffset + buf.readUInt16BE(rec + 10);
+      const raw = buf.subarray(start, start + length);
+      if (platform === 3 || platform === 0) {
+        postScriptName = Buffer.from(raw).swap16().toString('utf16le');
+      } else {
+        postScriptName = raw.toString('latin1');
+      }
+      break;
+    }
+  }
+  const os2 = tables['OS/2'];
+  return {
+    tables: Object.keys(tables),
+    postScriptName,
+    weightClass: os2 ? buf.readUInt16BE(os2.offset + 4) : null,
+  };
+}
 
 /**
  * A `fontFamily` React Native cannot resolve does not throw — it silently
@@ -84,5 +125,38 @@ describe('font registry', () => {
   it('flags typography parity as unresolved while any substitution stands', () => {
     const { typographyParityResolved } = require('@/constants/fonts');
     expect(typographyParityResolved()).toBe(Object.keys(FONT_SUBSTITUTIONS).length === 0);
+  });
+
+  it('registers only static faces with unique PostScript names', () => {
+    // expo-font on iOS silently ignores a font whose PostScript name repeats.
+    const byFile = new Map<string, ReturnType<typeof readSfnt>>();
+    new Set(Object.values(ARABIC_FONT_ASSETS)).forEach((file) => {
+      byFile.set(file, readSfnt(file));
+    });
+    const names = [...byFile.values()].map((f) => f.postScriptName);
+    names.forEach((n) => expect(n).toBeTruthy());
+    expect(new Set(names).size).toBe(names.length);
+  });
+
+  it('has no variable font among the Noto Sans faces', () => {
+    Object.entries(ARABIC_FONT_ASSETS)
+      .filter(([, file]) => /NotoSansArabic/.test(file))
+      .forEach(([family, file]) => {
+        expect([family, readSfnt(file).tables.includes('fvar')]).toEqual([family, false]);
+      });
+  });
+
+  it('gives each weight-specific family the weight class its face claims', () => {
+    const weight = (family: keyof typeof ARABIC_FONT_ASSETS) =>
+      readSfnt(ARABIC_FONT_ASSETS[family]).weightClass;
+    expect(weight('TheSansArabic')).toBe(700);
+    expect(weight('TheMixArab')).toBe(400);
+    expect(weight('NotoSansArabic')).toBe(400);
+    expect(weight('NotoSansArabic-SemiBold')).toBe(600);
+    expect(weight('NotoSansArabic-Bold')).toBe(700);
+  });
+
+  it('no longer references the variable font', () => {
+    expect(Object.values(ARABIC_FONT_ASSETS)).not.toContain('assets/fonts/NotoSansArabic-VF.ttf');
   });
 });

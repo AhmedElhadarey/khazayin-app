@@ -132,7 +132,7 @@ describe('the roles the section frames set their text in', () => {
   it('titles a section card in the display face at 16', () => {
     // `H3-49` on node 2031:5675 is TheSansArabic Bold 16.
     expect(TEXT_ROLES.sectionTitle.fontSize).toBe(16);
-    expect(TEXT_ROLES.sectionTitle.fontWeight).toBe('700');
+    expect(TEXT_ROLES.sectionTitle.fontWeight).toBe('400');
   });
 
   it('sets a page title at 18 in the body face', () => {

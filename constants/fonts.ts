@@ -8,17 +8,37 @@
  *
  * `app/_layout.tsx` is the only place that calls `useFonts`, and it registers
  * exactly `FONT_ASSET_MODULES`.
+ *
+ * ## Why every weight is its own static face
+ *
+ * A family registered through expo-font is ONE face; `fontWeight` cannot pick
+ * another weight from it.
+ * - iOS: Fabric chooses the closest weight from a one-element list, so a
+ *   variable font always rendered at wght 400 and `fontWeight: '700'` was
+ *   ignored (no synthetic bold).
+ * - Android: expo-font registers the alias only in the NORMAL typeface slot.
+ *   `fontWeight: '700'` asks for the empty BOLD slot, so Android falls back to
+ *   the system bold, which is a different typeface (Noto Naskh for Arabic).
+ *
+ * So the weight lives in the face: `TheSansArabic` IS Noto Sans Arabic Bold,
+ * `TheMixArab` IS Regular, and styles always use `fontWeight: '400'`. Pick a
+ * weight with `fontFace()` in `constants/typography.ts`. The static files are
+ * cut from the former variable font; see `scripts/fonts/README.md`. Each has a
+ * unique PostScript name, which expo-font on iOS requires.
  */
 
 /** Family name → repo-relative asset path. Used by the registry test. */
 export const ARABIC_FONT_ASSETS = {
   Amiri: 'assets/fonts/Amiri-Regular.ttf',
   'Amiri-Bold': 'assets/fonts/Amiri-Bold.ttf',
-  NotoSansArabic: 'assets/fonts/NotoSansArabic-VF.ttf',
+  NotoSansArabic: 'assets/fonts/NotoSansArabic-Regular.ttf',
+  'NotoSansArabic-SemiBold': 'assets/fonts/NotoSansArabic-SemiBold.ttf',
+  'NotoSansArabic-Bold': 'assets/fonts/NotoSansArabic-Bold.ttf',
   NotoNaskhArabic: 'assets/fonts/NotoNaskhArabic-VF.ttf',
   // Aliases for the licensed design families — see FONT_SUBSTITUTIONS.
-  TheSansArabic: 'assets/fonts/NotoSansArabic-VF.ttf',
-  TheMixArab: 'assets/fonts/NotoSansArabic-VF.ttf',
+  // The design only ever pairs TheSansArabic with Bold and TheMixArab with Regular.
+  TheSansArabic: 'assets/fonts/NotoSansArabic-Bold.ttf',
+  TheMixArab: 'assets/fonts/NotoSansArabic-Regular.ttf',
 } as const satisfies Record<string, string>;
 
 export type RegisteredFontFamily = keyof typeof ARABIC_FONT_ASSETS;
@@ -38,8 +58,8 @@ export const REGISTERED_FONT_FAMILIES = Object.keys(
  * No component style changes, because components already name the real family.
  */
 export const FONT_SUBSTITUTIONS: Partial<Record<RegisteredFontFamily, string>> = {
-  TheSansArabic: 'NotoSansArabic-VF.ttf',
-  TheMixArab: 'NotoSansArabic-VF.ttf',
+  TheSansArabic: 'NotoSansArabic-Bold.ttf',
+  TheMixArab: 'NotoSansArabic-Regular.ttf',
 };
 
 /** True only once every family renders in its own licensed face. */
@@ -55,8 +75,10 @@ export function typographyParityResolved(): boolean {
 export const FONT_ASSET_MODULES = {
   Amiri: require('../assets/fonts/Amiri-Regular.ttf'),
   'Amiri-Bold': require('../assets/fonts/Amiri-Bold.ttf'),
-  NotoSansArabic: require('../assets/fonts/NotoSansArabic-VF.ttf'),
+  NotoSansArabic: require('../assets/fonts/NotoSansArabic-Regular.ttf'),
+  'NotoSansArabic-SemiBold': require('../assets/fonts/NotoSansArabic-SemiBold.ttf'),
+  'NotoSansArabic-Bold': require('../assets/fonts/NotoSansArabic-Bold.ttf'),
   NotoNaskhArabic: require('../assets/fonts/NotoNaskhArabic-VF.ttf'),
-  TheSansArabic: require('../assets/fonts/NotoSansArabic-VF.ttf'),
-  TheMixArab: require('../assets/fonts/NotoSansArabic-VF.ttf'),
+  TheSansArabic: require('../assets/fonts/NotoSansArabic-Bold.ttf'),
+  TheMixArab: require('../assets/fonts/NotoSansArabic-Regular.ttf'),
 };
