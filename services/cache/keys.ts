@@ -15,9 +15,12 @@ import type { Manifest } from '../api/types';
 // Version
 // ---------------------------------------------------------------------------
 
-/** Bump this when the CachedEntry shape changes to atomically invalidate
- *  all stored cache entries on next app launch. */
-export const APP_CACHE_VERSION = '1';
+/** Bump this when the CachedEntry shape changes, or when a release changes
+ *  bundled content an install may already hold (the Library chip set is
+ *  pinned to it by cacheVersionGuard.test.ts), to atomically invalidate all
+ *  stored cache entries on next app launch. 2: the 2026-10-23 parity pass
+ *  changed the chips and the dawah and Quran content. */
+export const APP_CACHE_VERSION = '2';
 
 // ---------------------------------------------------------------------------
 // Domain union
@@ -58,9 +61,9 @@ export type CacheDomain =
  *                or omit for the first page.
  *
  * @example
- *   cacheKey('scholars')                     // 'khazayin:cache:v1:scholars'
- *   cacheKey('ayat', '002')                  // 'khazayin:cache:v1:ayat:002'
- *   cacheKey('lectures', 'prophet', 'eyJ..') // 'khazayin:cache:v1:lectures:prophet:eyJ..'
+ *   cacheKey('scholars')                     // 'khazayin:cache:v2:scholars'
+ *   cacheKey('ayat', '002')                  // 'khazayin:cache:v2:ayat:002'
+ *   cacheKey('lectures', 'prophet', 'eyJ..') // 'khazayin:cache:v2:lectures:prophet:eyJ..'
  */
 export function cacheKey(
   domain: CacheDomain,
@@ -86,8 +89,8 @@ export function cacheKey(
  *                the entire domain including all sub-resources.
  *
  * @example
- *   cachePrefix('scholars')          // 'khazayin:cache:v1:scholars'
- *   cachePrefix('ayat', '002')       // 'khazayin:cache:v1:ayat:002'
+ *   cachePrefix('scholars')          // 'khazayin:cache:v2:scholars'
+ *   cachePrefix('ayat', '002')       // 'khazayin:cache:v2:ayat:002'
  */
 export function cachePrefix(domain: CacheDomain, sub?: string | null): string {
   let prefix = `khazayin:cache:v${APP_CACHE_VERSION}:${domain}`;
