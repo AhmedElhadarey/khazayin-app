@@ -90,24 +90,57 @@ export const EMBLEM_SCALE = Object.freeze({
 const ABOVE_TOP = { step1BottomEdge: 19, step4Centre: 84.5 };
 
 /**
- * The pattern is one seamless tile, 735 pt square (2026-09-09 splash design).
- * The frames carry it to every edge, behind the wordmark too.
+ * The ground the frames paint. Steps 1-3 (2001:888, 2001:914, 2001:835) share
+ * one vertical linear gradient; step 4 (2007:511) is a lighter one with the
+ * same centre stop. Both are stored with the paint transform m01 1, m10 -1, so
+ * the stops run top to bottom. The app used measured off-the-export values
+ * (#D8BFA1, #F4E7DA @0.52, #D8BE9D) until the file's own stops were read; the
+ * export includes the OVERLAY pattern, which the pattern asset now bakes in
+ * itself against these stops, so the stated values are the ones to paint.
  */
-export const PATTERN_TILE = 735;
+export const GROUND_GRADIENT = Object.freeze({
+  colors: ['#D9C0A1', '#F8EDE1', '#D8BE9D'] as const,
+  locations: [0, 0.553, 1] as const,
+});
+export const GROUND_GRADIENT_EXIT = Object.freeze({
+  colors: ['#E5D5C1', '#F8EDE1', '#E5D5C1'] as const,
+  locations: [0, 0.553, 1] as const,
+});
+
+/**
+ * 2001:835 → 2007:511 is one SMART_ANIMATE (0.8 s, OUT_CUBIC) that moves the
+ * emblem and changes the fill, so the lighter ground fades in over exactly the
+ * emblem's exit.
+ */
+export const GROUND_EXIT_FADE = Object.freeze({
+  startMs: STEP_STARTS.exit,
+  durationMs: STEP_MS.exit,
+});
+
+/**
+ * The pattern: node 2001:889 in every Splash frame, 690 x 853 at (-149, -1),
+ * image e2364e38 (1934 square) STRETCH with paint transform m00 0.6633, m11
+ * 0.8206, m12 0.0890. The image is therefore drawn 690 / 0.6633 = 1040 pt wide
+ * and 853 / 0.8206 = 1039.5 pt tall, its top-left at x = -149 and
+ * y = -1 - (0.0890 / 0.8206) * 853 = -93.5. The texture is seamless, so a
+ * larger screen repeats it from that origin.
+ */
+export const PATTERN_TILE = 1040;
+export const PATTERN_ORIGIN = Object.freeze({ left: -149, top: -93.5 });
 
 export type PatternTile = { left: number; top: number; size: number };
 
 /**
- * The tiles that cover a screen. React Native's `repeat` resize mode drew the
- * tile once on both platforms and left a bare band below 735 pt, so the
- * overlay lays the tiles out itself.
+ * The tiles that cover a screen, the first at the file's origin. React
+ * Native's `repeat` resize mode drew the tile once on both platforms, so the
+ * overlay lays the tiles out itself. A phone needs one; a tablet needs four.
  */
 export function patternTiles(width: number, height: number): PatternTile[] {
   const tiles: PatternTile[] = [];
   // At least one tile even before the window has a size: the first tile's
   // decode is what releases the native splash.
-  for (let top = 0; top === 0 || top < height; top += PATTERN_TILE) {
-    for (let left = 0; left === 0 || left < width; left += PATTERN_TILE) {
+  for (let top = PATTERN_ORIGIN.top; top === PATTERN_ORIGIN.top || top < height; top += PATTERN_TILE) {
+    for (let left = PATTERN_ORIGIN.left; left === PATTERN_ORIGIN.left || left < width; left += PATTERN_TILE) {
       tiles.push({ left, top, size: PATTERN_TILE });
     }
   }
