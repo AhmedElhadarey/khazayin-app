@@ -58,6 +58,10 @@ export function RibbonCard({
     <Pressable
       onPress={onPress}
       {...gestureProps}
+      // Named in reading order: without a label iOS joins the children in
+      // physical order and reads the duration first, as a plain group.
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={[pretitle, title, meta, duration].filter(Boolean).join('، ')}
       style={({ pressed }) => [
         styles.card,
         badge ? styles.cardWithBadge : styles.cardWithRibbon,
