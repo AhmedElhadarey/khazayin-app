@@ -65,8 +65,12 @@ describe.each(['more', 'section', 'archive'] as const)('ListRowCard variant=%s a
     expect(textNode(r, TITLE).props.numberOfLines).toBe(2);
   });
 
-  it('keeps the subtitle to one ellipsized line', () => {
-    expect(textNode(r, SUBTITLE).props.numberOfLines).toBe(1);
+  // The section copy («تلاوات وتفسير وتدبر القرآن الكريم», «شروحات الكتب
+  // الإسلامية المهمة») is longer than a 360dp text column even at the default
+  // scale, so those subtitles wrap. The More row's one-liners keep ellipsizing.
+  it(variant === 'more' ? 'keeps the subtitle to one ellipsized line' : 'wraps the subtitle to a second line', () => {
+    expect(textNode(r, SUBTITLE).props.numberOfLines).toBe(variant === 'more' ? 1 : 2);
+    expect(flat(textNode(r, SUBTITLE)).textAlign).toBe('right');
   });
 
   it('grows with its text: minHeight, never a fixed height', () => {
