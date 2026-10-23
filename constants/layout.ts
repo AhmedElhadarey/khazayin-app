@@ -259,7 +259,7 @@ export const SEGMENT_TABS = Object.freeze({
    * strip exactly as tall as its content.
    */
   strip: Object.freeze({ flexGrow: 0, flexShrink: 0 } as const),
-  stripPaddingVertical: 6,
+  stripPaddingVertical: 8,
   gap: 8,
   /**
    * Node "\u0661" on 2031:6193 — four 84 x 45 tabs 8 apart fill the 360pt
@@ -410,6 +410,18 @@ export const PAGE_CHROME = Object.freeze({
    */
   searchHeight: 40,
   searchRadius: 12,
+  /**
+   * InlineHeader is a 44pt row and the pill starts right under it, so the block
+   * has no top padding; 8 below it end the header band (`HEADER_BAND.search`).
+   */
+  searchPaddingTop: 0,
+  searchPaddingBottom: 8,
+  /** Sections root: pill bottom 128, first card 148 (2031:5675). */
+  rootSearchPaddingBottom: 20,
+  /** First row / card under a search block with no tab strip: 10 below the pill. */
+  listAfterSearch: 2,
+  /** Letter rail top inside a body that starts `listAfterSearch` under the pill. */
+  railTop: 4,
 } as const);
 
 /**

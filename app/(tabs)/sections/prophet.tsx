@@ -6,7 +6,7 @@ import {
   SearchPill,
   SkeletonRibbonList,
 } from '@/components/khazain';
-import { CARD_DENSITY } from '@/constants/layout';
+import { CARD_DENSITY, PAGE_CHROME } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { startLecturePlayback } from '@/services/lecturePlayback';
 import { useProphetLecturesStore } from '@/store';
@@ -82,7 +82,11 @@ export default function ProphetScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  searchBlock: {
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.searchPaddingTop,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom,
+  },
   list: {
     paddingHorizontal: 16,
     paddingTop: 4,

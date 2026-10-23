@@ -134,7 +134,7 @@ const styles = StyleSheet.create({
   h1: textStyle('bodyLarge', { color: KhazainColors.inkTitle }),
   searchBlock: {
     paddingHorizontal: 16,
-    paddingBottom: 12,
+    paddingBottom: PAGE_CHROME.rootSearchPaddingBottom,
   },
   list: {
     paddingHorizontal: 16,

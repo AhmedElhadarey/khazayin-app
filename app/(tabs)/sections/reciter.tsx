@@ -8,7 +8,7 @@ import {
   SegmentTabs,
   SkeletonRibbonList,
 } from '@/components/khazain';
-import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_BOX, RESERVED_COLUMNS, PAGE_CHROME } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { RECITER_TABS } from '@/data/content/quran';
 import { DEFAULT_SETTINGS } from '@/constants/settings';
@@ -136,7 +136,11 @@ export default function ReciterScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  searchBlock: {
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.searchPaddingTop,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom,
+  },
   body: {
     // PHYSICAL_BOX pins the rail's `right` offset and the list's `paddingRight`
     // to real physical edges; without it forceRTL swaps both to the left.

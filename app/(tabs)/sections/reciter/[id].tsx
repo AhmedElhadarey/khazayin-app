@@ -1,6 +1,6 @@
 import { AsyncContent, InlineHeader, SearchPill, SkeletonRibbonList } from '@/components/khazain';
 import { ReciterSurahRow } from '@/components/khazain/sections';
-import { CARD_DENSITY } from '@/constants/layout';
+import { CARD_DENSITY, PAGE_CHROME } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import {
   reciterDetailAsyncProps,
@@ -114,12 +114,16 @@ export default function ReciterSurahListScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  searchBlock: {
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.searchPaddingTop,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom,
+  },
   list: {
     paddingHorizontal: 16,
-    paddingTop: 4,
+    paddingTop: PAGE_CHROME.listAfterSearch,
     gap: CARD_DENSITY.lectureListGap,
   },
   // Mirrors `list` padding so a state card sits where the rows would.
-  stateBlock: { paddingHorizontal: 16, paddingTop: 4 },
+  stateBlock: { paddingHorizontal: 16, paddingTop: PAGE_CHROME.listAfterSearch },
 });

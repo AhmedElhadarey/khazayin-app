@@ -8,8 +8,7 @@ import {
   CARD_DENSITY,
   PHYSICAL_BOX,
   RESERVED_COLUMNS,
-  SCREEN_BOTTOM_BREATHING,
-} from '@/constants/layout';
+  SCREEN_BOTTOM_BREATHING, PAGE_CHROME } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import type { Lecture } from '@/types/content';
 import { openSearch } from '@/services/searchNavigation';
@@ -86,13 +85,17 @@ export function RailedLectureList({
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  searchBlock: {
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.searchPaddingTop,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom,
+  },
   body: {
     // PHYSICAL_BOX pins the rail's `right` offset and the list's reserved
     // `paddingRight`; without it forceRTL swaps both to the left.
     ...PHYSICAL_BOX,
     flex: 1,
-    paddingTop: 8,
+    paddingTop: PAGE_CHROME.listAfterSearch,
     position: 'relative',
   },
   listContent: {
@@ -101,7 +104,7 @@ const styles = StyleSheet.create({
   },
   rail: {
     position: 'absolute',
-    top: 8,
+    top: PAGE_CHROME.railTop,
     bottom: 0,
     // The right offset (`LETTER_INDEX_EDGE`) is set at render time from
     // `railListGeometry`: 16 on phones, the column's edge on tablets.

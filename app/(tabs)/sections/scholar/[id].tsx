@@ -8,7 +8,7 @@ import {
   SkeletonRibbonList,
   seriesIdsOf,
 } from '@/components/khazain';
-import { CARD_DENSITY, READING_ROW } from '@/constants/layout';
+import { CARD_DENSITY, READING_ROW, PAGE_CHROME } from '@/constants/layout';
 import { toArabicDigits } from '@/constants/progress';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -206,7 +206,11 @@ const styles = StyleSheet.create({
     ...textStyle('bodyLarge', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     marginTop: 2,
   },
-  searchBlock: { paddingHorizontal: 16, paddingTop: 4, paddingBottom: 8 },
+  searchBlock: {
+    paddingHorizontal: 16,
+    paddingTop: PAGE_CHROME.searchPaddingTop,
+    paddingBottom: PAGE_CHROME.searchPaddingBottom,
+  },
   entryPad: { paddingHorizontal: 16, paddingBottom: 8 },
   splitBody: { ...READING_ROW, flex: 1 },
   panel: { width: SPLIT_SIDE },
