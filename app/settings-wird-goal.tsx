@@ -23,6 +23,7 @@ import {
   type JuzPreset,
 } from '@/constants/progress';
 import { presetToPages } from '@/db/helpers/wirdPresets';
+import { pageCountLabel } from '@/services/libraryStats';
 import { useWirdStore } from '@/store/wirdStore';
 
 // Labels use the traditional ḥizb family (جزء → حزب = ½ juz → ربع الحزب = ⅛ juz),
@@ -134,9 +135,9 @@ function PresetRow({
     <ChoiceRow
       selected={selected}
       onPress={onPress}
-      accessibilityLabel={`${label}، ${toArNum(pages)} صفحة`}
+      accessibilityLabel={`${label}، ${pageCountLabel(pages)}`}
     >
-      <Text style={styles.rowPages}>{`${toArNum(pages)} صفحة`}</Text>
+      <Text style={styles.rowPages}>{pageCountLabel(pages)}</Text>
       <Text style={styles.rowLabel} numberOfLines={1}>
         {label}
       </Text>

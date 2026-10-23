@@ -10,6 +10,7 @@ import {
 } from '@/constants/progress';
 import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
 import { resetFacade } from '@/db';
+import { pageCountLabel } from '@/services/libraryStats';
 import { useProgressStore } from '@/store/progressStore';
 import { useRecommendationInputsStore } from '@/store/recommendationInputsStore';
 import { useToastStore } from '@/store/toastStore';
@@ -54,7 +55,7 @@ export default function SettingsProgressScreen() {
     setSaving(true);
     try {
       await setTarget(parsed);
-      showToast({ message: `تم تحديث الهدف إلى ${toAr(parsed)} صفحة`, durationMs: 2500 });
+      showToast({ message: `تم تحديث الهدف إلى ${pageCountLabel(parsed)}`, durationMs: 2500 });
     } catch (err) {
       Alert.alert('تعذّر الحفظ', String(err));
     } finally {
@@ -131,7 +132,7 @@ export default function SettingsProgressScreen() {
               </Text>
             ) : (
               <Text style={styles.hint}>
-                {`الهدف الحالي: ${toAr(currentTarget)} صفحة`}
+                {`الهدف الحالي: ${pageCountLabel(currentTarget)}`}
               </Text>
             )}
             <Pressable

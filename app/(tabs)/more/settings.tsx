@@ -20,6 +20,7 @@ import {
 import { COMMUNITY_COPY, mutedMemberLabel, nextAttemptCopy } from '@/constants/communityCopy';
 import { toArabicDigits as toArNum } from '@/constants/progress';
 import { arabicCopyForCode } from '@/services/api/errors';
+import { pageCountLabel } from '@/services/libraryStats';
 import { COMMUNITY_MODE } from '@/services/community/config';
 import { runDeletionIfDue } from '@/services/community/deletionRunner';
 import { GUIDELINES_VERSION } from '@/services/community/gate';
@@ -215,7 +216,7 @@ export default function SettingsScreen() {
           />
           <SettingsValueRow
             title="هدف الورد اليومي"
-            value={`${toArNum(wirdTarget)} صفحة`}
+            value={pageCountLabel(wirdTarget)}
             icon={<WirdGoalGlyph />}
             onPress={() => router.push('/settings-wird-goal' as any)}
           />
