@@ -439,6 +439,7 @@ describe('the consumers draw each mark the way the file instances it', () => {
     for (const file of [
       'components/khazain/sections/ReciterSurahRow.tsx',
       'components/khazain/primitives/MiniPlayer.tsx',
+      'components/khazain/onboarding/PreviewButton.tsx',
     ]) {
       expect(read(file)).toMatch(/name="Play"[^/>]*mirrored/);
     }
