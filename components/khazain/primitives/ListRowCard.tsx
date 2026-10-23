@@ -139,6 +139,10 @@ const descenderRoom = { paddingBottom: DESCENDER_SLACK, marginBottom: -DESCENDER
  */
 const MORE_CARD_MIN_INSET = 12;
 
+/** Section/archive column gaps: title to subtitle, subtitle to count. */
+const SECTION_SUBTITLE_GAP = 4;
+const SECTION_COUNT_GAP = 1;
+
 const styles = StyleSheet.create({
   cardBase: {
     ...PHYSICAL_ROW,
@@ -204,16 +208,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   title: { ...textStyle('sectionTitle', { color: KhazainColors.inkTitle }), ...descenderRoom },
-  // `H3-49` ends at y=186 and `P-52` starts at 192; `P-55` follows 2 later.
+  // `DIV-48` stacks title 24, 4 + 2, subtitle 20, 2, count 16 = 68, which is
+  // the 96 card less its 14 + 14 inset. The Arabic leading floor makes the
+  // subtitle 21 and the count 18, so the margins give back the 3: 24 + 4 + 21
+  // + 1 + 18 = 68 (GLOBAL-15; the column had summed 71 and the card drew 99).
   subtitle: {
     ...textStyle('cardTitle', { color: KhazainColors.inkSubtle }),
     ...descenderRoom,
-    marginTop: 6,
+    marginTop: SECTION_SUBTITLE_GAP,
   },
   count: {
     ...textStyle('label', { color: KhazainColors.inkCount }),
     ...descenderRoom,
-    marginTop: 2,
+    marginTop: SECTION_COUNT_GAP,
   },
   // `H3-18` and `P-21` are both TheMixArab Regular 14, set flush — the first
   // ends at y=146.5 and the second starts there.

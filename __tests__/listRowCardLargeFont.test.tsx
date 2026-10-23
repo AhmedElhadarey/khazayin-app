@@ -115,3 +115,43 @@ describe('the More card keeps its 82 at the default scale', () => {
     );
   });
 });
+
+/**
+ * GLOBAL-15: Android section cards measured 99.2 against the frame's 96 (DIV-43,
+ * node 2031:6073, 361 x 96). The frame's text column DIV-48 is title 24, 4,
+ * subtitle (2 + 20 in the file, 21 here with the Arabic leading floor), 1,
+ * count 18: 68, which is exactly the card's minHeight less its vertical inset.
+ * The type roles stay as they are; the margins between them absorb the floor.
+ */
+describe.each(['section', 'archive'] as const)('ListRowCard variant=%s fills its stated height at the default scale', (variant) => {
+  const r = render(
+    <ListRowCard variant={variant} icon={null} title={TITLE} subtitle={SUBTITLE} count={COUNT} onPress={() => {}} />,
+  );
+  const box = (s: string) => {
+    const st = flat(textNode(r, s));
+    return (
+      st.lineHeight +
+      (st.marginTop ?? 0) +
+      (st.marginBottom ?? 0) +
+      (st.paddingTop ?? 0) +
+      (st.paddingBottom ?? 0)
+    );
+  };
+
+  it('title + subtitle + count + the margins between them = minHeight - 2 x paddingVertical', () => {
+    const card = flat(pressable(r));
+    const column = box(TITLE) + box(SUBTITLE) + box(COUNT);
+    const inner = card.minHeight - 2 * (card.paddingVertical + (card.borderWidth ?? 0));
+    expect(column).toBe(68);
+    expect(column).toBe(inner);
+  });
+
+  it('keeps the type roles: 24 title, 21 subtitle, 18 count', () => {
+    expect(flat(textNode(r, TITLE)).lineHeight).toBe(TEXT_ROLES.sectionTitle.lineHeight);
+    expect(flat(textNode(r, SUBTITLE)).lineHeight).toBe(TEXT_ROLES.cardTitle.lineHeight);
+    expect(flat(textNode(r, COUNT)).lineHeight).toBe(TEXT_ROLES.label.lineHeight);
+    expect([TEXT_ROLES.sectionTitle.lineHeight, TEXT_ROLES.cardTitle.lineHeight, TEXT_ROLES.label.lineHeight]).toEqual([
+      24, 21, 18,
+    ]);
+  });
+});
