@@ -1,10 +1,8 @@
-import { SheetShell } from '@/components/khazain/sheets';
-import { PHYSICAL_BOX } from '@/constants/layout';
-import { textStyle } from '@/constants/typography';
+import { SheetRow, SheetShell } from '@/components/khazain/sheets';
 import { KhazainColors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, StyleSheet, View } from 'react-native';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
@@ -99,36 +97,10 @@ export default function ShareSheet() {
     <SheetShell title="مشاركة" onClose={close}>
       <View style={styles.list}>
         {platforms.map((p) => (
-          <ShareRow key={p.id} label={p.label} icon={p.icon} onPress={p.open} />
+          <SheetRow key={p.id} title={p.label} icon={p.icon} onPress={p.open} />
         ))}
       </View>
     </SheetShell>
-  );
-}
-
-function ShareRow({
-  label,
-  icon,
-  onPress,
-}: {
-  label: string;
-  icon: React.ReactNode;
-  onPress?: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { transform: [{ scale: pressed ? 0.98 : 1 }], opacity: pressed ? 0.9 : 1 },
-      ]}
-    >
-      {/* Disc anchored to the right (RTL start side) via absolute positioning. */}
-      <View style={styles.disc}>{icon}</View>
-      <Text style={styles.label} numberOfLines={1}>
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -201,43 +173,5 @@ const styles = StyleSheet.create({
     paddingTop: 4,
     paddingBottom: 12,
     gap: 10,
-  },
-  row: {
-    // PHYSICAL_BOX so the absolute `right: 12` on the disc and the label's
-    // `paddingRight: 56` are the physical right. Unpinned, forceRTL swapped
-    // both to the left and took `textAlign: 'right'` with them.
-    ...PHYSICAL_BOX,
-    height: 56,
-    backgroundColor: KhazainColors.cream50,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.10)',
-    paddingHorizontal: 16,
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
-  },
-  // Anchored to the physical right via `right`, which the PHYSICAL_BOX on the
-  // row makes unambiguous. Vertical centering uses `top: '50%'` + a
-  // half-height translate.
-  disc: {
-    position: 'absolute',
-    right: 12,
-    top: '50%',
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: KhazainColors.navy800,
-    alignItems: 'center',
-    justifyContent: 'center',
-    transform: [{ translateY: -16 }],
-  },
-  label: {
-    ...textStyle('sectionTitle', { color: KhazainColors.ink900 }),
-    // Leave room on the right for the 32-wide disc + its 12 inset + 12 gap.,
-    paddingRight: 56,
   },
 });

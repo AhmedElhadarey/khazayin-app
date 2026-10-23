@@ -1,8 +1,8 @@
 import { PHYSICAL_BOX } from '@/constants/layout';
-import { KhazainColors } from '@/constants/theme';
+import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { fontFace } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 
 // Row used inside telegram / youtube / share sheets.
 // Per Figma each row is its own cream rounded card, with a navy circular disc
@@ -56,16 +56,12 @@ const styles = StyleSheet.create({
     // physical right. Unpinned, forceRTL mirrors every one of them to the left.
     ...PHYSICAL_BOX,
     backgroundColor: KhazainColors.cream50,
-    borderRadius: 14,
+    borderRadius: KhazainRadius.lg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.10)',
+    borderColor: KhazainColors.cardBorder,
     paddingHorizontal: 14,
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.03,
-    shadowRadius: 10,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    ...KhazainShadows.listRow,
   },
   rowShort: {
     minHeight: 56,
@@ -93,19 +89,9 @@ const styles = StyleSheet.create({
   textCol: {
     paddingRight: 56, // disc width 32 + right inset 12 + gap 12
   },
-  title: {
-    ...fontFace(700),
-    fontSize: 15,
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  title: textStyle('cardTitle', { color: KhazainColors.ink900 }),
   sub: {
-    fontFamily: 'TheMixArab',
-    fontSize: 12,
-    color: KhazainColors.ink500,
+    ...textStyle('caption', { color: KhazainColors.ink500 }),
     marginTop: 2,
-    writingDirection: 'rtl',
-    textAlign: 'right',
   },
 });
