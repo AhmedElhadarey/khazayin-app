@@ -116,13 +116,27 @@ function clampSites(source: string): Site[] {
 /** Identifiers bound with `const x = useLineClamp(...)`. */
 const hookBindings = (source: string) =>
   new Set([...source.matchAll(/const\s+(\w+)\s*=\s*useLineClamp\(/g)].map((m) => m[1]));
-const isLiteral = (expr: string) => /\d/.test(expr);
+/** A bare number: `numberOfLines={2}`. Not an identifier that merely contains a digit. */
+const isLiteral = (expr: string) => /^\d+$/.test(expr);
 
 const WITH_CLAMPS = FILES.filter((rel) => clampSites(read(rel)).length > 0);
 
 describe('numberOfLines guard (T28)', () => {
   it('scans the expected tree', () => {
     expect(WITH_CLAMPS.length).toBeGreaterThan(30);
+  });
+
+  it('classifies the attribute value, not any digit inside it', () => {
+    const sites = (src: string) => clampSites(src).map((x) => x.expr);
+    expect(sites('<Text numberOfLines={2}>')).toEqual(['2']);
+    expect(sites('<Text numberOfLines={ 2 }>')).toEqual(['2']);
+    expect(isLiteral('2')).toBe(true);
+    // An identifier with a digit is not a literal; it must be hook-bound.
+    expect(isLiteral('lines2')).toBe(false);
+    expect(hookBindings('const lines2 = useLineClamp(2);').has('lines2')).toBe(true);
+    // A ternary of literals is neither literal nor hook-bound, so it fails the guard.
+    expect(isLiteral('rail ? 1 : 2')).toBe(false);
+    expect(hookBindings('const x = useLineClamp(1);').has('rail ? 1 : 2')).toBe(false);
   });
 
   it.each(WITH_CLAMPS)('%s: every clamp is classified', (rel) => {
