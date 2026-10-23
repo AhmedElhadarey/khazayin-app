@@ -29,28 +29,35 @@ export function DawahPoster({
   const [decoded, setDecoded] = useState(false);
   const fill = !hasArt ? quote.tone ?? '#1A3F62' : decoded ? 'transparent' : KhazainColors.pageBg;
   return (
-    <Pressable
-      onPress={onPress}
-      // The shadowed poster is rasterized once so the carousel's per-frame scale
-      // moves a cached bitmap instead of redrawing it, wrap clones included.
-      shouldRasterizeIOS
-      style={({ pressed }) => [
-        styles.card,
-        {
-          width,
-          height,
-          backgroundColor: fill,
-          borderRadius: hasArt ? 0 : KhazainRadius.md,
-          transform: [
-            { perspective: 1200 },
-            { scale: pressed ? 0.96 : 1 },
-          ],
-        },
-      ]}
-    >
-      {quote.imageSource ? (
-        <Image source={quote.imageSource} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={0} onLoad={() => setDecoded(true)} />
-      ) : null}
+    // The bookmark is the Pressable's sibling, not its child: a Pressable is one
+    // accessibility element on iOS, so a nested save could not be reached and
+    // the poster borrowed its label («حفظ في المكتبة»).
+    <View style={[styles.frame, { width, height }]}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={quote.title}
+        // The shadowed poster is rasterized once so the carousel's per-frame scale
+        // moves a cached bitmap instead of redrawing it, wrap clones included.
+        shouldRasterizeIOS
+        style={({ pressed }) => [
+          styles.card,
+          {
+            width,
+            height,
+            backgroundColor: fill,
+            borderRadius: hasArt ? 0 : KhazainRadius.md,
+            transform: [
+              { perspective: 1200 },
+              { scale: pressed ? 0.96 : 1 },
+            ],
+          },
+        ]}
+      >
+        {quote.imageSource ? (
+          <Image source={quote.imageSource} style={styles.image} contentFit="cover" cachePolicy="memory-disk" transition={0} onLoad={() => setDecoded(true)} />
+        ) : null}
+      </Pressable>
 
       <View style={styles.bookmarkSlot} pointerEvents="box-none">
         <BookmarkButton
@@ -66,11 +73,14 @@ export function DawahPoster({
           variant="floating"
         />
       </View>
-    </Pressable>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  frame: {
+    position: 'relative',
+  },
   card: {
     position: 'relative',
     // The file's DROP_SHADOW on the centre poster. Not clipped, so the bare

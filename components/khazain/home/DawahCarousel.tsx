@@ -35,7 +35,7 @@ import { SCALE_STEPS, clampFocus, dawahLayout, nearestSlot, resolveWrap } from '
 // independent of it: a slot reports its own centre, and the fan is a function
 // of the distance from that to the middle of the viewport.
 
-type WrappedEntry = { item: DawahPosterModel; realIndex: number };
+type WrappedEntry = { item: DawahPosterModel; realIndex: number; clone: boolean };
 
 /**
  * Room under the posters. With the shadow down to the file's 1.22 blur there is
@@ -69,9 +69,9 @@ export function DawahCarousel({
   const wrapped = useMemo<WrappedEntry[]>(() => {
     if (!items || items.length < 2) return [];
     return [
-      { item: items[items.length - 1], realIndex: items.length - 1 },
-      ...items.map((item, i) => ({ item, realIndex: i })),
-      { item: items[0], realIndex: 0 },
+      { item: items[items.length - 1], realIndex: items.length - 1, clone: true },
+      ...items.map((item, i) => ({ item, realIndex: i, clone: false })),
+      { item: items[0], realIndex: 0, clone: true },
     ];
   }, [items]);
 
@@ -282,6 +282,10 @@ function Slot({
   return (
     <Animated.View
       onLayout={handleLayout}
+      // A clone is scenery for the infinite wrap; its real twin is the one a
+      // screen reader should meet, so each poster is announced once.
+      accessibilityElementsHidden={entry.clone}
+      importantForAccessibility={entry.clone ? 'no-hide-descendants' : 'auto'}
       style={[
         { width: slot, height: cardHeight, alignItems: 'center', justifyContent: 'center' },
         animatedStyle,
