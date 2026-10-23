@@ -56,6 +56,9 @@ export const REGISTERED_FONT_FAMILIES = Object.keys(
  * When the licensed TheSansArabic / TheMixArab files arrive, drop them into
  * `assets/fonts/`, point ARABIC_FONT_ASSETS at them, and delete the entry here.
  * No component style changes, because components already name the real family.
+ *
+ * Remember `NotoSansArabic-SemiBold` (used by `fontFace(600)`): it has no
+ * proprietary alias yet, so the licensed swap must decide what 600 becomes.
  */
 export const FONT_SUBSTITUTIONS: Partial<Record<RegisteredFontFamily, string>> = {
   TheSansArabic: 'NotoSansArabic-Bold.ttf',

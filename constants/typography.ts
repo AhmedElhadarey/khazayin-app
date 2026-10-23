@@ -42,6 +42,8 @@
  * floor at `MIN_BODY_SIZE`. Any role that had to be raised says so.
  */
 
+import type { RegisteredFontFamily } from './fonts';
+
 /**
  * Smallest size we will set live Arabic text at. Below roughly this, Arabic
  * diacritics stop resolving on a phone screen. Apple's own guidance floors
@@ -214,12 +216,16 @@ export function textStyle(
  * SemiBold face, 400 the prose face (`TheMixArab`, the Regular file). It always
  * returns `fontWeight: '400'` because the weight is in the face; spread it into
  * a style instead of writing `fontWeight: '700'`.
+ *
+ * Amiri sites do not use this: `Amiri-Bold` is already bold, so they just drop
+ * their `fontWeight`. 600 maps to `NotoSansArabic-SemiBold`, which has no
+ * proprietary alias yet (see `FONT_SUBSTITUTIONS`).
  */
 export function fontFace(weight: 400 | 600 | 700): {
-  fontFamily: string;
+  fontFamily: RegisteredFontFamily;
   fontWeight: '400';
 } {
-  const fontFamily =
+  const fontFamily: RegisteredFontFamily =
     weight === 700 ? DISPLAY_FAMILY : weight === 600 ? 'NotoSansArabic-SemiBold' : BODY_FAMILY;
   return { fontFamily, fontWeight: '400' };
 }
