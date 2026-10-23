@@ -86,6 +86,14 @@ describe('list-sheet geometry (Figma 2457:954)', () => {
   });
 });
 
+describe('scrim', () => {
+  it('list layout shares the one backdrop style the telegram/youtube sheets use', () => {
+    const src = read('components/khazain/sheets/SheetShell.tsx');
+    expect(src.match(/style=\{styles\.backdrop\}/g)).toHaveLength(2);
+    expect(src.match(/rgba\(20,15,8,0\.45\)/g)).toHaveLength(1);
+  });
+});
+
 describe('navigation and screen map', () => {
   it('reciterDestination targets the sheet for the qiraat style', () => {
     const src = read('services/reciterNavigation.ts');
@@ -95,7 +103,7 @@ describe('navigation and screen map', () => {
   it('maps 2457:954 to the sheet and flags 2102:3187 as a tab-state deviation', () => {
     const map = JSON.parse(read('docs/visual-regression/figma-mobile-screen-map.json'));
     const q = map.find((r: any) => r.nodeId === '2457:954');
-    expect(q.appRoute).toBe('/qiraat-sheet');
+    expect(q.appRoute).toBe('/sections/qiraat');
     expect(q.presentation).toBe('sheet');
     const m = map.find((r: any) => r.nodeId === '2102:3187');
     expect(m.deviation).toBe('modelled as tab state (D5)');

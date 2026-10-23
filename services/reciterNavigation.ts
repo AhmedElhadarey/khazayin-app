@@ -42,8 +42,9 @@ export function qiraatRedirectPlan(): { replace: string; push: string } {
 export function pickQiraa(id: string, setDefault: (id: string) => void, close: () => void): void {
   try {
     setDefault(id);
-  } catch {
+  } catch (error) {
     // A failed write must not trap the user in the sheet.
+    console.warn('[reciterNavigation] setDefaultQiraa failed', error);
   }
   close();
 }

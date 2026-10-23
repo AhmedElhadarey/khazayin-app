@@ -47,10 +47,17 @@ export function SheetShell({
 }) {
   const { width, sideInsets } = useResponsiveLayout();
   const { height: windowHeight } = useWindowDimensions();
+  const [titleHeight, setTitleHeight] = React.useState(0);
   // Tablets: a centred 600pt card, still pinned to the bottom by `root`.
   const column = sheetColumn(width, sideInsets);
   if (layout === 'list') {
     const g = SHEET_LIST_GEOMETRY;
+    // Scale 1: the 20pt box leaves the first row at 56. At large font scales
+    // the title grows past 20, so the rows move down with it (8pt gap).
+    const listBodyTop = Math.max(
+      g.firstRowTop,
+      g.titleTop + titleHeight + (g.firstRowTop - g.titleBottom),
+    );
     return (
       <View style={styles.root}>
         <Pressable
@@ -64,10 +71,13 @@ export function SheetShell({
           style={[styles.listWrap, { height: sheetListHeight(windowHeight) }, column]}
         >
           <View style={styles.listGrabber} />
-          <View style={styles.listTitleBox}>
+          <View
+            style={styles.listTitleBox}
+            onLayout={(e) => setTitleHeight(e.nativeEvent.layout.height)}
+          >
             <Text style={styles.listTitle}>{title}</Text>
           </View>
-          <View style={[styles.listBody, { paddingTop: g.firstRowTop }]}>{children}</View>
+          <View style={[styles.listBody, { paddingTop: listBodyTop }]}>{children}</View>
           <View pointerEvents="none" style={styles.listStroke} />
         </SafeAreaView>
       </View>
@@ -123,7 +133,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     width: SHEET_LIST_GEOMETRY.grabberWidth,
     height: SHEET_LIST_GEOMETRY.grabberHeight,
-    borderRadius: 2,
+    borderRadius: 2.5,
     backgroundColor: KhazainColors.hairlineWarm,
   },
   listTitleBox: {
@@ -131,7 +141,7 @@ const styles = StyleSheet.create({
     top: SHEET_LIST_GEOMETRY.titleTop,
     left: 0,
     right: 0,
-    height: SHEET_LIST_GEOMETRY.titleBottom - SHEET_LIST_GEOMETRY.titleTop,
+    minHeight: SHEET_LIST_GEOMETRY.titleBottom - SHEET_LIST_GEOMETRY.titleTop,
     justifyContent: 'center',
   },
   listTitle: {

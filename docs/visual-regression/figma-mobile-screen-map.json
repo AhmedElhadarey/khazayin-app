@@ -172,7 +172,7 @@
     "name": "Qiraat — ten qiraa rows",
     "width": 393,
     "height": 844,
-    "appRoute": "/qiraat-sheet",
+    "appRoute": "/sections/qiraat",
     "presentation": "sheet",
     "note": "Bottom sheet over the reciter screen; /sections/qiraat redirects to it (replace reciter?tab=qiraat, then push the sheet).",
     "readyText": "اختر القراءة",

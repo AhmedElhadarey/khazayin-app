@@ -7,6 +7,11 @@ import { useEffect, useRef } from 'react';
 // (app/qiraat-sheet.tsx). This screen swaps itself for the reciter screen on
 // the Qiraa tab, then pushes the sheet over it, so a cold link lands on a
 // sheet over the reciter list instead of an empty stack.
+//
+// Known limitation: a warm link while the reciter screen is already open
+// leaves two reciter entries in the sections stack (the replace swaps this
+// screen for a second reciter), so back from the first sheet close lands on a
+// duplicate reciter screen. Cold links are unaffected.
 export default function QiraatRedirect() {
   const router = useRouter();
   const done = useRef(false);

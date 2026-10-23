@@ -9,7 +9,7 @@ export default function SectionsLayout() {
       <Stack.Screen name="reciter" />
       <Stack.Screen name="reciter/[id]" />
       <Stack.Screen name="mushaf" />
-      <Stack.Screen name="qiraat" />
+      <Stack.Screen name="qiraat" options={{ animation: 'none' }} />
       <Stack.Screen name="scholar" />
       <Stack.Screen name="scholar/[id]" />
       <Stack.Screen name="discussion/index" />

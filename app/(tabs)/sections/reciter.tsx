@@ -62,8 +62,9 @@ export default function ReciterScreen() {
   // The store's `empty` is whole-dataset, so a single tab can still be empty.
   const view = reciterListView(status, data, active);
 
-  // The reciter is carried through: `reciterDestination` sends the Qiraa tab to
-  // the qiraat screen and every other reciter to their own listening list. The
+  // The reciter is carried through: `reciterDestination` opens the qiraat
+  // bottom sheet (`/qiraat-sheet`) for the Qiraa tab and sends every other
+  // reciter to their own listening list. The
   // previous version ignored its argument and opened the general Mushaf.
   const onPickReciter = (reciter: Reciter) => {
     router.push(reciterDestination(reciter) as any);
