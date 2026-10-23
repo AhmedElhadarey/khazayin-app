@@ -41,11 +41,17 @@ export default function NotesViewer() {
     });
 
   return (
-    <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
+    <View style={styles.backdrop}>
+      {/* Backdrop — an empty sibling behind the sheet, as in SheetShell. A
+          Pressable around the sheet made it ONE accessibility element on iOS:
+          VoiceOver saw «إغلاق» and none of the notes. */}
       <Pressable
-        onPress={() => {}}
-        style={[styles.sheetOuter, sheetColumn(width, sideInsets)]}
-      >
+        accessibilityRole="button"
+        accessibilityLabel="إغلاق"
+        onPress={close}
+        style={StyleSheet.absoluteFill}
+      />
+      <View style={[styles.sheetOuter, sheetColumn(width, sideInsets)]}>
         <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
           <View style={styles.handleWrap}>
             <SheetHandle />
@@ -77,8 +83,8 @@ export default function NotesViewer() {
             />
           )}
         </SafeAreaView>
-      </Pressable>
-    </Pressable>
+      </View>
+    </View>
   );
 }
 

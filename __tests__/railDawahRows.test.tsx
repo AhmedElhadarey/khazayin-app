@@ -100,7 +100,8 @@ describe('dawah rows (MEDIA-14, 15, 16)', () => {
     <DawahPosterRow title="عنوان" quote={{ id: 'q', title: 't', tone: 'navy' } as any} onPress={() => {}} />,
   );
   it('poster row is 89: 1 + 7 + 73 + 7 + 1', () => {
-    const row = flat(pressable(r));
+    // The card is the outer View; the opener and the actions sit inside it.
+    const row = flat(r.root.findAll((n) => n.type === 'View')[0]);
     expect(row.paddingVertical).toBe(7);
     expect(row.borderWidth).toBe(1);
     expect(2 * (row.paddingVertical + row.borderWidth) + 73).toBe(89);

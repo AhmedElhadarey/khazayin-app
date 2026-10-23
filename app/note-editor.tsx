@@ -124,11 +124,17 @@ export default function NoteEditor() {
       style={styles.root}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      {/* Backdrop — tap outside the sheet to dismiss. */}
-      <Pressable accessibilityLabel="إغلاق" onPress={close} style={styles.backdrop}>
-        {/* Stop touches from propagating into the dismiss handler. */}
+      <View style={styles.backdrop}>
+        {/* Backdrop — an empty sibling behind the sheet, as in SheetShell. A
+            Pressable around the sheet made it ONE accessibility element on iOS:
+            VoiceOver saw «إغلاق» and none of the sheet. */}
         <Pressable
-          onPress={() => {}}
+          accessibilityRole="button"
+          accessibilityLabel="إغلاق"
+          onPress={close}
+          style={StyleSheet.absoluteFill}
+        />
+        <View
           style={[
             styles.sheetOuter,
             sheetColumn(width, sideInsets),
@@ -192,6 +198,7 @@ export default function NoteEditor() {
                 <Pressable
                   onPress={confirmDelete}
                   hitSlop={6}
+                  accessibilityRole="button"
                   style={({ pressed }) => [styles.deleteRow, { opacity: pressed ? 0.7 : 1 }]}
                   accessibilityLabel="حذف الملاحظة"
                 >
@@ -223,8 +230,8 @@ export default function NoteEditor() {
               ) : null}
             </ScrollView>
           </SafeAreaView>
-        </Pressable>
-      </Pressable>
+        </View>
+      </View>
     </KeyboardAvoidingView>
   );
 }

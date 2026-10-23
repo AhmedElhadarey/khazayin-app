@@ -55,6 +55,9 @@ export default function DawahScreen() {
             <Pressable
               key={g.id}
               onPress={() => openDetail(g.id)}
+              accessibilityRole="button"
+              // Reading order: the title, then the count drawn at the left.
+              accessibilityLabel={`${g.title}، ${g.count}`}
               style={({ pressed }) => [
                 styles.row,
                 { transform: [{ scale: pressed ? 0.98 : 1 }] },

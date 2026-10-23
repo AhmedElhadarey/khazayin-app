@@ -146,6 +146,7 @@ export default function ContactScreen() {
             />
             <Pressable
               onPress={submit}
+              accessibilityRole="button"
               style={({ pressed }) => [
                 styles.submitBtn,
                 { opacity: pressed ? 0.85 : 1 },

@@ -141,6 +141,8 @@ export default function SettingsProgressScreen() {
             <Pressable
               onPress={onSave}
               disabled={!dirty || saving}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: !dirty || saving }}
               style={({ pressed }) => [
                 styles.saveBtn,
                 (!dirty || saving) && styles.saveBtnDisabled,
@@ -158,6 +160,7 @@ export default function SettingsProgressScreen() {
             </Text>
             <Pressable
               onPress={onReset}
+              accessibilityRole="button"
               style={({ pressed }) => [styles.resetBtn, { opacity: pressed ? 0.85 : 1 }]}
             >
               <Text style={styles.resetLabel}>إعادة تعيين التقدّم</Text>

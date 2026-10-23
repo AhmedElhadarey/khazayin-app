@@ -38,19 +38,17 @@ export function DawahPosterRow({
 }) {
   const oneLine = useLineClamp(1);
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { transform: [{ scale: pressed ? 0.98 : 1 }] },
-      ]}
-    >
+    // The actions are the opener's siblings, not its children: a Pressable is
+    // one accessibility element on iOS, so nested share / download buttons
+    // could not be reached (as the Home cards, b62b865).
+    <View style={styles.row}>
       {/* Physical left — action icons (share + download) */}
       <View style={styles.actions}>
         <Pressable
           onPress={onShare}
           hitSlop={{ top: 12, bottom: 12, left: 12, right: 4 }}
-          accessibilityLabel="مشاركة"
+          accessibilityRole="button"
+          accessibilityLabel={`مشاركة: ${title}`}
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
           <FigmaIcon name="DawahShare" size={ACTION_GLYPH} color={KhazainColors.inkTitle} />
@@ -58,14 +56,23 @@ export function DawahPosterRow({
         <Pressable
           onPress={onDownload}
           hitSlop={{ top: 12, bottom: 12, left: 4, right: 12 }}
-          accessibilityLabel="تنزيل"
+          accessibilityRole="button"
+          accessibilityLabel={`تنزيل: ${title}`}
           style={({ pressed }) => [styles.actionBtn, { opacity: pressed ? 0.6 : 1 }]}
         >
           <FigmaIcon name="DawahDownload" size={ACTION_GLYPH} color={KhazainColors.inkTitle} />
         </Pressable>
       </View>
 
-      {/* Centre — title */}
+      {/* Centre and physical right — title and poster open the poster. The
+          hitSlop gives back the row's inset, which used to be tappable. */}
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={title}
+        hitSlop={{ top: 7, bottom: 7, right: CARD_DENSITY.lectureCardPaddingHorizontal }}
+        style={({ pressed }) => [styles.open, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
+      >
       <View style={styles.titleWrap}>
         <Text style={styles.title} numberOfLines={oneLine}>
           {title}
@@ -87,7 +94,8 @@ export function DawahPosterRow({
           />
         ) : null}
       </View>
-    </Pressable>
+      </Pressable>
+    </View>
   );
 }
 
@@ -105,6 +113,15 @@ const styles = StyleSheet.create({
     // 1 + 7 + 73 + 7 + 1 = 89.
     paddingVertical: 7,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
+    alignItems: 'center',
+    gap: 8,
+  },
+  // Title and poster, 8 apart as when the row held all three directly.
+  open: {
+    ...PHYSICAL_ROW,
+    flex: 1,
+    minWidth: 0,
+    alignSelf: 'stretch',
     alignItems: 'center',
     gap: 8,
   },

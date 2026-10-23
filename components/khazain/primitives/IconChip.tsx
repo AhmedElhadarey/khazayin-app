@@ -8,10 +8,12 @@ type Props = {
   size?: number;
   bg?: string;
   style?: StyleProp<ViewStyle>;
+  /** Required in practice when `onPress` is set: the chip holds only a glyph. */
+  accessibilityLabel?: string;
 };
 
 // 40×40 rounded chip used for header bell and small toolbar buttons.
-export function IconChip({ children, onPress, size = 40, bg, style }: Props) {
+export function IconChip({ children, onPress, size = 40, bg, style, accessibilityLabel }: Props) {
   const content = (
     <View
       style={[
@@ -33,6 +35,8 @@ export function IconChip({ children, onPress, size = 40, bg, style }: Props) {
     <Pressable
       onPress={onPress}
       hitSlop={6}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [{ opacity: pressed ? 0.75 : 1 }]}
     >
       {content}

@@ -213,6 +213,7 @@ function PermissionDeniedBanner({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
       style={({ pressed }) => [
         styles.banner,
         KhazainShadows.card,

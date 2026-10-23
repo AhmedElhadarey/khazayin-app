@@ -79,6 +79,7 @@ export default function SettingsAboutScreen() {
         </View>
         <Pressable
           onPress={openFoundationWebsite}
+          accessibilityRole="link"
           style={({ pressed }) => [
             styles.linkCard,
             KhazainShadows.card,
