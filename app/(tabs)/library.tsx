@@ -74,6 +74,7 @@ import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
 import { useProgressStore } from '@/store/progressStore';
 import { selectGoalMetToday, useWirdStore } from '@/store/wirdStore';
 import { getRepos, progressRepo } from '@/db';
+import type { LectureSession } from '@/db/types';
 import { lectureNoteParamsFromSession } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
@@ -219,6 +220,7 @@ export default function LibraryScreen() {
   const todayPct = useWirdStore((s) => s.todayPct);
   const wirdTarget = useWirdStore((s) => s.target);
   const inProgressLecture = useProgressStore((s) => s.inProgressLecture);
+  const recentCompletedLecture = useProgressStore((s) => s.recentCompletedLecture);
   const completedLectureCount = useProgressStore((s) => s.completedLectureCount);
   const totalPagesRead = useProgressStore((s) => s.totalPagesRead);
   const completedJuzCount = useProgressStore((s) => s.completedJuzCount);
@@ -344,24 +346,27 @@ export default function LibraryScreen() {
     ),
   };
 
-  const audiobookProgressCard = inProgressLecture ? (
+  // The data model has no episode position or series length, so the card's
+  // «الحلقة n من m» meta is omitted until it can be stated truthfully.
+  const playLecture = (lecture: LectureSession, fromStart: boolean) => {
+    usePlayerStore.getState().setTrack({
+      id: lecture.lectureId,
+      title: lecture.title,
+      reciter: lecture.author,
+      durationSec: lecture.durationSec,
+    });
+    usePlayerStore
+      .getState()
+      .setProgress(!fromStart && lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0);
+    usePlayerStore.getState().setVisible(true);
+  };
+
+  const inProgressCard = inProgressLecture ? (
     (() => {
       const lecture = inProgressLecture;
       const pct = lecture.durationSec > 0
         ? Math.min(100, Math.round((lecture.positionSec / lecture.durationSec) * 100))
         : 0;
-      const resume = () => {
-        usePlayerStore.getState().setTrack({
-          id: lecture.lectureId,
-          title: lecture.title,
-          reciter: lecture.author,
-          durationSec: lecture.durationSec,
-        });
-        usePlayerStore.getState().setProgress(
-          lecture.durationSec > 0 ? lecture.positionSec / lecture.durationSec : 0,
-        );
-        usePlayerStore.getState().setVisible(true);
-      };
       return (
         <AudioProgressCard
           title={lecture.title}
@@ -370,7 +375,7 @@ export default function LibraryScreen() {
           subtitle={`${toArNum(pct)}٪ مكتمل`}
           primaryLabel="متابعة"
           secondaryLabel="إضافة ملاحظة"
-          onPrimary={resume}
+          onPrimary={() => playLecture(lecture, false)}
           onSecondary={() => {
             // Linked to the saved second. A session whose id is not an episode
             // id cannot be linked, so it keeps the old title-seeded note.
@@ -381,9 +386,34 @@ export default function LibraryScreen() {
         />
       );
     })()
-  ) : (
-    <EmptyInProgressCard onBrowse={() => router.push('/(tabs)/sections/scholar' as any)} />
-  );
+  ) : null;
+
+  // The most recently finished lecture: gold accent, full track.
+  const completedCard = recentCompletedLecture ? (
+    <AudioProgressCard
+      variant="completed"
+      title={recentCompletedLecture.title}
+      author={recentCompletedLecture.author}
+      pct={100}
+      subtitle="مكتمل"
+      primaryLabel="مراجعة"
+      secondaryLabel="عرض الملاحظات"
+      onPrimary={() => playLecture(recentCompletedLecture, true)}
+      onSecondary={() => router.push('/notes-viewer' as any)}
+    />
+  ) : null;
+
+  // With nothing in progress and nothing finished the section shows the empty
+  // card; otherwise it shows whichever real cards exist.
+  const audiobookProgressCard =
+    inProgressCard || completedCard ? (
+      <View style={styles.audiobookStack}>
+        {inProgressCard}
+        {completedCard}
+      </View>
+    ) : (
+      <EmptyInProgressCard onBrowse={() => router.push('/(tabs)/sections/scholar' as any)} />
+    );
 
   // Rendered from LIBRARY_SECTION_ORDER so the reference hierarchy is a
   // single declaration, and every newer metric provably sits below it.
@@ -788,6 +818,7 @@ const styles = StyleSheet.create({
   block: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, marginBottom: LIBRARY_SECTION_GAP },
   // The audiobook block sits 16 above the next block title (LIBRARY-20), not
   // the 40 that separates two top-level sections.
+  audiobookStack: { gap: 8 },
   blockAfterTitle: { paddingHorizontal: LIBRARY_DESIGN.sideMargin, marginBottom: 16 },
   sparklineBlock: {
     marginTop: 12,

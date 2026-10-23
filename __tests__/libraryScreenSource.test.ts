@@ -73,3 +73,16 @@ describe('search and header offsets (LIBRARY-13, 25)', () => {
     expect(body(lib, 'headerBlock')).toMatch(/paddingBottom: 12/);
   });
 });
+
+describe('completed lecture card (LIBRARY-10)', () => {
+  it('renders the gold variant for the most recent completed lecture', () => {
+    expect(lib).toMatch(/recentCompletedLecture/);
+    expect(lib).toMatch(/variant="completed"/);
+    expect(lib).toMatch(/primaryLabel="مراجعة"/);
+    expect(lib).toMatch(/secondaryLabel="عرض الملاحظات"/);
+    expect(lib).toMatch(/subtitle="مكتمل"/);
+  });
+  it('shows the empty card only when there is neither an in-progress nor a completed lecture', () => {
+    expect(lib).toMatch(/inProgressCard \|\| completedCard/);
+  });
+});
