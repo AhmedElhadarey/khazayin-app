@@ -10,6 +10,7 @@
  */
 import React from 'react';
 import { StyleSheet } from 'react-native';
+import { inlineHeaderHeight } from '@/components/khazain/primitives/InlineHeader';
 import { HeaderArt, headerArtGeometry, headerBandHeight } from '@/components/khazain/patterns/HeaderArt';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -191,18 +192,23 @@ describe('header band heights follow the app header, not the frame literal', () 
     expect(headerBandHeight(45, kind)).toBe(total);
   });
 
-  it('inline covers the 44pt InlineHeader row at scale 1, growing to the 1.2 cap', () => {
+  it('inline is the InlineHeader row: 44 at scale 1, growing to the 1.2 cap', () => {
     expect(headerBandHeight(45, 'inline', 1)).toBe(45 + 44);
     expect(headerBandHeight(45, 'inline', 1.7)).toBeCloseTo(45 + 16 + 28 * 1.2, 5);
     expect(headerBandHeight(45, 'inline', 1.7)).toBe(headerBandHeight(45, 'inline', 1.2));
+    for (const fs of [1, 1.15, 1.7]) {
+      expect(headerBandHeight(0, 'inline', fs)).toBe(inlineHeaderHeight(fs));
+    }
   });
 
-  it('search is the inline header plus the 56pt the frame stacks under it', () => {
-    expect(headerBandHeight(45, 'search', 1)).toBe(headerBandHeight(45, 'inline', 1) + 56);
+  it('search ends at the frame band (92 below the status bar) at scale 1', () => {
+    expect(headerBandHeight(45, 'search', 1)).toBe(137);
+    expect(headerBandHeight(45, 'search', 1.7)).toBeCloseTo(45 + 16 + 28 * 1.2 + 48, 5);
   });
 
-  it('more tracks the uncapped title line', () => {
+  it('more follows the title line, capped at the chrome scale', () => {
     expect(headerBandHeight(45, 'more', 1)).toBe(45 + 8 + 28);
-    expect(headerBandHeight(45, 'more', 1.7)).toBeCloseTo(45 + 8 + 28 * 1.7, 5);
+    expect(headerBandHeight(45, 'more', 1.7)).toBeCloseTo(45 + 8 + 28 * 1.2, 5);
+    expect(headerBandHeight(45, 'more', 1.7)).toBe(headerBandHeight(45, 'more', 1.2));
   });
 });

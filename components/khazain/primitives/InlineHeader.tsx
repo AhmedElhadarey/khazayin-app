@@ -48,8 +48,20 @@ const TITLE_INSET = (MIN_TOUCH_TARGET - TITLE_LINE) / 2;
  * arrow moves down by half the growth to follow the line's centre.
  */
 export function backGlyphOffset(fontScale: number): number {
-  const scaledLine = TITLE_LINE * Math.min(fontScale, CHROME_MAX_FONT_SCALE);
-  return (scaledLine - TITLE_LINE) / 2;
+  return (scaledTitleLine(fontScale) - TITLE_LINE) / 2;
+}
+
+/** One `bodyLarge` chrome line at a font scale: capped at CHROME_MAX_FONT_SCALE like every chrome Text. */
+export function scaledTitleLine(fontScale: number): number {
+  return TITLE_LINE * Math.min(fontScale, CHROME_MAX_FONT_SCALE);
+}
+
+/**
+ * The row's height: at least the 44pt target, growing once the capped title line
+ * plus its two TITLE_INSET paddings exceeds it. `HeaderArt`'s band follows this.
+ */
+export function inlineHeaderHeight(fontScale: number): number {
+  return Math.max(MIN_TOUCH_TARGET, 2 * TITLE_INSET + scaledTitleLine(fontScale));
 }
 
 export function InlineHeader({

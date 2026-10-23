@@ -78,7 +78,7 @@ describe('the generated icon set', () => {
     // The extractor cannot reach a raster paint, and a placeholder is not an
     // icon. Both are decisions, so both are written down rather than inferred
     // from the set being short.
-    const skipped = MANIFEST.notDrawn as ReadonlyArray<{ name: string; node: string; why: string }>;
+    const skipped = MANIFEST.notDrawn as readonly { name: string; node: string; why: string }[];
     expect(skipped.length).toBeGreaterThan(0);
     for (const s of skipped) {
       expect(s.node).toMatch(/^\d+:\d+$/);
@@ -150,7 +150,7 @@ describe('the generated icon set', () => {
   // that already-outlined ring is ~2 units wide and printed as a solid block.
   describe('an override that swaps a pre-outlined fill for a stroke colour', () => {
     const { collectPaths } = require('../scripts/figma/vector.js');
-    const blobOf = (pts: ReadonlyArray<readonly [number, number]>) => {
+    const blobOf = (pts: readonly (readonly [number, number])[]) => {
       const b = Buffer.alloc(pts.length * 9 + 1);
       let o = 0;
       pts.forEach(([x, y], i) => {
@@ -208,6 +208,48 @@ describe('the generated icon set', () => {
     it('still draws the stroke outline when the fill was not cleared', () => {
       const paths = run(undefined);
       expect(paths.map((p: { d: string }) => p.d)).toEqual(['M1 1L9 1L9 9Z', 'M0 0L30 0L30 30Z']);
+    });
+  });
+
+  describe('the manifest options bare, crop and exclude', () => {
+    const { collectPaths } = require('../scripts/figma/vector.js');
+    const blob = (() => {
+      const b = Buffer.alloc(9 * 3 + 1);
+      [[1, 10, 10], [2, 20, 10], [2, 20, 20]].forEach(([op, x, y], i) => {
+        b.writeUInt8(op, i * 9);
+        b.writeFloatLE(x, i * 9 + 1);
+        b.writeFloatLE(y, i * 9 + 5);
+      });
+      return { bytes: b };
+    })();
+    const g = (localID: number) => ({ sessionID: 2, localID });
+    const paint = (r: number) => [{ type: 'SOLID', visible: true, color: { r, g: 0, b: 0, a: 1 } }];
+    const shape = (id: number, r: number) => ({
+      type: 'VECTOR', guid: g(id), size: { x: 30, y: 30 },
+      transform: { m00: 1, m01: 0, m02: 0, m10: 0, m11: 1, m12: 0 },
+      fillPaints: paint(r), fillGeometry: [{ commandsBlob: 0, windingRule: 'NONZERO' }],
+    });
+    const root = { ...shape(1, 0), type: 'FRAME', size: { x: 60, y: 60 } };
+    const kids = [shape(2, 1), shape(3, 0.5)];
+    const run = (opts: object) => {
+      const byGuid = Object.assign(new Map(), { blobs: [blob] });
+      return collectPaths(root, { byGuid, childrenOf: (k: string) => (k === '2:1' ? kids : []) }, opts);
+    };
+
+    it('bare drops the root\'s own paint and keeps the contents', () => {
+      expect(run({})).toHaveLength(3);
+      expect(run({ bare: true })).toHaveLength(2);
+    });
+
+    it('crop moves the origin to the rectangle', () => {
+      expect(run({ bare: true, crop: { x: 4, y: 6, width: 20, height: 20 } })[0].d)
+        .toBe('M6 4L16 4L16 14Z');
+    });
+
+    it('exclude skips a subtree by guid', () => {
+      const paths = run({ bare: true, exclude: ['2:2'] });
+      expect(paths).toHaveLength(1);
+      expect(paths[0].fill).toBe('#800000');
     });
   });
 
@@ -292,7 +334,7 @@ describe('the header art the frames lay over the page', () => {
   it('draws the file\'s art rather than the prototype\'s CSS tile', () => {
     const src = fs.readFileSync(path.join(ROOT, 'components/khazain/patterns/HeaderArt.tsx'), 'utf8');
     expect(src).toContain('pattern-geometric-on-page.png');
-    expect(src).toContain('ornament-corner-on-page.png');
+    expect(src).toContain('ornament-corner-overlay.png');
     // No opacity is guessed: the blend is resolved at build time.
     expect(src).not.toMatch(/opacity[:=]\s*\{?[\d.]/);
   });
@@ -392,7 +434,7 @@ describe('the icon set carries the marks the 2026-10-23 audit found missing', ()
     }
     expect(FIGMA_ICONS.Notification.width).toBe(24);
     // Body at 40%, then the clapper and the stem at full strength.
-    const dims: Array<number | undefined> = FIGMA_ICONS.Notification.paths
+    const dims: (number | undefined)[] = FIGMA_ICONS.Notification.paths
       .map((p) => (p as { fillOpacity?: number }).fillOpacity);
     expect(dims[0]).toBeCloseTo(0.4, 2);
     expect(dims.slice(1).every((o) => o === undefined)).toBe(true);
@@ -448,10 +490,18 @@ describe('the icon set carries the marks the 2026-10-23 audit found missing', ()
     expect(disc).toBeGreaterThan(-1);
     expect(seal).toBeGreaterThan(disc);
     expect(letters).toBeGreaterThan(seal);
-    // The raster is 26.3 x 30 at (5,5) of a 40 badge and stretches to it.
-    expect(src).toMatch(/\(size \* 26\.3\) \/ 40/);
-    expect(src).toMatch(/\(size \* 30\) \/ 40/);
     expect(src).toMatch(/contentFit="fill"/);
+  });
+
+  it('pins the seal at 26.3 x 30 at (5,5) of the 40 badge, letters at (16.32,17.35)', () => {
+    const { EXCLUSIVE_SEAL } = require('../components/khazain/primitives/LectureBadges');
+    expect(EXCLUSIVE_SEAL.seal.left).toBe(5);
+    expect(EXCLUSIVE_SEAL.seal.top).toBe(5);
+    expect(EXCLUSIVE_SEAL.seal.width).toBeCloseTo(26.3, 1);
+    expect(EXCLUSIVE_SEAL.seal.height).toBe(30);
+    expect(EXCLUSIVE_SEAL.letters.left).toBeCloseTo(16.32, 2);
+    expect(EXCLUSIVE_SEAL.letters.top).toBeCloseTo(17.35, 2);
+    expect(Object.isFrozen(EXCLUSIVE_SEAL)).toBe(true);
   });
 
   it('exports the framed dawah badge, not the hand-drawn one that shadowed it', () => {

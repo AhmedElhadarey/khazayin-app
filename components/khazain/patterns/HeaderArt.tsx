@@ -1,5 +1,5 @@
 import { MIN_TOUCH_TARGET, PAGE_CHROME, PHYSICAL_BOX } from '@/constants/layout';
-import { CHROME_MAX_FONT_SCALE, TEXT_ROLES } from '@/constants/typography';
+import { inlineHeaderHeight, scaledTitleLine } from '@/components/khazain/primitives/InlineHeader';
 import { KhazainColors } from '@/constants/theme';
 import { Image } from 'expo-image';
 import React from 'react';
@@ -92,11 +92,11 @@ const TILE_TOP = -42.5;
  * `Frame 4header`: 80 / 81 / 136 / 137 / 155 in total). Add the safe-area top inset.
  */
 export const HEADER_BAND = Object.freeze({
-  /** More root 2102:2711 (80); see `headerBandHeight` for the app's own. */
+  /** Frame reference only (More root 2102:2711, 80): `headerBandHeight` derives the app's own. */
   more: 35,
-  /** Inline-header pushes: Contact, About, Dawah (81 in the file; the app's row is 44). */
+  /** Frame reference only (Contact, About, Dawah, 81): the app's row comes from `inlineHeaderHeight`. */
   inline: 36,
-  /** Library and Sections roots, 2031:4659 / 2031:5675 (136). */
+  /** Library and Sections roots, 2031:4659 / 2031:5675 (136). Frame literal: those titles are not font-scale driven here. */
   root: 91,
   /** Sub-screens with a search or tab row: lists, scholars, Archive 2558:1334 (137). */
   search: 92,
@@ -104,30 +104,27 @@ export const HEADER_BAND = Object.freeze({
   home: 110,
 });
 
+export type HeaderBandKind = keyof typeof HEADER_BAND;
+
 /**
  * The band covers the app's header, not the frame literal, where they differ:
- * - `inline`: `InlineHeader` keeps a 44pt touch row (the frame's is 36) and its
- *   title line grows with the font scale up to CHROME_MAX_FONT_SCALE, between
- *   two TITLE_INSET paddings.
- * - `search`: an `inline` header with the frame's search/tab row under it.
- * - `more`: the More title is uncapped `bodyLarge` under PAGE_CHROME.headerPaddingTop
- *   (8 + 28 = 36 at scale 1, the frame's 35 plus a point of line box).
+ * - `inline`: `inlineHeaderHeight(fontScale)` (a 44pt row, the frame's is 36,
+ *   growing with the title line up to CHROME_MAX_FONT_SCALE).
+ * - `search`: the inline header plus what sits under it down to the frame's band
+ *   end. The app's 44 row already absorbs the frame's 8pt above the search pill
+ *   (pill at 44..84 in both), so only `HEADER_BAND.search - MIN_TOUCH_TARGET` = 48
+ *   is added: 92 at scale 1, matching frame 2558:1334.
+ * - `more`: PAGE_CHROME.headerPaddingTop plus the title line. `app/_layout.tsx`
+ *   caps every Text at CHROME_MAX_FONT_SCALE and the More title does not
+ *   override it, so the line is capped (8 + 28 = 36 at scale 1; the frame says 35).
  * `root` and `home` use the frame's literal height.
  */
-export function headerBandHeight(
-  insetTop: number,
-  kind: keyof typeof HEADER_BAND,
-  fontScale = 1,
-): number {
-  const line = TEXT_ROLES.bodyLarge.lineHeight;
-  if (kind === 'inline' || kind === 'search') {
-    const pad = (MIN_TOUCH_TARGET - line) / 2;
-    const row = Math.max(MIN_TOUCH_TARGET, 2 * pad + line * Math.min(fontScale, CHROME_MAX_FONT_SCALE));
-    // `search` is the inline header plus what the frame stacks under it (92 - 36).
-    const below = kind === 'search' ? HEADER_BAND.search - HEADER_BAND.inline : 0;
-    return insetTop + row + below;
+export function headerBandHeight(insetTop: number, kind: HeaderBandKind, fontScale = 1): number {
+  if (kind === 'inline') return insetTop + inlineHeaderHeight(fontScale);
+  if (kind === 'search') {
+    return insetTop + inlineHeaderHeight(fontScale) + (HEADER_BAND.search - MIN_TOUCH_TARGET);
   }
-  if (kind === 'more') return insetTop + PAGE_CHROME.headerPaddingTop + line * fontScale;
+  if (kind === 'more') return insetTop + PAGE_CHROME.headerPaddingTop + scaledTitleLine(fontScale);
   return insetTop + HEADER_BAND[kind];
 }
 
@@ -165,19 +162,23 @@ const tabletBox = (p: Placed, right: number): ImageStyle => ({
   ...rotated(p.deg),
 });
 
-/**
- * Tile and corner placement. Phones keep the frame's left anchors, scaled to the
- * window. A tablet is wider than the frame and the tile is not seamless, so it
- * cannot stretch or repeat: it stays at its drawn size and anchors from the
- * physical right, where the page title is anchored. `inset` is the page column's
- * distance from the window's right edge; the art's own 16pt gutter is subtracted
- * so the frame's right edge lines up with the column.
- */
 /** Content (title) edge from the physical right: the column's outer edge plus the screens' gutter. */
 export function headerArtInset(readingInset: number, inset?: number): number {
   return inset ?? readingInset + RAIL_EDGE_GUTTER;
 }
 
+/**
+ * Tile and corner placement.
+ *
+ * Phones: the tile is a square of the window width and the only part that
+ * scales; the large corner is left-anchored (84 from the frame's left edge) and
+ * the small corner right-anchored (flush with the right edge), both at their
+ * drawn size. A tablet is wider than the frame and the tile is not seamless, so
+ * nothing stretches: the tile stays at its drawn 392pt and everything anchors
+ * from the physical right, where the page title is anchored. `inset` is the page
+ * column's distance from the window's right edge; the art's own 16pt gutter is
+ * subtracted so the frame's right edge lines up with the column.
+ */
 export function headerArtGeometry(
   isTablet: boolean,
   inset: number,
@@ -232,9 +233,10 @@ export function headerArtGeometry(
  * and blurry.
  *
  * The ground under it is `#F8F2ED` in every frame, so the blend has one
- * correct answer. `scripts/figma/extract-images.js` computes it once and
- * writes an opaque asset that renders identically at full opacity on that
- * ground. Nothing here guesses an opacity.
+ * correct answer. `scripts/figma/extract-images.js` computes it once. The tile
+ * is written opaque (it is the bottom layer); the corner keeps colour + alpha so
+ * its ground stays transparent over the tile, and renders identically to the
+ * blend on the page. Nothing here guesses an opacity.
  */
 export function HeaderArt({
   corners = 'pair',
@@ -245,7 +247,7 @@ export function HeaderArt({
   corners?: 'pair' | 'single' | 'none';
   /**
    * Where the page's content (its title) starts, measured from the window's
-   * physical right edge (tablets only; phones anchor left). Defaults to the
+   * physical right edge (tablets only; phones ignore it). Defaults to the
    * reading column's outer edge plus the screens' own gutter, which suits every
    * screen that pads by it; a full-width grid screen passes its own.
    */
@@ -278,7 +280,7 @@ export function HeaderArt({
       {bandHeight ? <View style={[styles.band, { height: bandHeight }]} /> : null}
       {corners === 'none' ? null : (
         <Image
-          source={require('@/assets/figma/ornament-corner-on-page.png')}
+          source={require('@/assets/figma/ornament-corner-overlay.png')}
           style={geo.cornerLarge}
           contentFit="fill"
           cachePolicy="memory-disk"
@@ -286,7 +288,7 @@ export function HeaderArt({
       )}
       {corners === 'pair' ? (
         <Image
-          source={require('@/assets/figma/ornament-corner-on-page.png')}
+          source={require('@/assets/figma/ornament-corner-overlay.png')}
           style={geo.cornerSmall}
           contentFit="fill"
           cachePolicy="memory-disk"

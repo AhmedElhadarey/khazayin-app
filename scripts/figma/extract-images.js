@@ -92,6 +92,37 @@ async function composeOverPageBg(srcPath, destPath, maxWidth) {
   console.log(`composed   ${path.relative(ROOT, destPath)}  ${w}x${h}, ${png.length} bytes`);
 }
 
+/**
+ * The corner motif's variant of the bake above: same OVERLAY blend, same ground,
+ * but kept as colour + alpha instead of flattened onto the page.
+ *
+ * The motif is drawn over the tile, rotated 115deg, and on screens with no
+ * opaque header band under it, so an opaque square of page colour (what
+ * `composeOverPageBg` writes) hides the tile around it. Per pixel the source
+ * has colour s and alpha a; over the page ground the blend gives
+ * `base + a * (overlay(base, s) - base)`, which is exactly alpha compositing of
+ * the colour t = overlay(base, s) at alpha a. So the output keeps a and replaces
+ * the colour with t (black source -> #F1E5DB, the page ground blended with ink).
+ * Over the page this reproduces the opaque asset to the rounding unit; over the
+ * tile it stays a whisper of the same tint. Pixels with alpha 0 stay transparent.
+ * Provenance: node 2102:2711 `Shape 2 copy`, image hash in WANTED above.
+ */
+async function bakeOverlayAlpha(srcPath, destPath) {
+  const img = sharp(srcPath);
+  const { width: w, height: h } = await img.metadata();
+  const { data } = await img.ensureAlpha().raw().toBuffer({ resolveWithObject: true });
+  const out = Buffer.alloc(data.length);
+  for (let i = 0; i < data.length; i += 4) {
+    for (let c = 0; c < 3; c += 1) out[i + c] = Math.round(overlay(PAGE_BG[c], data[i + c]));
+    out[i + 3] = data[i + 3];
+  }
+  const png = await sharp(out, { raw: { width: w, height: h, channels: 4 } })
+    .png({ compressionLevel: 9 })
+    .toBuffer();
+  fs.writeFileSync(destPath, png);
+  console.log(`baked      ${path.relative(ROOT, destPath)}  ${w}x${h}, ${png.length} bytes`);
+}
+
 async function main() {
   fs.mkdirSync(OUT, { recursive: true });
   const listed = execFileSync('unzip', ['-Z1', FIG], { encoding: 'utf8' }).split('\n');
@@ -109,16 +140,15 @@ async function main() {
     console.log(`wrote      ${path.relative(ROOT, dest)}  ${bytes.length} bytes`);
   }
   // The frames draw the tile at 392 x 549 points and the corner motif at
-  // 96.4 x 93.8; 1176 and 300 cover both at 3x.
+  // 96.4 x 93.8; 1176 covers the tile at 3x and the corner source is 183 square.
   await composeOverPageBg(
     path.join(OUT, 'pattern-geometric.png'),
     path.join(OUT, 'pattern-geometric-on-page.png'),
     1176,
   );
-  await composeOverPageBg(
+  await bakeOverlayAlpha(
     path.join(OUT, 'ornament-corner.png'),
-    path.join(OUT, 'ornament-corner-on-page.png'),
-    300,
+    path.join(OUT, 'ornament-corner-overlay.png'),
   );
 }
 
