@@ -5,6 +5,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SHEET_CHROME } from '@/constants/layout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { useRouter } from 'expo-router';
 import { ChoiceRow, FontSizePreview } from '@/components/khazain/settings';
 import { MIN_LINE_HEIGHT_RATIO, textStyle } from '@/constants/typography';
@@ -79,12 +80,13 @@ function LevelRow({
   fontSize: number;
   onPress: () => void;
 }) {
+  const oneLine = useLineClamp(1);
   return (
     <ChoiceRow selected={selected} onPress={onPress} accessibilityLabel={label}>
       {/* The preview size is the one deliberate exception to the role's size. */}
       <Text
         style={[styles.rowLabel, { fontSize, lineHeight: Math.ceil(fontSize * MIN_LINE_HEIGHT_RATIO) }]}
-        numberOfLines={1}
+        numberOfLines={oneLine}
       >
         {label}
       </Text>

@@ -2,6 +2,7 @@ import { PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
 import { SheetHandle } from '@/components/khazain/sheets';
 import { sheetColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { linkedNoteRow, NoteRefLink, noteRowA11y } from '@/components/khazain/notes';
@@ -90,6 +91,7 @@ function NoteRow({
   onPress: () => void;
   onOpenSource: () => void;
 }) {
+  const oneLine = useLineClamp(1);
   const row = linkedNoteRow(note);
   return (
     <Pressable
@@ -103,11 +105,11 @@ function NoteRow({
       ]}
     >
       {/* Physical left -> right: relative time, then title + source link. */}
-      <Text style={styles.rowTime} numberOfLines={1}>
+      <Text style={styles.rowTime} numberOfLines={oneLine}>
         {row.time}
       </Text>
       <View style={styles.rowColumn}>
-        <Text style={styles.rowTitle} numberOfLines={1}>
+        <Text style={styles.rowTitle} numberOfLines={oneLine}>
           {row.title}
         </Text>
         {row.label ? (

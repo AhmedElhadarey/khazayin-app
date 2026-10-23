@@ -3,6 +3,7 @@ import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { toArabicDigits } from '@/constants/progress';
 import { KhazainColors } from '@/constants/theme';
 import { BASMALA_TEXT, basmalaShown } from '@/services/mushafChrome';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import React, { useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Rect } from 'react-native-svg';
@@ -27,10 +28,11 @@ export function SurahCartouche({
   ayahCount?: number;
 }) {
   const [size, setSize] = useState<{ w: number; h: number } | null>(null);
+  const oneLine = useLineClamp(1);
   const parts = {
     order: <Side key="order" text={`ترتيبها ${toArabicDigits(surahNumber)}`} />,
     name: (
-      <Text key="name" style={styles.name} numberOfLines={1}>
+      <Text key="name" style={styles.name} numberOfLines={oneLine}>
         {`سورة ${name}`}
       </Text>
     ),

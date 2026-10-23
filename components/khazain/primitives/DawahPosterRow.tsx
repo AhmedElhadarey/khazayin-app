@@ -2,6 +2,7 @@ import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import type { DawahPoster as DawahPosterModel } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -35,6 +36,7 @@ export function DawahPosterRow({
   onShare?: () => void;
   onDownload?: () => void;
 }) {
+  const oneLine = useLineClamp(1);
   return (
     <Pressable
       onPress={onPress}
@@ -65,7 +67,7 @@ export function DawahPosterRow({
 
       {/* Centre — title */}
       <View style={styles.titleWrap}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={oneLine}>
           {title}
         </Text>
       </View>

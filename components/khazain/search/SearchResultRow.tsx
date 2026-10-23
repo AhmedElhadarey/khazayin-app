@@ -3,6 +3,7 @@ import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 
 // Shared row used by all 4 group types in the search modal.
 // RTL: icon on visual right (a flex slot in the PHYSICAL_ROW), meta chip on visual left.
@@ -25,6 +26,7 @@ export function SearchResultRow({ iconNode, title, subtitle, meta, accessory, on
   // Feedback lives on the whole card frame, so track the press here rather than
   // in the Pressable's style callback (which only reaches the inner content).
   const [pressed, setPressed] = useState(false);
+  const oneLine = useLineClamp(1);
   return (
     <View
       style={[
@@ -53,11 +55,11 @@ export function SearchResultRow({ iconNode, title, subtitle, meta, accessory, on
         ) : null}
 
         <View style={styles.body}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={styles.title} numberOfLines={oneLine}>
             {title}
           </Text>
           {subtitle ? (
-            <Text style={styles.subtitle} numberOfLines={1}>
+            <Text style={styles.subtitle} numberOfLines={oneLine}>
               {subtitle}
             </Text>
           ) : null}

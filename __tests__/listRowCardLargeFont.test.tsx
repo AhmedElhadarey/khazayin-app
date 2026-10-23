@@ -18,6 +18,14 @@ import { ListRowCard } from '@/components/khazain/primitives/ListRowCard';
 import { CARD_DENSITY } from '@/constants/layout';
 import { TEXT_ROLES } from '@/constants/typography';
 
+// The jest Dimensions mock reports fontScale 2, where useLineClamp unclamps.
+// This suite pins the default text size, whose clamps are the Figma geometry;
+// enlarged-text unclamping is covered by lineClampRows.test.tsx.
+jest.mock('@/hooks/useLineClamp', () => {
+  const actual = jest.requireActual('@/hooks/useLineClamp');
+  return { ...actual, useLineClamp: (lines: number) => actual.lineClampFor(lines, 1) };
+});
+
 type Node = {
   parent: Node | null;
   type: unknown;

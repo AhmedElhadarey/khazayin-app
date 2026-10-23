@@ -11,6 +11,13 @@ import { QuickChip } from '@/components/khazain/home/QuickChip';
 import { KhazainColors } from '@/constants/theme';
 
 jest.mock('@/components/khazain/primitives', () => ({ BookmarkButton: () => null }));
+// The jest Dimensions mock reports fontScale 2, where useLineClamp unclamps.
+// This suite pins the default text size, whose clamps are the Figma geometry;
+// enlarged-text unclamping is covered by lineClampRows.test.tsx.
+jest.mock('@/hooks/useLineClamp', () => {
+  const actual = jest.requireActual('@/hooks/useLineClamp');
+  return { ...actual, useLineClamp: (lines: number) => actual.lineClampFor(lines, 1) };
+});
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { act, create } = require('react-test-renderer') as {

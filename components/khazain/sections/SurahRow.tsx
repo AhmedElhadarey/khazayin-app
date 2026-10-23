@@ -7,6 +7,7 @@ import type { Surah } from '@/types/content';
 import { SAVED_COPY, SAVE_ACTION_NAME, announceSaveResult, toggleSaved } from '@/services/savedToggle';
 import { useSavedStore } from '@/store';
 import { playSaveHaptic } from '@/components/khazain/primitives/useSaveGesture';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -40,6 +41,7 @@ export function SurahRow({
     displayNumber: surah.displayNumber,
     meta: surah.meta,
   };
+  const oneLine = useLineClamp(1);
   const saved = useSavedStore((s) =>
     s.items.some((it) => it.type === 'surah' && it.entityId === surah.id),
   );
@@ -79,10 +81,10 @@ export function SurahRow({
 
       {/* Centre — name + meta */}
       <View style={styles.body}>
-        <Text style={styles.name} numberOfLines={1}>
+        <Text style={styles.name} numberOfLines={oneLine}>
           {surah.name}
         </Text>
-        <Text style={styles.meta} numberOfLines={1}>
+        <Text style={styles.meta} numberOfLines={oneLine}>
           {surah.meta}
         </Text>
       </View>

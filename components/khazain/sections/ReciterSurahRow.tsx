@@ -3,6 +3,7 @@ import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { toArabicDigits } from '@/constants/progress';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import type { Surah } from '@/types/content';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -30,6 +31,7 @@ export function ReciterSurahRow({
   reciterName: string;
   onPress?: () => void;
 }) {
+  const oneLine = useLineClamp(1);
   return (
     <Pressable
       onPress={onPress}
@@ -49,10 +51,10 @@ export function ReciterSurahRow({
         <FigmaIcon name="Play" size={20} color={KhazainColors.navy800} mirrored />
       </View>
       <View style={styles.body}>
-        <Text style={styles.name} numberOfLines={1}>
+        <Text style={styles.name} numberOfLines={oneLine}>
           {surah.name}
         </Text>
-        <Text style={styles.meta} numberOfLines={1}>
+        <Text style={styles.meta} numberOfLines={oneLine}>
           {surah.meta}
         </Text>
       </View>

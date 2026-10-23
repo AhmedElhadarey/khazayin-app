@@ -3,6 +3,7 @@ import { SECTION_TILE_MIN_HEIGHT } from '@/constants/responsive';
 import { listRowAccessibilityLabel } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -30,6 +31,8 @@ export function SectionTile({
   width?: number;
   onPress?: () => void;
 }) {
+  const oneLine = useLineClamp(1);
+  const twoLines = useLineClamp(2);
   return (
     <Pressable
       onPress={onPress}
@@ -42,11 +45,11 @@ export function SectionTile({
       ]}
     >
       <View style={styles.disc}>{icon}</View>
-      <Text style={styles.title} numberOfLines={1}>
+      <Text style={styles.title} numberOfLines={oneLine}>
         {title}
       </Text>
       {subtitle ? (
-        <Text style={styles.subtitle} numberOfLines={2}>
+        <Text style={styles.subtitle} numberOfLines={twoLines}>
           {subtitle}
         </Text>
       ) : null}

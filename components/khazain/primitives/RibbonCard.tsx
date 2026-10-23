@@ -1,6 +1,7 @@
 import { CARD_DENSITY, PHYSICAL_ROW, LIST_ROW_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import type { SaveTarget } from '@/services/savedToggle';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -49,6 +50,8 @@ export function RibbonCard({
   onPress?: () => void;
 }) {
   const { saved, gestureProps } = useSaveGesture(save);
+  const oneLine = useLineClamp(1);
+  const twoLines = useLineClamp(2);
   const durationNode = duration ? <Text style={styles.duration}>{duration}</Text> : null;
 
   return (
@@ -87,12 +90,12 @@ export function RibbonCard({
             badge ? styles.titleBadge : styles.titleRibbon,
             !badge && meta ? styles.titleRibbonWithMeta : null,
           ]}
-          numberOfLines={2}
+          numberOfLines={twoLines}
         >
           {title}
         </Text>
         {meta ? (
-          <Text style={[styles.meta, badge ? null : styles.metaRibbon]} numberOfLines={1}>
+          <Text style={[styles.meta, badge ? null : styles.metaRibbon]} numberOfLines={oneLine}>
             {meta}
           </Text>
         ) : null}

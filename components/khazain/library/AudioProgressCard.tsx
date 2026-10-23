@@ -1,6 +1,7 @@
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { LatticeDisc } from './LatticeDisc';
 import { LIST_CARD } from './libraryLayout';
 import React from 'react';
@@ -45,6 +46,7 @@ export function AudioProgressCard({
   variant?: AudioCardVariant;
 }) {
   const completed = variant === 'completed';
+  const oneLine = useLineClamp(1);
   const clamped = completed ? 100 : Math.max(0, Math.min(100, pct));
   const accent = completed ? KhazainColors.goldAccent : KhazainColors.navy800;
   return (
@@ -52,10 +54,10 @@ export function AudioProgressCard({
       {/* Physical left → right: text column, then the disc at the right. */}
       <View style={styles.topRow}>
         <View style={styles.textColumn}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={styles.title} numberOfLines={oneLine}>
             {title}
           </Text>
-          <Text style={styles.author} numberOfLines={1}>
+          <Text style={styles.author} numberOfLines={oneLine}>
             {author}
           </Text>
           <View style={styles.track}>

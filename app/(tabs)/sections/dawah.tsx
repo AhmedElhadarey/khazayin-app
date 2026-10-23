@@ -9,6 +9,7 @@ import React, { useEffect } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useLineClamp } from '@/hooks/useLineClamp';
 
 // JSX order is [text, badge]. Want text on left, badge on right.
 
@@ -30,6 +31,7 @@ export default function DawahScreen() {
 
   const insets = useSafeAreaInsets();
   const { fontScale } = useWindowDimensions();
+  const oneLine = useLineClamp(1);
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline', fontScale)} />
@@ -63,7 +65,7 @@ export default function DawahScreen() {
               <View style={styles.countBlock}>
                 <Text style={styles.count}>{g.count}</Text>
               </View>
-              <Text style={styles.title} numberOfLines={1}>
+              <Text style={styles.title} numberOfLines={oneLine}>
                 {g.title}
               </Text>
               <MoonMountainBadge size={CARD_DENSITY.lectureBadgeDisc} />

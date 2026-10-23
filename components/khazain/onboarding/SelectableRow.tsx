@@ -6,6 +6,7 @@ import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { SELECTABLE_ROW_ORDER, type SelectableRowSlot } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 
 type Props = {
   title: string;
@@ -54,6 +55,7 @@ export function SelectableRow({
   preview,
 }: Props): React.ReactElement {
   const [pressed, setPressed] = useState(false);
+  const oneLine = useLineClamp(1);
   const slots: Record<SelectableRowSlot, React.ReactNode> = {
     preview: preview ? (
       <View style={selected ? styles.previewSlotSelected : styles.previewSlot}>{preview}</View>
@@ -81,11 +83,11 @@ export function SelectableRow({
           </Svg>
         ) : null}
         <View style={styles.textCol}>
-          <Text style={styles.rowTitle} numberOfLines={1}>
+          <Text style={styles.rowTitle} numberOfLines={oneLine}>
             {title}
           </Text>
           {subtitle ? (
-            <Text style={styles.rowSubtitle} numberOfLines={1}>
+            <Text style={styles.rowSubtitle} numberOfLines={oneLine}>
               {subtitle}
             </Text>
           ) : null}

@@ -12,6 +12,7 @@ import { MIN_TOUCH_TARGET, PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/consta
 import { COMMUNITY_POST_ORDER, type CommunityPostSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import type { PostDisplayStatus } from '@/types/community';
 
 export type PostRowStatus = PostDisplayStatus;
@@ -68,6 +69,7 @@ export function PostRow({
   const badge =
     status === 'pending' ? COMMUNITY_COPY.pendingBadge : status === 'hidden' ? COMMUNITY_COPY.hiddenBadge : null;
   const initial = [...authorName.trim()][0] ?? '•';
+  const oneLine = useLineClamp(1);
 
   const slots: Record<CommunityPostSlot, React.ReactNode> = {
     actions: (
@@ -104,7 +106,7 @@ export function PostRow({
         accessible
         accessibilityLabel={postA11y({ name: authorName, time: timeLabel, status, body })}
       >
-        <Text style={styles.name} numberOfLines={1}>
+        <Text style={styles.name} numberOfLines={oneLine}>
           {authorName}
         </Text>
         <Text style={styles.time}>{timeLabel}</Text>

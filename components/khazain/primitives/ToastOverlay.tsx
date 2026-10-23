@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
 import { READING_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 
 /**
  * ToastOverlay — global toast surface. Mounted once in app/_layout.tsx as
@@ -24,6 +25,7 @@ export function ToastOverlay() {
   const current = useToastStore((s) => s.current);
   const dismiss = useToastStore((s) => s.dismiss);
   const playerVisible = usePlayerStore((s) => s.isVisible);
+  const twoLines = useLineClamp(2);
 
   const opacity = useRef(new Animated.Value(0)).current;
   const translateY = useRef(new Animated.Value(20)).current;
@@ -91,7 +93,7 @@ export function ToastOverlay() {
           {isAchievement ? <CheckmarkBadge /> : null}
           <Text
             style={[styles.message, isAchievement && styles.messageAchievement]}
-            numberOfLines={2}
+            numberOfLines={twoLines}
           >
             {current.message}
           </Text>

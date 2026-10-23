@@ -2,6 +2,7 @@ import { CARD_DENSITY, LIST_ROW_TEXT, PHYSICAL_ROW } from '@/constants/layout';
 import { LECTURE_CARD_ORDER, type LectureCardSlot } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { lectureSaveTarget } from '@/services/savedToggle';
 import type { Lecture } from '@/types/content';
 import React from 'react';
@@ -60,6 +61,9 @@ export function LectureCard({
   // rail lists are single-line in the file. It no longer forks the text
   // styles: both frames set the same faces and sizes.
   const heightStyle = rail ? styles.cardRail : styles.card;
+  // Figma clamps at the default text size; enlarged text wraps (useLineClamp).
+  const oneLine = useLineClamp(1);
+  const titleLines = useLineClamp(rail ? 1 : 2);
 
   const saveTarget = lectureSaveTarget({ id, title, scholar, duration, category });
   const { saved, gestureProps } = useSaveGesture(saveTarget);
@@ -89,18 +93,18 @@ export function LectureCard({
         style={[styles.textBlock, rail ? styles.textBlockRail : styles.textBlockCard]}
       >
         {pretitleSmall && !rail ? (
-          <Text style={styles.pretitle} numberOfLines={1}>
+          <Text style={styles.pretitle} numberOfLines={oneLine}>
             {pretitleSmall}
           </Text>
         ) : null}
         <Text
           style={[styles.title, rail ? null : styles.titleCard, !rail && scholar ? styles.titleCardWithScholar : null]}
-          numberOfLines={rail ? 1 : 2}
+          numberOfLines={titleLines}
         >
           {title}
         </Text>
         {scholar && !rail ? (
-          <Text style={[styles.scholar, styles.scholarCard]} numberOfLines={1}>
+          <Text style={[styles.scholar, styles.scholarCard]} numberOfLines={oneLine}>
             {scholar}
           </Text>
         ) : null}

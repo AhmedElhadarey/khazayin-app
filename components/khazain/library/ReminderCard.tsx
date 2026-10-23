@@ -1,6 +1,7 @@
 import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { LIST_CARD, REMINDER_CARD } from './libraryLayout';
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
@@ -45,12 +46,13 @@ const GRADIENT_END = { x: 0.73, y: 1.99 } as const;
  */
 export function ReminderCard({ reminder }: { reminder: ReminderSummary }) {
   const armed = reminder.armed;
+  const oneLine = useLineClamp(1);
   const body = (
     <>
       <View style={styles.header}>
         <Toggle on={armed} onChange={reminder.onToggle} label={reminder.labelAr} />
         <View style={styles.titleGroup}>
-          <Text style={styles.title} numberOfLines={1}>
+          <Text style={styles.title} numberOfLines={oneLine}>
             {reminder.labelAr}
           </Text>
           <View style={styles.disc}>

@@ -14,6 +14,7 @@ import { CARD_DENSITY, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { GROUP_ROW_ORDER, listRowAccessibilityLabel, type GroupRowSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { arabicCount } from '@/services/libraryStats';
 
 function GroupGlyph() {
@@ -36,14 +37,15 @@ export function GroupRow({
   onPress?: () => void;
 }) {
   const subtitle = arabicCount(memberCount, MEMBERS);
+  const oneLine = useLineClamp(1);
   const slots: Record<GroupRowSlot, React.ReactNode> = {
     disclosure: <FigmaIcon name="DisclosureCircle" size={24} color={KhazainColors.navy800} />,
     text: (
       <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={oneLine}>
           {name}
         </Text>
-        <Text style={styles.subtitle} numberOfLines={1}>
+        <Text style={styles.subtitle} numberOfLines={oneLine}>
           {subtitle}
         </Text>
       </View>

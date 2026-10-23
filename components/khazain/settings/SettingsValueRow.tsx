@@ -2,6 +2,7 @@ import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -24,6 +25,7 @@ type Props = {
 };
 
 export function SettingsValueRow({ title, value, icon, onPress, expanded }: Props) {
+  const oneLine = useLineClamp(1);
   return (
     <Pressable
       onPress={onPress}
@@ -34,12 +36,12 @@ export function SettingsValueRow({ title, value, icon, onPress, expanded }: Prop
     >
       <FigmaIcon name="DisclosureCircle" size={24} color={KhazainColors.navy800} />
       <View style={styles.valueWrap}>
-        <Text style={styles.value} numberOfLines={1}>
+        <Text style={styles.value} numberOfLines={oneLine}>
           {value}
         </Text>
       </View>
       <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={oneLine}>
           {title}
         </Text>
       </View>

@@ -11,6 +11,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { useRouter } from 'expo-router';
 import { PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
 import { ChoiceRow } from '@/components/khazain/settings';
@@ -131,6 +132,7 @@ function PresetRow({
   selected: boolean;
   onPress: () => void;
 }) {
+  const oneLine = useLineClamp(1);
   return (
     <ChoiceRow
       selected={selected}
@@ -138,7 +140,7 @@ function PresetRow({
       accessibilityLabel={`${label}، ${pageCountLabel(pages)}`}
     >
       <Text style={styles.rowPages}>{pageCountLabel(pages)}</Text>
-      <Text style={styles.rowLabel} numberOfLines={1}>
+      <Text style={styles.rowLabel} numberOfLines={oneLine}>
         {label}
       </Text>
     </ChoiceRow>

@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { Toggle } from '@/components/khazain/primitives';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 
 // Physical left → right: toggle, title and description, icon chip — pinned by
 // PHYSICAL_ROW so the control cannot swap sides.
@@ -25,16 +26,17 @@ export function SettingsToggleRow({
   onValueChange,
   disabled,
 }: Props) {
+  const twoLines = useLineClamp(2);
   return (
     <View style={[styles.card, disabled ? styles.disabled : null]}>
       {/* Physical left → right: toggle, text, icon chip. */}
       <Toggle on={value} onChange={onValueChange} disabled={disabled} label={title} />
       <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={2}>
+        <Text style={styles.title} numberOfLines={twoLines}>
           {title}
         </Text>
         {description ? (
-          <Text style={styles.description} numberOfLines={2}>
+          <Text style={styles.description} numberOfLines={twoLines}>
             {description}
           </Text>
         ) : null}

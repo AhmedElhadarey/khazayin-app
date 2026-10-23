@@ -4,6 +4,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SHEET_CHROME } from '@/constants/layout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { useRouter } from 'expo-router';
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
 import { ChoiceRow } from '@/components/khazain/settings';
@@ -70,14 +71,15 @@ function SelectableReciterRow({
   selected: boolean;
   onPress: () => void;
 }) {
+  const oneLine = useLineClamp(1);
   return (
     <ChoiceRow selected={selected} onPress={onPress} accessibilityLabel={subtitle ? `${title}، ${subtitle}` : title}>
       <View style={styles.textCol}>
-        <Text style={styles.rowTitle} numberOfLines={1}>
+        <Text style={styles.rowTitle} numberOfLines={oneLine}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={styles.rowSubtitle} numberOfLines={1}>
+          <Text style={styles.rowSubtitle} numberOfLines={oneLine}>
             {subtitle}
           </Text>
         ) : null}

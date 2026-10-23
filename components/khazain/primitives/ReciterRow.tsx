@@ -6,6 +6,7 @@ import {
   type ReciterRowSlot,
 } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FigmaIcon } from '../icons/FigmaIcon';
@@ -32,6 +33,7 @@ export function ReciterRow({
   onPress?: () => void;
   isDefault?: boolean;
 }) {
+  const oneLine = useLineClamp(1);
   const slots: Record<ReciterRowSlot, React.ReactNode> = {
     // `vuesax/bulk/arrow-right` at 20, mirrored — 10 instances on 2457:954 and
     // 7 on 2031:6193, every one of them carrying `transform.m00: -1`. This
@@ -42,11 +44,11 @@ export function ReciterRow({
     ),
     text: (
       <View style={styles.textCol}>
-        <Text style={[styles.title, subtitle ? styles.titleWithSubtitle : null]} numberOfLines={1}>
+        <Text style={[styles.title, subtitle ? styles.titleWithSubtitle : null]} numberOfLines={oneLine}>
           {title}
         </Text>
         {subtitle ? (
-          <Text style={styles.subtitle} numberOfLines={1}>
+          <Text style={styles.subtitle} numberOfLines={oneLine}>
             {subtitle}
           </Text>
         ) : null}

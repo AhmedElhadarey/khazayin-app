@@ -1,6 +1,7 @@
 import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle, CHROME_MAX_FONT_SCALE } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -22,6 +23,7 @@ export function QuickChip({
   children: React.ReactNode;
   onPress?: () => void;
 }) {
+  const twoLines = useLineClamp(2);
   return (
     <Pressable
       onPress={onPress}
@@ -35,7 +37,9 @@ export function QuickChip({
         // Two lines at a fixed line height: the longest label («حصريات خزائن الرحمن»)
         // does not fit one line in a ~112pt chip at the 1.2 chrome cap. The label
         // takes the chip's full width (see styles.label) rather than shrink-wrapping.
-        numberOfLines={2}
+        // Enlarged text is not clamped (useLineClamp): the chip grows instead of
+        // Android 15 dropping letters, and its siblings stretch to match.
+        numberOfLines={twoLines}
         maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
       >
         {label}

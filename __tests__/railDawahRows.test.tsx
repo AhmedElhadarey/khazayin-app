@@ -14,6 +14,13 @@ jest.mock('@react-native-async-storage/async-storage', () =>
 jest.mock('@/services/audioEngine', () => ({}));
 jest.mock('react-native-track-player', () => ({}));
 jest.mock('@sentry/react-native', () => ({}));
+// The jest Dimensions mock reports fontScale 2, where useLineClamp unclamps.
+// This suite pins the default text size, whose clamps are the Figma geometry;
+// enlarged-text unclamping is covered by lineClampRows.test.tsx.
+jest.mock('@/hooks/useLineClamp', () => {
+  const actual = jest.requireActual('@/hooks/useLineClamp');
+  return { ...actual, useLineClamp: (lines: number) => actual.lineClampFor(lines, 1) };
+});
 jest.mock('react-native-safe-area-context', () => ({
   useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
 }));

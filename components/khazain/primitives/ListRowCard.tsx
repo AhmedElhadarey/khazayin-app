@@ -2,6 +2,7 @@ import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { LIST_ROW_ORDER, type ListRowSlot, listRowAccessibilityLabel } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View, type ViewStyle } from 'react-native';
 import { FigmaIcon } from '../icons/FigmaIcon';
@@ -29,7 +30,8 @@ import { FigmaIcon } from '../icons/FigmaIcon';
  *    *square* chip with no stroke. Both its lines are body face at 14.
  *
  * At a large font scale the card grows with its text — every variant sets
- * `minHeight`, never `height` — and the title wraps to two lines.
+ * `minHeight`, never `height` — and its lines are no longer clamped
+ * (`useLineClamp`): at the default scale title and subtitle clamp to two.
  *
  * Physical order (left → right) is disclosure, text, icon badge, driven by
  * LIST_ROW_ORDER inside a PHYSICAL_ROW container so React Native cannot
@@ -55,6 +57,7 @@ export function ListRowCard({
   onPress?: () => void;
 }) {
   const isMore = variant === 'more';
+  const twoLines = useLineClamp(2);
 
   const slots: Record<ListRowSlot, React.ReactNode> = {
     // The two rows do not share a disclosure either: the section card
@@ -78,18 +81,19 @@ export function ListRowCard({
     ) : null,
     text: (
       <View style={styles.textCol}>
-        {/* Two lines, not one: at a large font scale a one-line title either
-            ellipsized or, on Android 15, silently lost its last letter
-            («الموقع الإلكترون»). At the default scale every title fits one. */}
-        <Text style={isMore ? styles.titleMore : styles.title} numberOfLines={2}>
+        {/* Two lines at the default scale, unclamped when text is enlarged: a
+            clamped title either ellipsized or, on Android 15, silently lost its
+            last letter («الموقع الإلكترون»). At the default scale every title fits one. */}
+        <Text style={isMore ? styles.titleMore : styles.title} numberOfLines={twoLines}>
           {title}
         </Text>
         {subtitle ? (
           // Two lines on every variant: the section copy is longer than a 360dp
           // column even at the default scale («تلاوات وتفسير وتدبر القرآن
           // الكريم»), and at 320dp x 1.7 the More one-liners lost words too.
-          // The card grows with it (minHeight, never height).
-          <Text style={isMore ? styles.subtitleMore : styles.subtitle} numberOfLines={2}>
+          // The card grows with it (minHeight, never height), and enlarged
+          // text is not clamped at all (useLineClamp).
+          <Text style={isMore ? styles.subtitleMore : styles.subtitle} numberOfLines={twoLines}>
             {subtitle}
           </Text>
         ) : null}

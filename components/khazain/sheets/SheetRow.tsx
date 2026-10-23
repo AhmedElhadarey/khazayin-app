@@ -3,6 +3,7 @@ import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme'
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 
 // Row used inside telegram / youtube / share sheets.
 // No Figma frame covers these sheets; the contract is theme.ts card tokens.
@@ -23,6 +24,7 @@ export function SheetRow({
   /** Present: the row is one option of a single choice and says whether it is chosen. */
   checked?: boolean;
 }) {
+  const oneLine = useLineClamp(1);
   return (
     <Pressable
       onPress={onPress}
@@ -37,11 +39,11 @@ export function SheetRow({
     >
       <View style={styles.disc}>{icon}</View>
       <View style={styles.textCol}>
-        <Text style={styles.title} numberOfLines={1}>
+        <Text style={styles.title} numberOfLines={oneLine}>
           {title}
         </Text>
         {sub ? (
-          <Text style={styles.sub} numberOfLines={1}>
+          <Text style={styles.sub} numberOfLines={oneLine}>
             {sub}
           </Text>
         ) : null}

@@ -4,6 +4,7 @@ import { Pressable, Text } from 'react-native';
 import { RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
+import { useLineClamp } from '@/hooks/useLineClamp';
 
 type Props = {
   label: string;
@@ -14,8 +15,9 @@ type Props = {
 const labelStyle = { ...RTL_TEXT, ...textStyle('caption', { color: KhazainColors.navy800 }) };
 
 export function NoteRefLink({ label, onPress }: Props) {
+  const oneLine = useLineClamp(1);
   const text = (
-    <Text style={labelStyle} numberOfLines={1}>
+    <Text style={labelStyle} numberOfLines={oneLine}>
       {label}
     </Text>
   );

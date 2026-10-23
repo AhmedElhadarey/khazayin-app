@@ -3,6 +3,7 @@ import { RECENT_NOTE_ROW } from '@/components/khazain/library/libraryLayout';
 import { SheetHandle } from '@/components/khazain/sheets';
 import { noteEditorSheetExtra, sheetColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { useLineClamp } from '@/hooks/useLineClamp';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { editorSeed, linkedNoteRow, NoteRefLink } from '@/components/khazain/notes';
@@ -71,6 +72,7 @@ export default function NoteEditor() {
   const titleRef = useRef<string>(existing?.title ?? seedTitle ?? '');
 
   const didUnmount = useRef(false);
+  const oneLine = useLineClamp(1);
   useEffect(() => () => {
     didUnmount.current = true;
   }, []);
@@ -205,11 +207,11 @@ export default function NoteEditor() {
                     return (
                       <View key={n.id} style={styles.recentRow}>
                         {/* Physical left -> right: relative time, title (+ source label). */}
-                        <Text style={styles.recentTime} numberOfLines={1}>
+                        <Text style={styles.recentTime} numberOfLines={oneLine}>
                           {row.time}
                         </Text>
                         <View style={styles.recentColumn}>
-                          <Text style={styles.recentTitle} numberOfLines={1}>
+                          <Text style={styles.recentTitle} numberOfLines={oneLine}>
                             {row.title}
                           </Text>
                           {row.label ? <NoteRefLink label={row.label} /> : null}
