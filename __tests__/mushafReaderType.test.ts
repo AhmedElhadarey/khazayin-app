@@ -8,10 +8,15 @@ import path from 'path';
  */
 const src = fs.readFileSync(path.resolve(__dirname, '../app/(tabs)/sections/mushaf.tsx'), 'utf8');
 
+// The ayah tree, and its styles, live in AyatSegments.
+const ayatSrc = fs.readFileSync(
+  path.resolve(__dirname, '../components/khazain/mushaf/AyatSegments.tsx'),
+  'utf8',
+);
 const styleBlock = (name: string): string => {
-  const start = src.indexOf(`  ${name}: {`);
+  const start = ayatSrc.indexOf(`  ${name}: {`);
   if (start < 0) return '';
-  return src.slice(start, src.indexOf('\n  },', start));
+  return ayatSrc.slice(start, ayatSrc.indexOf('\n  },', start));
 };
 
 describe('Mushaf reader Quran text face', () => {

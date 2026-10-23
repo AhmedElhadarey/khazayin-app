@@ -10,7 +10,13 @@ import {
 } from '@/components/khazain';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { inlineHeaderHeight } from '@/components/khazain/primitives/InlineHeader';
-import { MushafChrome, SurahCartouche, useReduceMotion } from '@/components/khazain/mushaf';
+import {
+  AyatSegments,
+  MushafChrome,
+  SurahCartouche,
+  useMushafChromeGate,
+  useReduceMotion,
+} from '@/components/khazain/mushaf';
 import { SurahEndSuggestions } from '@/components/khazain/recommendations';
 import { useScreenReaderOn } from '@/components/khazain/recommendations/useScreenReaderOn';
 import { RECOMMENDATIONS_ENABLED } from '@/constants/recommendations';
@@ -23,7 +29,6 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContracts';
 import {
   ayahCharOffset,
-  ayahMarker,
   ayahScrollY,
   findSurahIdForPage,
   normalizeAyahParam,
@@ -37,13 +42,10 @@ import {
 import { ReadingPlaceController, currentKeyEntry } from '@/services/mushafAnchor';
 import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
 import {
-  ChromeTapTracker,
-  HIDE_CONTROLS_LABEL,
-  SHOW_CONTROLS_LABEL,
-  chromeAfterTap,
   chromeBottomPad,
   metaGap,
   metaTopPad,
+  mushafAccessibilityActions,
 } from '@/services/mushafChrome';
 import { bookmarkTarget, readingPosition, saveMushafBookmark } from '@/services/mushafBookmark';
 import { useMushafBookmarkStore } from '@/store/mushafBookmarkStore';
@@ -59,7 +61,7 @@ import { takeAyahNoteParams } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, type AppStateStatus, type GestureResponderEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { AppState, type AccessibilityActionEvent, type AppStateStatus, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
 
@@ -262,31 +264,28 @@ function ReadingView({
   // user's font values back unchanged (mushafType / mushafSheetWidth).
   const { width, isTablet, sideInsets } = useResponsiveLayout();
   const sheetWidth = mushafSheetWidth(width);
-  const type = mushafType(width, ayatFontSize, ayatLineHeight);
+  const type = useMemo(
+    () => mushafType(width, ayatFontSize, ayatLineHeight),
+    [width, ayatFontSize, ayatLineHeight],
+  );
   const sheetColumn = isTablet ? insetColumn(width, sheetWidth, sideInsets) : undefined;
 
   // ---- Tap-to-show chrome (design 2026-10-23 D3) ---------------------------
   // Up on every visit, down only on a tap, back on the next. A screen reader
-  // pins it up; Reduce Motion removes the fade. All rules live in
-  // services/mushafChrome; this component forwards raw touches to it.
+  // pins it up; Reduce Motion removes the fade. The gate is
+  // `useMushafChromeGate`, called below once `place` exists.
   const insets = useSafeAreaInsets();
   const screenReaderOn = useScreenReaderOn();
   const reduceMotion = useReduceMotion();
-  const [chromeShown, setChromeShown] = useState(true);
-  useFocusEffect(
-    useCallback(() => {
-      setChromeShown(true);
-    }, []),
-  );
-  const [tap] = useState(() => new ChromeTapTracker());
-  const scrollingRef = useRef(false);
   const scrollYRef = useRef(0);
   // Measured heights include the safe areas; the estimate keeps the first
   // frame from jumping by the header's height.
   const [chromeTop, setChromeTop] = useState(insets.top + CHROME_TOP_ESTIMATE);
   const [chromeBottom, setChromeBottom] = useState(chromeBottomPad(insets.bottom) + CHROME_BOTTOM_ESTIMATE);
   const chromeTopRef = useRef(chromeTop);
-  chromeTopRef.current = chromeTop;
+  useEffect(() => {
+    chromeTopRef.current = chromeTop;
+  }, [chromeTop]);
   const [scrollViewH, setScrollViewH] = useState(0);
 
   // The meta line shows the surah's first page (frame 2349:982); reading is tracked per page below.
@@ -379,6 +378,14 @@ function ReadingView({
     const y = place.takeScrollRequest();
     if (y != null) scrollRef.current?.scrollTo({ y, animated: false });
   }, [place]);
+  const {
+    chromeShown,
+    setChromeShown,
+    pageTouchHandlers,
+    scrollStateHandlers,
+    consumeTouch,
+    noteLongPress,
+  } = useMushafChromeGate(screenReaderOn, { onUserScrollBegin: () => place.onUserScrollBegin() });
 
   const tryScroll = useCallback(() => {
     if (targetAyah == null) {
@@ -487,6 +494,37 @@ function ReadingView({
     [router, surahId],
   );
 
+  // Stable for the ayah tree: a chrome toggle changes none of these.
+  const a11yActions = useMemo(
+    () => mushafAccessibilityActions(chromeShown, screenReaderOn),
+    [chromeShown, screenReaderOn],
+  );
+  const onA11yAction = useCallback(
+    (e: AccessibilityActionEvent) => {
+      if (e.nativeEvent.actionName === 'showControls') setChromeShown(true);
+      if (e.nativeEvent.actionName === 'hideControls') setChromeShown(false);
+      if (e.nativeEvent.actionName === 'addSurahNote') takeAyahNote(undefined);
+    },
+    [setChromeShown, takeAyahNote],
+  );
+  const onSegmentLayout = useCallback(
+    (page: number, { y, height }: { y: number; height: number }, key: string) => {
+      tracking.setSegmentLayout(page, y, height);
+      layoutsRef.current.set(page, { key, y, height });
+      place.onSegmentLayout(page, { y, height }, Date.now());
+      flushPlace();
+      tryScroll();
+    },
+    [tracking, place, flushPlace, tryScroll],
+  );
+  const onSegmentTextLayout = useCallback(
+    (page: number, lines: TextLine[], key: string) => {
+      linesRef.current.set(page, { key, lines });
+      tryScroll();
+    },
+    [tryScroll],
+  );
+
   // Revelation type comes from the surah catalogue. The old comment here said
   // the store "is already cached from the index, so this costs nothing" — true
   // only if the reader was reached by tapping through the index. It is not:
@@ -542,30 +580,6 @@ function ReadingView({
     saveBookmark: { onPress: onSaveBookmark },
   };
 
-  const onPageTouchStart = (e: GestureResponderEvent) => {
-    const t = e.nativeEvent;
-    tap.start({
-      x: t.pageX,
-      y: t.pageY,
-      ms: Date.now(),
-      touches: t.touches?.length ?? 1,
-      scrolling: scrollingRef.current,
-    });
-  };
-  const onPageTouchMove = (e: GestureResponderEvent) => {
-    const t = e.nativeEvent;
-    tap.move({ x: t.pageX, y: t.pageY, touches: t.touches?.length ?? 1 });
-  };
-  // In-page controls (note rows, suggestion dismiss, retry) bubble their touch
-  // to the page; marking it consumed keeps it from toggling the chrome. Child
-  // touch-end handlers run before the page's, so the mark lands in time.
-  const consumeTouch = useCallback(() => tap.consumeTouch(), [tap]);
-  const onPageTouchEnd = () => {
-    if (tap.end({ ms: Date.now(), scrolling: scrollingRef.current })) {
-      setChromeShown((shown) => chromeAfterTap(shown, screenReaderOn));
-    }
-  };
-
   return (
     <View style={styles.screen}>
       {/* 2349:829 carries the tile only. The sheet is opaque, so on a phone it
@@ -573,10 +587,7 @@ function ReadingView({
       <HeaderArt corners="none" />
       <View
         style={styles.pageArea}
-        onTouchStart={onPageTouchStart}
-        onTouchMove={onPageTouchMove}
-        onTouchEnd={onPageTouchEnd}
-        onTouchCancel={() => tap.cancel()}
+        {...pageTouchHandlers}
       >
         <ScrollView
           ref={scrollRef}
@@ -584,21 +595,7 @@ function ReadingView({
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={250}
           onLayout={(e) => setScrollViewH(e.nativeEvent.layout.height)}
-          onScrollBeginDrag={() => {
-            scrollingRef.current = true;
-            place.onUserScrollBegin();
-          }}
-          onScrollEndDrag={() => {
-            // Momentum, when there is any, starts straight after and re-arms this.
-            scrollingRef.current = false;
-          }}
-          onMomentumScrollBegin={() => {
-            scrollingRef.current = true;
-            place.onUserScrollBegin();
-          }}
-          onMomentumScrollEnd={() => {
-            scrollingRef.current = false;
-          }}
+          {...scrollStateHandlers}
           onScroll={(e) => {
             scrollYRef.current = e.nativeEvent.contentOffset.y;
             tracking.onScroll(e.nativeEvent.contentOffset.y + chromeTop, Date.now());
@@ -636,54 +633,18 @@ function ReadingView({
                 skeleton={<SkeletonRowList count={5} />}
                 emptyMessage="لا توجد آيات لهذه السورة"
               >
-                {segments.map((segment) => (
-                  <Text
-                    key={segment.page}
-                    onLayout={(e) => {
-                      const { y, height } = e.nativeEvent.layout;
-                      tracking.setSegmentLayout(segment.page, y, height);
-                      layoutsRef.current.set(segment.page, { key: typeKey, y, height });
-                      place.onSegmentLayout(segment.page, { y, height }, Date.now());
-                      flushPlace();
-                      tryScroll();
-                    }}
-                    onTextLayout={(e) => {
-                      linesRef.current.set(segment.page, { key: typeKey, lines: e.nativeEvent.lines });
-                      tryScroll();
-                    }}
-                    style={[
-                      styles.ayatBody,
-                      { fontSize: type.fontSize, lineHeight: type.lineHeight },
-                    ]}
-                    accessibilityActions={[
-                      { name: 'showControls', label: SHOW_CONTROLS_LABEL },
-                      { name: 'hideControls', label: HIDE_CONTROLS_LABEL },
-                      { name: 'addSurahNote', label: 'إضافة ملاحظة على السورة' },
-                    ]}
-                    onAccessibilityAction={(e) => {
-                      if (e.nativeEvent.actionName === 'showControls') setChromeShown(true);
-                      if (e.nativeEvent.actionName === 'hideControls') setChromeShown(false);
-                      if (e.nativeEvent.actionName === 'addSurahNote') takeAyahNote(undefined);
-                    }}
-                  >
-                    {segment.ayat.map((a, i) => (
-                      <React.Fragment key={a.number}>
-                        <Text
-                          onLongPress={() => {
-                            tap.noteLongPress();
-                            takeAyahNote(a.number);
-                          }}
-                          suppressHighlighting
-                          style={a.number === targetAyah ? styles.ayahHighlight : undefined}
-                        >
-                          {a.text}
-                        </Text>
-                        <AyahNum n={a.number} />
-                        {i < segment.ayat.length - 1 ? ' ' : ''}
-                      </React.Fragment>
-                    ))}
-                  </Text>
-                ))}
+                <AyatSegments
+                  segments={segments}
+                  type={type}
+                  targetAyah={targetAyah}
+                  typeKey={typeKey}
+                  accessibilityActions={a11yActions}
+                  onSegmentLayout={onSegmentLayout}
+                  onSegmentTextLayout={onSegmentTextLayout}
+                  onA11yAction={onA11yAction}
+                  noteLongPress={noteLongPress}
+                  takeAyahNote={takeAyahNote}
+                />
               </AsyncContent>
             </View>
             {/* Outside the measured body wrapper above, so the page-segment offsets
@@ -792,18 +753,6 @@ function SurahNotesFooter({
   );
 }
 
-/**
- * The end-of-ayah medallion. The string is `ayahMarker(n)`, the same one
- * `ayahCharOffset` / `segmentCharLength` count, so deep-link precision holds.
- */
-function AyahNum({ n }: { n: number }) {
-  return (
-    <Text style={styles.ayahNum} suppressHighlighting>
-      {ayahMarker(n)}
-    </Text>
-  );
-}
-
 function MushafBtn({
   label,
   icon,
@@ -877,26 +826,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     backgroundColor: KhazainColors.mushafSheet,
   },
-  ayatBody: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    lineHeight: 48,
-    color: KhazainColors.mushafInk,
-    fontWeight: '400',
-    textAlign: 'justify',
-    writingDirection: 'rtl',
-  },
   noteHint: {
     ...textStyle('caption', { color: KhazainColors.ink400, textAlign: 'center' }),
     paddingTop: 16,
-  },
-  ayahHighlight: { backgroundColor: KhazainColors.cream200 },
-  // Inherits the body size: Amiri draws the medallion round the digits at the
-  // size of the text beside it.
-  ayahNum: {
-    color: KhazainColors.gold600,
-    fontFamily: 'Amiri-Bold',
-    fontWeight: '400',
   },
   // `btn` — three radius-8 buttons on the page ground, no rule above them.
   footer: {

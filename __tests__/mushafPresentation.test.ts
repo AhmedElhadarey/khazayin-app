@@ -120,9 +120,9 @@ describe('ayah marker', () => {
     expect(/[0-9]/.test(ayahMarker(12))).toBe(false);
   });
 
-  it('is the string the reader renders (AyahNum has no markup of its own)', () => {
+  it('is the string the reader renders (AyahNum has no markup of its own, in AyatSegments)', () => {
     const src = require('fs').readFileSync(
-      require('path').join(__dirname, '../app/(tabs)/sections/mushaf.tsx'),
+      require('path').join(__dirname, '../components/khazain/mushaf/AyatSegments.tsx'),
       'utf8',
     );
     expect(src).toMatch(/\{ayahMarker\(n\)\}/);

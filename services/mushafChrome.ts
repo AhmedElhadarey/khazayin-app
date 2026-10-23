@@ -12,8 +12,6 @@
 export const CHROME_TAP_MAX_MS = 300;
 /** ...and only when the finger moved less than this many points. */
 export const CHROME_TAP_MAX_MOVE_PT = 10;
-/** The long-press that takes a note; it wins over a tap and never toggles. */
-export const AYAH_LONG_PRESS_MS = 500;
 /** The frame's dissolve is 0.3s OUT_CUBIC. */
 export const CHROME_FADE_MS = 300;
 /** Full-screen scrim behind the chrome, above the page. */
@@ -21,6 +19,26 @@ export const CHROME_SCRIM = 'rgba(0,0,0,0.24)';
 
 export const SHOW_CONTROLS_LABEL = 'إظهار عناصر التحكم';
 export const HIDE_CONTROLS_LABEL = 'إخفاء عناصر التحكم';
+
+export type MushafA11yAction = {
+  name: 'showControls' | 'hideControls' | 'addSurahNote';
+  label: string;
+};
+
+/**
+ * Custom actions on the page text. `showControls` is always there; `hideControls`
+ * only while it could do something: not under a screen reader (the chrome is
+ * pinned up) and not once the chrome is already down.
+ */
+export function mushafAccessibilityActions(
+  shown: boolean,
+  screenReaderOn: boolean,
+): MushafA11yAction[] {
+  const actions: MushafA11yAction[] = [{ name: 'showControls', label: SHOW_CONTROLS_LABEL }];
+  if (shown && !screenReaderOn) actions.push({ name: 'hideControls', label: HIDE_CONTROLS_LABEL });
+  actions.push({ name: 'addSurahNote', label: 'إضافة ملاحظة على السورة' });
+  return actions;
+}
 
 export type TapSample = {
   pressMs: number;

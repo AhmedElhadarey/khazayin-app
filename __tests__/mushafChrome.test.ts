@@ -1,8 +1,10 @@
 import {
-  AYAH_LONG_PRESS_MS,
+  mushafAccessibilityActions,
   CHROME_FADE_MS,
   CHROME_SCRIM,
   ChromeTapTracker,
+  HIDE_CONTROLS_LABEL,
+  SHOW_CONTROLS_LABEL,
   basmalaShown,
   chromeAfterTap,
   chromeFadeMs,
@@ -39,9 +41,6 @@ describe('isChromeTap decision table', () => {
   it('a long-press never toggles, whatever the timing', () => {
     expect(isChromeTap({ ...tap, longPressFired: true })).toBe(false);
     expect(isChromeTap({ ...tap, longPressFired: true, pressMs: 50 })).toBe(false);
-  });
-  it('the long-press window is longer than the tap window, so they never overlap', () => {
-    expect(AYAH_LONG_PRESS_MS).toBeGreaterThan(299);
   });
   it('a second finger cancels the tap', () => {
     expect(isChromeTap({ ...tap, multiTouch: true })).toBe(false);
@@ -175,5 +174,23 @@ describe('one gate for showing and hiding', () => {
     expect(t.end({ ms: 50, scrolling: false })).toBe(false);
     t.start({ x: 0, y: 0, ms: 100, touches: 1, scrolling: false });
     expect(t.end({ ms: 150, scrolling: false })).toBe(true);
+  });
+});
+
+describe('mushafAccessibilityActions', () => {
+  const names = (shown: boolean, sr: boolean) => mushafAccessibilityActions(shown, sr).map((a) => a.name);
+  it('offers both controls actions while the chrome is up and can be hidden', () => {
+    expect(names(true, false)).toEqual(['showControls', 'hideControls', 'addSurahNote']);
+  });
+  it('leaves out hideControls once the chrome is down', () => {
+    expect(names(false, false)).toEqual(['showControls', 'addSurahNote']);
+  });
+  it('leaves out hideControls while a screen reader pins the chrome up, and keeps showControls', () => {
+    expect(names(true, true)).toEqual(['showControls', 'addSurahNote']);
+    expect(names(false, true)).toEqual(['showControls', 'addSurahNote']);
+  });
+  it('labels them in Arabic', () => {
+    const labels = mushafAccessibilityActions(true, false).map((a) => a.label);
+    expect(labels).toEqual([SHOW_CONTROLS_LABEL, HIDE_CONTROLS_LABEL, 'إضافة ملاحظة على السورة']);
   });
 });

@@ -64,8 +64,9 @@ describe('mushaf reader', () => {
   });
   it('a tap toggles the chrome, a long-press on an ayah only ever takes a note', () => {
     // The long-press marks the touch so its release cannot toggle the chrome.
-    expect(src).toMatch(/onLongPress=\{\(\) => \{\s*tap\.noteLongPress\(\);\s*takeAyahNote\(a\.number\);\s*\}\}/);
-    expect(src).toMatch(/chromeAfterTap\(/);
+    const ayat = read('components/khazain/mushaf/AyatSegments.tsx');
+    expect(ayat).toMatch(/onLongPress=\{\(\) => \{\s*noteLongPress\(\);\s*takeAyahNote\(a\.number\);\s*\}\}/);
+    expect(read('components/khazain/mushaf/useMushafChromeGate.ts')).toMatch(/chromeAfterTap\(/);
     expect(src).not.toMatch(/onPress=\{[^}]*setChromeShown/);
   });
 });
