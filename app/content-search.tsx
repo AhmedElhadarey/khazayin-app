@@ -247,7 +247,12 @@ function EmptyState({
             <>
               {/* Physical left -> right: the clear action, then the heading. */}
               <View style={styles.recentsHeaderRow}>
-                <Pressable onPress={onClearAllRecents} hitSlop={8}>
+                <Pressable
+                  onPress={onClearAllRecents}
+                  hitSlop={8}
+                  accessibilityRole="button"
+                  accessibilityLabel="مسح البحث الأخير"
+                >
                   <Text style={styles.clearAllText}>مسح</Text>
                 </Pressable>
                 <Text style={styles.recentsTitle}>البحث الأخير</Text>

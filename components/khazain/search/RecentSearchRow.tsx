@@ -27,14 +27,15 @@ export function RecentSearchRow({ query, onPress, onRemove }: Props) {
         hitSlop={10}
         style={styles.removeBtn}
         accessibilityRole="button"
-        accessibilityLabel="إزالة"
+        // Named by its query: a list of bare «إزالة» cannot be told apart.
+        accessibilityLabel={`إزالة: ${query}`}
       >
         <View style={styles.xGlyph}>
           <View style={[styles.xLine, { transform: [{ rotate: '45deg' }] }]} />
           <View style={[styles.xLine, { transform: [{ rotate: '-45deg' }] }]} />
         </View>
       </Pressable>
-      <Pressable onPress={onPress} style={styles.tap}>
+      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={query} style={styles.tap}>
         <Text style={styles.text} numberOfLines={oneLine}>
           {query}
         </Text>
