@@ -22,7 +22,7 @@ The audit raised **199 findings** (54 high, 90 medium, 55 low), all listed in `2
 
 ## 2. What was fixed
 
-Every ticket ran this loop: an implementer with a failing test first, a spec review, then a quality review, repeated until both passed. All 30 tickets are closed on the board. T01 to T26 came from the audit, T27 is this record and the defects found in device QA, and T28 to T30 came from the post-pass device review (§4).
+Every ticket ran this loop: an implementer with a failing test first, a spec review, then a quality review, repeated until both passed. All 31 tickets are closed on the board. T01 to T26 came from the audit, T27 is this record and the defects found in device QA, and T28 to T31 came from the post-pass device review and its code review (§4).
 
 | Ticket | Findings | Commits |
 |---|---|---|
@@ -56,6 +56,7 @@ Every ticket ran this loop: an implementer with a failing test first, a spec rev
 | T28 Large text: rows wrap instead of clamping | — | 265061e, bf0f5d7, 68bcda8, b1cae16, 7b29476, f87eeef, e3c86ce (Mushaf footer), 212dbca (settings value rows), 55de5c8 (single-line inputs) |
 | T29 Home scholar and book cards | — | b62b865, fe38734, 82748e8 (ribbon rows, same defect) |
 | T30 Alerts in Arabic | — | c25d849 |
+| T31 Screen-reader roles and the review of T28–T30 | — | 2f0f564 (inputs keep their line height at the default size), 23440da, b3679b2, 028853f, d208a10 |
 | Library «تذكيراتي» chip (D7, half) | — | d8ca4c3, 5f11be0, c51cb9b (content cache version, so installs see the new chip set at once) |
 | Recent searches (VoiceOver) | — | 51397c0 |
 
@@ -71,16 +72,22 @@ Every ticket ran this loop: an implementer with a failing test first, a spec rev
 - **Clamped text at large font scales (T28).** On Android 15 a clamped line that overflows loses letters with no ellipsis («…في السنة النب», «الشيخ صالح الف» on Books at 320dp × 1.7). `useLineClamp(n)` keeps the frame's clamp at font scale ≤ 1 and drops it above, so the row grows from its `minHeight`. It covers 49 sites. The 13 fixed-size chrome sites that keep a literal clamp are each listed in `lineClampGuard` with a reason.
 - **Mushaf footer at large font scales.** The three buttons ran off the screen. Two-word labels now wrap, and one-word buttons keep their width (e3c86ce).
 - **Settings value row at 320dp × 1.7.** The value column did not shrink, so «هدف الورد اليومي» was drawn one letter per line. When text is enlarged, the value now stacks under the title, as the `more` rows beside it do (212dbca).
-- **Single-line inputs at large font scales.** The search field cut off the top of its placeholder. A fixed `lineHeight` on an EditText scales less than its font, so the line box ends up shorter than the glyphs. `inputTextStyle()` drops it for single-line inputs, and a guard covers every `TextInput` (55de5c8).
+- **Single-line inputs at large font scales.** The search field cut off the top of its placeholder. A fixed `lineHeight` on an EditText scales less than its font, so the line box ends up shorter than the glyphs.
+  - The first fix, 55de5c8, dropped the line height at every size. The code review caught that this grew the 46pt contact and community fields by 8–10pt at the default size.
+  - `useInputLineHeight()` now keeps the role's line height at font scale ≤ 1 and releases it only when text is enlarged (2f0f564). Contact fields measure 46pt on the iPhone and 46dp on Android at 1.0.
+  - A guard covers every single-line `TextInput`.
 - **Home scholar and book cards (T29).** Scholar cards were announced as buttons but did nothing; book cards had no action at all. Both nested their bookmark inside the card, where VoiceOver could not reach it. A scholar card now opens the scholar's page and a book card plays it, as the Sections lists do. The bookmark is a sibling of the card, and on Android it is elevated so it still draws on top (b62b865, fe38734).
 - **Ribbon rows (VoiceOver).** Scholar list, «كل الشرح» and recommendation rows were read as a plain group starting with the duration. Each is now one button in reading order (82748e8).
 - **English «OK» in alerts (T30).** 28 alerts passed no buttons, so each showed the platform's English «OK». `showNotice()` gives them «حسناً», and a guard fails on any `Alert.alert` call without named buttons (c25d849).
 - **Bookmarks (VoiceOver, TalkBack).** A standalone bookmark said only «حفظ في المكتبة» or «إزالة من المحفوظات», so a list of them could not be told apart. It now names its item. On a saved lecture or ribbon row, the nested bookmark is hidden from screen readers, as SurahRow's already was. The row carries «محفوظة» and the unsave action, so TalkBack no longer focuses the bookmark first (5a03ec9).
+- **Note editor and notes viewer (VoiceOver).** Each sheet was wrapped in its «إغلاق» backdrop `Pressable`, which iOS treats as one element. VoiceOver found only «إغلاق»: the title, the text field, «حفظ الملاحظة» and the format buttons did not exist for it. The backdrop is now an empty sibling behind the sheet, as in `SheetShell`. A tap inside the sheet still keeps it open, and a backdrop tap closes it, on both platforms (23440da).
+- **Controls with no role.** 15 pressables were announced as plain groups, among them «إرسال الرسالة», «حفظ الهدف», the dawah months and the about link. The dawah poster rows' share and download buttons sat inside the opener and could not be reached. Every one now has a role; the poster actions are siblings named per poster. `pressableRoleGuard` fails on any `onPress` pressable without a role, on a backdrop that wraps content, and on an empty `onPress` (23440da, 028853f).
+- **Saved and search result rows (TalkBack).** These rows read the duration first. They are now named title، subtitle، meta (d208a10).
 - **Recent searches (VoiceOver).** The query and «مسح» were plain groups, and every remove button said only «إزالة». Each is now a named button, and remove names its query (51397c0).
 
 ## 3. Evidence
 
-**Gates.** Unit suite: 256 suites and 3,449 tests pass. `tsc --noEmit` is clean, and eslint is clean on every touched file. These guard tests are new or extended:
+**Gates.** Unit suite: 258 suites and 3,468 tests pass. `tsc --noEmit` is clean, and eslint is clean on every touched file. These guard tests are new or extended:
 - `fontRegistry`, plus the weight guard (no bold `fontWeight` on a registered family)
 - `listRowCardLargeFont` and `wirdStartRow`
 - `figmaAssetLicensing` (no `.fig` source image under `assets/`)
@@ -89,7 +96,8 @@ Every ticket ran this loop: an implementer with a failing test first, a spec rev
 - `welcomeStepBullets` and `contextualNotesInvariants` (tap case)
 - `lineClampGuard`, `lineClampRows`, `settingsValueRowLargeFont` and `inputLineHeightGuard` (large text)
 - `homeCardsA11y`, `ribbonCardA11y`, `recentSearchA11y`, `bookmarkLabel` and `savedRowBookmarkA11y`
-- `alertButtonsGuard` and `cacheVersionGuard`
+- `alertButtonsGuard` (with fixtures for aliased, element-access, destructured and empty-button forms) and `cacheVersionGuard`
+- `pressableRoleGuard` and `searchResultRowA11y`
 
 **Devices, checked by hand through argent on each ticket's screens.**
 
@@ -183,6 +191,8 @@ The first matrix (`docs/audit/screen-matrix/2026-10-23T15-15-54/`) found three d
 
 The iPhone 16 at the default scale was checked after each fix and did not move.
 
+**Code review of the post-pass commits.** An independent reviewer read the eight commits from 82748e8 to 5a03ec9. It found one blocker, the input heights at the default size, and gaps in the alert guard. Both are fixed in T31. The re-review passed all three fix commits. It also confirmed by reasoning through the responder system that the reworked sheets route touches as before.
+
 One tooling note: on this letterboxed tablet, argent's normalised taps land in the wrong place, so these checks used `adb shell input tap` in display pixels.
 
 ## 5. Open items
@@ -216,6 +226,8 @@ One tooling note: on this letterboxed tablet, argent's normalised taps land in t
 | Notes and playback | Notes filtering, and re-render cost during playback, are worth a profiler pass. |
 | Descenders at large font scales | Android 14+ grows `lineHeight` less than `fontSize`. At 1.7 a 14pt role's line box is about 1.26× the size instead of 1.5×, so a TextView clips the descenders of its last line. Covered so far: ListRowCard (`descenderRoom`, 635dfd6) and single-line inputs (`inputTextStyle`, 55de5c8). Unclamped multi-line text looked fine in the 320dp × 1.7 sweep, but no other role is guarded yet. |
 | Android alert layout | `showNotice` labels the button «حسناً», but the native AlertDialog lays out by the system locale. On an English-language phone the title sits on the left. Fixing it means an in-app modal instead of `Alert`. |
+| Dawah month counts | The file writes «٥ تخطيط» … «٩ تخطيط»; standard agreement for ٣–١٠ is the plural. The app keeps the file's copy. A question for the client. |
+| Modal sheets and the screen behind | With a sheet open, VoiceOver can still reach the screen underneath while the keyboard is up. This is the same for every transparent-modal route. |
 | Contact numbers at 320dp × 1.7 | The WhatsApp number wraps a single digit onto a second line. It is readable, but a bidi-isolated, non-breaking number would read better. |
 | Letter rail | Since 0dd7e38 the rail announces and emits ي (alef maqsura is the last letter, per MEDIA-18). Recorded under T11. |
 
