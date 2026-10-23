@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KhazainColors } from '@/constants/theme';
 import { toArabicDigits as toAr } from '@/constants/progress';
 import type { HistoryCell, WeekdayCompletion, WirdCellState } from '@/services/wirdHistory';
+import { fontFace, textStyle } from '@/constants/typography';
 
 /**
  * Wird completion-history view (US5). Presentational only — the screen owns the
@@ -240,11 +241,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 8,
     marginTop: 4,
-    fontFamily: 'TheSansArabic', // bold-ok: sectionLabel is a heading/label the file shows bold
-    fontSize: 14,
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('cardTitle', { color: KhazainColors.ink900 }),
   },
   card: {
     marginHorizontal: 14,
@@ -263,7 +260,7 @@ const styles = StyleSheet.create({
   },
   weekdayPct: {
     width: 44,
-    fontFamily: 'TheSansArabic', // bold-ok: weekdayPct is a heading/label the file shows bold
+    fontFamily: 'TheMixArab', // chart data, Regular
     fontSize: 12,
     color: KhazainColors.navy800,
     textAlign: 'left',
@@ -330,8 +327,8 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(141,107,52,0.05)',
   },
   cellCheck: {
-    // Bold face (not fontWeight): a registered family is one static face.
-    fontFamily: 'TheSansArabic', // bold-ok: the check glyph was bold
+    // No fontFamily: U+2713 is not in Noto Sans Arabic, so the glyph falls back to the system face, where weight applies.
+    fontWeight: '700', // fontweight-ok: check glyph in the system fallback face, not a registered family
     fontSize: 13,
     color: KhazainColors.cream50,
    writingDirection: 'rtl',},
@@ -365,8 +362,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   legendCheck: {
-    // Bold face (not fontWeight): a registered family is one static face.
-    fontFamily: 'TheSansArabic', // bold-ok: the check glyph was bold
+    // No fontFamily: U+2713 is not in Noto Sans Arabic, so the glyph falls back to the system face, where weight applies.
+    fontWeight: '700', // fontweight-ok: check glyph in the system fallback face, not a registered family
     fontSize: 9,
     color: KhazainColors.cream50,
    writingDirection: 'rtl',},
@@ -385,7 +382,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cream100,
   },
   showMoreLabel: {
-    fontFamily: 'TheSansArabic', // bold-ok: showMoreLabel is a heading/label the file shows bold
+    ...fontFace(700),
     fontSize: 13,
     color: KhazainColors.navy800,
     writingDirection: 'rtl',

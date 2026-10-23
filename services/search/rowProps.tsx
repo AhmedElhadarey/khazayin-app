@@ -18,6 +18,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import type { SearchResultGroup } from './searchAll';
 import { searchTargetFor, type SearchTarget } from './searchTarget';
+import { fontFace, textStyle } from '@/constants/typography';
 
 // ---------------------------------------------------------------------------
 // Inline badges shared between search + library
@@ -50,17 +51,14 @@ const badgeStyles = StyleSheet.create({
     borderWidth: 1, borderColor: KhazainColors.gold200,
     alignItems: 'center', justifyContent: 'center',
   },
-  surahBadgeText: {
-    fontFamily: 'TheSansArabic', fontSize: 14, // bold-ok: surahBadgeText is a heading/label the file shows bold
-    color: KhazainColors.gold200,
-  },
+  surahBadgeText: textStyle('cardTitle', { color: KhazainColors.gold200 }),
   scholarBadge: {
     width: 40, height: 40, borderRadius: 20,
     backgroundColor: KhazainColors.gold200,
     alignItems: 'center', justifyContent: 'center',
   },
   scholarBadgeText: {
-    fontFamily: 'TheSansArabic', fontSize: 18, // bold-ok: scholarBadgeText is a heading/label the file shows bold
+    ...fontFace(700), fontSize: 18,
     color: KhazainColors.cream50,
   },
 });

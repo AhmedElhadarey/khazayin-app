@@ -2,6 +2,7 @@ import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { fontFace, textStyle } from '@/constants/typography';
 
 // Shared row used by all 4 group types in the search modal.
 // RTL: icon on visual right (absolute positioned), meta chip on visual left.
@@ -77,7 +78,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   title: {
-    fontFamily: 'TheSansArabic', // bold-ok: title is a heading/label the file shows bold
+    ...fontFace(700),
     fontSize: 15,
     color: KhazainColors.ink900,
     textAlign: 'right',
@@ -98,11 +99,5 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cream100,
     marginLeft: 8,
   },
-  metaText: {
-    fontFamily: 'TheSansArabic', // bold-ok: metaText is a heading/label the file shows bold
-    fontSize: 12,
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  metaText: textStyle('label', { color: KhazainColors.ink900 }),
 });

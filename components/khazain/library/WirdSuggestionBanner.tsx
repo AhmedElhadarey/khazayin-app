@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { KhazainColors } from '@/constants/theme';
 import { toArabicDigits as toAr } from '@/constants/progress';
+import { textStyle } from '@/constants/typography';
 
 /**
  * Non-blocking gold-bordered banner that surfaces when the adaptive wird
@@ -54,14 +55,7 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.gold500,
     gap: 10,
   },
-  message: {
-    fontFamily: 'TheSansArabic', // bold-ok: message is a heading/label the file shows bold
-    fontSize: 13,
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-    lineHeight: 22,
-  },
+  message: textStyle('bodyCompact', { color: KhazainColors.navy800 }),
   actions: {
     flexDirection: 'row',
     gap: 8,
@@ -73,22 +67,12 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     backgroundColor: KhazainColors.cream100,
   },
-  dismissLabel: {
-    color: KhazainColors.ink700,
-    fontFamily: 'TheSansArabic', // bold-ok: dismissLabel is a heading/label the file shows bold
-    fontSize: 12,
-    writingDirection: 'rtl',
-  },
+  dismissLabel: textStyle('label', { color: KhazainColors.ink700 }),
   acceptBtn: {
     paddingVertical: 7,
     paddingHorizontal: 16,
     borderRadius: 10,
     backgroundColor: KhazainColors.navy800,
   },
-  acceptLabel: {
-    color: '#fff',
-    fontFamily: 'TheSansArabic', // bold-ok: acceptLabel is a heading/label the file shows bold
-    fontSize: 12,
-    writingDirection: 'rtl',
-  },
+  acceptLabel: textStyle('label', { color: '#fff' }),
 });

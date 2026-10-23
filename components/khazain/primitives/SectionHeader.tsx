@@ -3,6 +3,7 @@ import { KhazainColors } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { ChevronIcon } from '../icons';
+import { textStyle } from '@/constants/typography';
 
 type Props = {
   title: string;
@@ -65,13 +66,7 @@ const styles = StyleSheet.create({
     borderRadius: 2,
     backgroundColor: KhazainColors.goldBar,
   },
-  title: {
-    fontFamily: 'TheSansArabic', // bold-ok: title is a heading/label the file shows bold
-    fontSize: 16,
-    color: KhazainColors.navy900,
-    lineHeight: 21,
-    writingDirection: 'rtl',
-  },
+  title: textStyle('sectionTitle', { color: KhazainColors.navy900 }),
   link: {
     ...PHYSICAL_ROW,
     alignItems: 'center',

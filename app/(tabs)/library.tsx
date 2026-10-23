@@ -32,7 +32,7 @@ import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificat
 import { usePlayerStore } from '@/store/playerStore';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { KhazainColors } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
+import { fontFace, textStyle } from '@/constants/typography';
 import {
   FILTER_CHIP,
   LIBRARY_CARD_RADIUS,
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   dbErrorBtnLabel: {
     color: '#fff',
     fontSize: 13,
-    fontFamily: 'TheSansArabic', // bold-ok: dbErrorBtnLabel is a heading/label the file shows bold
+    ...fontFace(700),
     writingDirection: 'rtl',
     textAlign: 'center',
   },

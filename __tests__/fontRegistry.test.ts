@@ -91,7 +91,8 @@ describe('font registry', () => {
   it('finds the app actually using the registered families', () => {
     // Guards against the scan silently matching nothing and passing vacuously.
     const used = usedFontFamilies();
-    expect(used).toContain('TheSansArabic');
+    // TheSansArabic is reached through type roles / fontFace(), not a literal.
+    expect(used).toContain('TheMixArab');
     expect(used).toContain('Amiri-Bold');
   });
 

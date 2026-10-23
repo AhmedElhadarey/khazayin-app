@@ -1,6 +1,7 @@
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text } from 'react-native';
+import { fontFace } from '@/constants/typography';
 
 // Horizontal row of curated suggestion topic chips. RTL-inverted so
 // first chip lands on the visual right.
@@ -67,7 +68,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipText: {
-    fontFamily: 'TheSansArabic', // bold-ok: chipText is a heading/label the file shows bold
+    ...fontFace(700),
     fontSize: 13,
     color: KhazainColors.ink900,
   },

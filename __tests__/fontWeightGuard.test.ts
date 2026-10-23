@@ -35,6 +35,12 @@ const isLegacy = (rel: string) =>
  * fontWeight. A parent that sets a bold weight on a registered family poisons
  * every nested child on Android, so a parent Text must never set one.
  *
+ * KNOWN LIMITS (not caught here): a weight inherited across files (a parent
+ * `<Text>` in one file wrapping a child in another), a style object built from
+ * spread/computed keys, a weight passed through a prop to a component that
+ * applies it, and the file-level family gate below (a file naming no registered
+ * family is not scanned at all).
+ *
  * `ALLOWLIST` below holds only the Mushaf screen (ticket T20). The test fails if a new offender appears
  * or an allowlisted file's count grows; it also fails when a count shrinks, so
  * the entry is lowered as sites are migrated.
@@ -50,7 +56,16 @@ const FAMILY_RE = new RegExp(
 // fontWeight set (object key or JSX prop) to a heavy value anywhere on the line,
 // so ternaries like `fontWeight: on ? '600' : '400'` are caught.
 const WEIGHT_RE = /fontWeight\s*[:=]\s*\{?(.*)$/;
-const HEAVY_RE = /\bbold\b|(?<![\d.])[5-9]00\b/;
+// Numeric 500-900 or any named weight above normal.
+const HEAVY_RE = /\b(?:bold|bolder|semibold|medium|heavy|black)\b|(?<![\d.])[5-9]00\b/i;
+/** Reviewed escape hatch; a reason is mandatory: `// fontweight-ok: <why>`. */
+const WEIGHT_OK_RE = /fontweight-ok:\s*\S/;
+
+/** The value token of a `fontWeight` assignment: up to the first `,` or `}`. */
+function weightValue(rest: string): string {
+  const cut = rest.search(/[,}]/);
+  return (cut === -1 ? rest : rest.slice(0, cut)).trim();
+}
 
 function walk(dir: string, out: string[] = []): string[] {
   for (const name of readdirSync(path.join(REPO_ROOT, dir))) {
@@ -62,14 +77,22 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-function heavyWeightLines(source: string): number {
+/**
+ * `strict` (app/ and components/khazain) additionally flags a `fontWeight`
+ * whose value cannot be read statically: on the next line, or a bare identifier.
+ */
+function heavyWeightLines(source: string, strict = false): number {
   return source.split('\n').filter((line) => {
     const t = line.trim();
     if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return false;
-    // Explicit, reviewed escape hatch for text that is NOT in a registered family.
-    if (line.includes('fontweight-ok')) return false;
+    if (WEIGHT_OK_RE.test(line)) return false;
     const m = WEIGHT_RE.exec(line);
-    return !!m && HEAVY_RE.test(m[1]);
+    if (!m) return false;
+    const value = weightValue(m[1]);
+    // Ternaries are checked whole (up to the line's end) so both arms count.
+    if (HEAVY_RE.test(m[1].includes('?') ? m[1] : value)) return true;
+    if (!strict) return false;
+    return value === '' || !/['"\d]/.test(value);
   }).length;
 }
 
@@ -79,7 +102,7 @@ function offenders(): Record<string, number> {
     if (isLegacy(rel) || rel.includes('__tests__')) continue;
     const source = readFileSync(path.join(REPO_ROOT, rel), 'utf8');
     if (!FAMILY_RE.test(source)) continue;
-    const n = heavyWeightLines(source);
+    const n = heavyWeightLines(source, rel.startsWith('app/') || rel.startsWith('components/khazain/'));
     if (n > 0) found[rel] = n;
   }
   return found;
@@ -89,7 +112,9 @@ function offenders(): Record<string, number> {
  * `TheSansArabic` is the BOLD file, so a hand-assembled `fontFamily:
  * 'TheSansArabic'` is always bold. Prose, data and meta text must use a role
  * (`textStyle`) or `fontFace(400)`. A site that is intentionally bold and has
- * no matching role carries `// bold-ok: <reason>` on the same line.
+ * no matching role carries `// bold-ok: <reason>` on the same line. The reason
+ * must be true: for a screen with no Figma frame say so ("no frame; contract:
+ * label role"), never claim the file shows it.
  */
 const BOLD_FAMILY_RE = /fontFamily\s*[:=]\s*\{?\s*['"]TheSansArabic['"]/;
 const BOLD_FAMILY_EXEMPT = new Set(['constants/typography.ts', 'constants/fonts.ts']);
@@ -131,6 +156,21 @@ describe('no bold fontWeight on a registered custom family', () => {
     expect(heavyWeightLines("fontWeight: on ? '600' : '400',")).toBe(1);
     expect(heavyWeightLines('fontWeight="bold"')).toBe(1);
     expect(heavyWeightLines("fontWeight: '500',")).toBe(1);
+    for (const w of ['semibold', 'medium', 'heavy', 'black', 'bold']) {
+      expect(heavyWeightLines(`fontWeight: '${w}',`)).toBe(1);
+    }
+    // Only the fontWeight value counts, not a neighbouring property.
+    expect(heavyWeightLines("fontWeight: '400', marginTop: 500,")).toBe(0);
+    expect(heavyWeightLines("fontWeight: '400', zIndex: 600 }")).toBe(0);
+    // A reason is mandatory on the escape hatch.
+    expect(heavyWeightLines("fontWeight: '700', // fontweight-ok: system face")).toBe(0);
+    expect(heavyWeightLines("fontWeight: '700', // fontweight-ok")).toBe(1);
+    // Unreadable values are flagged in strict mode only.
+    expect(heavyWeightLines('fontWeight:', true)).toBe(1);
+    expect(heavyWeightLines('fontWeight: weight,', true)).toBe(1);
+    expect(heavyWeightLines('fontWeight: weight,', false)).toBe(0);
+    expect(heavyWeightLines("fontWeight: on ? '400' : '400',", true)).toBe(0);
+    expect(heavyWeightLines("fontWeight: '400',", true)).toBe(0);
     expect(heavyWeightLines("fontWeight: 'bold',")).toBe(1);
     expect(heavyWeightLines("fontWeight: '400',")).toBe(0);
     expect(heavyWeightLines("// fontWeight: '700'")).toBe(0);

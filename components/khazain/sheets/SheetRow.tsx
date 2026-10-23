@@ -2,6 +2,7 @@ import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { fontFace } from '@/constants/typography';
 
 // Row used inside telegram / youtube / share sheets.
 // Per Figma each row is its own cream rounded card, with a navy circular disc
@@ -93,7 +94,7 @@ const styles = StyleSheet.create({
     paddingRight: 56, // disc width 32 + right inset 12 + gap 12
   },
   title: {
-    fontFamily: 'TheSansArabic', // bold-ok: title is a heading/label the file shows bold
+    ...fontFace(700),
     fontSize: 15,
     color: KhazainColors.ink900,
     writingDirection: 'rtl',

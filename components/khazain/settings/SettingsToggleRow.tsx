@@ -3,6 +3,7 @@ import { PHYSICAL_ROW } from '@/constants/layout';
 import { StyleSheet, Text, View } from 'react-native';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { Toggle } from '@/components/khazain/primitives';
+import { textStyle } from '@/constants/typography';
 
 // Physical left → right: toggle, title and description, icon chip — pinned by
 // PHYSICAL_ROW so the control cannot swap sides.
@@ -72,14 +73,8 @@ const styles = StyleSheet.create({
     minWidth: 0,
     gap: 2,
   },
-  title: {
-    fontFamily: 'TheSansArabic', // bold-ok: title is a heading/label the file shows bold
-    fontSize: 16,
-    lineHeight: 22,
-    color: KhazainColors.inkTitle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  // Same role as SettingsValueRow's title: the two sit on the same screens.
+  title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   description: {
     fontFamily: 'TheMixArab',
     fontSize: 13,

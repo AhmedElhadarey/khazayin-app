@@ -191,3 +191,32 @@ describe('source-level role routing (screens with heavy providers)', () => {
     expect(src).toContain('<PillButton label="إعادة المحاولة"');
   });
 });
+
+describe('NOFRAME-23 settings-font-size LevelRow', () => {
+  const src = read('app/settings-font-size.tsx');
+  it('uses reciter density, a hairlineWarm overlay frame and no shadow', () => {
+    expect(src).toContain('CARD_DENSITY.reciterRowMinHeight');
+    expect(src).toContain('CARD_DENSITY.reciterRowRadius');
+    expect(src).toContain('KhazainColors.hairlineWarm');
+    expect(src).toContain('styles.frame');
+    expect(src).not.toContain('KhazainShadows');
+  });
+  it('takes its label from bodyCompact but keeps the per-level size', () => {
+    expect(src).toContain("...textStyle('bodyCompact', { color: KhazainColors.inkTitle })");
+    expect(src).toMatch(/\[styles\.rowLabel, \{ fontSize,/);
+    expect(src).not.toContain('Amiri-Bold');
+  });
+});
+
+describe('weight decisions', () => {
+  it('SettingsToggleRow title matches the value row (bodyCompact)', () => {
+    expect(read('components/khazain/settings/SettingsToggleRow.tsx')).toContain(
+      "textStyle('bodyCompact', { color: KhazainColors.inkTitle })",
+    );
+  });
+  it('the suggestion banner sentence is Regular', () => {
+    expect(read('components/khazain/library/WirdSuggestionBanner.tsx')).toContain(
+      "message: textStyle('bodyCompact'",
+    );
+  });
+});

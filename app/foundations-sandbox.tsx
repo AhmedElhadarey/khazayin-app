@@ -45,6 +45,7 @@ import { KhazainColors } from '@/constants/theme';
 import React, { useCallback, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { fontFace } from '@/constants/typography';
 
 // Dev-only smoke-render route for the Foundations track.
 // Open /foundations-sandbox in Expo Go. Delete this file once Track 1 is accepted.
@@ -265,7 +266,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   patternLabel: {
-    fontFamily: 'TheSansArabic', // bold-ok: patternLabel is a heading/label the file shows bold
+    ...fontFace(700),
     color: KhazainColors.cream100,
     fontSize: 13,
   },

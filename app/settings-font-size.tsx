@@ -5,9 +5,9 @@ import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { FontSizePreview } from '@/components/khazain/settings';
-import { PHYSICAL_ROW } from '@/constants/layout';
-import { textStyle } from '@/constants/typography';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { MIN_LINE_HEIGHT_RATIO, textStyle } from '@/constants/typography';
+import { KhazainColors } from '@/constants/theme';
 import { FONT_SIZE_SCALE } from '@/constants/settings';
 import type { FontSizeLevel } from '@/types/settings';
 import { useSettingsStore } from '@/store';
@@ -91,8 +91,7 @@ function LevelRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        KhazainShadows.card,
-        selected ? styles.rowSelected : null,
+        selected ? styles.rowPadSelected : styles.rowPadIdle,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
     >
@@ -108,9 +107,21 @@ function LevelRow({
           />
         </Svg>
       ) : null}
-      <Text style={[styles.rowLabel, { fontSize }]} numberOfLines={1}>
+      {/* The preview size is the one deliberate exception to the role's size. */}
+      <Text
+        style={[styles.rowLabel, { fontSize, lineHeight: Math.ceil(fontSize * MIN_LINE_HEIGHT_RATIO) }]}
+        numberOfLines={1}
+      >
         {label}
       </Text>
+      {/* Border drawn as an overlay so choosing a row never moves its content. */}
+      <View
+        pointerEvents="none"
+        accessible={false}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={[styles.frame, selected ? styles.frameSelected : null]}
+      />
     </Pressable>
   );
 }
@@ -139,24 +150,27 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
-    minHeight: 56,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 16,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
     backgroundColor: KhazainColors.cardBg,
-    borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
   },
-  rowSelected: {
+  // The 12 / 16 inset plus the frame border it sits inside, per state.
+  rowPadIdle: { paddingVertical: 13, paddingHorizontal: 17 },
+  rowPadSelected: { paddingVertical: 13.5, paddingHorizontal: 17.5 },
+  frame: {
+    ...StyleSheet.absoluteFillObject,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
+    borderWidth: 1,
+    borderColor: KhazainColors.hairlineWarm,
+  },
+  frameSelected: {
     borderColor: KhazainColors.goldAccent,
     borderWidth: 1.5,
   },
+  // Family and colour from the role; the size comes from the level.
   rowLabel: {
     flex: 1,
-    fontFamily: 'Amiri-Bold',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   },
   footer: {
     paddingBottom: 24,

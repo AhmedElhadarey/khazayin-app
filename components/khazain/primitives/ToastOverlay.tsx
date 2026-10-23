@@ -4,6 +4,7 @@ import React, { useEffect, useRef } from 'react';
 import { Animated, Easing, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
+import { textStyle } from '@/constants/typography';
 
 /**
  * ToastOverlay — global toast surface. Mounted once in app/_layout.tsx as
@@ -171,17 +172,10 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     writingDirection: 'rtl',
   },
-  messageAchievement: {
-    color: KhazainColors.navy800,
-    fontFamily: 'TheSansArabic', // bold-ok: achievement toast message was 700
-  },
+  messageAchievement: textStyle('cardTitle', { color: KhazainColors.navy800 }),
   actionBtn: {
     paddingHorizontal: 8,
     paddingVertical: 6,
   },
-  actionLabel: {
-    color: KhazainColors.gold200,
-    fontFamily: 'TheSansArabic', // bold-ok: actionLabel is a heading/label the file shows bold
-    fontSize: 14,
-  },
+  actionLabel: textStyle('cardTitle', { color: KhazainColors.gold200 }),
 });

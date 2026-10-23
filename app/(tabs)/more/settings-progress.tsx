@@ -29,6 +29,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
+import { fontFace } from '@/constants/typography';
 
 const toAr = toArabicDigits;
 
@@ -258,7 +259,7 @@ const styles = StyleSheet.create({
   },
   saveLabel: {
     color: '#fff',
-    fontFamily: 'TheSansArabic', // bold-ok: saveLabel is a heading/label the file shows bold
+    ...fontFace(700),
     fontSize: 13,
   },
   resetBtn: {
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
   },
   resetLabel: {
     color: '#fff',
-    fontFamily: 'TheSansArabic', // bold-ok: resetLabel is a heading/label the file shows bold
+    ...fontFace(700),
     fontSize: 13,
   },
 });
