@@ -34,3 +34,4 @@ export { RtlCarousel } from './RtlCarousel';
 export { BookmarkButton } from './BookmarkButton';
 export { useSaveGesture } from './useSaveGesture';
 export { ToastOverlay } from './ToastOverlay';
+export { FormatButton } from './FormatButton';

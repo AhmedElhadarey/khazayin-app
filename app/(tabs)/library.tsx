@@ -43,6 +43,7 @@ import {
 import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { FormatButton } from '@/components/khazain/primitives/FormatButton';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import {
@@ -91,7 +92,6 @@ import {
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
@@ -129,7 +129,6 @@ export default function LibraryScreen() {
   const controls = useWindowControlsInset();
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { fontScale } = useWindowDimensions();
   const notes = useNotesStore((s) => s.notes);
   const { data: filters, status: filtersStatus, error: filtersError, fetch: fetchFilters, refresh: refreshFilters } = useLibraryFiltersStore();
 
@@ -566,15 +565,15 @@ export default function LibraryScreen() {
               <Text style={styles.noteSaveLabel}>حفظ</Text>
             </Pressable>
             <View style={{ flex: 1 }} />
-            <FormatBtn>
+            <FormatButton accessibilityLabel="قائمة">
               <FigmaIcon name="NoteListFormat" size={FORMAT_GLYPH} color={KhazainColors.ink500} />
-            </FormatBtn>
-            <FormatBtn>
+            </FormatButton>
+            <FormatButton accessibilityLabel="مائل">
               <FigmaIcon name="NoteItalic" size={FORMAT_GLYPH} color={KhazainColors.ink500} />
-            </FormatBtn>
-            <FormatBtn>
+            </FormatButton>
+            <FormatButton accessibilityLabel="عريض">
               <FigmaIcon name="NoteBold" size={FORMAT_GLYPH} color={KhazainColors.ink500} />
-            </FormatBtn>
+            </FormatButton>
           </View>
           <View style={styles.recentBlock}>
             <Text style={styles.recentHeader}>آخر الملاحظات</Text>
@@ -727,7 +726,7 @@ export default function LibraryScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <HeaderArt corners="pair" smallCorner="library" bandHeight={headerBandHeight(insets.top, 'root', fontScale)} />
+      <HeaderArt corners="pair" smallCorner="library" bandHeight={headerBandHeight(insets.top, 'root')} />
       <ScrollView
         contentContainerStyle={[{ paddingBottom: 24 }, columnStyle]}
         showsVerticalScrollIndicator={false}
@@ -741,20 +740,6 @@ export default function LibraryScreen() {
 }
 
 // ── Small inline components / glyphs ──
-
-/**
- * A button in the quick-note toolbar — nodes `BUTTON-113` / `BUTTON-116` /
- * `BUTTON-119` on 2031:4659, all 32 at radius 16 on `#FCFAF8`. The file draws
- * all three marks, including the bold and italic ones the app had been setting
- * as styled letters.
- */
-function FormatBtn({ children }: { children: React.ReactNode }) {
-  return (
-    <Pressable style={({ pressed }) => [formatStyles.btn, { opacity: pressed ? 0.75 : 1 }]}>
-      {children}
-    </Pressable>
-  );
-}
 
 /**
  * A block heading. The wrapper is pinned so the title's right alignment is the
@@ -1007,14 +992,3 @@ const styles = StyleSheet.create({
   },
 });
 
-const formatStyles = StyleSheet.create({
-  // BUTTON-113/116/119: 32 x 32 discs on the card's lighter surface.
-  btn: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: KhazainColors.cardBg,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-});

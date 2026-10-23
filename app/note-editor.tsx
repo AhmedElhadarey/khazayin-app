@@ -19,7 +19,8 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Path } from 'react-native-svg';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { FormatButton } from '@/components/khazain/primitives/FormatButton';
 
 // `id`/`title` predate linked notes; the `ref*` keys are written by
 // services/noteRefs.ts `noteRefToParams` (prefixed to avoid clashing with them).
@@ -177,11 +178,15 @@ export default function NoteEditor() {
                   <Text style={styles.saveLabel}>حفظ</Text>
                 </Pressable>
                 <View style={{ flex: 1 }} />
-                <FormatBtn>
-                  <ListGlyph />
-                </FormatBtn>
-                <FormatBtn italic>I</FormatBtn>
-                <FormatBtn bold>B</FormatBtn>
+                <FormatButton accessibilityLabel="قائمة">
+                  <FigmaIcon name="NoteListFormat" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+                </FormatButton>
+                <FormatButton accessibilityLabel="مائل">
+                  <FigmaIcon name="NoteItalic" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+                </FormatButton>
+                <FormatButton accessibilityLabel="عريض">
+                  <FigmaIcon name="NoteBold" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
+                </FormatButton>
               </View>
 
               {editingId ? (
@@ -225,49 +230,8 @@ export default function NoteEditor() {
   );
 }
 
-// ── Inline glyphs / small components ────────────────────────────────────
-
-function FormatBtn({
-  children,
-  bold,
-  italic,
-}: {
-  children: React.ReactNode;
-  bold?: boolean;
-  italic?: boolean;
-}) {
-  return (
-    <Pressable style={({ pressed }) => [formatStyles.btn, { opacity: pressed ? 0.75 : 1 }]}>
-      {typeof children === 'string' ? (
-        <Text
-          style={[
-            formatStyles.label,
-            // The toolbar glyph is the platform 'System' face, not a registered family.
-            bold && { fontWeight: '700' }, // fontweight-ok: toolbar glyph renders in the platform System face
-            italic && { fontStyle: 'italic' },
-          ]}
-        >
-          {children}
-        </Text>
-      ) : (
-        children
-      )}
-    </Pressable>
-  );
-}
-
-function ListGlyph() {
-  return (
-    <Svg width={14} height={14} viewBox="0 0 14 14">
-      <Path
-        d="M2 3h10M2 7h10M2 11h10"
-        stroke={KhazainColors.ink700}
-        strokeWidth={1.3}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
+/** Glyph size inside the 32pt FormatButton, as in the Library quick-note card. */
+const FORMAT_GLYPH = 16;
 
 const styles = StyleSheet.create({
   // The dim lives on the KAV so its padding strip under the keyboard is dimmed
@@ -365,20 +329,3 @@ const styles = StyleSheet.create({
   recentTitle: textStyle('cardTitle', { color: KhazainColors.ink900 }),
 });
 
-const formatStyles = StyleSheet.create({
-  btn: {
-    width: 36,
-    height: 36,
-    borderRadius: 999,
-    backgroundColor: KhazainColors.cream50,
-    borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  label: {
-    fontFamily: 'System',
-    fontSize: 14,
-    color: KhazainColors.ink700,
-  },
-});
