@@ -4,8 +4,9 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { FoundationMark } from '@/components/khazain/home/FoundationMark';
 import { Wordmark } from '@/components/khazain/primitives';
-import { PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 /** The four "how the app works" highlights, folded in from the old feature screens. */
@@ -91,14 +92,7 @@ const styles = StyleSheet.create({
   wordmarkWrap: {
     alignItems: 'center',
   },
-  mission: {
-    fontFamily: 'Amiri',
-    fontSize: 19,
-    lineHeight: 34,
-    color: KhazainColors.ink700,
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
+  mission: textStyle('bodyLarge', { color: KhazainColors.ink700, textAlign: 'center' }),
   highlights: {
     alignSelf: 'stretch',
     gap: 10,
@@ -109,12 +103,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   highlightText: {
-    ...RTL_TEXT,
+    ...textStyle('body', { color: KhazainColors.ink700 }),
     flex: 1,
-    fontFamily: 'TheSansArabic',
-    fontSize: 15,
-    lineHeight: 24,
-    color: KhazainColors.ink700,
   },
   bullet: {
     width: 7,
@@ -122,11 +112,5 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.goldAccent,
     transform: [{ rotate: '45deg' }],
   },
-  hint: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
+  hint: textStyle('bodyCompact', { color: KhazainColors.inkSubtle, textAlign: 'center' }),
 });

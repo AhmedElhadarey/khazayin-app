@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 
-import { PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { SELECTABLE_ROW_ORDER, type SelectableRowSlot } from '@/constants/rtlContracts';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 
 type Props = {
   title: string;
@@ -94,7 +95,7 @@ export function SelectableRow({
   };
 
   return (
-    <View style={[styles.card, KhazainShadows.card, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
+    <View style={[styles.card, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}>
       {SELECTABLE_ROW_ORDER.map((slot) => (
         <React.Fragment key={slot}>{slots[slot]}</React.Fragment>
       ))}
@@ -112,12 +113,12 @@ export function SelectableRow({
 const styles = StyleSheet.create({
   card: {
     // Physical left -> right: [preview?] [select]. No border here (see
-    // `frame`), so minHeight 64 gives max(64, 2 * border + 24 + content) —
+    // `frame`), so minHeight 56 gives max(56, 2 * border + 24 + content) —
     // the base row's height, where the bordered view carried minHeight.
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    minHeight: 64,
-    borderRadius: 16,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
     backgroundColor: KhazainColors.cardBg,
   },
   frame: {
@@ -125,9 +126,9 @@ const styles = StyleSheet.create({
     // radio's origin stays on the pixel grid; rendered last so it paints over
     // the slots.
     ...StyleSheet.absoluteFillObject,
-    borderRadius: 16,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
     borderWidth: BORDER.idle,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineWarm,
   },
   frameSelected: {
     borderColor: KhazainColors.goldAccent,
@@ -165,19 +166,6 @@ const styles = StyleSheet.create({
     marginLeft: 12 + BORDER.selected,
   },
   textCol: { flex: 1, gap: 2 },
-  rowTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 17,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  rowSubtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 13,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  rowTitle: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  rowSubtitle: textStyle('caption', { color: KhazainColors.ink500 }),
 });

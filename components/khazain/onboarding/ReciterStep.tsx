@@ -5,6 +5,7 @@ import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
 import { PHYSICAL_BOX } from '@/constants/layout';
 import { ONBOARDING_POPULAR_RECITER_IDS } from '@/constants/settings';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { selectOnboardingReciters } from '@/services/onboardingReciters';
 import { canPreview, stopPreview, toggleReciterPreview } from '@/services/reciterPreview';
 import { usePreviewStore, useRecitersStore, useSettingsStore } from '@/store';
@@ -100,20 +101,10 @@ const styles = StyleSheet.create({
   // physical right. Under `forceRTL` alone it resolves to the physical LEFT,
   // which is what pushed these headings to the wrong edge.
   container: { ...PHYSICAL_BOX, flex: 1, paddingHorizontal: 24 },
-  title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 22,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  // The Settings sheets set the same headings in `bodyLarge`.
+  title: textStyle('bodyLarge', { color: KhazainColors.ink900 }),
   subtitle: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
     marginTop: 4,
     marginBottom: 12,
   },

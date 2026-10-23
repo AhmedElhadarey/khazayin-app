@@ -4,6 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { PillButton } from '@/components/khazain/primitives';
 import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 
 type Props = {
   /** Current step index (0-based). */
@@ -83,12 +84,5 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     minHeight: 28,
   },
-  linkText: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    fontWeight: '600',
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  linkText: textStyle('cardTitle', { color: KhazainColors.inkSubtle }),
 });

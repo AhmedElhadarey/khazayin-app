@@ -28,55 +28,20 @@ const isLegacy = (rel: string) =>
  * `fontWeight` for such a family, and Android registers it only in the NORMAL
  * slot, so `fontWeight: '700'` makes Android fall back to the SYSTEM bold (a
  * different typeface, Noto Naskh for Arabic). The weight must live in the face:
- * use `textStyle(role)` or `fontFace(family, weight)` from
+ * use `textStyle(role)` or `fontFace(weight)` from
  * `constants/typography.ts`.
  *
  * NESTED <Text>: a child <Text> inherits its parent's fontFamily AND
  * fontWeight. A parent that sets a bold weight on a registered family poisons
  * every nested child on Android, so a parent Text must never set one.
  *
- * T02 MUST EMPTY `ALLOWLIST` below. The test fails if a new offender appears
+ * `ALLOWLIST` below holds only the Mushaf screen (ticket T20). The test fails if a new offender appears
  * or an allowlisted file's count grows; it also fails when a count shrinks, so
  * the entry is lowered as sites are migrated.
  */
 const ALLOWLIST: Record<string, number> = {
-  'app/(tabs)/library.tsx': 1,
-  'app/(tabs)/more/settings-progress.tsx': 3,
+  // Owned by ticket T20 (Mushaf typography). Remove once migrated.
   'app/(tabs)/sections/mushaf.tsx': 2,
-  'app/_layout.tsx': 2,
-  'app/foundations-sandbox.tsx': 1,
-  'app/note-editor.tsx': 1,
-  'app/settings-about.tsx': 1,
-  'app/settings-font-size.tsx': 1,
-  'app/settings-prayer.tsx': 2,
-  'app/settings-qiraa.tsx': 1,
-  'app/settings-reciter.tsx': 1,
-  'app/settings-wird-goal.tsx': 2,
-  'app/settings-wird-reminder.tsx': 1,
-  'components/khazain/art/ScrollArt.tsx': 1,
-  'components/khazain/library/AudioProgressCard.tsx': 1,
-  'components/khazain/library/CircularProgress.tsx': 1,
-  'components/khazain/library/InsightRow.tsx': 1,
-  'components/khazain/library/WirdHistory.tsx': 6,
-  'components/khazain/library/WirdSuggestionBanner.tsx': 3,
-  'components/khazain/onboarding/ChannelsStep.tsx': 1,
-  'components/khazain/onboarding/OnboardingFooter.tsx': 1,
-  'components/khazain/onboarding/QiraaStep.tsx': 1,
-  'components/khazain/onboarding/ReciterStep.tsx': 1,
-  'components/khazain/onboarding/SelectableRow.tsx': 1,
-  'components/khazain/primitives/DetailHeader.tsx': 1,
-  'components/khazain/primitives/MiniPlayer.tsx': 1,
-  'components/khazain/primitives/PillButton.tsx': 1,
-  'components/khazain/primitives/SectionHeader.tsx': 2,
-  'components/khazain/primitives/ToastOverlay.tsx': 3,
-  'components/khazain/search/SearchGroupHeader.tsx': 1,
-  'components/khazain/search/SearchResultRow.tsx': 2,
-  'components/khazain/search/SuggestionChips.tsx': 1,
-  'components/khazain/settings/FontSizePreview.tsx': 1,
-  'components/khazain/settings/SettingsToggleRow.tsx': 1,
-  'components/khazain/sheets/SheetRow.tsx': 1,
-  'components/khazain/sheets/SheetShell.tsx': 1,
-  'services/search/rowProps.tsx': 2,
 };
 
 const FAMILY_RE = new RegExp(
@@ -101,6 +66,8 @@ function heavyWeightLines(source: string): number {
   return source.split('\n').filter((line) => {
     const t = line.trim();
     if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return false;
+    // Explicit, reviewed escape hatch for text that is NOT in a registered family.
+    if (line.includes('fontweight-ok')) return false;
     const m = WEIGHT_RE.exec(line);
     return !!m && HEAVY_RE.test(m[1]);
   }).length;
@@ -118,6 +85,41 @@ function offenders(): Record<string, number> {
   return found;
 }
 
+/**
+ * `TheSansArabic` is the BOLD file, so a hand-assembled `fontFamily:
+ * 'TheSansArabic'` is always bold. Prose, data and meta text must use a role
+ * (`textStyle`) or `fontFace(400)`. A site that is intentionally bold and has
+ * no matching role carries `// bold-ok: <reason>` on the same line.
+ */
+const BOLD_FAMILY_RE = /fontFamily\s*[:=]\s*\{?\s*['"]TheSansArabic['"]/;
+const BOLD_FAMILY_EXEMPT = new Set(['constants/typography.ts', 'constants/fonts.ts']);
+
+function unannotatedBoldFamilyLines(source: string): number {
+  return source.split('\n').filter((line) => {
+    const t = line.trim();
+    if (t.startsWith('//') || t.startsWith('*') || t.startsWith('/*')) return false;
+    return BOLD_FAMILY_RE.test(line) && !/bold-ok:\s*\S/.test(line);
+  }).length;
+}
+
+describe('no hand-assembled TheSansArabic without a stated reason', () => {
+  it('detects the pattern and honours the annotation', () => {
+    expect(unannotatedBoldFamilyLines("fontFamily: 'TheSansArabic',")).toBe(1);
+    expect(unannotatedBoldFamilyLines("fontFamily: 'TheSansArabic', // bold-ok: heading")).toBe(0);
+    expect(unannotatedBoldFamilyLines("fontFamily: 'TheMixArab',")).toBe(0);
+  });
+
+  it('has no unannotated TheSansArabic style outside the type scale', () => {
+    const bad: Record<string, number> = {};
+    for (const rel of SCAN_DIRS.flatMap((d) => walk(d))) {
+      if (isLegacy(rel) || rel.includes('__tests__') || BOLD_FAMILY_EXEMPT.has(rel)) continue;
+      const n = unannotatedBoldFamilyLines(readFileSync(path.join(REPO_ROOT, rel), 'utf8'));
+      if (n > 0) bad[rel] = n;
+    }
+    expect(bad).toEqual({});
+  });
+});
+
 describe('no bold fontWeight on a registered custom family', () => {
   it('scans a non-trivial amount of source', () => {
     expect(SCAN_DIRS.flatMap((d) => walk(d)).length).toBeGreaterThan(100);
@@ -128,6 +130,8 @@ describe('no bold fontWeight on a registered custom family', () => {
     expect(heavyWeightLines('fontWeight: 600,')).toBe(1);
     expect(heavyWeightLines("fontWeight: on ? '600' : '400',")).toBe(1);
     expect(heavyWeightLines('fontWeight="bold"')).toBe(1);
+    expect(heavyWeightLines("fontWeight: '500',")).toBe(1);
+    expect(heavyWeightLines("fontWeight: 'bold',")).toBe(1);
     expect(heavyWeightLines("fontWeight: '400',")).toBe(0);
     expect(heavyWeightLines("// fontWeight: '700'")).toBe(0);
   });

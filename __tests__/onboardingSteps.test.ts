@@ -58,7 +58,8 @@ describe('four-screen flow', () => {
     expect(src.match(/key: '/g)).toHaveLength(4);
     expect(src).toMatch(/WELCOME_HIGHLIGHTS\.map/);
     expect(src).toMatch(/\.\.\.PHYSICAL_ROW/);
-    expect(src).toMatch(/\.\.\.RTL_TEXT/);
+    // textStyle(role) spreads the RTL direction itself (NOFRAME-24).
+    expect(src).toMatch(/textStyle\('body'/);
     expect(src).toMatch(/FoundationMark/); // Q6: user-approved deviation from "LogoBadge"
   });
 });
@@ -83,12 +84,13 @@ describe('selectable row with a preview control', () => {
       expect(border).toMatch(/idle:\s*1\b/);
       expect(border).toMatch(/selected:\s*1\.5\b/);
     });
-    it('the card carries background, radius and minHeight 64 but no border', () => {
+    it('the card carries background, reciter-row radius and minHeight but no border', () => {
       // Yoga applies minHeight to the border-box; with no border on the card
-      // its height is max(64, 2 * border + 24 + content), the base row's.
+      // its height is max(56, 2 * border + 24 + content), the reciter row's
+      // (CARD_DENSITY, NOFRAME-23).
       const card = style(row(), 'card');
-      expect(card).toMatch(/minHeight:\s*64/);
-      expect(card).toMatch(/borderRadius:\s*16/);
+      expect(card).toMatch(/minHeight:\s*CARD_DENSITY\.reciterRowMinHeight/);
+      expect(card).toMatch(/borderRadius:\s*CARD_DENSITY\.reciterRowRadius/);
       expect(card).toMatch(/backgroundColor/);
       expect(card).not.toMatch(/border(Width|Color)/);
       expect(card).not.toMatch(/padding/);
@@ -98,7 +100,7 @@ describe('selectable row with a preview control', () => {
       const frame = style(src, 'frame');
       const frameSelected = style(src, 'frameSelected');
       expect(frame).toMatch(/\.\.\.StyleSheet\.absoluteFillObject/);
-      expect(frame).toMatch(/borderRadius:\s*16/);
+      expect(frame).toMatch(/borderRadius:\s*CARD_DENSITY\.reciterRowRadius/);
       expect(frame).toMatch(/borderWidth:\s*BORDER\.idle\b/);
       expect(frameSelected).toMatch(/borderWidth:\s*BORDER\.selected\b/);
       expect(frameSelected).toMatch(/borderColor:\s*KhazainColors\.goldAccent/);
