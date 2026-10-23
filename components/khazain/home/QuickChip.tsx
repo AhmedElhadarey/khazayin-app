@@ -1,21 +1,23 @@
+import { PHYSICAL_BOX } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle, CHROME_MAX_FONT_SCALE } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-// Cream quick-access chip with a circular badge floating 11px above its top.
+// Cream quick-access chip with a badge floating 11px above its top. The badge
+// (24.94 x 24) is drawn whole by its children — disc, glyph and hairline ring
+// are one node in the file (`audio book` 2093:1760 / 1768, `audio` 1775), so
+// the chip paints nothing of its own behind them.
 // 48 tall, flex:1, navy stripe at bottom, label centered.
 // Port of design_source/app/home.jsx QuickChip.
 export function QuickChip({
   label,
   children,
   onPress,
-  iconBg = KhazainColors.navy,
 }: {
   label: string;
   children: React.ReactNode;
   onPress?: () => void;
-  iconBg?: string;
 }) {
   return (
     <Pressable
@@ -24,7 +26,7 @@ export function QuickChip({
       accessibilityLabel={label}
       style={({ pressed }) => [styles.chip, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}
     >
-      <View style={[styles.badge, { backgroundColor: iconBg }]}>{children}</View>
+      <View style={styles.badge}>{children}</View>
       <Text
         style={styles.label}
         numberOfLines={1}
@@ -54,11 +56,8 @@ const styles = StyleSheet.create({
     top: -11,
     width: 25,
     height: 24,
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: KhazainColors.navy,
-    alignItems: 'center',
-    justifyContent: 'center',
+    // Children are placed by absolute offset from the badge's physical origin.
+    ...PHYSICAL_BOX,
   },
   label: {
     ...textStyle('label', { color: KhazainColors.navy, textAlign: 'center' }),
