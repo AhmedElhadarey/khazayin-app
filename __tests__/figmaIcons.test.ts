@@ -459,6 +459,11 @@ describe('the consumers draw each mark the way the file instances it', () => {
       /name="Pause"[^/>]*/,
     )?.[0] ?? '';
     expect(pause).not.toMatch(/mirrored/);
+    const preview = read('components/khazain/onboarding/PreviewButton.tsx').match(
+      /name="Pause"[^/>]*/,
+    )?.[0] ?? '';
+    expect(preview).toMatch(/name="Pause"/);
+    expect(preview).not.toMatch(/mirrored/);
   });
 
   it('applies the flip as an SVG transform, not an RN style transform', () => {

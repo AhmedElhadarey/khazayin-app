@@ -43,9 +43,9 @@ export const ExportNotesGlyph = () => file('LibraryNotes');
 export function QiraaGlyph() {
   return (
     <Drawn>
-      <Path d="M4 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z" fill={C} opacity={SECONDARY} />
-      <Path d="M13 3l5 5h-4a1 1 0 01-1-1V3z" fill={C} />
-      <Path d="M8 13h7M8 17h5" stroke={C} strokeWidth={2} strokeLinecap="round" />
+      <Path d="M5 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5z" fill={C} opacity={SECONDARY} />
+      <Path d="M14 3l5 5h-4a1 1 0 01-1-1V3z" fill={C} />
+      <Path d="M9 13h7M9 17h5" stroke={C} strokeWidth={2} strokeLinecap="round" />
     </Drawn>
   );
 }
@@ -63,7 +63,7 @@ export function FontSizeGlyph() {
   return (
     <Drawn>
       <Path d="M3 6h10v2.2H9.1V19H6.9V8.2H3V6z" fill={C} />
-      <Path d="M14 11h7v1.8h-2.9V19h-1.9v-6.2H14V11z" fill={C} opacity={SECONDARY} />
+      <Path d="M14 11h7v1.8h-2.55V19h-1.9v-6.2H14V11z" fill={C} opacity={SECONDARY} />
     </Drawn>
   );
 }
@@ -109,19 +109,10 @@ export function PrayerTimesGlyph() {
 export function CommunityGlyph() {
   return (
     <Drawn>
+      <Circle cx={16.5} cy={8} r={3} fill={C} opacity={SECONDARY} />
       <Circle cx={9} cy={8} r={3.5} fill={C} />
       <Path d="M2.5 20a6.5 6.5 0 0113 0v.5h-13V20z" fill={C} opacity={SECONDARY} />
-      <Path d="M16 4.7a3.5 3.5 0 010 6.6 3.5 3.5 0 000-6.6zM17.5 14.2A6.5 6.5 0 0121.5 20.5H18a8 8 0 00-2-5.2l1.5-1.1z" fill={C} opacity={SECONDARY} />
-    </Drawn>
-  );
-}
-
-/** A neutral "i" for rows with no subject mark (developer and moderation rows). */
-export function InfoGlyph() {
-  return (
-    <Drawn>
-      <Circle cx={12} cy={12} r={9.5} fill={C} opacity={SECONDARY} />
-      <Path d="M12 11v6M12 7.2v.4" stroke={C} strokeWidth={2.2} strokeLinecap="round" />
+      <Path d="M17.5 14.2A6.5 6.5 0 0121.5 20.5H18a8 8 0 00-2-5.2l1.5-1.1z" fill={C} opacity={SECONDARY} />
     </Drawn>
   );
 }

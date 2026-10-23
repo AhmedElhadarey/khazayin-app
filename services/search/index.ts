@@ -9,7 +9,7 @@ export { normalize } from './normalize';
 export { match } from './match';
 export { searchAll } from './searchAll';
 export type { SearchResultGroup, SearchAllInput } from './searchAll';
-export { rowPropsForSearchResult, rowPropsForSavedItem, SurahNumberBadge, ScholarMedallion } from './rowProps';
+export { rowPropsForSearchResult, rowPropsForSavedItem } from './rowProps';
 export type { RowProps, SearchRowProps } from './rowProps';
 export { createSearchTargetRunner, searchTargetFor } from './searchTarget';
 export type { SearchTarget } from './searchTarget';

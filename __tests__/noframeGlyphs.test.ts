@@ -14,6 +14,7 @@ describe('NOFRAME-08: search / saved badges', () => {
   const src = read('services/search/rowProps.tsx');
   it('uses the surah star and the quill badge, not inline discs', () => {
     expect(src).toMatch(/<SurahStar[^>]*index=\{[^}]*displayNumber[^}]*\}/);
+    expect(src).not.toMatch(/SurahNumberBadge|ScholarMedallion/);
     expect(src).toMatch(/CARD_DENSITY\.surahBadgeDisc/);
     expect(src).toMatch(/<QuillBadge size=\{40\}/);
     expect(src).not.toMatch(/badgeStyles|surahBadge:|scholarBadge:/);
@@ -92,6 +93,14 @@ describe('NOFRAME-21: settings row glyphs', () => {
     }
     expect(settings).not.toMatch(/<Svg/);
     expect(notif).not.toMatch(/<Svg/);
+  });
+  it('no drawn path repeats an arc command back to back (zero-area subpath)', () => {
+    const ds = [...glyphs.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]);
+    expect(ds.length).toBeGreaterThan(5);
+    for (const d of ds) {
+      const arcs = d.match(/[aA][^a-zA-Z]*/g) ?? [];
+      for (let i = 1; i < arcs.length; i++) expect(arcs[i]).not.toBe(arcs[i - 1]);
+    }
   });
   it('drawn marks are filled, not 1.5pt outlines', () => {
     expect(glyphs).not.toMatch(/strokeWidth=\{1\.5\}/);

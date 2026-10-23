@@ -20,26 +20,8 @@ import type { SearchResultGroup } from './searchAll';
 import { searchTargetFor, type SearchTarget } from './searchTarget';
 
 // ---------------------------------------------------------------------------
-// Badges shared between search + library
+// Row badges (no frame covers search or the Library saved rows)
 // ---------------------------------------------------------------------------
-
-/**
- * Surah index badge: the file's 36pt star (`SurahStar`, node 2207:5706) with
- * the Arabic-Indic numeral over it, the same badge SurahRow / ReciterSurahRow
- * draw. No frame covers search or the Library saved rows, so the contract is
- * that glyph and `CARD_DENSITY.surahBadgeDisc`.
- */
-export function SurahNumberBadge({ displayNumber }: { displayNumber: string }) {
-  return <SurahStar index={displayNumber} size={CARD_DENSITY.surahBadgeDisc} />;
-}
-
-/**
- * Scholar badge: `QuillBadge` (`BadgeQuill`, node 2869:2011), the glyph the scholars list
- * (2102:2975) puts on each row.
- */
-export function ScholarMedallion() {
-  return <QuillBadge size={40} />;
-}
 
 // ---------------------------------------------------------------------------
 // Row props builder
@@ -71,7 +53,7 @@ export function rowPropsForSearchResult(
   if (group.type === 'surah') {
     const s = item as Surah;
     return {
-      iconNode: <SurahNumberBadge displayNumber={s.displayNumber} />,
+      iconNode: <SurahStar index={s.displayNumber} size={CARD_DENSITY.surahBadgeDisc} />,
       title: s.name,
       subtitle: s.meta,
       target,
@@ -80,7 +62,7 @@ export function rowPropsForSearchResult(
   if (group.type === 'scholar') {
     const s = item as Scholar;
     return {
-      iconNode: <ScholarMedallion />,
+      iconNode: <QuillBadge size={40} />,
       title: s.name,
       target,
     };
@@ -111,14 +93,14 @@ export function rowPropsForSavedItem(item: SavedItem): RowProps {
   switch (item.snapshot.type) {
     case 'surah':
       return {
-        iconNode: <SurahNumberBadge displayNumber={item.snapshot.displayNumber} />,
+        iconNode: <SurahStar index={item.snapshot.displayNumber} size={CARD_DENSITY.surahBadgeDisc} />,
         title: item.snapshot.name,
         subtitle: item.snapshot.meta,
         route: '/sections/mushaf',
       };
     case 'scholar':
       return {
-        iconNode: <ScholarMedallion />,
+        iconNode: <QuillBadge size={40} />,
         title: item.snapshot.name,
         route: `/sections/scholar/${item.entityId}`,
       };
