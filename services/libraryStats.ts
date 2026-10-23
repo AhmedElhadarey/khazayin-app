@@ -185,7 +185,13 @@ export function filterChipCount(
       return toArabicDigits(counts.completed);
     case 'reminders':
       return toArabicDigits(counts.reminders);
-    default:
+    case 'playlist':
+    case 'history':
       return '';
+    default: {
+      // A new chip id must decide here whether it carries a count.
+      const unhandled: never = id;
+      return unhandled;
+    }
   }
 }
