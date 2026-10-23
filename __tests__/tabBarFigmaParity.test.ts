@@ -40,6 +40,21 @@ describe('tab bar Figma parity (GLOBAL-05..09)', () => {
     expect(src).toMatch(/justifyContent: 'space-between'/);
   });
 
+  it('zeroes the inherited 4pt padding on phone items so labels size them', () => {
+    const block = src.match(/itemPhone: \{([^}]*)\}/);
+    expect(block).not.toBeNull();
+    expect(block![1]).toMatch(/minWidth: TAB_BAR\.inactiveItemMinWidth/);
+    expect(block![1]).toMatch(/paddingHorizontal: 0/);
+  });
+
+  it('applies phone-only styles and hit slop to phones only', () => {
+    expect(src).toMatch(/hitSlop=\{tablet \? undefined :/);
+    expect(src).toMatch(/!tablet && styles\.barPhone/);
+    expect(src).toMatch(/!tablet && styles\.itemPhone/);
+    expect(src).toMatch(/active && !tablet && styles\.itemActivePhone/);
+    expect(src).toMatch(/tablet \? styles\.tabWrapTablet : styles\.tabWrap/);
+  });
+
   it('keeps a 44pt touch width on a 42pt item', () => {
     const slop = TAB_BAR.touchSlopHorizontal;
     expect(TAB_BAR.inactiveItemMinWidth + 2 * slop).toBeGreaterThanOrEqual(44);

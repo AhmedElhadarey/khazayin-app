@@ -124,7 +124,11 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityRole="button"
                 accessibilityState={active ? { selected: true } : {}}
                 accessibilityLabel={label}
-                hitSlop={{ left: TAB_BAR.touchSlopHorizontal, right: TAB_BAR.touchSlopHorizontal }}
+                hitSlop={
+                  tablet
+                    ? undefined
+                    : { left: TAB_BAR.touchSlopHorizontal, right: TAB_BAR.touchSlopHorizontal }
+                }
                 style={[tablet ? styles.tabWrapTablet : styles.tabWrap, itemStyle]}
               >
                 <View
@@ -202,6 +206,7 @@ const styles = StyleSheet.create({
   },
   itemPhone: {
     minWidth: TAB_BAR.inactiveItemMinWidth,
+    paddingHorizontal: 0,
   },
   itemActive: {
     backgroundColor: TAB_BAR.activeFill,
