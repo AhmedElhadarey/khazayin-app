@@ -176,7 +176,7 @@ function Field({
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
-        placeholderTextColor={KhazainColors.ink400}
+        placeholderTextColor={KhazainColors.inkSubtle}
         textAlign="right"
         multiline={multi}
         keyboardType={keyboardType}
@@ -227,8 +227,12 @@ const styles = StyleSheet.create({
   // More screen is 18 or 14.
   formTitle: {
     ...textStyle('bodyTitle', { color: KhazainColors.inkTitle, textAlign: 'center' }),
-    // `DIV-126` starts at 293, the title at 309, and `FORM-127` at 342.
-    marginBottom: -4,
+    // `DIV-126` starts at 293, the title at 309, and `FORM-127` at 342. The
+    // 30pt line box (the title role's floor at the scaled 20) is kept; the text
+    // sits 8-11pt low inside it, so the box is pulled up 4.5 and the next
+    // block up 4 + 4.5 further.
+    marginTop: -4.5,
+    marginBottom: -8.5,
   },
   fieldGroup: {
     // `LABEL-129` ends at 362 and `INPUT` starts at 370.
@@ -249,6 +253,8 @@ const styles = StyleSheet.create({
   // `BUTTON-143` — 311 x 45 at radius 8, `#184B76`, its label in the body
   // face at 14. Not the 14pt radius and 15pt bold label the app had.
   submitBtn: {
+    // formCard gap 16 + 6 = 22 from the textarea to the button.
+    marginTop: 6,
     minHeight: 45,
     borderRadius: 8,
     backgroundColor: KhazainColors.navy800,

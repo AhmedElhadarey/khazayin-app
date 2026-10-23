@@ -275,12 +275,14 @@ export const KhazainShadows = {
     // without the separator the 2026-09-09 audit found around every card.
     elevation: 1,
   },
+  /**
+   * `boxShadow` (New Architecture) takes CSS semantics, which is what the file
+   * states; `elevation: 1` drew a grey Android outline the file does not have. Android < API 28 draws
+   * no outset shadow; that is accepted. Apply to a View style only — Text
+   * ignores it.
+   */
   input: {
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 1,
+    boxShadow: '0px 4px 16px rgba(0,0,0,0.08)',
   },
   /**
    * The More list's card — node 2102:2711 `websiteLink-13` is the one card in
@@ -288,11 +290,7 @@ export const KhazainShadows = {
    * is a much tighter one than `card`.
    */
   listRow: {
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 2,
-    shadowOffset: { width: 0, height: 1 },
-    elevation: 1,
+    boxShadow: '0px 1px 2px rgba(0,0,0,0.05)',
   },
   press: {
     shadowColor: '#34240C',

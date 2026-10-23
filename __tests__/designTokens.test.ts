@@ -55,7 +55,7 @@ describe('Figma colour tokens', () => {
 describe('card elevation', () => {
   it('keeps Android elevation low enough not to draw a separator', () => {
     expect(KhazainShadows.card.elevation).toBe(CARD_DENSITY.cardElevation);
-    expect(KhazainShadows.input.elevation).toBeLessThanOrEqual(1);
+    expect((KhazainShadows.input as { elevation?: number }).elevation ?? 0).toBeLessThanOrEqual(1);
   });
 });
 
