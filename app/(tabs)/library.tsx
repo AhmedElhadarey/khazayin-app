@@ -38,7 +38,7 @@ import {
   streakSubtitle,
   wirdHighlightLabel,
 } from '@/services/libraryStats';
-import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificationRegistry';
+import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
 import { usePlayerStore } from '@/store/playerStore';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { FormatButton } from '@/components/khazain/primitives/FormatButton';
@@ -73,7 +73,12 @@ import {
 import { useLibraryFiltersStore, useSavedStore, useSettingsStore } from '@/store';
 import { describeWirdReminder } from '@/services/wirdReminder';
 import { setCategoryEnabled } from '@/services/notificationCategoryToggle';
-import { audiobookCardsFor, buildSmartReminders } from '@/services/libraryView';
+import {
+  audiobookCardsFor,
+  buildSmartReminders,
+  enabledFromMap,
+  runSingleFlight,
+} from '@/services/libraryView';
 import type { NotificationCategoryId } from '@/types/settings';
 import { useNotificationPermission } from '@/hooks/useNotificationPermission';
 import { formatRelativeAr, useNotesStore } from '@/store/notesStore';
@@ -148,7 +153,9 @@ export default function LibraryScreen() {
   // preference would persist, the card would render a next-reminder time, and
   // the scheduler would silently arm nothing — the card would be
   // advertising a reminder that can never fire.
-  const wirdReminderOn = useSettingsStore((s) => s.notifications['wird-daily']);
+  const notificationsMap = useSettingsStore((s) => s.notifications);
+  const isCategoryOn = enabledFromMap(NOTIFICATION_CATEGORIES, notificationsMap);
+  const wirdReminderOn = isCategoryOn('wird-daily');
   const wirdReminderTime = useSettingsStore((s) => s.wirdReminderTime);
   const notificationPermission = useNotificationPermission();
   // Once today's goal is met, today's reminder is cancelled, so the caption
@@ -164,10 +171,11 @@ export default function LibraryScreen() {
   // the switch where it was.
   const pendingToggles = useRef(new Set<NotificationCategoryId>());
   const onToggleCategory = (id: NotificationCategoryId, next: boolean) => {
-    if (pendingToggles.current.has(id)) return;
-    pendingToggles.current.add(id);
-    setCategoryEnabled(id, next)
-      .then((outcome) => {
+    runSingleFlight(
+      pendingToggles.current,
+      id,
+      () =>
+        setCategoryEnabled(id, next).then((outcome) => {
         if (outcome === 'permission-denied') {
           Alert.alert(
             'إذن الإشعارات مطلوب',
@@ -185,9 +193,12 @@ export default function LibraryScreen() {
             ],
           );
         }
-      })
-      .catch(() => undefined)
-      .finally(() => pendingToggles.current.delete(id));
+        }),
+      (err) => {
+        // The switch stays where it was; only surface the cause in development.
+        if (__DEV__) console.warn('[library] category toggle failed', id, err);
+      },
+    );
   };
 
   useEffect(() => {
@@ -286,7 +297,7 @@ export default function LibraryScreen() {
   // re-renders this on a toggle.
   const smartReminders = buildSmartReminders({
     categories: NOTIFICATION_CATEGORIES,
-    isEnabled: isCategoryEnabled,
+    isEnabled: isCategoryOn,
     permission: notificationPermission,
     now: new Date(),
     wirdTime: wirdReminderTime,

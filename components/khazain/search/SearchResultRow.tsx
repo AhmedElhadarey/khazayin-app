@@ -20,37 +20,42 @@ type Props = {
 };
 
 export function SearchResultRow({ iconNode, title, subtitle, meta, accessory, onPress }: Props) {
+  // The row chrome is a plain View so the accessory (a sibling, not a descendant of
+  // the accessible Pressable) stays its own VoiceOver element.
   return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { transform: [{ scale: pressed ? 0.99 : 1 }], opacity: pressed ? 0.92 : 1 },
-      ]}
-    >
+    <View style={styles.row}>
       {/* Physical left → right: accessory, meta chip, title block, icon. */}
       {accessory ?? null}
-      {meta ? (
-        <View style={styles.metaChip}>
-          <Text style={styles.metaText} numberOfLines={1}>
-            {meta}
-          </Text>
-        </View>
-      ) : null}
-
-      <View style={styles.body}>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-        {subtitle ? (
-          <Text style={styles.subtitle} numberOfLines={1}>
-            {subtitle}
-          </Text>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        style={({ pressed }) => [
+          styles.press,
+          { transform: [{ scale: pressed ? 0.99 : 1 }], opacity: pressed ? 0.92 : 1 },
+        ]}
+      >
+        {meta ? (
+          <View style={styles.metaChip}>
+            <Text style={styles.metaText} numberOfLines={1}>
+              {meta}
+            </Text>
+          </View>
         ) : null}
-      </View>
 
-      <View style={styles.iconSlot}>{iconNode}</View>
-    </Pressable>
+        <View style={styles.body}>
+          <Text style={styles.title} numberOfLines={1}>
+            {title}
+          </Text>
+          {subtitle ? (
+            <Text style={styles.subtitle} numberOfLines={1}>
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+
+        <View style={styles.iconSlot}>{iconNode}</View>
+      </Pressable>
+    </View>
   );
 }
 
@@ -67,6 +72,13 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     marginBottom: CARD_DENSITY.listGap,
     borderColor: KhazainColors.hairlineWarm,
+  },
+  press: {
+    ...PHYSICAL_ROW,
+    flex: 1,
+    minWidth: 0,
+    alignItems: 'center',
+    gap: 12,
   },
   iconSlot: {
     width: 40,

@@ -70,7 +70,7 @@ describe('EmptyInProgressCard (T16)', () => {
     expect(texts(kids[1])[0]).toBe('لا توجد محاضرة قيد الاستماع');
     expect(texts(kids[2])).toEqual(['تصفّح المحاضرات']);
     const label = card.findAll((n) => n.type === 'Text' && n.children.includes('تصفّح المحاضرات'))[0];
-    expect(label.props.numberOfLines).toBe(1);
+    expect(label.props.numberOfLines).toBeUndefined(); // wraps at large font scales instead of ellipsizing
     expect(KhazainColors.pageBg).toBeTruthy();
   });
 });

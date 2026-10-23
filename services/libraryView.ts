@@ -88,3 +88,40 @@ export function audiobookCardsFor(
     empty: hasIn || hasDone ? null : 'browse',
   };
 }
+
+/**
+ * `isEnabled` derived from the subscribed `notifications` map (not a snapshot
+ * read), so a component that selects the whole map re-renders on any toggle.
+ * A missing key falls back to the category's registered default.
+ */
+export function enabledFromMap(
+  categories: readonly NotificationCategory[],
+  stored: Partial<Record<NotificationCategoryId, boolean>>,
+): (id: NotificationCategoryId) => boolean {
+  return (id) => {
+    const v = stored[id];
+    if (typeof v === 'boolean') return v;
+    return categories.find((c) => c.id === id)?.defaultOn ?? false;
+  };
+}
+
+/**
+ * Single-flight guard: runs `task` unless `key` is already pending (returns
+ * null). The key is released when the task settles; a rejection goes to
+ * `onError` and never escapes.
+ */
+export function runSingleFlight<K>(
+  pending: Set<K>,
+  key: K,
+  task: () => Promise<unknown>,
+  onError?: (err: unknown) => void,
+): Promise<void> | null {
+  if (pending.has(key)) return null;
+  pending.add(key);
+  return task()
+    .then(() => undefined)
+    .catch((err) => onError?.(err))
+    .finally(() => {
+      pending.delete(key);
+    });
+}

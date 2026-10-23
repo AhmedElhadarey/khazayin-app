@@ -32,7 +32,7 @@ export function EmptyInProgressCard({
           accessibilityRole="button"
           style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.85 : 1 }]}
         >
-          <Text style={styles.ctaLabel} numberOfLines={1}>
+          <Text style={styles.ctaLabel}>
             تصفّح المحاضرات
           </Text>
         </Pressable>
@@ -59,7 +59,10 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   cta: {
-    height: 36,
+    minHeight: 36,
+    paddingVertical: 6,
+    flexShrink: 1,
+    maxWidth: '45%',
     paddingHorizontal: 16,
     borderRadius: 8,
     backgroundColor: KhazainColors.navy800,

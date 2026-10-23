@@ -114,12 +114,7 @@ export function readingStatus(trend: TrendLike, totalPagesRead: number): Reading
 
 /** «يوم واحد» / «يومين» / «٣ أيام» / «١١ يومًا» — a day count that agrees with its number. */
 export function daySpan(days: number): string {
-  if (days === 1) return 'يوم واحد';
-  if (days === 2) return 'يومين';
-  const lastTwo = days % 100;
-  return lastTwo >= 3 && lastTwo <= 10
-    ? `${toArabicDigits(days)} أيام`
-    : `${toArabicDigits(days)} يومًا`;
+  return arabicCount(days, { one: 'يوم واحد', two: 'يومين', few: 'أيام', many: 'يومًا' });
 }
 
 // 28 days = 4 weeks, the trend window.

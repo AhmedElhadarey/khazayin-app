@@ -1,9 +1,8 @@
 /**
  * Signed area per subpath of an SVG path (M/L/H/V/C/S/Q/A/Z, absolute and
- * relative, packed arc flags). Test helper: a filled subpath with ~0 area draws
- * nothing, which is how a retraced arc once hid CommunityGlyph's second head.
+ * relative, packed arc flags; T is unsupported and throws).
+ * Test helper: a filled subpath with ~0 area draws nothing, which is how a retraced arc once hid CommunityGlyph's second head.
  */
-// Signed area per subpath of an SVG path (M/L/H/V/C/S/Q/T/A/Z, abs+rel).
 export function subpathAreas(d: string): number[] {
   const toks = d.match(/[a-zA-Z]|-?(?:\d*\.\d+|\d+\.?)(?:e[-+]?\d+)?/gi) as string[];
   let i = 0, cmd = '', x = 0, y = 0, sx = 0, sy = 0, cx = 0, cy = 0;

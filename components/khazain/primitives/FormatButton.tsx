@@ -40,7 +40,7 @@ export function FormatButton({
       accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled: !onPress }}
       accessibilityHint={onPress ? undefined : 'قريبًا'}
-      style={({ pressed }) => [styles.btn, { opacity: pressed ? 0.75 : 1 }]}
+      style={({ pressed }) => [styles.btn, { opacity: !onPress ? 0.5 : pressed ? 0.75 : 1 }]}
     >
       <FigmaIcon name={mark} size={GLYPH} color={KhazainColors.ink500} />
     </Pressable>

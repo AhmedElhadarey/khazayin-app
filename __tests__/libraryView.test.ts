@@ -1,12 +1,12 @@
 /** Pure view decisions for the Library: smart reminders and the audiobook section. */
+import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
+import { remindersSubtitle } from '@/services/libraryStats';
+import { audiobookCardsFor, buildSmartReminders, enabledFromMap, runSingleFlight } from '@/services/libraryView';
+
 jest.mock('@react-native-async-storage/async-storage', () => ({
   __esModule: true,
   default: { getItem: jest.fn(async () => null), setItem: jest.fn(async () => undefined), removeItem: jest.fn(async () => undefined) },
 }));
-
-import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
-import { remindersSubtitle } from '@/services/libraryStats';
-import { audiobookCardsFor, buildSmartReminders } from '@/services/libraryView';
 
 const NOW = new Date(2026, 9, 23, 6, 0);
 const base = {
@@ -67,5 +67,40 @@ describe('audiobookCardsFor', () => {
   it('المكتمل shows the completed card alone, or its own empty state', () => {
     expect(audiobookCardsFor('completed', lecture, lecture)).toEqual({ inProgress: false, completed: true, empty: null });
     expect(audiobookCardsFor('completed', lecture, null)).toEqual({ inProgress: false, completed: false, empty: 'completed' });
+  });
+});
+
+
+describe('enabledFromMap', () => {
+  it('reads the stored value and falls back to defaultOn for a missing key', () => {
+    const cats = NOTIFICATION_CATEGORIES;
+    const first = cats[0];
+    const isOn = enabledFromMap(cats, { [first.id]: !first.defaultOn } as any);
+    expect(isOn(first.id)).toBe(!first.defaultOn);
+    expect(enabledFromMap(cats, {} as any)(first.id)).toBe(first.defaultOn);
+  });
+});
+
+describe('runSingleFlight', () => {
+  it('ignores a second call for the same key until the first settles', async () => {
+    const pending = new Set<string>();
+    let release!: () => void;
+    const task = jest.fn(() => new Promise<void>((r) => { release = r; }));
+    const a = runSingleFlight(pending, 'k', task);
+    const b = runSingleFlight(pending, 'k', task);
+    expect(task).toHaveBeenCalledTimes(1);
+    expect(b).toBeNull();
+    release();
+    await a;
+    expect(pending.has('k')).toBe(false);
+    runSingleFlight(pending, 'k', task);
+    expect(task).toHaveBeenCalledTimes(2);
+  });
+  it('releases the key and reports a failure to onError', async () => {
+    const pending = new Set<string>();
+    const onError = jest.fn();
+    await runSingleFlight(pending, 'k', () => Promise.reject(new Error('x')), onError);
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(pending.has('k')).toBe(false);
   });
 });

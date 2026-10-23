@@ -1,4 +1,5 @@
 import React from 'react';
+import { StyleSheet } from 'react-native';
 import { FormatButton } from '@/components/khazain/primitives/FormatButton';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -28,6 +29,11 @@ describe('FormatButton', () => {
     expect(btn.props.disabled).toBe(true);
     expect(btn.props.accessibilityState).toEqual({ disabled: true });
     expect(btn.props.accessibilityHint).toBe('قريبًا');
+  });
+  it('looks inert at half opacity when disabled, full when live', () => {
+    const style = (b: any) => StyleSheet.flatten(typeof b.props.style === 'function' ? b.props.style({ pressed: false }) : b.props.style);
+    expect(style(mount()).opacity).toBe(0.5);
+    expect(style(mount(() => undefined)).opacity).toBe(1);
   });
   it('is live without a hint once it has an action', () => {
     const btn = mount(() => undefined);

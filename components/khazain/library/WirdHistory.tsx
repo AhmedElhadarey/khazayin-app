@@ -183,9 +183,9 @@ function GridCell({ cell }: { cell: HistoryCell | undefined }) {
     <View style={styles.cellWrap} accessible accessibilityLabel={cellAccessibilityLabel(cell)}>
       <View style={[styles.cell, cellStyleFor(cell.state)]}>
         {cell.state === 'completed' ? (
-          <Text style={styles.cellCheck}>✓</Text>
+          <Text style={styles.cellCheck} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>✓</Text>
         ) : (
-          <Text style={styles.cellDay}>
+          <Text style={styles.cellDay} maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}>
             {toAr(d)}
           </Text>
         )}
