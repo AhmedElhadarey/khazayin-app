@@ -1,5 +1,6 @@
 import {
   LIBRARY_EXTENSION_SECTIONS,
+  LIBRARY_IN_PLACE_EXTENSIONS,
   LIBRARY_PROGRESS_STAT_ORDER,
   LIBRARY_REFERENCE_SECTIONS,
   LIBRARY_SECTION_ORDER,
@@ -23,7 +24,6 @@ describe('Library reference hierarchy', () => {
       'dailyWird',
       'quickNote',
       'filters',
-      'savedList',
       'audiobookProgress',
       'smartReminders',
     ]);
@@ -41,7 +41,7 @@ describe('Library reference hierarchy', () => {
     const lastReference = Math.max(
       ...LIBRARY_REFERENCE_SECTIONS.map((key) => LIBRARY_SECTION_ORDER.indexOf(key)),
     );
-    LIBRARY_EXTENSION_SECTIONS.forEach((key) => {
+    LIBRARY_EXTENSION_SECTIONS.filter((key) => !LIBRARY_IN_PLACE_EXTENSIONS.includes(key as 'savedList')).forEach((key) => {
       expect([key, LIBRARY_SECTION_ORDER.indexOf(key) > lastReference]).toEqual([key, true]);
     });
   });
@@ -50,6 +50,7 @@ describe('Library reference hierarchy', () => {
     expect([...LIBRARY_EXTENSION_SECTIONS].sort()).toEqual([
       'insights',
       'progressStats',
+      'savedList',
       'wirdHistory',
       'wirdSuggestion',
       'wirdTrend',
@@ -64,6 +65,17 @@ describe('Library reference hierarchy', () => {
     // The extra entry is the DB-failure banner, which is an error state rather
     // than a Figma section.
     expect(LIBRARY_SECTION_ORDER).toContain('dbError');
+  });
+});
+
+describe('savedList is an in-place extension (LIBRARY-26)', () => {
+  it('is not part of the frame but keeps its place between the chips and the audiobook block', () => {
+    expect(LIBRARY_REFERENCE_SECTIONS).not.toContain('savedList');
+    expect(LIBRARY_EXTENSION_SECTIONS).toContain('savedList');
+    expect(LIBRARY_IN_PLACE_EXTENSIONS).toEqual(['savedList']);
+    const at = (k: (typeof LIBRARY_SECTION_ORDER)[number]) => LIBRARY_SECTION_ORDER.indexOf(k);
+    expect(at('filters')).toBeLessThan(at('savedList'));
+    expect(at('savedList')).toBeLessThan(at('audiobookProgress'));
   });
 });
 

@@ -114,3 +114,31 @@ describe('wird reminder card copy (LIBRARY-11, 12)', () => {
     expect(nextReminderLabel(now, { hour: 8, minute: 0 }, false)).toContain('٨:٠٠');
   });
 });
+
+import { filterChipCount } from '@/services/libraryStats';
+import { LIBRARY_FILTERS } from '@/data/content/sections';
+
+describe('Library filter chips (LIBRARY-17)', () => {
+  const counts = { saved: 3, notes: 12, completed: 0 };
+  it('carries the file chips plus real notes and completed, السجل last', () => {
+    expect(LIBRARY_FILTERS.map((f) => [f.id, f.label])).toEqual([
+      ['all', 'الكل'],
+      ['saved', 'المحفوظات'],
+      ['notes', 'ملاحظاتي'],
+      ['completed', 'المكتمل'],
+      ['playlist', 'قوائم التشغيل'],
+      ['history', 'السجل'],
+    ]);
+  });
+  it('counts are real Arabic-Indic numbers where a feature backs them', () => {
+    expect(filterChipCount('all', counts)).toBe('١٥');
+    expect(filterChipCount('saved', counts)).toBe('٣');
+    expect(filterChipCount('notes', counts)).toBe('١٢');
+    expect(filterChipCount('completed', counts)).toBe('٠');
+  });
+  it('has no count for playlists or history, and no fake number in the data', () => {
+    expect(filterChipCount('playlist', counts)).toBe('');
+    expect(filterChipCount('history', counts)).toBe('');
+    expect(LIBRARY_FILTERS.find((f) => f.id === 'playlist')!.count).toBeUndefined();
+  });
+});

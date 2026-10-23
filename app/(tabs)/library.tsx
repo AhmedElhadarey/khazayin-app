@@ -29,6 +29,7 @@ import {
   visibleLibrarySections,
 } from '@/constants/libraryPresentation';
 import {
+  filterChipCount,
   juzCompletedSubtitle,
   lecturesListenedSubtitle,
   nextReminderLabel,
@@ -271,15 +272,14 @@ export default function LibraryScreen() {
 
   // US5: the 'history' (السجل) pill is now live and renders <WirdHistory/>.
   // Override mock counts with real values from savedStore + notesStore.
-  const realFilters = filters
-    .map((f) => ({
-      ...f,
-      count:
-        f.id === 'all' ? toArNum(savedCount + notes.length) :
-        f.id === 'saved' ? toArNum(savedCount) :
-        f.id === 'notes' ? toArNum(notes.length) :
-        f.count,
-    }));
+  const realFilters = filters.map((f) => ({
+    ...f,
+    count: filterChipCount(f.id, {
+      saved: savedCount,
+      notes: notes.length,
+      completed: completedLectureCount,
+    }),
+  }));
 
   // Reminder categories that are both shipped and switched on. Derived from the
   // notification registry, so the Library never advertises a reminder that has
@@ -629,9 +629,11 @@ export default function LibraryScreen() {
               >
                 {/* The frame sets the label at 14 and the count at 12, with a
                     12pt gap — physical left → right: count, then label. */}
-                <Text style={[styles.filterCount, active && styles.filterLabelActive]}>
-                  {f.count}
-                </Text>
+                {f.count ? (
+                  <Text style={[styles.filterCount, active && styles.filterLabelActive]}>
+                    {f.count}
+                  </Text>
+                ) : null}
                 <Text style={[styles.filterLabel, active && styles.filterLabelActive]}>
                   {f.label}
                 </Text>

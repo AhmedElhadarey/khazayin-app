@@ -18,13 +18,18 @@ export const LIBRARY_REFERENCE_SECTIONS = Object.freeze([
   'dailyWird',
   'quickNote',
   'filters',
-  'savedList',
   'audiobookProgress',
   'smartReminders',
 ] as const);
 
-/** Sections this app added after the design. Never above the reference set. */
+/**
+ * Sections this app added after the design. Never above the reference set,
+ * with one exception: `savedList` is the filter chips' result list. The frame
+ * has no saved list, so it is an addition, but it renders in place between the
+ * chips and the audiobook block — the chip that selects it sits right above.
+ */
 export const LIBRARY_EXTENSION_SECTIONS = Object.freeze([
+  'savedList',
   'wirdHistory',
   'wirdTrend',
   'insights',
@@ -75,7 +80,14 @@ export const LIBRARY_PROGRESS_STAT_ORDER = Object.freeze(['lectures', 'juz', 'pa
 
 export type LibraryProgressStatKey = (typeof LIBRARY_PROGRESS_STAT_ORDER)[number];
 
-export type LibraryFilter = 'all' | 'saved' | 'notes' | 'history';
+/** Extensions that render inside the reference run instead of below it. */
+export const LIBRARY_IN_PLACE_EXTENSIONS = Object.freeze(['savedList'] as const);
+
+/**
+ * The chip ids. `playlist` and `completed` select no section of their own: they
+ * narrow the page to the frame furniture (the audiobook cards included).
+ */
+export type LibraryFilter = 'all' | 'saved' | 'notes' | 'completed' | 'playlist' | 'history';
 
 /**
  * Which filters each section appears under. Sections absent from this map are

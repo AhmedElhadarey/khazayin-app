@@ -86,3 +86,9 @@ describe('completed lecture card (LIBRARY-10)', () => {
     expect(lib).toMatch(/inProgressCard \|\| completedCard/);
   });
 });
+
+describe('filter chip rendering (LIBRARY-17)', () => {
+  it('renders the count only when there is one', () => {
+    expect(lib).toMatch(/\{f\.count \? \(\s*<Text style=\{\[styles\.filterCount/);
+  });
+});

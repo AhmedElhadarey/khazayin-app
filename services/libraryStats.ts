@@ -124,3 +124,26 @@ export function nextReminderLabel(now: Date, time: TimeOfDay, goalMetToday: bool
     next.getDate() === now.getDate();
   return `التذكير التالي: ${isToday ? 'اليوم' : 'غدًا'} ${formatClockTime(time)}`;
 }
+
+/**
+ * The count on a Library filter chip, in Arabic-Indic digits. Empty for chips
+ * that have no real number behind them (قوائم التشغيل, السجل), so the chip
+ * renders its label alone instead of a made-up count.
+ */
+export function filterChipCount(
+  id: string,
+  counts: { saved: number; notes: number; completed: number },
+): string {
+  switch (id) {
+    case 'all':
+      return toArabicDigits(counts.saved + counts.notes);
+    case 'saved':
+      return toArabicDigits(counts.saved);
+    case 'notes':
+      return toArabicDigits(counts.notes);
+    case 'completed':
+      return toArabicDigits(counts.completed);
+    default:
+      return '';
+  }
+}

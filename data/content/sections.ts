@@ -193,10 +193,16 @@ export const MORE_EXTERNAL_URLS: Lookup<string> = {
 // LIBRARY_FILTERS — filter pills (library.tsx)
 // ---------------------------------------------------------------------------
 
-/** `count` matches the original inline mock values from library.tsx:17-21. */
+/**
+ * Chip set, in order. The counts of الكل / المحفوظات / ملاحظاتي / المكتمل are
+ * real and filled in by the Library from its stores; the rest carry none, so
+ * the chip renders its label alone (no fabricated number).
+ */
 export const LIBRARY_FILTERS: LibraryFilter[] = [
-  { id: 'all',      label: 'الكل',            count: '١٢' },
-  { id: 'saved',    label: 'المحفوظات',        count: '١٨' },
-  { id: 'playlist', label: 'قوائم التشغيل',   count: '٥'  },
-  { id: 'history',  label: 'السجل',           count: ''   },
+  { id: 'all',       label: 'الكل',            count: '' },
+  { id: 'saved',     label: 'المحفوظات',        count: '' },
+  { id: 'notes',     label: 'ملاحظاتي',         count: '' },
+  { id: 'completed', label: 'المكتمل',          count: '' },
+  { id: 'playlist',  label: 'قوائم التشغيل' },
+  { id: 'history',   label: 'السجل' },
 ];
