@@ -6,7 +6,7 @@ import { AsyncContent } from '@/components/khazain/state/AsyncContent';
 import { COMMUNITY_COPY } from '@/constants/communityCopy';
 import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, READING_GRID, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
+import { inputTextStyle, textStyle } from '@/constants/typography';
 import { KhazainConfig } from '@/constants/config';
 import { useCommunityAccess, useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   heading: { ...RTL_TEXT, ...textStyle('sectionTitle', { color: KhazainColors.navy900 }) },
   label: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }) },
   input: {
-    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+    ...inputTextStyle('bodyCompact', { color: KhazainColors.inkTitle }),
     minHeight: 46,
     backgroundColor: KhazainColors.cardBg,
     borderRadius: CARD_DENSITY.lectureCardRadius,

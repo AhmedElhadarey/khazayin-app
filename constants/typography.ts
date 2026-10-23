@@ -210,6 +210,19 @@ export function textStyle(
 }
 
 /**
+ * `textStyle` for a single-line TextInput: the same face and size, without the
+ * role's `lineHeight`. Android 14+ scales `fontSize` and `lineHeight` through a
+ * non-linear curve that grows the larger value less, so at a large font scale
+ * a fixed line box is shorter than the glyphs and the EditText clips their
+ * tops. One line needs no leading. Multiline inputs keep `textStyle`.
+ * Guarded by `__tests__/inputLineHeightGuard.test.ts`.
+ */
+export function inputTextStyle(role: TextRole, overrides?: Parameters<typeof textStyle>[1]) {
+  const { lineHeight: _lineHeight, ...rest } = textStyle(role, overrides);
+  return rest;
+}
+
+/**
  * Family for an ad-hoc weight, for the few sites a role does not cover.
  *
  * 700 is the design's display face (`TheSansArabic`, the Bold file), 600 the

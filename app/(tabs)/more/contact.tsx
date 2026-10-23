@@ -5,7 +5,7 @@ import { WHATSAPP_RING } from '@/components/khazain/icons/whatsappRing';
 import { CARD_DENSITY, PHYSICAL_BOX } from '@/constants/layout';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { KhazainColors } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
+import { inputTextStyle, TEXT_ROLES, textStyle } from '@/constants/typography';
 import {
   CONTACT_INCOMPLETE_ALERT,
   CONTACT_SENT_ALERT,
@@ -195,6 +195,8 @@ function Field({
             minHeight: 106,
             textAlignVertical: 'top',
             paddingTop: 12,
+            // The message wraps, so it keeps the role's leading.
+            lineHeight: TEXT_ROLES.bodyCompact.lineHeight,
           },
         ]}
       />
@@ -249,7 +251,7 @@ const styles = StyleSheet.create({
   // fill, so the field reads as a flat well rather than an outlined box; the
   // app had been drawing a visible warm border it does not have.
   fieldInput: {
-    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+    ...inputTextStyle('bodyCompact', { color: KhazainColors.inkTitle }),
     minHeight: 46,
     backgroundColor: KhazainColors.cardBg,
     borderRadius: CARD_DENSITY.lectureCardRadius,

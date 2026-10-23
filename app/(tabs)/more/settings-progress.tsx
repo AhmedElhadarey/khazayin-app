@@ -30,7 +30,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { textStyle } from '@/constants/typography';
+import { inputTextStyle, textStyle } from '@/constants/typography';
 import { showNotice } from '@/services/notice';
 
 const toAr = toArabicDigits;
@@ -200,7 +200,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   input: {
-    ...textStyle('bodyLarge', { color: KhazainColors.navy800 }),
+    ...inputTextStyle('bodyLarge', { color: KhazainColors.navy800 }),
     flex: 1,
     backgroundColor: KhazainColors.cream100,
     borderRadius: 12,

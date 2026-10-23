@@ -1,7 +1,7 @@
 import { PAGE_CHROME, PHYSICAL_ROW } from '@/constants/layout';
 import { SEARCH_PILL_ORDER, type SearchPillSlot } from '@/constants/rtlContracts';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
+import { inputTextStyle, textStyle } from '@/constants/typography';
 import React from 'react';
 import {
   Pressable,
@@ -178,7 +178,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    ...textStyle('bodyCompact'),
+    ...inputTextStyle('bodyCompact'),
     paddingVertical: 0,
   },
   placeholderText: {

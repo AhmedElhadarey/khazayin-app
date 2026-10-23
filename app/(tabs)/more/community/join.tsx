@@ -6,7 +6,7 @@ import { COMMUNITY_COPY } from '@/constants/communityCopy';
 import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
 import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
+import { inputTextStyle, textStyle } from '@/constants/typography';
 import { useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { isApiError } from '@/services/api/errors';
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   input: {
-    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+    ...inputTextStyle('bodyCompact', { color: KhazainColors.inkTitle }),
     flex: 1,
     minHeight: 46,
     backgroundColor: KhazainColors.cardBg,
