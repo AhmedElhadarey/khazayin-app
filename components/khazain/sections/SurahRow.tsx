@@ -1,4 +1,5 @@
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { toArabicDigits } from '@/constants/progress';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { BookmarkButton, SurahStar } from '@/components/khazain/primitives';
@@ -17,9 +18,9 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
  * surahs: 60 tall at radius 16 behind a 1pt `#D9D6D3` hairline, inset 12, with
  * the numbered 36pt star badge at the trailing edge.
  *
- * The frame puts a play triangle at the physical left; this app puts its own
- * bookmark control there, because tapping the row opens the reader rather than
- * starting audio.
+ * In 2207:17898 the physical-left slot is empty (its `vuesax/bulk/play`
+ * instance has opacity 0). The bookmark there is a pure app addition — the
+ * savedContent G2 entry point — not a replacement for a visible play control.
  *
  * Track: khazain-saved_20260511  T13
  */
@@ -62,7 +63,7 @@ export function SurahRow({
       </View>
 
       {/* Physical right — the numbered star badge, `DIV-79`. */}
-      <SurahStar index={surah.displayNumber} size={CARD_DENSITY.surahBadgeDisc} />
+      <SurahStar index={toArabicDigits(surah.number)} size={CARD_DENSITY.surahBadgeDisc} />
     </Pressable>
   );
 }
@@ -78,13 +79,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     alignItems: 'center',
-    gap: 12,
+    gap: 8,
   },
   body: {
     flex: 1,
     minWidth: 0,
     alignItems: 'flex-end',
   },
-  name: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
-  meta: textStyle('caption', { color: KhazainColors.ink500 }),
+  name: textStyle('bodyCompactLoose', { color: KhazainColors.inkTitle }),
+  meta: { ...textStyle('caption', { color: KhazainColors.ink500 }), lineHeight: 20 },
 });

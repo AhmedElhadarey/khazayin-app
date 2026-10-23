@@ -14,11 +14,29 @@ import { FigmaIcon } from '../icons/FigmaIcon';
  * star than the one the design draws. The numeral stays app-side because it is
  * data — the file states a single `١`.
  */
-export function SurahStar({ index, size = 36 }: { index: string; size?: number }) {
+export function SurahStar({
+  index,
+  size = 36,
+  labelRole = 'label',
+}: {
+  index: string;
+  size?: number;
+  /** 12 (`label`) on the Mushaf list, 14 (`cardTitle`) on a reciter's list. */
+  labelRole?: 'label' | 'cardTitle';
+}) {
   return (
     <View style={[styles.wrap, { width: size, height: size }]}>
       <FigmaIcon name="SurahStar" size={size} />
-      <Text style={styles.label} numberOfLines={1}>
+      <Text
+        style={[
+          styles.label,
+          textStyle(labelRole, { color: KhazainColors.goldAccent, textAlign: 'center' }),
+          // 20pt leading in a star-high box: the numeral sat ~3pt above the
+          // star's centre at the role's own 18pt leading on iOS.
+          { height: size, lineHeight: 20 },
+        ]}
+        numberOfLines={1}
+      >
         {index}
       </Text>
     </View>
@@ -31,8 +49,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   label: {
-    ...textStyle('label', { color: KhazainColors.goldAccent, textAlign: 'center' }),
     position: 'absolute',
     includeFontPadding: false,
+    textAlignVertical: 'center',
   },
 });

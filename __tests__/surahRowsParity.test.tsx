@@ -1,0 +1,118 @@
+/**
+ * T10 — surah rows and badges against frames 2207:5270 / 2207:17898:
+ * unpadded Arabic-Indic badge numerals, `•` meta separator, 8pt row gap,
+ * 14/24 title and 12/20 meta, 20pt play icon, and the reciter tab labels.
+ */
+import React from 'react';
+import { StyleSheet, Text } from 'react-native';
+import { ReciterSurahRow } from '@/components/khazain/sections/ReciterSurahRow';
+import { SurahRow } from '@/components/khazain/sections/SurahRow';
+import { SurahStar } from '@/components/khazain/primitives/SurahStar';
+import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { RECITER_TABS, SURAHS } from '@/data/content/quran';
+import { searchAll } from '@/services/search/searchAll';
+import { TEXT_ROLES } from '@/constants/typography';
+
+jest.mock('@react-native-async-storage/async-storage', () =>
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
+);
+jest.mock('@/services/audioEngine', () => ({}));
+jest.mock('react-native-track-player', () => ({}));
+jest.mock('@sentry/react-native', () => ({}));
+jest.mock('react-native-safe-area-context', () => ({
+  useSafeAreaInsets: () => ({ top: 0, bottom: 0, left: 0, right: 0 }),
+}));
+
+type Node = { type: unknown; props: Record<string, any>; findAll: (p: (n: Node) => boolean) => Node[] };
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const { act, create } = require('react-test-renderer') as {
+  act: (fn: () => void) => void;
+  create: (el: React.ReactElement) => { root: Node };
+};
+const render = (el: React.ReactElement) => {
+  let r!: ReturnType<typeof create>;
+  act(() => {
+    r = create(el);
+  });
+  return r;
+};
+const flat = (n: Node) =>
+  StyleSheet.flatten(typeof n.props.style === 'function' ? n.props.style({ pressed: false }) : n.props.style) as any;
+const textOf = (r: ReturnType<typeof create>, s: string) =>
+  r.root.findAll((n) => n.type === Text && n.props.children === s)[0];
+const rowOf = (r: ReturnType<typeof create>) => r.root.findAll((n) => typeof n.props.style === 'function')[0];
+
+const pick = (n: number) =>
+  SURAHS[n - 1] ?? { ...SURAHS[0], id: String(n), number: n, displayNumber: String(n) };
+
+describe('badge numerals are unpadded', () => {
+  it.each([1, 9, 10, 114])('SurahRow and ReciterSurahRow render surah %i without padding', (n) => {
+    const expected = String(n).replace(/[0-9]/g, (d) => '٠١٢٣٤٥٦٧٨٩'[Number(d)]);
+    const a = render(<SurahRow surah={pick(n)} />);
+    const b = render(<ReciterSurahRow surah={pick(n)} reciterName="x" />);
+    expect(textOf(a, expected)).toBeTruthy();
+    expect(textOf(b, expected)).toBeTruthy();
+    if (n < 10) expect(textOf(a, pick(n).displayNumber)).toBeUndefined();
+  });
+
+  it('keeps displayNumber in the data and in search', () => {
+    expect(pick(1).displayNumber).toBe('٠١');
+    const run = (query: string) =>
+      searchAll({ query, surahs: SURAHS, scholars: [], books: [], lectures: [] })[0]?.items ?? [];
+    expect((run('٠١') as any[]).some((s) => s.number === 1)).toBe(true);
+    expect((run('١') as any[]).some((s) => s.number === 1)).toBe(true);
+    expect((run('1') as any[]).some((s) => s.number === 1)).toBe(true);
+  });
+});
+
+describe('SurahStar labelRole', () => {
+  it('defaults to label (12) and takes cardTitle (14)', () => {
+    const a = render(<SurahStar index="١١٤" />);
+    const b = render(<SurahStar index="١١٤" labelRole="cardTitle" />);
+    expect(flat(textOf(a, '١١٤')).fontSize).toBe(TEXT_ROLES.label.fontSize);
+    expect(flat(textOf(b, '١١٤')).fontSize).toBe(TEXT_ROLES.cardTitle.fontSize);
+    expect(flat(textOf(b, '١١٤')).lineHeight).toBe(20);
+  });
+  it('centres the label in a star-sized box', () => {
+    const r = render(<SurahStar index="١" size={36} />);
+    const s = flat(textOf(r, '١'));
+    expect(s.textAlignVertical).toBe('center');
+    expect(s.height).toBe(36);
+  });
+});
+
+describe('meta separator and tab labels', () => {
+  it('uses U+2022 and never U+00B7 in SURAHS meta', () => {
+    expect(SURAHS.length).toBeGreaterThan(0);
+    for (const s of SURAHS) {
+      expect(s.meta).toContain(' • ');
+      expect(s.meta).not.toContain('·');
+    }
+    expect(pick(1).meta).toBe('مكية • ٧ آيات');
+    expect(pick(4).meta).toBe('مدنية • ١٧٦ آية');
+  });
+  it('tab labels carry the file diacritics', () => {
+    const l = RECITER_TABS.map((t) => t.label);
+    expect(l.slice(0, 3)).toEqual(['المصحف المجوَّد', 'المصحف المرتَّل', 'المصحف المعلِّم']);
+  });
+});
+
+describe('row metrics', () => {
+  it('SurahRow: gap 8, title 14/24, meta 12/20', () => {
+    const s = pick(2);
+    const r = render(<SurahRow surah={s} />);
+    expect(flat(rowOf(r)).gap).toBe(8);
+    expect(flat(textOf(r, s.name))).toMatchObject({ fontSize: 14, lineHeight: 24 });
+    expect(flat(textOf(r, s.meta))).toMatchObject({ fontSize: 12, lineHeight: 20 });
+  });
+  it('ReciterSurahRow: title 14/24, meta 12/20, play icon 20, 14pt badge', () => {
+    const s = pick(2);
+    const r = render(<ReciterSurahRow surah={s} reciterName="x" />);
+    expect(flat(textOf(r, s.name))).toMatchObject({ fontSize: 14, lineHeight: 24 });
+    expect(flat(textOf(r, s.meta))).toMatchObject({ fontSize: 12, lineHeight: 20 });
+    const play = r.root.findAll((n) => n.type === FigmaIcon && n.props.name === 'Play')[0];
+    expect(play.props.size).toBe(20);
+    expect(flat(textOf(r, '٢')).fontSize).toBe(14);
+  });
+});

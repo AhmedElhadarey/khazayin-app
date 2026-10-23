@@ -1,5 +1,6 @@
 import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { toArabicDigits } from '@/constants/progress';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import type { Surah } from '@/types/content';
@@ -45,7 +46,7 @@ export function ReciterSurahRow({
           all 16 of the file's play instances, because playback runs right to
           left. This replaces a hand-drawn triangle.
         */}
-        <FigmaIcon name="Play" size={16} color={KhazainColors.navy800} mirrored />
+        <FigmaIcon name="Play" size={20} color={KhazainColors.navy800} mirrored />
       </View>
       <View style={styles.body}>
         <Text style={styles.name} numberOfLines={1}>
@@ -55,7 +56,11 @@ export function ReciterSurahRow({
           {surah.meta}
         </Text>
       </View>
-      <SurahStar index={surah.displayNumber} size={CARD_DENSITY.surahBadgeDisc} />
+      <SurahStar
+        index={toArabicDigits(surah.number)}
+        size={CARD_DENSITY.surahBadgeDisc}
+        labelRole="cardTitle"
+      />
     </Pressable>
   );
 }
@@ -86,6 +91,6 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   // `H3-73` is TheMixArab Regular 14 in `#281E13`, not navy calligraphy.
-  name: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
-  meta: textStyle('caption', { color: KhazainColors.ink500 }),
+  name: textStyle('bodyCompactLoose', { color: KhazainColors.inkTitle }),
+  meta: { ...textStyle('caption', { color: KhazainColors.ink500 }), lineHeight: 20 },
 });
