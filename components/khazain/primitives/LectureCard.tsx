@@ -19,7 +19,7 @@ import { useSaveGesture } from './useSaveGesture';
 // 64 tall at radius 16, `#FCFAF8` behind a 1pt `#D9D6D3` hairline, inset 8, and
 // — like every card in these frames — casting no shadow at all.
 //
-// `compact` is the shape the two rail lists use (2869:2088, 2869:2306): 56
+// `variant="rail"` is the shape the two rail lists use (2869:2088, 2869:2306): 56
 // tall at radius 20 with no stroke, because the rail supplies the edge.
 // `pretitleSmall` renders an optional pretitle line above the title (e.g. "فضيلة الشيخ").
 // `iconNode` lets each section slot a different glyph badge.
@@ -36,7 +36,6 @@ export function LectureCard({
   scholar,
   duration,
   pretitleSmall,
-  compact: compactProp,
   variant,
   onPress,
 }: {
@@ -47,7 +46,6 @@ export function LectureCard({
   scholar?: string;
   duration?: string;
   pretitleSmall?: string;
-  compact?: boolean;
   /**
    * `rail` is the Audiobooks / Exclusive row (2869:2158, 2869:2367): the
    * compact shape with the badge and ONE line of text, vertically centred.
@@ -58,11 +56,10 @@ export function LectureCard({
   onPress?: () => void;
 }) {
   const rail = variant === 'rail';
-  const compact = compactProp || rail;
-  // `compact` changes the card's shape and clamps the title to one line — the
+  // `rail` changes the card's shape and clamps the title to one line — the
   // rail lists are single-line in the file. It no longer forks the text
   // styles: both frames set the same faces and sizes.
-  const heightStyle = compact ? styles.cardCompact : styles.card;
+  const heightStyle = rail ? styles.cardCompact : styles.card;
 
   const saveTarget = lectureSaveTarget({ id, title, scholar, duration, category });
   const { saved, gestureProps } = useSaveGesture(saveTarget);
@@ -89,7 +86,7 @@ export function LectureCard({
       <View
         style={[
           styles.textBlock,
-          compact ? null : styles.textBlockCard,
+          rail ? null : styles.textBlockCard,
           // Full width, not shrink-wrapped (Android 15 line-breaking), and
           // centred on the row's cross axis.
           rail ? styles.textBlockRail : null,
@@ -101,13 +98,13 @@ export function LectureCard({
           </Text>
         ) : null}
         <Text
-          style={[styles.title, compact ? null : styles.titleCard, !compact && scholar ? styles.titleCardWithScholar : null]}
-          numberOfLines={compact ? 1 : 2}
+          style={[styles.title, rail ? null : styles.titleCard, !rail && scholar ? styles.titleCardWithScholar : null]}
+          numberOfLines={rail ? 1 : 2}
         >
           {title}
         </Text>
         {scholar && !rail ? (
-          <Text style={[styles.scholar, compact ? null : styles.scholarCard]} numberOfLines={1}>
+          <Text style={[styles.scholar, rail ? null : styles.scholarCard]} numberOfLines={1}>
             {scholar}
           </Text>
         ) : null}

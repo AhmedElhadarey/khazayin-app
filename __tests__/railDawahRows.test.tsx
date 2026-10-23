@@ -58,6 +58,9 @@ describe('LectureCard rail variant (MEDIA-09)', () => {
     expect(card.alignItems).toBe('center');
     const title = r.root.findAll((n) => n.type === Text)[0];
     expect(title.props.numberOfLines).toBe(1);
+    const block = r.root.findAll((n) => flat(n)?.flex === 1 && flat(n)?.minWidth === 0)[0];
+    expect(flat(block).alignItems).toBe('stretch');
+    expect(flat(block).alignSelf).toBe('stretch');
   });
   it('keeps long-press save and an informative label', () => {
     const p = pressable(r);

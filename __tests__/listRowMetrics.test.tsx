@@ -67,7 +67,7 @@ describe('ReciterRow (SECTIONS-03, SECTIONS-11)', () => {
 describe('LectureCard (MEDIA-11, SCHOLARS-12)', () => {
   const mk = (compact: boolean) =>
     render(
-      <LectureCard id="1" category={'tafsir' as any} iconNode={null} title="العنوان" scholar="الشيخ" compact={compact} />,
+      <LectureCard id="1" category={'tafsir' as any} iconNode={null} title="العنوان" scholar="الشيخ" variant={compact ? 'rail' : undefined} />,
     );
   it('bordered card is 64: 1 + 7 + 48 + 7 + 1', () => {
     const r = mk(false);

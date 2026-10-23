@@ -67,7 +67,7 @@ export function BookmarkButton({
 
   const containerStyle =
     variant === 'floating'
-      ? [styles.floatingBubble, KhazainShadows.input]
+      ? [styles.floatingBubble, KhazainShadows.floatingBubble]
       : styles.bubble;
 
   return (

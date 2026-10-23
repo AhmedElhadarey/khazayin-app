@@ -228,9 +228,9 @@ const styles = StyleSheet.create({
   formTitle: {
     ...textStyle('bodyTitle', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     // `DIV-126` starts at 293, the title at 309, and `FORM-127` at 342. The
-    // 30pt line box (the title role's floor at the scaled 20) is kept; the text
-    // sits 8-11pt low inside it, so the box is pulled up 4.5 and the next
-    // block up 4 + 4.5 further.
+    // line box is 30 (the 1.5x floor over the stated 21), which adds 9 over the
+    // file's box: 4.5 above and 4.5 below. Each side is pulled back by that
+    // 4.5, and the below side keeps the original -4 as well.
     marginTop: -4.5,
     marginBottom: -8.5,
   },

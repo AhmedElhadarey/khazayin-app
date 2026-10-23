@@ -1359,6 +1359,7 @@ Generated from the nine audits behind `docs/plans/2026-10-23-figma-parity-design
 - Fix: shadowOpacity 0.05, shadowRadius 1 (iOS). Leave Android elevation 1.
 - Files: constants/theme.ts
 - Blast radius: Every user of KhazainShadows.listRow (More root, Contact rows, Settings rows).
+- Superseded: GLOBAL-13's `boxShadow` approach replaces the iOS shadowRadius fix above (85d429b).
 
 ### MORE-16 (low, spacing) — Paragraph block height and card position
 - Frame: 2106:2712 About

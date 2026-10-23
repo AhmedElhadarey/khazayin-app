@@ -277,12 +277,24 @@ export const KhazainShadows = {
   },
   /**
    * `boxShadow` (New Architecture) takes CSS semantics, which is what the file
-   * states; `elevation: 1` drew a grey Android outline the file does not have. Android < API 28 draws
-   * no outset shadow; that is accepted. Apply to a View style only — Text
-   * ignores it.
+   * states; `elevation: 1` drew a grey Android outline the file does not
+   * have. Android < API 28 draws no outset shadow; that is accepted. Apply to
+   * a View style only — Text ignores it.
    */
   input: {
     boxShadow: '0px 4px 16px rgba(0,0,0,0.08)',
+  },
+  /**
+   * The floating bookmark bubble on Home posters (translucent fill). It keeps
+   * the legacy shadow it had before `input` moved to `boxShadow`, so GLOBAL-13
+   * only changes the search pills and list rows.
+   */
+  floatingBubble: {
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 1,
   },
   /**
    * The More list's card — node 2102:2711 `websiteLink-13` is the one card in
