@@ -202,19 +202,6 @@ export function contentWidth(width: number): number {
   return columnWidth - horizontalGutter(columnWidth) * 2;
 }
 
-/**
- * `#RRGGBB` → `rgba(r, g, b, a)`. Colours are named once in `KhazainColors`
- * (CLAUDE.md, Theme conventions); the tab bar needs one of them at reduced
- * opacity, and re-typing the literal is how the palette drifts.
- */
-function withAlpha(hex: string, alpha: number): string {
-  const value = hex.replace('#', '');
-  const r = parseInt(value.slice(0, 2), 16);
-  const g = parseInt(value.slice(2, 4), 16);
-  const b = parseInt(value.slice(4, 6), 16);
-  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-}
-
 // ---------------------------------------------------------------------------
 // Bottom navigation geometry (Figma node 2031:5675, design spec section 5.2)
 // ---------------------------------------------------------------------------
@@ -230,8 +217,22 @@ export const TAB_BAR = Object.freeze({
   itemRadius: 8,
   /** Translucent gold over navy — not an opaque cream panel. */
   activeFill: KhazainColors.navPillBg,
+  /** Active label (Figma Active?=Yes keeps the label cream). */
   activeInk: KhazainColors.navLabel,
-  inactiveInk: withAlpha(KhazainColors.navLabel, 0.85),
+  /** Active icon: the Active?=Yes variants recolour every path to gold. */
+  activeIcon: KhazainColors.navPill,
+  /** Inactive icon and label: #F1E7DD at full opacity. */
+  inactiveInk: KhazainColors.navLabel,
+  /** The visible corner is the controls row's 24, not the 32 outer symbol. */
+  cornerRadius: 24,
+  /** Phone row padding (Figma 2001:17496); items space-between. */
+  phonePaddingHorizontal: 16,
+  inactiveItemMinWidth: 42,
+  activeItemPaddingHorizontal: 12,
+  /** Extends a 42pt item to a 46pt touch width (>= 44). */
+  touchSlopHorizontal: 2,
+  /** The indicator straddles the bar's top edge, 2pt above the pill. */
+  indicatorTop: -2,
   indicatorWidth: 40,
   indicatorHeight: 4,
   indicatorColor: KhazainColors.navPill,

@@ -3,7 +3,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { PHYSICAL_ROW, TAB_BAR, TAB_PHYSICAL_ORDER } from '@/constants/layout';
-import { MINI_PLAYER_MARGIN, miniPlayerColumn, tabItemStyle, tabRowColumn } from '@/constants/responsive';
+import { MINI_PLAYER_MARGIN, isTabletWidth, miniPlayerColumn, tabItemStyle, tabRowColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { CHROME_MAX_FONT_SCALE, textStyle } from '@/constants/typography';
 import {
@@ -82,6 +82,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
   const rowColumn = tabRowColumn(width, sideInsets);
   const playerColumn = miniPlayerColumn(width, sideInsets);
   const itemStyle = tabItemStyle(width);
+  const tablet = isTabletWidth(width);
 
   const routesByName = new Map(state.routes.map((r) => [r.name, r]));
   const activeRouteName = state.routes[state.index]?.name;
@@ -94,6 +95,7 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
       <View
         style={[
           styles.bar,
+          !tablet && styles.barPhone,
           { paddingBottom: insets.bottom },
         ]}
       >
@@ -122,13 +124,21 @@ export function CustomTabBar({ state, navigation }: BottomTabBarProps) {
                 accessibilityRole="button"
                 accessibilityState={active ? { selected: true } : {}}
                 accessibilityLabel={label}
-                style={[styles.tabWrap, itemStyle]}
+                hitSlop={{ left: TAB_BAR.touchSlopHorizontal, right: TAB_BAR.touchSlopHorizontal }}
+                style={[tablet ? styles.tabWrapTablet : styles.tabWrap, itemStyle]}
               >
-                <View style={[styles.item, active && styles.itemActive]}>
+                <View
+                  style={[
+                    styles.item,
+                    !tablet && styles.itemPhone,
+                    active && styles.itemActive,
+                    active && !tablet && styles.itemActivePhone,
+                  ]}
+                >
                   {active ? <View style={styles.indicator} /> : null}
                   <Icon
                     size={TAB_BAR.iconSize}
-                    color={active ? TAB_BAR.activeInk : TAB_BAR.inactiveInk}
+                    color={active ? TAB_BAR.activeIcon : TAB_BAR.inactiveInk}
                     active={active}
                   />
                   <Text
@@ -158,10 +168,13 @@ const styles = StyleSheet.create({
   },
   bar: {
     backgroundColor: TAB_BAR.background,
-    borderTopLeftRadius: 32,
-    borderTopRightRadius: 32,
+    borderTopLeftRadius: TAB_BAR.cornerRadius,
+    borderTopRightRadius: TAB_BAR.cornerRadius,
     paddingHorizontal: 10,
     // paddingBottom: the safe-area inset, injected once at the call site.
+  },
+  barPhone: {
+    paddingHorizontal: TAB_BAR.phonePaddingHorizontal,
   },
   row: {
     ...PHYSICAL_ROW,
@@ -171,10 +184,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  tabWrap: {
-    // Each item caps at the reference 67pt and `space-between` spreads the
-    // leftover width, so the four tabs stay evenly placed from 320pt to 480pt
-    // without any item stretching into a slab.
+  // Phones: items size to their content and `space-between` spreads the rest,
+  // so positions shift with the active (wider) tab as in Figma 2001:17496.
+  tabWrap: {},
+  // Tablets: equal slots capped by `tabItemStyle`, so the row never jumps.
+  tabWrapTablet: {
     flex: 1,
     maxWidth: TAB_BAR.itemWidth,
   },
@@ -186,12 +200,18 @@ const styles = StyleSheet.create({
     gap: 2,
     paddingHorizontal: 4,
   },
+  itemPhone: {
+    minWidth: TAB_BAR.inactiveItemMinWidth,
+  },
   itemActive: {
     backgroundColor: TAB_BAR.activeFill,
   },
+  itemActivePhone: {
+    paddingHorizontal: TAB_BAR.activeItemPaddingHorizontal,
+  },
   indicator: {
     position: 'absolute',
-    top: 0,
+    top: TAB_BAR.indicatorTop,
     width: TAB_BAR.indicatorWidth,
     height: TAB_BAR.indicatorHeight,
     borderRadius: TAB_BAR.indicatorHeight / 2,
