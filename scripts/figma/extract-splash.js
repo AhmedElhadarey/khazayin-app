@@ -71,6 +71,8 @@ function buildWordmark(ix) {
   if (paths.length !== 72 || fills.length !== 1) {
     throw new Error(`wordmark: expected 72 paths in one colour, got ${paths.length} in ${fills}`);
   }
+  const rules = [...new Set(paths.map((p) => p.fillRule))];
+  if (rules.length !== 1) throw new Error(`wordmark: paths mix fill rules (${rules}); cannot join into one path`);
   const width = round2(node.size.x);
   const height = round2(node.size.y);
   const d = paths.map((p) => p.d).join('');
@@ -86,6 +88,7 @@ function buildWordmark(ix) {
     `  width: ${width},`,
     `  height: ${height},`,
     `  fill: '${fills[0]}',`,
+    `  fillRule: '${rules[0]}',`,
     `  d: '${d}',`,
     '} as const;',
     '',

@@ -63,3 +63,15 @@ describe('the ground layers', () => {
     );
   });
 });
+
+describe('the wordmark generator', () => {
+  it('has a checked-in module that matches the .fig', () => {
+    // --check regenerates the path string in-process and exits non-zero on drift.
+    const { execFileSync } = require('child_process') as typeof import('child_process');
+    const out = execFileSync('node', [path.join(ROOT, 'scripts/figma/extract-splash.js'), '--check'], {
+      encoding: 'utf8',
+    });
+    expect(out).toMatch(/up to date/);
+    expect(LAUNCH_WORDMARK.fillRule).toBe('nonzero');
+  });
+});

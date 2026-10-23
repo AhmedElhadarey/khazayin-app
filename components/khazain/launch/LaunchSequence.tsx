@@ -341,7 +341,7 @@ export function LaunchSequence({
       </View>
       <Animated.View style={[styles.footer, appear]} pointerEvents="none">
         <Svg width={LAUNCH_WORDMARK.width} height={LAUNCH_WORDMARK.height} viewBox={`0 0 ${LAUNCH_WORDMARK.width} ${LAUNCH_WORDMARK.height}`}>
-          <Path d={LAUNCH_WORDMARK.d} fill={LAUNCH_WORDMARK.fill} />
+          <Path d={LAUNCH_WORDMARK.d} fill={LAUNCH_WORDMARK.fill} fillRule={LAUNCH_WORDMARK.fillRule} />
         </Svg>
       </Animated.View>
     </View>

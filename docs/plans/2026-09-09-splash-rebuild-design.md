@@ -38,7 +38,7 @@ flattened export.
 
 | Layer | Source | Display |
 |---|---|---|
-| Gradient | measured off the frame export | vertical linear, `#D9C0A1` → `#F8EDE1` @55.3% → `#D8BE9D` (stated; was measured `#D8BFA1`/`#F4E7DA`@52%/`#D8BE9D`). Step 4 fades to `#E5D5C1`/`#F8EDE1`/`#E5D5C1` |
+| Gradient | stated stops (2001:888 / 2007:511) | vertical linear, `#D9C0A1` → `#F8EDE1` @55.3% → `#D8BE9D` (stated; was measured `#D8BFA1`/`#F4E7DA`@52%/`#D8BE9D`). Step 4 fades to `#E5D5C1`/`#F8EDE1`/`#E5D5C1` |
 | Pattern | `images/e2364e38…` 1934² | 1040 pt, first tile at (-149, -93.5), repeated on larger screens (was 735 from 0,0) |
 | Emblem | frame `images/1ddc58b3…` 681×945 + calligraphy `images/201c4e64…` 445×527 + tagline `images/d8d88636…` 433×58 | 131 × 181 pt, screen centre |
 | Wordmark | node 2183:4304, 72 SOLID `#7F613D` vectors | SVG path, 220 × 35.06 pt, centred, 24 pt above the bottom edge (was a fitted raster `images/61202191…`) |
@@ -119,14 +119,21 @@ where the overlay never mounts.
 
 ## Assets
 
-Written to `assets/khazain/splash/` as lossless WebP (724 KB total, down from 2.0 MB as
-PNG). Pattern ships at 1x/2x only — it is a soft 29%-opacity texture, so 2x upsamples
-invisibly on a 3x screen while a 3x tile of that size costs 741 KB alone. Emblem and
-(Updated 2026-10-23: the pattern is near-lossless WebP, 1040 px and 1400 px; the wordmark raster is gone, now an SVG path.)
+Written to `assets/khazain/splash/`. Emblem ships 1x/2x/3x as lossless WebP. The pattern
+(updated 2026-10-23) ships 1x/2x as near-lossless WebP at quality 60 (within 2 levels of
+lossless): 1040 px and 1400 px (about 1.35 px/pt at @2x). The wordmark raster is gone; it is
+an SVG path.
 
-The generator is not checked in: it depends on `sharp`, which is not a project dependency
-(it resolves only as a hoisted transitive install). Every measurement it applies is recorded
-above, so the assets can be regenerated from `docs/KHAZAYIN.fig` without it.
+Why 1400 px and not the 1934 px source: a 1934 px RGBA bitmap decodes to about 15 MB, against
+7.8 MB at 1400 px, and low-end Android (Realme Note 50 class) pays that decode on the launch
+path. The texture is low-contrast (about 29% alpha, +-7/255 amplitude), so the upsample is
+not visible.
+
+The OVERLAY bake is exact for steps 1-3 at 852 pt height and within about 5/255 elsewhere,
+where the gradient stretches differently.
+
+The generator is checked in at `scripts/figma/extract-splash.js`. `sharp` is a
+devDependency. `--check` verifies the generated wordmark module, and a jest test runs it.
 
 ## Not covered
 
