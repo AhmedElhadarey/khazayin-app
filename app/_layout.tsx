@@ -1,6 +1,8 @@
 import { LaunchSequence, shouldRunLaunchSequence, useLaunchReveal } from '@/components/khazain/launch';
 import { FONT_ASSET_MODULES } from '@/constants/fonts';
-import { Colors } from '@/constants/theme';
+import { Colors, KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
+import { PillButton } from '@/components/khazain/primitives/PillButton';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
@@ -9,7 +11,7 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
-import { I18nManager, LogBox, Platform, Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import { I18nManager, LogBox, Platform, StyleSheet, Text, TextInput, View } from 'react-native';
 import { Image as ExpoImage } from 'expo-image';
 import { useBackgroundRefresh } from '@/hooks/useBackgroundRefresh';
 import { useHorizonReconcile } from '@/hooks/useHorizonReconcile';
@@ -564,14 +566,7 @@ function RootErrorFallback({ onRetry }: { onRetry: () => void }) {
       <Text style={fallbackStyles.body}>
         نعتذر، حدث خطأ أثناء تشغيل التطبيق. يمكنك إعادة المحاولة.
       </Text>
-      <Pressable
-        onPress={onRetry}
-        accessibilityRole="button"
-        accessibilityLabel="إعادة المحاولة"
-        style={({ pressed }) => [fallbackStyles.button, { opacity: pressed ? 0.85 : 1 }]}
-      >
-        <Text style={fallbackStyles.buttonLabel}>إعادة المحاولة</Text>
-      </Pressable>
+      <PillButton label="إعادة المحاولة" variant="navy" onPress={onRetry} style={fallbackStyles.button} />
     </View>
   );
 }
@@ -582,38 +577,19 @@ const fallbackStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 32,
-    backgroundColor: Colors.light.background,
+    backgroundColor: KhazainColors.pageBg,
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 20,
-    fontWeight: '700',
-    color: Colors.light.text,
-    textAlign: 'center',
-    writingDirection: 'rtl',
+    ...textStyle('bodyLarge', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     marginBottom: 10,
   },
   body: {
-    fontSize: 14,
-    color: Colors.light.text,
-    textAlign: 'center',
-    writingDirection: 'rtl',
-    lineHeight: 22,
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     marginBottom: 24,
   },
-  button: {
-    paddingVertical: 12,
-    paddingHorizontal: 28,
-    borderRadius: 12,
-    backgroundColor: Colors.light.primary,
-  },
-  buttonLabel: {
-    color: '#fff',
-    fontSize: 15,
-    fontWeight: '600',
-    textAlign: 'center',
-    writingDirection: 'rtl',
-  },
+  // Full width: PillButton's label fills the pill, and a shrink-wrapped Arabic
+  // label can lose its last word on Android 15+.
+  button: { alignSelf: 'stretch' },
 });
 
 // Wrap the root so Sentry can capture render errors and touch/navigation
