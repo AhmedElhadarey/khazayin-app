@@ -1,4 +1,4 @@
-import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, LIST_ROW_TEXT, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import {
   listRowAccessibilityLabel,
@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     minHeight: CARD_DENSITY.reciterRowMinHeight,
     // 1 + 3 + 48 + 3 + 1 = 56: the 24 + 4 + 20 text column fills the row.
-    paddingVertical: 3,
+    paddingVertical: LIST_ROW_TEXT.paddingVertical,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
     gap: 8,
     borderRadius: CARD_DENSITY.reciterRowRadius,
@@ -103,7 +103,7 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   // `H3-145` is TheMixArab Regular 14, `P-148` TheMixArab Regular 12.
-  title: { ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }), lineHeight: 24 },
-  titleWithSubtitle: { marginBottom: 4 },
-  subtitle: { ...textStyle('caption', { color: KhazainColors.ink500 }), lineHeight: 20 },
+  title: textStyle('bodyCompactLoose', { color: KhazainColors.inkTitle }),
+  titleWithSubtitle: { marginBottom: LIST_ROW_TEXT.titleGap },
+  subtitle: { ...textStyle('caption', { color: KhazainColors.ink500 }), lineHeight: LIST_ROW_TEXT.subtitleLineHeight },
 });

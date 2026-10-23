@@ -4,7 +4,7 @@
  * mutate the engine's inputs, and the engine stays deterministic.
  */
 import { PAGES_PER_QURAN } from '@/constants/progress';
-import { RIBBON_ROW } from '@/constants/layout';
+import { LIST_ROW_TEXT } from '@/constants/layout';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -42,18 +42,18 @@ export const PAGE_READ_LIMIT = PAGES_PER_QURAN;
 
 /**
  * One typical row: a pretitle (reason), a title and a meta line. Every
- * number is RibbonCard's own (RIBBON_ROW), so the skeleton, hint and items
+ * number is RibbonCard's own (LIST_ROW_TEXT), so the skeleton, hint and items
  * share one height and the sections below do not move on the swap (§6.5). A
  * title that wraps grows its row past the slot; sizing for that worst case
  * instead left a blank band under every section of one-line rows.
  * `__tests__/listRowMetrics.test.tsx` pins this to a rendered RibbonCard.
  */
 export const RECOMMENDATION_SLOT_HEIGHT =
-  RIBBON_ROW.pretitleLineHeight +
-  RIBBON_ROW.titleLineHeight +
-  RIBBON_ROW.titleGap +
-  RIBBON_ROW.metaLineHeight +
-  2 * (RIBBON_ROW.paddingVertical + RIBBON_ROW.borderWidth);
+  LIST_ROW_TEXT.subtitleLineHeight +
+  LIST_ROW_TEXT.titleLineHeight +
+  LIST_ROW_TEXT.titleGap +
+  LIST_ROW_TEXT.subtitleLineHeight +
+  2 * (LIST_ROW_TEXT.paddingVertical + LIST_ROW_TEXT.borderWidth);
 
 /** Kill switch (§7.7). */
 export const RECOMMENDATIONS_ENABLED = true;

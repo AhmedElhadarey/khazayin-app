@@ -8,8 +8,9 @@ import { StyleSheet, Text } from 'react-native';
 import { LectureCard } from '@/components/khazain/primitives/LectureCard';
 import { ReciterRow } from '@/components/khazain/primitives/ReciterRow';
 import { RibbonCard } from '@/components/khazain/primitives/RibbonCard';
-import { CARD_DENSITY } from '@/constants/layout';
+import { CARD_DENSITY, LIST_ROW_TEXT } from '@/constants/layout';
 import { RECOMMENDATION_SLOT_HEIGHT } from '@/constants/recommendations';
+import { TEXT_ROLES } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
@@ -54,7 +55,7 @@ describe('ReciterRow (SECTIONS-03, SECTIONS-11)', () => {
     const content = lh(r, 'عنوان') + mb(r, 'عنوان') + gap + lh(r, 'فرعي');
     expect(content).toBe(48);
     const chrome = 2 * (row.paddingVertical + row.borderWidth);
-    expect(Math.max(row.minHeight, content + chrome)).toBe(56);
+    expect(content + chrome).toBe(56);
   });
   it('draws the disclosure wedge in inkTitle', () => {
     const icon = r.root.findAll((n) => n.props.name === 'Back')[0];
@@ -76,12 +77,16 @@ describe('LectureCard (MEDIA-11, SCHOLARS-12)', () => {
     expect(content).toBe(48);
     expect(2 * (card.paddingVertical + card.borderWidth) + content).toBe(CARD_DENSITY.lectureCardMinHeight);
   });
-  it('compact rows keep their own 56 metrics', () => {
+  it('title line height is the bodyCompactLoose role', () => {
+    expect(LIST_ROW_TEXT.titleLineHeight).toBe(TEXT_ROLES.bodyCompactLoose.lineHeight);
+  });
+  it('compact rows keep minHeight 56 and padding 8 (not the bordered-card metrics)', () => {
     const r = mk(true);
     const card = flat(pressable(r));
     expect(card.minHeight).toBe(56);
     expect(card.paddingVertical).toBe(8);
-    expect(lh(r, 'العنوان')).not.toBe(24);
+    expect(flat(pressable(r)).borderWidth).toBeUndefined();
+    expect(lh(r, 'العنوان')).toBe(TEXT_ROLES.bodyCompact.lineHeight);
   });
 });
 

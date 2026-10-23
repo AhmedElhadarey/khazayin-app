@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { LetterIndex } from '@/components/khazain/primitives/LetterIndex';
 
 // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -15,16 +15,21 @@ const render = () => {
   });
   return r;
 };
-const labels = (r: any): string[] =>
-  r.root
-    .findAll((n: any) => n.props.accessibilityRole === 'button' && typeof n.props.onPress === 'function')
-    .map((n: any) => n.props.accessibilityLabel as string);
-
 describe('LetterIndex', () => {
-  it('ends on alef maqsura (U+0649), as every frame does (MEDIA-18/SCHOLARS-15/SECTIONS-19)', () => {
-    const last = labels(render()).pop()!;
-    expect(last.endsWith('ى')).toBe(true);
-    expect(labels(render()).some((l) => l.endsWith('ي'))).toBe(false);
+  it('draws alef maqsura last (U+0649) but announces and emits ya (MEDIA-18/SCHOLARS-15/SECTIONS-19)', () => {
+    const onLetterPress = jest.fn();
+    let r: any;
+    act(() => {
+      r = create(<LetterIndex onLetterPress={onLetterPress} />);
+    });
+    const buttons = r.root.findAll((n: any) => n.props.accessibilityRole === 'button' && typeof n.props.onPress === 'function');
+    const last = buttons[buttons.length - 1];
+    expect(last.props.accessibilityLabel).toBe('الحرف \u064A');
+    const glyphs = r.root.findAll((n: any) => n.type === Text).map((n: any) => n.props.children);
+    expect(glyphs[glyphs.length - 1]).toBe('\u0649');
+    expect(glyphs).not.toContain('\u064A');
+    act(() => last.props.onPress());
+    expect(onLetterPress).toHaveBeenCalledWith('\u064A');
   });
 
   it('is its own physical box and sits chips flush at the physical right (SCHOLARS-16)', () => {

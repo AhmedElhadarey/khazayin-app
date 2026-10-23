@@ -287,6 +287,23 @@ export function physicalTabOrder<T>(tabs: readonly T[]): T[] {
 // Shared card density (design spec section 5.2)
 // ---------------------------------------------------------------------------
 //
+/**
+ * Text metrics shared by the 56pt list rows (ReciterRow, the bordered
+ * LectureCard, RibbonCard's ribbon variant; nodes 2031:6193, 2465:1911,
+ * 2510:1990): a 24 title, 4, then a 20 subtitle fill the 48pt column. Padding
+ * and hairline are the ribbon/reciter row's (1 + 3 + 48 + 3 + 1 = 56); the gold
+ * ribbon pulls back out over the padding. The 24 title is the
+ * `bodyCompactLoose` role; the 20 line has no role. Home's recommendation slot
+ * derives from this.
+ */
+export const LIST_ROW_TEXT = Object.freeze({
+  paddingVertical: 3,
+  borderWidth: 1,
+  titleLineHeight: 24,
+  titleGap: 4,
+  subtitleLineHeight: 20,
+} as const);
+
 // One density for every lecture-like screen. Do not fork these per route
 // unless the corresponding Figma frame genuinely differs — the audit found the
 // app's rows roughly a third taller than the reference, which pushed content
@@ -403,21 +420,6 @@ export const PAGE_CHROME = Object.freeze({
  * The selected chip keeps that box and changes only its colours; the 20 x 22
  * r8 chip the frames also contain is a different, unselected state.
  */
-/**
- * RibbonCard's ribbon variant (node 2510:1990 `DIV-139`): 56 tall, a 1pt
- * hairline, 3pt padding and a 48pt text column (24 title + 4 + 20 meta). The
- * gold ribbon runs border-inner-edge to border-inner-edge, so it pulls back
- * out over the padding. Home's recommendation slot derives from these.
- */
-export const RIBBON_ROW = Object.freeze({
-  paddingVertical: 3,
-  borderWidth: 1,
-  pretitleLineHeight: 20,
-  titleLineHeight: 24,
-  titleGap: 4,
-  metaLineHeight: 20,
-} as const);
-
 export const LETTER_RAIL = Object.freeze({
   width: 20,
   chipWidth: 16,

@@ -16,8 +16,11 @@ import { Pressable, ScrollView, StyleSheet, Text } from 'react-native';
 // RTL note: this component is *visually* pinned to the screen's RIGHT edge
 // (the start-side in RTL). Place it inside the parent screen's right padding.
 const LETTERS = [
-  'أ','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك','ل','م','ن','ه','و','ى',
+  'أ','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز','س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك','ل','م','ن','ه','و','ي',
 ];
+// Every frame's rail ends on alef maqsura (U+0649), but the letter it stands
+// for is ya (U+064A): the glyph is drawn, the letter is announced and emitted.
+const GLYPH: Readonly<Record<string, string>> = { 'ي': '\u0649' };
 
 export type LetterIndexProps = {
   active?: string;
@@ -51,7 +54,7 @@ export function LetterIndex({ active = 'م', onLetterPress, letters = LETTERS }:
             ]}
           >
             <Text style={[styles.letter, isActive ? styles.letterActive : styles.letterIdle]}>
-              {l}
+              {GLYPH[l] ?? l}
             </Text>
           </Pressable>
         );

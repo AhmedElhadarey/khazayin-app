@@ -1,4 +1,4 @@
-import { CARD_DENSITY, PHYSICAL_ROW, RIBBON_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW, LIST_ROW_TEXT } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import type { SaveTarget } from '@/services/savedToggle';
@@ -124,17 +124,17 @@ const styles = StyleSheet.create({
   cardWithRibbon: {
     minHeight: CARD_DENSITY.reciterRowMinHeight,
     borderRadius: CARD_DENSITY.reciterRowRadius,
-    borderWidth: RIBBON_ROW.borderWidth,
+    borderWidth: LIST_ROW_TEXT.borderWidth,
     borderColor: KhazainColors.hairlineWarm,
     // 1 + 3 + 48 + 3 + 1 = 56.
-    paddingVertical: RIBBON_ROW.paddingVertical,
+    paddingVertical: LIST_ROW_TEXT.paddingVertical,
     paddingHorizontal: CARD_DENSITY.lectureCardPaddingHorizontal,
   },
   ribbon: {
     alignSelf: 'stretch',
     // The ribbon reaches the card's own edge, past the row's inset, and runs
     // from the border's inner edge to the other (54 in a 56 row).
-    marginVertical: -RIBBON_ROW.paddingVertical,
+    marginVertical: -LIST_ROW_TEXT.paddingVertical,
     marginRight: -CARD_DENSITY.lectureCardPaddingHorizontal,
     width: 12,
     borderTopRightRadius: 11,
@@ -155,13 +155,13 @@ const styles = StyleSheet.create({
   title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   meta: textStyle('caption', { color: KhazainColors.ink500 }),
   // Scholar list (2102:2975): 16/24 title, 12/24 pretitle, both in inkTitle.
-  pretitleBadge: { ...textStyle('caption', { color: KhazainColors.inkTitle }), lineHeight: 24 },
+  pretitleBadge: textStyle('captionLoose', { color: KhazainColors.inkTitle }),
   titleBadge: textStyle('body', { color: KhazainColors.inkTitle }),
   // Ribbon rows (2510:1990): 24 title + 4 + 20 meta. A recommendation's reason is 20 too.
-  pretitleRibbon: { lineHeight: RIBBON_ROW.pretitleLineHeight },
-  titleRibbon: { lineHeight: RIBBON_ROW.titleLineHeight },
-  titleRibbonWithMeta: { marginBottom: RIBBON_ROW.titleGap },
-  metaRibbon: { lineHeight: RIBBON_ROW.metaLineHeight },
+  pretitleRibbon: { lineHeight: LIST_ROW_TEXT.subtitleLineHeight },
+  titleRibbon: textStyle('bodyCompactLoose', { color: KhazainColors.inkTitle }),
+  titleRibbonWithMeta: { marginBottom: LIST_ROW_TEXT.titleGap },
+  metaRibbon: { lineHeight: LIST_ROW_TEXT.subtitleLineHeight },
   duration: {
     ...textStyle('label', { color: KhazainColors.ink500 }),
     flexShrink: 0,

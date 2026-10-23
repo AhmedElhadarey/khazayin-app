@@ -1,4 +1,4 @@
-import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, LIST_ROW_TEXT, PHYSICAL_ROW } from '@/constants/layout';
 import { LECTURE_CARD_ORDER, type LectureCardSlot } from '@/constants/rtlContracts';
 import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
@@ -159,9 +159,9 @@ const styles = StyleSheet.create({
   title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   scholar: textStyle('caption', { color: KhazainColors.ink500 }),
   // The bordered card only (2465:1911 `DIV-139`): title box 8..32, subtitle 36..56.
-  titleCard: { lineHeight: 24 },
-  titleCardWithScholar: { marginBottom: 4 },
-  scholarCard: { lineHeight: 20 },
+  titleCard: textStyle('bodyCompactLoose', { color: KhazainColors.inkTitle }),
+  titleCardWithScholar: { marginBottom: LIST_ROW_TEXT.titleGap },
+  scholarCard: { lineHeight: LIST_ROW_TEXT.subtitleLineHeight },
   endCluster: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
