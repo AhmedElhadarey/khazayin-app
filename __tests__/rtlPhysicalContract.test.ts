@@ -42,6 +42,7 @@ const PINNED_SCREENS = [
   'app/settings-notifications.tsx',
   'components/khazain/library/WirdHistory.tsx',
   'components/khazain/library/WirdSuggestionBanner.tsx',
+  'components/khazain/library/WirdStartRow.tsx',
   'components/khazain/library/InsightRow.tsx',
   'components/khazain/library/MySavedSection.tsx',
   'components/khazain/library/EmptyInProgressCard.tsx',

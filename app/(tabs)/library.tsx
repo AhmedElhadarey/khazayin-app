@@ -16,6 +16,7 @@ import {
   TrendSparkline,
   WirdHistory,
   WirdSuggestionBanner,
+  WirdStartRow,
 } from '@/components/khazain/library';
 import { PAGE_CHROME, PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import {
@@ -506,28 +507,17 @@ export default function LibraryScreen() {
               <Text style={styles.wirdTitle}>ورد القرآن اليومي</Text>
             </View>
           </View>
-          {/* Physical left → right: "بدء الورد", then the reading summary. */}
-          <View style={styles.wirdActions}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="بدء الورد"
-              onPress={() =>
-                router.push({
-                  pathname: '/(tabs)/sections/mushaf' as any,
-                  params: lastSurah ? { surah: String(lastSurah.surahNumber) } : {},
-                })
-              }
-              style={({ pressed }) => [styles.startBtn, { opacity: pressed ? 0.85 : 1 }]}
-            >
-              <Text style={styles.startBtnLabel}>بدء الورد</Text>
-            </Pressable>
-            {/* One full-width column (Android 15: a shrink-wrapped Arabic Text can
-                lose its last word), the texts right-aligned inside it. */}
-            <View style={{ flex: 1 }}>
-              <Text style={styles.wirdMeta}>{lastReadingLabel(trendLast28, totalPagesRead)}</Text>
-              {wirdHighlight ? <Text style={styles.wirdHighlight}>{wirdHighlight}</Text> : null}
-            </View>
-          </View>
+          <WirdStartRow
+            style={styles.wirdActions}
+            meta={lastReadingLabel(trendLast28, totalPagesRead)}
+            highlight={wirdHighlight}
+            onStart={() =>
+              router.push({
+                pathname: '/(tabs)/sections/mushaf' as any,
+                params: lastSurah ? { surah: String(lastSurah.surahNumber) } : {},
+              })
+            }
+          />
           {/* Physical left → right: the toggle, then its label. */}
           <View style={styles.reminderInline}>
             <Toggle on={reminder.armed} onChange={(next) => onToggleCategory('wird-daily', next)} label="التذكير اليومي" />
@@ -859,26 +849,8 @@ const styles = StyleSheet.create({
   // Physical left → right: progress ring, then the reading summary.
   wirdTop: { ...PHYSICAL_ROW, alignItems: 'center', gap: 14 },
   wirdTitle: textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
-  wirdMeta: textStyle('cardTitle', { color: KhazainColors.inkTitle }),
-  wirdHighlight: {
-    ...textStyle('label', { color: KhazainColors.ink500 }),
-    marginTop: 4,
-  },
-  // Physical left → right: بدء الورد, spacer, daily-reminder toggle.
-  wirdActions: {
-    ...PHYSICAL_ROW,
-    marginTop: 14,
-    alignItems: 'flex-start',
-  },
-  startBtn: {
-    height: 36,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    backgroundColor: KhazainColors.navy800,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  startBtnLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
+  // The start button and reading summary row; its layout lives in WirdStartRow.
+  wirdActions: { marginTop: 14 },
   reminderInline: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
