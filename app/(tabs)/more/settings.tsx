@@ -29,7 +29,7 @@ import { PRAYER_METHOD_LABELS_AR } from '@/constants/settings';
 import { useRecommendationsStore } from '@/store/recommendationsStore';
 import { useWirdStore } from '@/store/wirdStore';
 import { KhazainConfig } from '@/constants/config';
-import { PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { clearAppCache } from '@/services/cacheFacade';
@@ -292,17 +292,17 @@ export default function SettingsScreen() {
           />
         </SettingsSection>
         {__DEV__ ? (
-          <SettingsSection title="مطوّر (Dev)">
+          <SettingsSection title="للمطوّرين">
             <ListRowCard
-            variant="more"
+              variant="more"
               title="إعادة الإعداد الأولي"
               subtitle="عرض شاشة الترحيب من جديد"
               icon={<InfoGlyph />}
               onPress={onResetOnboarding}
             />
             <ListRowCard
-            variant="more"
-              title="إرسال حدث تجريبي إلى Sentry"
+              variant="more"
+              title="إرسال حدث تجريبي لتسجيل الأعطال"
               subtitle="للتحقق من تسجيل الأعطال"
               icon={<InfoGlyph />}
               onPress={onTestSentry}
@@ -463,22 +463,23 @@ const styles = StyleSheet.create({
   statusCard: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 16,
+    gap: 16,
+    minHeight: CARD_DENSITY.moreCardHeight,
+    paddingVertical: 8,
+    paddingHorizontal: CARD_DENSITY.moreCardPaddingHorizontal,
+    borderRadius: CARD_DENSITY.moreCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
-    ...KhazainShadows.card,
+    borderColor: KhazainColors.hairlineCream,
+    ...KhazainShadows.listRow,
   },
   statusText: { ...PHYSICAL_BOX, flex: 1, minWidth: 0, gap: 2 },
   statusTitle: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }) },
-  statusLine: { ...RTL_TEXT, ...textStyle('caption', { color: KhazainColors.inkSubtle }) },
+  statusLine: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.inkSubtle }) },
   statusChip: {
-    width: 48,
+    width: CARD_DENSITY.moreChipSize,
     aspectRatio: 1,
-    borderRadius: 24,
+    borderRadius: CARD_DENSITY.moreChipRadius,
     backgroundColor: KhazainColors.iconChipBg,
     alignItems: 'center',
     justifyContent: 'center',

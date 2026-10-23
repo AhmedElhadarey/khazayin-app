@@ -1,5 +1,5 @@
 import React from 'react';
-import { PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { StyleSheet, Text, View } from 'react-native';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import { Toggle } from '@/components/khazain/primitives';
@@ -26,7 +26,7 @@ export function SettingsToggleRow({
   disabled,
 }: Props) {
   return (
-    <View style={[styles.card, KhazainShadows.card, disabled ? styles.disabled : null]}>
+    <View style={[styles.card, disabled ? styles.disabled : null]}>
       {/* Physical left → right: toggle, text, icon chip. */}
       <Toggle on={value} onChange={onValueChange} disabled={disabled} label={title} />
       <View style={styles.textCol}>
@@ -48,21 +48,22 @@ const styles = StyleSheet.create({
   card: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
-    borderRadius: 20,
+    gap: 16,
+    minHeight: CARD_DENSITY.moreCardHeight,
+    paddingHorizontal: CARD_DENSITY.moreCardPaddingHorizontal,
+    borderRadius: CARD_DENSITY.moreCardRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineCream,
+    ...KhazainShadows.listRow,
   },
   disabled: {
     opacity: 0.6,
   },
   iconChip: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: CARD_DENSITY.moreChipSize,
+    height: CARD_DENSITY.moreChipSize,
+    borderRadius: CARD_DENSITY.moreChipRadius,
     backgroundColor: KhazainColors.iconChipBg,
     alignItems: 'center',
     justifyContent: 'center',
@@ -75,12 +76,5 @@ const styles = StyleSheet.create({
   },
   // Same role as SettingsValueRow's title: the two sit on the same screens.
   title: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
-  description: {
-    fontFamily: 'TheMixArab',
-    fontSize: 13,
-    lineHeight: 18,
-    color: KhazainColors.inkSubtle,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  description: textStyle('bodyCompact', { color: KhazainColors.inkSubtle }),
 });
