@@ -1,7 +1,7 @@
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import React from 'react';
 import { FlatList, Pressable, StyleSheet, Text } from 'react-native';
-import { fontFace } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 
 // Horizontal row of curated suggestion topic chips. RTL-inverted so
 // first chip lands on the visual right.
@@ -36,6 +36,7 @@ export function SuggestionChips({ onPick }: Props) {
       renderItem={({ item }) => (
         <Pressable
           onPress={() => onPick(item)}
+          hitSlop={{ top: 6, bottom: 6 }}
           style={({ pressed }) => [
             styles.chip,
             { opacity: pressed ? 0.85 : 1 },
@@ -63,13 +64,9 @@ const styles = StyleSheet.create({
     borderRadius: KhazainRadius.pill,
     backgroundColor: KhazainColors.cream50,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.12)',
+    borderColor: KhazainColors.cardBorder,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  chipText: {
-    ...fontFace(700),
-    fontSize: 13,
-    color: KhazainColors.ink900,
-  },
+  chipText: textStyle('label', { color: KhazainColors.ink900, textAlign: 'center' }),
 });

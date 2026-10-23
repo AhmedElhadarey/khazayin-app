@@ -2,7 +2,7 @@ import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { fontFace, textStyle } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 
 // Shared row used by all 4 group types in the search modal.
 // RTL: icon on visual right (absolute positioned), meta chip on visual left.
@@ -58,12 +58,12 @@ const styles = StyleSheet.create({
     gap: 12,
     minHeight: CARD_DENSITY.reciterRowMinHeight,
     backgroundColor: KhazainColors.cream50,
-    borderRadius: KhazainRadius.lg,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
     borderWidth: 1,
     paddingHorizontal: 16,
     paddingVertical: 8,
     marginBottom: CARD_DENSITY.listGap,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineWarm,
   },
   iconSlot: {
     width: 40,
@@ -75,22 +75,13 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'flex-end',
+    // Full width: a shrink-wrapped Arabic title loses its last word on Android 15+.
+    alignItems: 'stretch',
   },
-  title: {
-    ...fontFace(700),
-    fontSize: 15,
-    color: KhazainColors.ink900,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
+  title: textStyle('cardTitle', { color: KhazainColors.ink900 }),
   subtitle: {
-    fontFamily: 'TheMixArab',
-    fontSize: 13,
-    color: KhazainColors.inkSubtle,
+    ...textStyle('caption', { color: KhazainColors.inkSubtle }),
     marginTop: 2,
-    textAlign: 'right',
-    writingDirection: 'rtl',
   },
   metaChip: {
     paddingHorizontal: 8,
