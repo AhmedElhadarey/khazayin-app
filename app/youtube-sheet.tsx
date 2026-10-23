@@ -1,5 +1,6 @@
 import { SheetRow, SheetShell } from '@/components/khazain/sheets';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import { useRouter } from 'expo-router';
 import React from 'react';
 import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
@@ -64,12 +65,8 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   more: {
-    textAlign: 'center',
+    ...textStyle('caption', { color: KhazainColors.goldAccent, textAlign: 'center' }),
     paddingTop: 6,
     paddingBottom: 4,
-    fontSize: 12,
-    color: KhazainColors.gold500,
-    fontFamily: 'TheSansArabic',
-    writingDirection: 'rtl',
   },
 });

@@ -5,9 +5,9 @@ import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
-import { PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
 import { useQiratStore, useSettingsStore } from '@/store';
 
 export default function SettingsQiraaScreen() {
@@ -71,7 +71,6 @@ function SelectableRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        KhazainShadows.card,
         selected ? styles.rowSelected : null,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
@@ -116,13 +115,13 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
-    minHeight: 56,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 16,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineWarm,
   },
   rowSelected: {
     borderColor: KhazainColors.goldAccent,
@@ -130,11 +129,6 @@ const styles = StyleSheet.create({
   },
   rowTitle: {
     flex: 1,
-    fontFamily: 'Amiri-Bold',
-    fontSize: 17,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   },
 });

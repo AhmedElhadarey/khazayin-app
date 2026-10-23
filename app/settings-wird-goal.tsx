@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
 import {
@@ -143,7 +143,6 @@ function PresetRow({
       accessibilityState={{ selected }}
       style={({ pressed }) => [
         styles.row,
-        KhazainShadows.card,
         selected ? styles.rowSelected : null,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
@@ -189,13 +188,13 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
-    minHeight: 56,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 16,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineWarm,
   },
   rowSelected: {
     borderColor: KhazainColors.goldAccent,
@@ -203,12 +202,7 @@ const styles = StyleSheet.create({
   },
   rowLabel: {
     flex: 1,
-    fontFamily: 'Amiri-Bold',
-    fontWeight: '700',
-    fontSize: 16,
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
+    ...textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
   },
   rowPages: textStyle('bodyCompact', { color: KhazainColors.ink500 }),
   customBlock: { ...PHYSICAL_BOX, gap: 8 },
@@ -229,7 +223,6 @@ const styles = StyleSheet.create({
     flex: 1,
     fontFamily: 'Amiri-Bold',
     fontSize: 22,
-    fontWeight: '700',
     color: KhazainColors.ink900,
     writingDirection: 'rtl',
     paddingVertical: 4,

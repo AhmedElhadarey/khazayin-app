@@ -295,7 +295,7 @@ const styles = StyleSheet.create({
   emptyState: {
     ...PHYSICAL_BOX,
     paddingVertical: 20,
-    alignItems: 'flex-end',
+    alignItems: 'stretch',
     gap: 6,
   },
   emptyTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
@@ -313,13 +313,7 @@ const styles = StyleSheet.create({
     borderBottomColor: 'rgba(141,107,52,0.12)',
   },
   timeName: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
-  timeValue: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 18,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-  },
+  timeValue: textStyle('sectionTitle', { color: KhazainColors.navy800 }),
   locationRow: {
     // Physical left -> right: value, label.
     ...PHYSICAL_ROW,
@@ -356,10 +350,7 @@ const styles = StyleSheet.create({
     ...textStyle('body', { color: KhazainColors.ink900 }),
     flex: 1,
   },
-  selectLabelActive: {
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-  },
+  selectLabelActive: textStyle('cardTitle', { color: KhazainColors.navy800 }),
   caption: {
     ...textStyle('bodyCompact', { color: KhazainColors.ink700 }),
     paddingHorizontal: 4,

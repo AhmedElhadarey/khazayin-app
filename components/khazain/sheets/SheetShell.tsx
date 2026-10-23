@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { sheetColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 
 // Bottom-sheet shell for transparent modal routes.
 // Renders a dark backdrop + cream card pinned to the bottom with a drag-handle and centered title.
@@ -71,12 +72,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   title: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 17,
-    fontWeight: '700',
-    color: KhazainColors.navy800,
-    textAlign: 'center',
+    ...textStyle('bodyLarge', { color: KhazainColors.inkTitle, textAlign: 'center' }),
     marginBottom: 10,
-    writingDirection: 'rtl',
   },
 });

@@ -5,9 +5,9 @@ import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import Svg, { Path } from 'react-native-svg';
 import { useRouter } from 'expo-router';
 import { AsyncContent, SkeletonRibbonList } from '@/components/khazain';
-import { PHYSICAL_ROW } from '@/constants/layout';
+import { CARD_DENSITY, PHYSICAL_ROW } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
 import { useRecitersStore, useSettingsStore } from '@/store';
 
 export default function SettingsReciterScreen() {
@@ -74,7 +74,6 @@ function SelectableReciterRow({
       onPress={onPress}
       style={({ pressed }) => [
         styles.row,
-        KhazainShadows.card,
         selected ? styles.rowSelected : null,
         { transform: [{ scale: pressed ? 0.98 : 1 }] },
       ]}
@@ -125,26 +124,19 @@ const styles = StyleSheet.create({
     ...PHYSICAL_ROW,
     alignItems: 'center',
     gap: 12,
-    minHeight: 64,
+    minHeight: CARD_DENSITY.reciterRowMinHeight,
     paddingVertical: 12,
     paddingHorizontal: 16,
-    borderRadius: 16,
+    borderRadius: CARD_DENSITY.reciterRowRadius,
     backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineWarm,
   },
   rowSelected: {
     borderColor: KhazainColors.goldAccent,
     borderWidth: 1.5,
   },
   textCol: { flex: 1, gap: 2 },
-  rowTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 17,
-    fontWeight: '700',
-    color: KhazainColors.ink900,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  rowSubtitle: textStyle('bodyCompact', { color: KhazainColors.ink500 }),
+  rowTitle: textStyle('bodyCompact', { color: KhazainColors.inkTitle }),
+  rowSubtitle: textStyle('caption', { color: KhazainColors.ink500 }),
 });

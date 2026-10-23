@@ -1,5 +1,6 @@
 import { PHYSICAL_ROW } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
+import { textStyle } from '@/constants/typography';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -43,20 +44,14 @@ const styles = StyleSheet.create({
     height: 44,
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(141,107,52,0.08)',
+    borderBottomColor: KhazainColors.hairlineFaint,
   },
   tap: {
     flex: 1,
     height: '100%',
     justifyContent: 'center',
   },
-  text: {
-    fontFamily: 'TheSansArabic',
-    fontSize: 14,
-    color: KhazainColors.ink900,
-    textAlign: 'right',
-    writingDirection: 'rtl',
-  },
+  text: textStyle('bodyCompact', { color: KhazainColors.ink900 }),
   removeBtn: {
     width: 32,
     height: 32,
