@@ -1,6 +1,6 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 
 import { FoundationMark } from '@/components/khazain/home/FoundationMark';
 import { Wordmark } from '@/components/khazain/primitives';
@@ -31,6 +31,10 @@ export const WELCOME_HIGHLIGHTS: readonly { key: string; text: string }[] = Obje
  */
 export function WelcomeStep(): React.ReactElement {
   const { columnStyle } = useResponsiveLayout();
+  // The bullet leads the item's FIRST line. Text line boxes grow with the
+  // system font scale, so its offset does too.
+  const { fontScale } = useWindowDimensions();
+  const bulletTop = (BODY_LINE * fontScale - BULLET) / 2;
   return (
     <LinearGradient
       colors={[KhazainColors.cream50, KhazainColors.cream100, KhazainColors.cream200]}
@@ -58,7 +62,7 @@ export function WelcomeStep(): React.ReactElement {
             <View key={h.key} style={styles.highlightRow}>
               {/* Physical left → right: text, bullet — the bullet leads at the right edge. */}
               <Text style={styles.highlightText}>{h.text}</Text>
-              <View style={styles.bullet} />
+              <View style={[styles.bullet, { marginTop: bulletTop }]} />
             </View>
           ))}
         </View>
@@ -68,6 +72,9 @@ export function WelcomeStep(): React.ReactElement {
     </LinearGradient>
   );
 }
+
+const BULLET = 7;
+const BODY_LINE = textStyle('body').lineHeight as number;
 
 const styles = StyleSheet.create({
   gradient: { flex: 1 },
@@ -99,7 +106,8 @@ const styles = StyleSheet.create({
   },
   highlightRow: {
     ...PHYSICAL_ROW,
-    alignItems: 'center',
+    // Not 'center': a wrapped item would put the bullet between its lines.
+    alignItems: 'flex-start',
     gap: 10,
   },
   highlightText: {
@@ -107,8 +115,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   bullet: {
-    width: 7,
-    height: 7,
+    width: BULLET,
+    height: BULLET,
     backgroundColor: KhazainColors.goldAccent,
     transform: [{ rotate: '45deg' }],
   },
