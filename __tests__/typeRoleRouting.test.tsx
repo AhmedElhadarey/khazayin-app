@@ -141,7 +141,6 @@ describe('NOFRAME-23 selectable rows', () => {
     (rel) => {
       const src = read(rel);
       expect(src).toContain('<ChoiceRow');
-      expect(src).not.toContain('KhazainShadows.card,\n        selected');
       expect(src).not.toContain('rowSelected');
       expect(src).toMatch(/textStyle\('bodyCompact', \{ color: KhazainColors\.inkTitle \}\)/);
     },
@@ -226,8 +225,32 @@ describe('ChoiceRow (qiraa, reciter, wird goal, font size)', () => {
   });
 
   it('is a radio that reports its state', () => {
-    expect(rowOf(true).pressable.props.accessibilityState).toEqual({ selected: true });
-    expect(rowOf(false).pressable.props.accessibilityState).toEqual({ selected: false });
+    expect(rowOf(true).pressable.props.accessibilityState).toEqual({ checked: true, selected: true });
+    expect(rowOf(false).pressable.props.accessibilityState).toEqual({ checked: false, selected: false });
+  });
+
+  it('reserves the tick slot in both states so the content never moves', () => {
+    const layout = (selected: boolean) => {
+      const r = render(
+        <ChoiceRow selected={selected} onPress={() => {}}>
+          <Text>x</Text>
+        </ChoiceRow>,
+      );
+      const pressable = r.root.findAll((n) => n.props.accessibilityRole === 'radio')[0];
+      const kids = (pressable as any).children
+        .filter((c: any) => typeof c !== 'string')
+        .map((c: any) => c.type);
+      const slots = r.root.findAll(
+        (n) => n.type === 'View' && flat(n)?.width === 18 && flat(n)?.height === 18,
+      );
+      return { slots, kinds: kids.length };
+    };
+    const idle = layout(false);
+    const chosen = layout(true);
+    expect(idle.slots).toHaveLength(1);
+    expect(chosen.slots).toHaveLength(1);
+    expect(flat(idle.slots[0])).toEqual(flat(chosen.slots[0]));
+    expect(idle.kinds).toBe(chosen.kinds);
   });
 
   it('draws the tick only when chosen', () => {

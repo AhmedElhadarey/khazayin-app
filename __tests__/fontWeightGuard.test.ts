@@ -39,7 +39,8 @@ const isLegacy = (rel: string) =>
  * `<Text>` in one file wrapping a child in another), a style object built from
  * spread/computed keys, a weight passed through a prop to a component that
  * applies it, and the file-level family gate below (a file naming no registered
- * family is not scanned at all). Also missed: a ternary with a bare-identifier
+ * family is not scanned at all). Lines are cut at the first `//`, so a weight
+ * after a URL on the same line (`'https://x', fontWeight: '700'`) is missed. Also missed: a ternary with a bare-identifier
  * arm (`on ? weight : '400'`) and the shorthand property `{ fontWeight }`.
  *
  * `ALLOWLIST` below is empty now that the Mushaf screen (ticket T20) is migrated. The test fails if a new offender appears
@@ -90,10 +91,10 @@ function heavyWeightLines(source: string, strict = false): number {
     const m = WEIGHT_RE.exec(code);
     if (!m) return false;
     // A type member (`fontWeight: string;`) declares a type, it sets no weight.
-    if (m[1].trim().endsWith(';')) return false;
-    const value = weightValue(m[1]);
+    if (/^(?:string|number|TextStyle\[.*\])\s*;$/.test(m[1].trim())) return false;
+    const value = weightValue(m[1].replace(/;\s*$/, ''));
     // Ternaries are checked whole (up to the line's end) so both arms count.
-    if (HEAVY_RE.test(m[1].includes('?') ? m[1] : value)) return true;
+    if (HEAVY_RE.test(m[1].includes('?') ? m[1].replace(/;\s*$/, '') : value)) return true;
     if (!strict) return false;
     return value === '' || !/['"\d]/.test(value);
   }).length;
@@ -180,6 +181,13 @@ describe('no bold fontWeight on a registered custom family', () => {
     expect(heavyWeightLines("fontWeight: '400', // was 500?")).toBe(0);
     expect(heavyWeightLines("fontWeight: '700', // really?")).toBe(1);
     expect(heavyWeightLines('fontWeight: string;', true)).toBe(0);
+    expect(heavyWeightLines('  fontWeight: number;', true)).toBe(0);
+    expect(heavyWeightLines('  fontWeight: TextStyle["fontWeight"];', true)).toBe(0);
+    // A statement-ending `;` must not hide a real bold weight.
+    expect(heavyWeightLines("const s = { fontFamily: 'TheMixArab', fontWeight: '700' };")).toBe(1);
+    expect(heavyWeightLines("style.fontWeight = 'bold';")).toBe(1);
+    expect(heavyWeightLines("<Text style={{ fontWeight: '700' }} />;")).toBe(1);
+    expect(heavyWeightLines("style.fontWeight = '400';")).toBe(0);
     expect(heavyWeightLines("fontWeight: '400',")).toBe(0);
     expect(heavyWeightLines("// fontWeight: '700'")).toBe(0);
   });

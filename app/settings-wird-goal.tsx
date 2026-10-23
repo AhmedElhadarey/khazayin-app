@@ -137,7 +137,11 @@ function PresetRow({
   onPress: () => void;
 }) {
   return (
-    <ChoiceRow selected={selected} onPress={onPress}>
+    <ChoiceRow
+      selected={selected}
+      onPress={onPress}
+      accessibilityLabel={`${label}، ${toArNum(pages)} صفحة`}
+    >
       <Text style={styles.rowPages}>{`${toArNum(pages)} صفحة`}</Text>
       <Text style={styles.rowLabel} numberOfLines={1}>
         {label}

@@ -11,7 +11,8 @@ import { KhazainColors } from '@/constants/theme';
  *
  * The frame is an absolutely positioned overlay, not a border on the row, and
  * the padding is the same in both states, so choosing a row changes only the
- * frame colour and width: content and row height never move. Reciter-row
+ * frame colour and width. The 18x18 tick slot is always reserved (empty when not
+ * chosen), so content and row height never move. Reciter-row
  * density (`CARD_DENSITY`), hairlineWarm frame, no shadow, gold 1.5 when chosen.
  *
  * Physical left -> right: tick, then `children` (the text), so the Arabic text
@@ -32,22 +33,25 @@ export function ChoiceRow({
     <Pressable
       onPress={onPress}
       accessibilityRole="radio"
-      accessibilityState={{ selected }}
+      accessibilityState={{ checked: selected, selected }}
       accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [styles.row, { transform: [{ scale: pressed ? 0.98 : 1 }] }]}
     >
-      {selected ? (
-        <Svg width={18} height={18} viewBox="0 0 18 18">
-          <Path
-            d="M4 9.5l3.5 3.5L14 5.5"
-            stroke={KhazainColors.goldAccent}
-            strokeWidth={2.2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            fill="none"
-          />
-        </Svg>
-      ) : null}
+      {/* Always reserved, so the content is in the same place chosen or not. */}
+      <View style={styles.tickSlot}>
+        {selected ? (
+          <Svg width={18} height={18} viewBox="0 0 18 18">
+            <Path
+              d="M4 9.5l3.5 3.5L14 5.5"
+              stroke={KhazainColors.goldAccent}
+              strokeWidth={2.2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </Svg>
+        ) : null}
+      </View>
       {children}
       <View
         pointerEvents="none"
@@ -72,6 +76,7 @@ const styles = StyleSheet.create({
     borderRadius: CARD_DENSITY.reciterRowRadius,
     backgroundColor: KhazainColors.cardBg,
   },
+  tickSlot: { width: 18, height: 18 },
   frame: {
     ...StyleSheet.absoluteFillObject,
     borderRadius: CARD_DENSITY.reciterRowRadius,

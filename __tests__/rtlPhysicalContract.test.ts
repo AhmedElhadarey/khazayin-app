@@ -83,6 +83,16 @@ const PINNED_SCREENS = [
   'components/khazain/onboarding/PreviewButton.tsx',
 ] as const;
 
+/**
+ * Screens that left PINNED_SCREENS because they now compose the shared
+ * ChoiceRow (which carries the pin) but must still not rely on auto-flip.
+ */
+const NO_AUTOFLIP_SCREENS = [
+  'app/settings-font-size.tsx',
+  'app/settings-qiraa.tsx',
+  'app/settings-reciter.tsx',
+] as const;
+
 /** Strip `//` and `/* *\/` comments so a prose mention of a banned rule passes. */
 function code(file: string): string {
   return fs
@@ -102,6 +112,14 @@ describe('the physical RTL contract holds on every hand-authored screen', () => 
     // only reads correctly if the container is LTR, which under forceRTL it is
     // not. PHYSICAL_ROW states the order instead of inferring it.
     expect(code(file)).not.toMatch(/flexDirection:\s*'row-reverse'/);
+  });
+});
+
+describe('screens built on ChoiceRow still avoid auto-flip', () => {
+  it.each(NO_AUTOFLIP_SCREENS)('%s has no row-reverse and no I18nManager branch', (file) => {
+    const src = code(file);
+    expect(src).not.toMatch(/flexDirection:\s*'row-reverse'/);
+    expect(src).not.toMatch(/I18nManager/);
   });
 });
 
