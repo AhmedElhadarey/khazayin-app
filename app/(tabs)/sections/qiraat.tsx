@@ -1,4 +1,4 @@
-import { qiraatRedirectPlan } from '@/services/reciterNavigation';
+import { runQiraatRedirect } from '@/services/reciterNavigation';
 import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 
@@ -19,10 +19,10 @@ export default function QiraatRedirect() {
   useEffect(() => {
     if (done.current) return;
     done.current = true;
-    const plan = qiraatRedirectPlan();
-    router.replace(plan.replace as any);
-    // Let the replace commit before stacking the modal on top.
-    setTimeout(() => router.push(plan.push as any), 0);
+    runQiraatRedirect({
+      replace: (href) => router.replace(href as any),
+      push: (href) => router.push(href as any),
+    });
   }, [router]);
 
   return null;

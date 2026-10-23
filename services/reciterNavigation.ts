@@ -38,7 +38,24 @@ export function qiraatRedirectPlan(): { replace: string; push: string } {
   return { replace: '/sections/reciter?tab=qiraat', push: QIRAAT_SHEET_ROUTE };
 }
 
-/** A row tap: persist the reading first, and close even if persisting fails. */
+/**
+ * Runs the redirect plan: replace this screen with the reciter Qiraa tab, then
+ * (after the replace commits) push the sheet over it.
+ */
+export function runQiraatRedirect(router: {
+  replace: (href: string) => void;
+  push: (href: string) => void;
+}): void {
+  const plan = qiraatRedirectPlan();
+  router.replace(plan.replace);
+  setTimeout(() => router.push(plan.push), 0);
+}
+
+/**
+ * A row tap: persist the reading first, and close even if persisting fails.
+ * The guard only catches a synchronous throw from `setDefault`; an async
+ * persist failure (a rejected write) never reaches it.
+ */
 export function pickQiraa(id: string, setDefault: (id: string) => void, close: () => void): void {
   try {
     setDefault(id);

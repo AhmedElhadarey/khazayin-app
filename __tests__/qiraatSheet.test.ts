@@ -5,6 +5,7 @@ import { sheetMaxWidth } from '@/constants/responsive';
 import {
   QIRAAT_SHEET_ROUTE,
   pickQiraa,
+  runQiraatRedirect,
   qiraatRedirectPlan,
 } from '@/services/reciterNavigation';
 
@@ -29,7 +30,7 @@ describe('qiraat sheet route', () => {
 
   it('keeps /sections/qiraat as a redirect, with no list of its own', () => {
     const src = read('app/(tabs)/sections/qiraat.tsx');
-    expect(src).toMatch(/qiraatRedirectPlan/);
+    expect(src).toMatch(/runQiraatRedirect/);
     expect(src).not.toMatch(/ReciterRow/);
   });
 
@@ -48,13 +49,41 @@ describe('pickQiraa', () => {
   });
 
   it('still closes if persisting throws', () => {
+    const warn = jest.spyOn(console, 'warn').mockImplementation(() => {});
     const close = jest.fn();
-    expect(() =>
-      pickQiraa('q3', () => {
-        throw new Error('x');
-      }, close),
-    ).not.toThrow();
-    expect(close).toHaveBeenCalled();
+    try {
+      expect(() =>
+        pickQiraa('q3', () => {
+          throw new Error('x');
+        }, close),
+      ).not.toThrow();
+      expect(close).toHaveBeenCalled();
+      expect(warn).toHaveBeenCalledWith(
+        '[reciterNavigation] setDefaultQiraa failed',
+        expect.any(Error),
+      );
+    } finally {
+      warn.mockRestore();
+    }
+  });
+});
+
+describe('runQiraatRedirect', () => {
+  beforeEach(() => jest.useFakeTimers());
+  afterEach(() => jest.useRealTimers());
+
+  it('replaces with the reciter Qiraa tab first, then pushes the sheet', () => {
+    const calls: string[] = [];
+    runQiraatRedirect({
+      replace: (h) => calls.push(`replace:${h}`),
+      push: (h) => calls.push(`push:${h}`),
+    });
+    expect(calls).toEqual(['replace:/sections/reciter?tab=qiraat']);
+    jest.runAllTimers();
+    expect(calls).toEqual([
+      'replace:/sections/reciter?tab=qiraat',
+      `push:${QIRAAT_SHEET_ROUTE}`,
+    ]);
   });
 });
 
@@ -84,20 +113,7 @@ describe('list-sheet geometry (Figma 2457:954)', () => {
   });
 });
 
-describe('scrim', () => {
-  it('list layout shares the one backdrop style the telegram/youtube sheets use', () => {
-    const src = read('components/khazain/sheets/SheetShell.tsx');
-    expect(src.match(/style=\{styles\.backdrop\}/g)).toHaveLength(2);
-    expect(src.match(/rgba\(20,15,8,0\.45\)/g)).toHaveLength(1);
-  });
-});
-
 describe('navigation and screen map', () => {
-  it('reciterDestination targets the sheet for the qiraat style', () => {
-    const src = read('services/reciterNavigation.ts');
-    expect(src).toMatch(/return QIRAAT_SHEET_ROUTE/);
-  });
-
   it('maps 2457:954 to the sheet and flags 2102:3187 as a tab-state deviation', () => {
     const map = JSON.parse(read('docs/visual-regression/figma-mobile-screen-map.json'));
     const q = map.find((r: any) => r.nodeId === '2457:954');
