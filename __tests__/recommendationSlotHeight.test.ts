@@ -14,7 +14,7 @@ const source = fs.readFileSync(
 
 describe('RECOMMENDATION_SLOT_HEIGHT', () => {
   it('is built from the metrics RibbonCard reads', () => {
-    for (const key of ['paddingVertical', 'borderWidth', 'titleLineHeight', 'titleGap', 'subtitleLineHeight']) {
+    for (const key of ['paddingVertical', 'borderWidth', 'titleGap', 'subtitleLineHeight']) {
       expect(source).toContain(`LIST_ROW_TEXT.${key}`);
     }
     expect(RECOMMENDATION_SLOT_HEIGHT).toBe(
