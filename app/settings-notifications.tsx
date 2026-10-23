@@ -17,7 +17,7 @@ import { ClockGlyph, NotificationsGlyph } from '@/components/khazain/settings/Se
 import { useRouter } from 'expo-router';
 import { PHYSICAL_BOX } from '@/constants/layout';
 import { textStyle } from '@/constants/typography';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import { SettingsToggleRow, SettingsValueRow } from '@/components/khazain/settings';
 import { NOTIFICATION_CATEGORIES } from '@/services/notificationRegistry';
 import { getPermissionAsync, type PermissionStatus } from '@/services/notificationScheduler';
@@ -239,16 +239,16 @@ const styles = StyleSheet.create({
   noteCard: {
     ...PHYSICAL_BOX,
     backgroundColor: KhazainColors.cream100,
-    borderRadius: 14,
+    borderRadius: KhazainRadius.md,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.18)',
+    borderColor: KhazainColors.cardBorder,
     padding: 14,
     gap: 8,
   },
   noteText: textStyle('caption', { color: KhazainColors.ink700 }),
   banner: {
     ...PHYSICAL_BOX,
-    backgroundColor: '#FCE9D6',
+    backgroundColor: KhazainColors.cream200,
     borderWidth: 1,
     borderColor: KhazainColors.gold500,
     borderRadius: 16,

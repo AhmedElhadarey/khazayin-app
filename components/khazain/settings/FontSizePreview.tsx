@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#FBF3DF',
+    backgroundColor: KhazainColors.cream200,
     minHeight: 96,
     justifyContent: 'center',
     alignItems: 'center',

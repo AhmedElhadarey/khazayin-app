@@ -50,7 +50,6 @@ const PINNED_SCREENS = [
   'app/note-editor.tsx',
   'app/notes-viewer.tsx',
   'app/content-search.tsx',
-  'app/share-sheet.tsx',
   'app/(tabs)/more/settings-progress.tsx',
   'app/(tabs)/more/settings.tsx',
   'app/(tabs)/more/community/index.tsx',
@@ -93,6 +92,7 @@ const PINNED_SCREENS = [
  * ChoiceRow (which carries the pin) but must still not rely on auto-flip.
  */
 const NO_AUTOFLIP_SCREENS = [
+  'app/share-sheet.tsx',
   'app/settings-font-size.tsx',
   'app/settings-qiraa.tsx',
   'app/settings-reciter.tsx',

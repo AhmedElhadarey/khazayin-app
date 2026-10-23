@@ -95,7 +95,7 @@ describe('app/settings-about.tsx build row (source contract)', () => {
     expect(source).toMatch(/nativeBuildVersion: Application\.nativeBuildVersion/);
     expect(source).toMatch(/executionEnvironment: Constants\.executionEnvironment/);
     // Always rendered: the value falls back to '—' instead of hiding the row.
-    expect(source).toMatch(/\{build \?\? '—'\}/);
+    expect(source).toMatch(/\{isolatedDigits\(build \?\? '—'\)\}/);
     expect(source).toMatch(/رقم البناء/);
     expect(source).not.toMatch(/\{build \?\s*\(/);
   });

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { PillButton } from '@/components/khazain/primitives';
 import { SheetHandle } from '@/components/khazain/sheets';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
 import { useRouter } from 'expo-router';
@@ -59,15 +60,7 @@ export default function SettingsFontSizeScreen() {
       <View style={styles.footer}>
         {/* The rule spans the sheet; the button sits in the reading column. */}
         <View style={[styles.footerInner, columnStyle]}>
-          <Pressable
-            onPress={apply}
-            style={({ pressed }) => [
-              styles.applyBtn,
-              { opacity: pressed ? 0.85 : 1 },
-            ]}
-          >
-            <Text style={styles.applyBtnLabel}>تطبيق</Text>
-          </Pressable>
+          <PillButton variant="navy" label="تطبيق" onPress={apply} style={styles.applyBtn} />
         </View>
       </View>
     </SafeAreaView>
@@ -117,16 +110,9 @@ const styles = StyleSheet.create({
     paddingBottom: 24,
     paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(141,107,52,0.12)',
+    borderTopColor: KhazainColors.cardBorder,
     backgroundColor: KhazainColors.pageBg,
   },
   footerInner: { paddingHorizontal: 16 },
-  applyBtn: {
-    backgroundColor: KhazainColors.navy800,
-    borderRadius: 999,
-    paddingVertical: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  applyBtnLabel: textStyle('sectionTitle', { color: '#fff' }),
+  applyBtn: { width: '100%' },
 });

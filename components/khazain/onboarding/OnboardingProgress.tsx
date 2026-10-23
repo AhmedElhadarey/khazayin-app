@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: KhazainColors.cardBorder,
+    backgroundColor: KhazainColors.cream400,
   },
   dotDone: {
     backgroundColor: KhazainColors.goldAccent,

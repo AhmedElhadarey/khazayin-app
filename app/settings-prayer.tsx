@@ -13,6 +13,7 @@
  * `expo-notifications`): every side effect goes through a service module.
  */
 
+import { PillButton } from '@/components/khazain/primitives';
 import { SheetHandle } from '@/components/khazain/sheets';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -169,21 +170,13 @@ export default function SettingsPrayerScreen() {
             <Text style={styles.locationValue}>{locationLabel}</Text>
             <Text style={styles.locationLabelText}>الموقع الحالي</Text>
           </View>
-          <Pressable
+          <PillButton
+            variant="navy"
+            label={busy ? 'جارٍ التحديد…' : 'تحديد موقعي'}
             onPress={onLocate}
             disabled={busy}
-            accessibilityRole="button"
-            accessibilityState={{ disabled: busy }}
-            accessibilityLabel="تحديد موقعي"
-            style={({ pressed }) => [
-              styles.locateBtn,
-              { opacity: busy ? 0.6 : pressed ? 0.85 : 1 },
-            ]}
-          >
-            <Text style={styles.locateBtnLabel}>
-              {busy ? 'جارٍ التحديد…' : 'تحديد موقعي'}
-            </Text>
-          </Pressable>
+            style={styles.locateBtn}
+          />
         </View>
 
         {/* 3. Calculation method. */}
@@ -319,16 +312,7 @@ const styles = StyleSheet.create({
   },
   locationLabelText: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
   locationValue: textStyle('body', { color: KhazainColors.ink700 }),
-  locateBtn: {
-    backgroundColor: KhazainColors.navy800,
-    borderRadius: 999,
-    paddingVertical: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-    marginTop: 4,
-  },
-  locateBtnLabel: textStyle('sectionTitle', { color: '#fff' }),
+  locateBtn: { width: '100%', marginBottom: 12, marginTop: 4 },
   selectRow: {
     // Physical left -> right: tick, label.
     ...PHYSICAL_ROW,
