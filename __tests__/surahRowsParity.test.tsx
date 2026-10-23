@@ -128,3 +128,27 @@ describe('row metrics', () => {
     expect(flat(textOf(r, '٢')).fontSize).toBe(14);
   });
 });
+
+describe('SurahRow bookmark as a row accessibility action', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { useSavedStore } = require('@/store') as typeof import('@/store');
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const { SAVED_COPY } = require('@/services/savedToggle') as typeof import('@/services/savedToggle');
+  const isSaved = (id: string) => useSavedStore.getState().items.some((i) => i.type === 'surah' && i.entityId === id);
+
+  it('toggles saved state, relabels, and hides the nested button', () => {
+    useSavedStore.setState({ items: [] } as any);
+    const s = pick(2);
+    const r = render(<SurahRow surah={s} />);
+    const row = rowOf(r);
+    expect(row.props.accessibilityActions).toEqual([{ name: 'bookmark', label: SAVED_COPY.saveLabel }]);
+    act(() => row.props.onAccessibilityAction({ nativeEvent: { actionName: 'bookmark' } }));
+    expect(isSaved(s.id)).toBe(true);
+    expect(rowOf(r).props.accessibilityActions[0].label).toBe(SAVED_COPY.unsaveLabel);
+    act(() => rowOf(r).props.onAccessibilityAction({ nativeEvent: { actionName: 'bookmark' } }));
+    expect(isSaved(s.id)).toBe(false);
+    const hidden = r.root.findAll((n) => n.props.importantForAccessibility === 'no-hide-descendants');
+    expect(hidden.length).toBeGreaterThan(0);
+    expect(hidden[0].props.accessibilityElementsHidden).toBe(true);
+  });
+});

@@ -4,6 +4,9 @@ import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { BookmarkButton, SurahStar } from '@/components/khazain/primitives';
 import type { Surah } from '@/types/content';
+import { SAVED_COPY, toggleSaved } from '@/services/savedToggle';
+import { useSavedStore } from '@/store';
+import { playSaveHaptic } from '@/components/khazain/primitives/useSaveGesture';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -31,9 +34,31 @@ export function SurahRow({
   surah: Surah;
   onPress?: () => void;
 }) {
+  const snapshot = {
+    type: 'surah' as const,
+    name: surah.name,
+    displayNumber: surah.displayNumber,
+    meta: surah.meta,
+  };
+  const saved = useSavedStore((s) =>
+    s.items.some((it) => it.type === 'surah' && it.entityId === surah.id),
+  );
+  // The row is one accessible element, so the nested BookmarkButton cannot take
+  // focus; the same toggle is exposed as a custom action on the row instead.
+  const toggleBookmark = () => {
+    playSaveHaptic();
+    toggleSaved({ type: 'surah', entityId: surah.id, snapshot });
+  };
+
   return (
     <Pressable
       onPress={onPress}
+      accessibilityActions={[
+        { name: 'bookmark', label: saved ? SAVED_COPY.unsaveLabel : SAVED_COPY.saveLabel },
+      ]}
+      onAccessibilityAction={(e) => {
+        if (e.nativeEvent.actionName === 'bookmark') toggleBookmark();
+      }}
       accessibilityRole="button"
       accessibilityLabel={`${surah.name}، ${surah.meta}`}
       style={({ pressed }) => [
@@ -42,17 +67,14 @@ export function SurahRow({
       ]}
     >
       {/* Physical left — bookmark */}
-      <BookmarkButton
-        type="surah"
-        entityId={surah.id}
-        snapshot={{
-          type: 'surah',
-          name: surah.name,
-          displayNumber: surah.displayNumber,
-          meta: surah.meta,
-        }}
-        variant="light"
-      />
+      <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
+        <BookmarkButton
+          type="surah"
+          entityId={surah.id}
+          snapshot={snapshot}
+          variant="light"
+        />
+      </View>
 
       {/* Centre — name + meta */}
       <View style={styles.body}>
