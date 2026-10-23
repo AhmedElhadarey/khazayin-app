@@ -9,9 +9,9 @@
  * The instance's own stroke outline is not reused: Figma derives it at twice
  * the stated weight, so the ring is drawn as a bordered View of the stated one.
  */
+export type WhatsappRingSpec = { ring: number; border: number; glyph: number };
+
 export const WHATSAPP_RING = Object.freeze({
   more: Object.freeze({ ring: 16, border: 1, glyph: 7.2 }),
   contact: Object.freeze({ ring: 28, border: 1.75, glyph: 12.6 }),
-});
-
-export type WhatsappRingSpec = { ring: number; border: number; glyph: number };
+} satisfies Readonly<Record<'more' | 'contact', WhatsappRingSpec>>);
