@@ -132,13 +132,6 @@ export function ListRowCard({
 const DESCENDER_SLACK = 8;
 const descenderRoom = { paddingBottom: DESCENDER_SLACK, marginBottom: -DESCENDER_SLACK } as const;
 
-/**
- * The More card's vertical inset. The file draws none — its two 21pt lines sit
- * centred in the 82 — so this only shows once the text outgrows the card:
- * 12 + 42 + 12 + 2 hairline = 68, inside the 82, so the default is unchanged.
- */
-const MORE_CARD_MIN_INSET = 12;
-
 /** Section/archive column gaps: title to subtitle, subtitle to count. */
 const SECTION_SUBTITLE_GAP = 4;
 const SECTION_COUNT_GAP = 1;
@@ -171,7 +164,7 @@ const styles = StyleSheet.create({
   // `card` elevation.
   cardMore: {
     minHeight: CARD_DENSITY.moreCardHeight,
-    paddingVertical: MORE_CARD_MIN_INSET,
+    paddingVertical: CARD_DENSITY.moreCardPaddingVertical,
     paddingHorizontal: CARD_DENSITY.moreCardPaddingHorizontal,
     borderRadius: CARD_DENSITY.moreCardRadius,
     borderWidth: 1,

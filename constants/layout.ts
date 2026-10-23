@@ -365,6 +365,12 @@ export const CARD_DENSITY = Object.freeze({
   moreCardHeight: 82,
   moreCardRadius: 16,
   moreCardPaddingHorizontal: 16,
+  /**
+   * The file draws no vertical inset — the two 21pt lines sit centred in the
+   * 82 — so this only shows once the text outgrows the card at a large font
+   * scale: 12 + 42 + 12 + 2 hairline = 68, inside the 82.
+   */
+  moreCardPaddingVertical: 12,
   /** `DIV-24` — 48 x 48 at radius 16, so it reads as a squircle, not a circle. */
   moreChipSize: 48,
   /** Node 2102:2711 draws each row glyph at ~20pt in the chip; Settings shares it. */

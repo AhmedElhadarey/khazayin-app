@@ -58,7 +58,7 @@ describe('WirdStartRow (Library daily-wird card)', () => {
     expect(hostTexts(kids[1])).toEqual([META, HIGHLIGHT]);
   });
 
-  it('never overlaps: no absolute child, a fixed button, a flexible text column and a gap', () => {
+  it('never overlaps: the gap keeps them apart and nothing is absolutely positioned', () => {
     for (const n of [row, ...row.findAll((x) => x.type === 'View')]) {
       expect(flat(n).position).not.toBe('absolute');
     }
