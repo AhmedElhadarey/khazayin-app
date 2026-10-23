@@ -24,6 +24,7 @@ import {
   Text,
   TextInput,
   View,
+  useWindowDimensions,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -78,9 +79,10 @@ export default function ContactScreen() {
   };
 
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline')} />
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline', fontScale)} />
       <InlineHeader title="تواصل معنا" onBack={() => router.back()} style={columnStyle} />
       <KeyboardAvoidingView
         style={{ flex: 1 }}

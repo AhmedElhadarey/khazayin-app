@@ -80,13 +80,14 @@ describe('large corner', () => {
 describe('small corner', () => {
   it('default is the Sections / More 37x36 at (356, 36), unrotated', () => {
     const s: any = headerArtGeometry(false, 16).cornerSmall;
-    expect(s).toMatchObject({ left: 356, top: 36, width: 37, height: 36 });
+    expect(s).toMatchObject({ right: 0, top: 36, width: 37, height: 36 });
+    expect(s).not.toHaveProperty('left');
     expect(s.transform).toBeUndefined();
   });
 
   it('library is 37x36 at (356, 43)', () => {
     const s: any = headerArtGeometry(false, 16, { smallCorner: 'library' }).cornerSmall;
-    expect(s).toMatchObject({ left: 356, top: 43, width: 37, height: 36 });
+    expect(s).toMatchObject({ right: 0, top: 43, width: 37, height: 36 });
   });
 
   it('home is 25.84x25.14, rotated 20.8deg about its origin (370.94, 38)', () => {
@@ -95,8 +96,29 @@ describe('small corner', () => {
     expect(s.height).toBeCloseTo(25.14, 1);
     expect(rot(s)).toBeCloseTo(20.8, 1);
     // centre = origin + R (w/2, h/2)
-    expect(centre(s).x).toBeCloseTo(370.94 + 0.9347 * 12.92 - 0.3554 * 12.57, 1);
-    expect(centre(s).y).toBeCloseTo(38 + 0.3554 * 12.92 + 0.9347 * 12.57, 1);
+    const cx = 370.94 + 0.9347 * 12.92 - 0.3554 * 12.57;
+    // right-anchored: centre x = 393 - right - width / 2
+    expect(393 - s.right - s.width / 2).toBeCloseTo(cx, 1);
+    expect(s.top + s.height / 2).toBeCloseTo(38 + 0.3554 * 12.92 + 0.9347 * 12.57, 1);
+  });
+
+  it.each([320, 360, 393, 480])('is flush with the right edge of a %i window', (w) => {
+    for (const v of ['default', 'library'] as const) {
+      const s: any = headerArtGeometry(false, 16, { width: w, smallCorner: v }).cornerSmall;
+      expect(s).not.toHaveProperty('left');
+      expect(s.right).toBe(0); // box right edge == window width
+    }
+    const h: any = headerArtGeometry(false, 16, { width: w, smallCorner: 'home' }).cornerSmall;
+    expect(h.right).toBeCloseTo(393 - (370.94 + 0.9347 * 12.92 - 0.3554 * 12.57) - h.width / 2, 1);
+    expect(h.right).toBeGreaterThanOrEqual(0);
+  });
+
+  it('keeps the large corner on the physical left at every width', () => {
+    for (const w of [320, 393, 480]) {
+      const s: any = headerArtGeometry(false, 16, { width: w }).cornerLarge;
+      expect(s.left).toBeCloseTo(-27.07, 1);
+      expect(s).not.toHaveProperty('right');
+    }
   });
 
   it('tablet right anchor preserves the default box', () => {
@@ -161,14 +183,26 @@ describe('HeaderArt render order', () => {
   });
 });
 
-describe('header band heights (frame total less the 45pt status bar, plus the inset)', () => {
+describe('header band heights follow the app header, not the frame literal', () => {
   it.each([
-    ['more', 80],
-    ['inline', 81],
     ['root', 136],
-    ['search', 137],
     ['home', 155],
   ] as const)('%s = %i at the frame inset', (kind, total) => {
     expect(headerBandHeight(45, kind)).toBe(total);
+  });
+
+  it('inline covers the 44pt InlineHeader row at scale 1, growing to the 1.2 cap', () => {
+    expect(headerBandHeight(45, 'inline', 1)).toBe(45 + 44);
+    expect(headerBandHeight(45, 'inline', 1.7)).toBeCloseTo(45 + 16 + 28 * 1.2, 5);
+    expect(headerBandHeight(45, 'inline', 1.7)).toBe(headerBandHeight(45, 'inline', 1.2));
+  });
+
+  it('search is the inline header plus the 56pt the frame stacks under it', () => {
+    expect(headerBandHeight(45, 'search', 1)).toBe(headerBandHeight(45, 'inline', 1) + 56);
+  });
+
+  it('more tracks the uncapped title line', () => {
+    expect(headerBandHeight(45, 'more', 1)).toBe(45 + 8 + 28);
+    expect(headerBandHeight(45, 'more', 1.7)).toBeCloseTo(45 + 8 + 28 * 1.7, 5);
   });
 });

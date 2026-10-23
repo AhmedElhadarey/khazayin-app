@@ -11,7 +11,7 @@ import { ARCHIVE_ROWS, type ArchiveRow } from '@/data/content/archive';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
@@ -32,12 +32,13 @@ const GLYPH_BY_ID: Record<ArchiveRow['id'], React.ReactNode> = {
 
 export default function ArchiveScreen() {
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt bandHeight={headerBandHeight(insets.top, 'search')} />
+      <HeaderArt bandHeight={headerBandHeight(insets.top, 'search', fontScale)} />
       <InlineHeader title="الأرشيف" onBack={() => router.back()} style={columnStyle} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }, columnStyle]}

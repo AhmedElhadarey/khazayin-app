@@ -24,7 +24,17 @@ describe("headerArtGeometry", () => {
     // Geometry values are pinned in headerArtGeometry.test.tsx.
     expect(g.tile).toMatchObject({ position: "absolute", top: -42.5, right: 140, width: 392, height: 392 });
     expect(g.cornerSmall).toMatchObject({ right: 140, top: 36, width: 37, height: 36 });
+    expect(g.cornerSmall).not.toHaveProperty("left");
     expect(g.cornerLarge).toHaveProperty("right");
+    expect(g.cornerLarge).not.toHaveProperty("left");
+  });
+
+  it("keeps the single-corner tablet path right-anchored and 8pt lower", () => {
+    const pair = headerArtGeometry(true, 156).cornerLarge;
+    const single = headerArtGeometry(true, 156, { corners: "single" }).cornerLarge;
+    expect(single).not.toHaveProperty("left");
+    expect(single.right).toBe(pair.right);
+    expect((single.top as number) - (pair.top as number)).toBeCloseTo(8, 5);
   });
 
   it("defaults the inset to the content edge, 16pt inside the column", () => {

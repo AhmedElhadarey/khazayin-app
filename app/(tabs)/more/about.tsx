@@ -6,7 +6,7 @@ import { textStyle } from '@/constants/typography';
 import { ABOUT_CARDS, ABOUT_PARAGRAPHS } from '@/data/content/about';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
@@ -19,12 +19,13 @@ import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 // page of titles.
 export default function AboutScreen() {
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   const { columnStyle } = useResponsiveLayout();
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
-      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline')} />
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline', fontScale)} />
       <InlineHeader title="مؤسسة خزائن الرحمن" onBack={() => router.back()} style={columnStyle} />
       <ScrollView
         contentContainerStyle={[styles.container, { paddingBottom: 24 }, columnStyle]}

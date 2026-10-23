@@ -1,4 +1,5 @@
-import { PHYSICAL_BOX } from '@/constants/layout';
+import { MIN_TOUCH_TARGET, PAGE_CHROME, PHYSICAL_BOX } from '@/constants/layout';
+import { CHROME_MAX_FONT_SCALE, TEXT_ROLES } from '@/constants/typography';
 import { KhazainColors } from '@/constants/theme';
 import { Image } from 'expo-image';
 import React from 'react';
@@ -80,7 +81,8 @@ export type HeaderArtSmallCorner = keyof typeof SMALL_CORNERS;
  * `Vector Smart Object` is 392 x 549 with a STRETCH paint of m11 1.4005 and
  * m12 0.1084 over a square image: it draws a 392 square from y = -0.1084 / 1.4005
  * * 549 = -42.5, and the rest of the node is empty. The art is therefore a square
- * of the frame's width, not the 549pt box the node is.
+ * of the window's width, not the 549pt box the node is. At the 393 frame that is
+ * a 393 square against the file's 392 (within 1pt).
  */
 const TILE_SIDE = 392;
 const TILE_TOP = -42.5;
@@ -90,9 +92,9 @@ const TILE_TOP = -42.5;
  * `Frame 4header`: 80 / 81 / 136 / 137 / 155 in total). Add the safe-area top inset.
  */
 export const HEADER_BAND = Object.freeze({
-  /** More root 2102:2711 (80). */
+  /** More root 2102:2711 (80); see `headerBandHeight` for the app's own. */
   more: 35,
-  /** Inline-header pushes: Contact, About, Dawah (81). */
+  /** Inline-header pushes: Contact, About, Dawah (81 in the file; the app's row is 44). */
   inline: 36,
   /** Library and Sections roots, 2031:4659 / 2031:5675 (136). */
   root: 91,
@@ -102,7 +104,30 @@ export const HEADER_BAND = Object.freeze({
   home: 110,
 });
 
-export function headerBandHeight(insetTop: number, kind: keyof typeof HEADER_BAND): number {
+/**
+ * The band covers the app's header, not the frame literal, where they differ:
+ * - `inline`: `InlineHeader` keeps a 44pt touch row (the frame's is 36) and its
+ *   title line grows with the font scale up to CHROME_MAX_FONT_SCALE, between
+ *   two TITLE_INSET paddings.
+ * - `search`: an `inline` header with the frame's search/tab row under it.
+ * - `more`: the More title is uncapped `bodyLarge` under PAGE_CHROME.headerPaddingTop
+ *   (8 + 28 = 36 at scale 1, the frame's 35 plus a point of line box).
+ * `root` and `home` use the frame's literal height.
+ */
+export function headerBandHeight(
+  insetTop: number,
+  kind: keyof typeof HEADER_BAND,
+  fontScale = 1,
+): number {
+  const line = TEXT_ROLES.bodyLarge.lineHeight;
+  if (kind === 'inline' || kind === 'search') {
+    const pad = (MIN_TOUCH_TARGET - line) / 2;
+    const row = Math.max(MIN_TOUCH_TARGET, 2 * pad + line * Math.min(fontScale, CHROME_MAX_FONT_SCALE));
+    // `search` is the inline header plus what the frame stacks under it (92 - 36).
+    const below = kind === 'search' ? HEADER_BAND.search - HEADER_BAND.inline : 0;
+    return insetTop + row + below;
+  }
+  if (kind === 'more') return insetTop + PAGE_CHROME.headerPaddingTop + line * fontScale;
   return insetTop + HEADER_BAND[kind];
 }
 
@@ -112,10 +137,18 @@ type Placed = ReturnType<typeof fromFigma>;
 const rotated = (deg: number): ImageStyle =>
   deg === 0 ? {} : { transform: [{ rotate: `${deg}deg` }] };
 
-/** A phone keeps the frame's left anchors; `left` is already the centre-corrected box. */
-const phoneBox = (p: Placed): ImageStyle => ({
+/**
+ * A phone anchors the box to one physical edge; `left` is already the
+ * centre-corrected box. The large corner is left-anchored: the file places it
+ * 84 from the frame's left edge, which is a fixed offset from that edge at any
+ * width. The small corner is right-anchored: in every frame it is flush with the
+ * right edge (356 + 37 = 393), so it hugs the physical right at every width.
+ */
+const phoneBox = (p: Placed, edge: 'left' | 'right' = 'left'): ImageStyle => ({
   position: 'absolute',
-  left: p.left,
+  ...(edge === 'left'
+    ? { left: p.left }
+    : { right: round2(ART_FRAME_WIDTH - p.left - p.width) }),
   top: p.top,
   width: p.width,
   height: p.height,
@@ -168,7 +201,7 @@ export function headerArtGeometry(
         height: side,
       },
       cornerLarge: phoneBox(large),
-      cornerSmall: phoneBox(small),
+      cornerSmall: phoneBox(small, 'right'),
     };
   }
   const right = inset - ART_GUTTER;

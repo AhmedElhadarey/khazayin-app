@@ -12,7 +12,7 @@ import { useMoreRowsStore } from '@/store';
 import type { MoreRow as MoreRowData } from '@/types/content';
 import { useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, Linking, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Linking, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -22,6 +22,7 @@ const MORE_GLYPH = 20;
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   const { columnStyle } = useResponsiveLayout();
   const controls = useWindowControlsInset();
   const router = useRouter();
@@ -60,7 +61,7 @@ export default function MoreScreen() {
 
   return (
     <SafeAreaView style={styles.screen} edges={['top']}>
-      <HeaderArt bandHeight={headerBandHeight(insets.top, 'more')} />
+      <HeaderArt bandHeight={headerBandHeight(insets.top, 'more', fontScale)} />
       <ScrollView
         // React Navigation already reserves the measured tab-bar height.
         contentContainerStyle={[{ paddingBottom: SCREEN_BOTTOM_BREATHING }, columnStyle]}
