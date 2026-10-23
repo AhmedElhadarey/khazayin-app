@@ -44,7 +44,7 @@ import { NOTIFICATION_CATEGORIES, isCategoryEnabled } from '@/services/notificat
 import { usePlayerStore } from '@/store/playerStore';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { KhazainColors } from '@/constants/theme';
-import { fontFace, textStyle } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 import {
   FILTER_CHIP,
   LIBRARY_CARD_RADIUS,
@@ -807,37 +807,28 @@ const styles = StyleSheet.create({
     paddingHorizontal: LIBRARY_DESIGN.sideMargin,
     paddingBottom: PAGE_CHROME.searchPaddingBottom + LIBRARY_SEARCH_MARGIN_BELOW,
   },
+  // No frame covers the failure banner; geometry is the Library contract.
   dbErrorBanner: {
-    marginHorizontal: 14,
+    ...PHYSICAL_BOX,
+    marginHorizontal: LIBRARY_DESIGN.sideMargin,
     marginBottom: 14,
     padding: 14,
-    borderRadius: 14,
-    backgroundColor: KhazainColors.cream100,
+    borderRadius: LIBRARY_CARD_RADIUS,
+    backgroundColor: KhazainColors.cardBg,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.25)',
-    alignItems: 'center',
+    borderColor: KhazainColors.hairline,
+    alignItems: 'stretch',
     gap: 10,
   },
-  dbErrorText: {
-    fontSize: 13,
-    color: KhazainColors.ink700,
-    fontFamily: 'TheMixArab',
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
+  dbErrorText: textStyle('bodyCompact', { color: KhazainColors.ink700, textAlign: 'center' }),
   dbErrorBtn: {
+    alignSelf: 'center',
     paddingVertical: 8,
     paddingHorizontal: 20,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
   },
-  dbErrorBtnLabel: {
-    color: '#fff',
-    fontSize: 13,
-    ...fontFace(700),
-    writingDirection: 'rtl',
-    textAlign: 'center',
-  },
+  dbErrorBtnLabel: textStyle('cardTitle', { color: KhazainColors.pageBg, textAlign: 'center' }),
   statsRow: {
     ...PHYSICAL_ROW,
     gap: STAT_CARD.gap,
@@ -1011,11 +1002,7 @@ const styles = StyleSheet.create({
   },
   sectionTitle: textStyle('sectionTitle', { color: KhazainColors.inkHeading }),
   historyLoading: {
-    fontFamily: 'TheMixArab',
-    fontSize: 13,
-    color: KhazainColors.ink400,
-    writingDirection: 'rtl',
-    textAlign: 'center',
+    ...textStyle('caption', { color: KhazainColors.ink400, textAlign: 'center' }),
     paddingVertical: 24,
   },
 });
@@ -1029,10 +1016,5 @@ const formatStyles = StyleSheet.create({
     backgroundColor: KhazainColors.cardBg,
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  label: {
-    fontFamily: 'System',
-    fontSize: 13,
-    color: KhazainColors.ink700,
   },
 });

@@ -54,7 +54,7 @@ export function TrendSparkline({
             x2={width}
             y1={targetY}
             y2={targetY}
-            stroke={KhazainColors.gold400}
+            stroke={KhazainColors.goldAccent}
             strokeDasharray="4 3"
             strokeWidth={1}
             opacity={0.6}
@@ -76,9 +76,9 @@ export function TrendSparkline({
               fill={
                 filled
                   ? wirdTarget && p.pagesRead >= wirdTarget
-                    ? KhazainColors.gold500
+                    ? KhazainColors.goldAccent
                     : KhazainColors.navy800
-                  : KhazainColors.cream100
+                  : KhazainColors.hairline
               }
               opacity={filled ? 0.85 : 1}
             />
@@ -86,7 +86,7 @@ export function TrendSparkline({
         })}
         <Path
           d={`M0 ${HEIGHT - PADDING_BOTTOM} L${width} ${HEIGHT - PADDING_BOTTOM}`}
-          stroke={KhazainColors.cream100}
+          stroke={KhazainColors.hairline}
           strokeWidth={1}
         />
       </Svg>
@@ -100,7 +100,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: KhazainColors.cream100,
+    borderColor: KhazainColors.hairline,
     borderRadius: 8,
   },
   emptyLabel: textStyle('caption', { color: KhazainColors.ink400, textAlign: 'center' }),
