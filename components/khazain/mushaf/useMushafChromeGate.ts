@@ -1,6 +1,6 @@
 import { ChromeTapTracker, chromeAfterTap } from '@/services/mushafChrome';
 import { useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { GestureResponderEvent } from 'react-native';
 
 /**
@@ -22,7 +22,9 @@ export function useMushafChromeGate(
   const [tap] = useState(() => new ChromeTapTracker());
   const scrollingRef = useRef(false);
   const onBeginRef = useRef(opts.onUserScrollBegin);
-  onBeginRef.current = opts.onUserScrollBegin;
+  useEffect(() => {
+    onBeginRef.current = opts.onUserScrollBegin;
+  });
 
   // Up on every visit. A blur can swallow a momentum-end event, and a stuck
   // "scrolling" flag would then veto every tap.

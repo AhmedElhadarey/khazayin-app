@@ -26,4 +26,50 @@ describe('Mushaf reader chrome wiring', () => {
     expect(src).toMatch(/onTouchEnd=\{ayatStatus === 'success' \? undefined : consumeTouch\}/);
     expect(src).toMatch(/onTouchEnd=\{consumeTouch\}[^>]*>\s*<SurahNotesFooter/);
   });
+
+  it('hides on a tap only: no timer, and nothing in onScroll touches the chrome', () => {
+    expect(src).not.toMatch(/setTimeout/);
+    const at = src.indexOf('onScroll={');
+    expect(at).toBeGreaterThan(0);
+    expect(src.slice(at, at + 400)).not.toMatch(/setChromeShown/);
+  });
+
+  it('draws the ivory sheet and ink from tokens', () => {
+    expect(src).toContain('KhazainColors.mushafSheet');
+    const ayat = fs.readFileSync(
+      path.resolve(__dirname, '../components/khazain/mushaf/AyatSegments.tsx'),
+      'utf8',
+    );
+    expect(ayat).toContain('KhazainColors.mushafInk');
+  });
+
+  it('has no middle-dot separator and no gold gradient box', () => {
+    expect(raw).not.toContain('·');
+    expect(src).not.toContain('LinearGradient');
+    expect(src).toContain('<SurahCartouche');
+  });
+
+  it('the resume placeholder shows the same tile and sheet column as the loaded page', () => {
+    const i = src.indexOf('function ResumePlaceholder');
+    expect(i).toBeGreaterThan(0);
+    const body = src.slice(i, i + 700);
+    expect(body).toContain('<HeaderArt corners="none"');
+    expect(body).toContain('insetColumn(');
+    expect(body).toContain('styles.resumeSheet');
+    expect(src).toMatch(/resumeSheet:\s*\{[^}]*KhazainColors\.mushafSheet/);
+  });
+
+  it('hands AyatSegments stable identifiers, so an inline lambda cannot break its memo', () => {
+    const at = raw.indexOf('<AyatSegments');
+    expect(at).toBeGreaterThan(0);
+    const tag = raw.slice(at, raw.indexOf('/>', at));
+    for (const prop of [
+      'takeAyahNote={takeAyahNote}',
+      'noteLongPress={noteLongPress}',
+      'segments={segments}',
+      'type={type}',
+    ]) {
+      expect(tag).toContain(prop);
+    }
+  });
 });
