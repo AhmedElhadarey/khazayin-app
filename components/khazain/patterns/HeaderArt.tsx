@@ -240,11 +240,18 @@ export function headerArtGeometry(
  */
 export function HeaderArt({
   corners = 'pair',
+  tile = true,
   inset,
   smallCorner,
   bandHeight,
 }: {
   corners?: 'pair' | 'single' | 'none';
+  /**
+   * Draw the geometric tile (default). The Mushaf reader splits one frame's art
+   * over two layers: the page carries the tile (2349:829), the header overlay
+   * only the corner (2349:982).
+   */
+  tile?: boolean;
   /**
    * Where the page's content (its title) starts, measured from the window's
    * physical right edge (tablets only; phones ignore it). Defaults to the
@@ -271,12 +278,14 @@ export function HeaderArt({
   });
   return (
     <View style={styles.layer} pointerEvents="none" accessible={false} accessibilityElementsHidden>
-      <Image
-        source={require('@/assets/figma/pattern-geometric-on-page.png')}
-        style={geo.tile}
-        contentFit="fill"
-        cachePolicy="memory-disk"
-      />
+      {tile ? (
+        <Image
+          source={require('@/assets/figma/pattern-geometric-on-page.png')}
+          style={geo.tile}
+          contentFit="fill"
+          cachePolicy="memory-disk"
+        />
+      ) : null}
       {bandHeight ? <View style={[styles.band, { height: bandHeight }]} /> : null}
       {corners === 'none' ? null : (
         <Image

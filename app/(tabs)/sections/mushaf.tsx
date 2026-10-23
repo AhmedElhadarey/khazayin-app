@@ -8,6 +8,7 @@ import {
   SurahRow,
   surahNotesBlock,
 } from '@/components/khazain';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { MushafChrome, SurahCartouche, useReduceMotion } from '@/components/khazain/mushaf';
 import { SurahEndSuggestions } from '@/components/khazain/recommendations';
 import { useScreenReaderOn } from '@/components/khazain/recommendations/useScreenReaderOn';
@@ -45,7 +46,7 @@ import { takeAyahNoteParams } from '@/services/noteActions';
 import { openSearch } from '@/services/searchNavigation';
 import { useFocusEffect, useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState, type AppStateStatus, type GestureResponderEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { AppState, type AppStateStatus, type GestureResponderEvent, Platform, Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
 
@@ -174,9 +175,13 @@ function ListView({ onBack, onPick }: { onBack: () => void; onPick: (id: string)
   // container, not a wrapper around the ScrollView, so the side insets still
   // scroll (design 2026-10-22 §3.3).
   const { columnStyle } = useResponsiveLayout();
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
 
   return (
     <SafeAreaView style={styles.listScreen} edges={['top', 'bottom']}>
+      {/* Frame 2207:17898: tile 2207:17899 plus the single corner. */}
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'search', fontScale)} />
       <View style={columnStyle}>
         <InlineHeader title="قراءة القرآن" onBack={onBack} />
       </View>
@@ -492,6 +497,9 @@ function ReadingView({
 
   return (
     <View style={styles.screen}>
+      {/* 2349:829 carries the tile only. The sheet is opaque, so on a phone it
+          covers the tile; it shows in the tablet margins around the sheet. */}
+      <HeaderArt corners="none" />
       <View
         style={styles.pageArea}
         onTouchStart={onPageTouchStart}
@@ -630,6 +638,9 @@ function ReadingView({
             <Text style={styles.subtitle}>{metaLine}</Text>
           </View>
         }
+        // 2349:982 carries the corner only (2349:919), no tile. It is laid from
+        // the top of the block, safe area included, as the frame places it.
+        topArt={<HeaderArt corners="single" tile={false} />}
         bottom={
           // Physical left → right: الفهرس، الانتقال للعلامة، حفظ علامة
           // (MUSHAF_FOOTER_ORDER, Figma node 2349:982).

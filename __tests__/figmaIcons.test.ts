@@ -350,6 +350,8 @@ describe('the header art the frames lay over the page', () => {
       'app/(tabs)/sections/index.tsx',
       // 2031:4659 is the other tab root with the pair and the library corner.
       'app/(tabs)/library.tsx',
+      // 2207:17898 (index) and 2349:829 / 2349:982 (reader) lay the art too.
+      'app/(tabs)/sections/mushaf.tsx',
     ];
     for (const file of screens) {
       const src = fs.readFileSync(path.join(ROOT, file), 'utf8');

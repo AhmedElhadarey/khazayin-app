@@ -25,6 +25,7 @@ export function MushafChrome({
   onTopHeight,
   onBottomHeight,
   top,
+  topArt,
   bottom,
 }: {
   visible: boolean;
@@ -36,6 +37,8 @@ export function MushafChrome({
   /** Height of the footer block including the bottom safe area. */
   onBottomHeight: (h: number) => void;
   top: React.ReactNode;
+  /** Art laid behind the header block from its very top edge (under the status bar). */
+  topArt?: React.ReactNode;
   bottom: React.ReactNode;
 }) {
   const insets = useSafeAreaInsets();
@@ -80,6 +83,7 @@ export function MushafChrome({
           style={[styles.block, { paddingTop: insets.top }]}
           onLayout={(e) => onTopHeight(e.nativeEvent.layout.height)}
         >
+          {topArt}
           {top}
         </View>
       </Animated.View>
