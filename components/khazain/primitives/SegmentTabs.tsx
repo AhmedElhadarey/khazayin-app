@@ -49,7 +49,9 @@ export function SegmentTabs<T extends string>({
         style={styles.strip}
         contentContainerStyle={styles.scroll}
       >
-        <View style={styles.row}>
+        {/* iOS only announces `tab` children ("tab, 2 of 4", selected) inside
+            a `tablist` container; without it VoiceOver read plain groups. */}
+        <View style={styles.row} accessibilityRole="tablist">
           {physicalTabOrder(tabs).map((t) => {
             const isActive = t.key === active;
             return (
