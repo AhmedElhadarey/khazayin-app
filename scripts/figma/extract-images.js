@@ -24,6 +24,12 @@ const WANTED = [
       + '(the Home carousel mark). A white خزائن الرحمن seal, drawn over a gold disc.',
   },
   {
+    name: 'seal-word-hasri.png',
+    hash: '9beec0fa2da17ace6e7c956803c2aee8fb693f6b',
+    from: 'Node 2093:1763 `Rectangle` (10.8x5.4 at 8.1,9 in the 24.94x24 badge 2093:1760): the '
+      + 'navy word حصري laid over the white seal on the Home حصريات quick chip.',
+  },
+  {
     name: 'pattern-geometric.png',
     hash: 'e2364e38291c133886f77e15ddb43b487b8c2f27',
     from: 'Node 2102:2711 `Vector Smart Object`, the 392x549 header overlay on the '

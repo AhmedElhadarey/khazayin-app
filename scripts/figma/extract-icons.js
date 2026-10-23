@@ -28,9 +28,9 @@ function build() {
   const entries = manifest.icons.map((icon) => {
     const node = ix.byGuid.get(icon.node);
     if (!node) throw new Error(`${icon.name}: no node ${icon.node} in the file`);
-    const paths = collectPaths(node, ix);
+    const paths = collectPaths(node, ix, { bare: icon.bare, crop: icon.crop, exclude: icon.exclude });
     if (!paths.length) throw new Error(`${icon.name}: node ${icon.node} paints nothing`);
-    const size = node.size || { x: 24, y: 24 };
+    const size = icon.crop ? { x: icon.crop.width, y: icon.crop.height } : node.size || { x: 24, y: 24 };
     const colours = [...new Set(paths.map((p) => p.fill))];
     return {
       ...icon,

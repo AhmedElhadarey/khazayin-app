@@ -109,6 +109,13 @@ function ownReflection(node) {
  * Walk a node subtree and collect every painted outline in the root's own
  * coordinate space.
  *
+ * `opts` lets a manifest entry take a container and still get one mark:
+ *  - `bare`    — skip the root's own fill/stroke (a `DIV-58` disc the app draws
+ *                itself), keeping everything painted inside it.
+ *  - `crop`    — `{x,y,width,height}` in the root's own space; the result is
+ *                translated so that rectangle is the new origin.
+ *  - `exclude` — guids (`"2869:2452"`) whose subtrees are skipped.
+ *
  * Three things make this more than a tree walk:
  *
  *  - **Instances carry no children.** An INSTANCE points at a SYMBOL master
@@ -122,11 +129,13 @@ function ownReflection(node) {
  *  - **A BOOLEAN_OPERATION already holds its own result**, so its children
  *    must not be walked again or the union is drawn twice.
  */
-function collectPaths(root, { byGuid, childrenOf }) {
+function collectPaths(root, { byGuid, childrenOf }, opts = {}) {
+  const exclude = new Set(opts.exclude || []);
   const paths = [];
 
-  const walk = (node, abs, inherited) => {
+  const walk = (node, abs, inherited, isRoot) => {
     if (node.visible === false) return;
+    if (exclude.has(guidKey(node.guid))) return;
     const key = overrideKeyOf(node);
     const over = inherited.overrides.get(key);
     const derived = inherited.derived.get(key);
@@ -166,7 +175,9 @@ function collectPaths(root, { byGuid, childrenOf }) {
     // `strokeGeometry`) thickens it into a solid block (MoreArchive), so the
     // ring is emitted in the stroke colour and the stroke outline is skipped.
     const fillCleared = over && Array.isArray(over.fillPaints) && over.fillPaints.length === 0;
-    if (fillCleared && solidHex(strokePaints) && (fillGeom || []).length) {
+    if (isRoot && opts.bare) {
+      // The container's own paint is drawn by the app; only its contents count.
+    } else if (fillCleared && solidHex(strokePaints) && (fillGeom || []).length) {
       emit(fillGeom, strokePaints);
     } else {
       emit(fillGeom, fillPaints);
@@ -193,7 +204,7 @@ function collectPaths(root, { byGuid, childrenOf }) {
         const next = { ...inherited, overrides, derived: derivedMap, opacity: inherited.opacity * nodeOpacity };
         // The master's own transform is replaced by the instance's, so its
         // children compose onto `abs` directly.
-        for (const c of childrenOf(guidKey(master.guid))) walk(c, compose(abs, c.transform), next);
+        for (const c of childrenOf(guidKey(master.guid))) walk(c, compose(abs, c.transform), next, false);
       }
       return;
     }
@@ -206,15 +217,18 @@ function collectPaths(root, { byGuid, childrenOf }) {
     }
 
     const next = { ...inherited, opacity: inherited.opacity * nodeOpacity };
-    for (const c of childrenOf(guidKey(node.guid))) walk(c, compose(abs, c.transform), next);
+    for (const c of childrenOf(guidKey(node.guid))) walk(c, compose(abs, c.transform), next, false);
   };
 
-  walk(root, ownReflection(root), {
+  const origin = opts.crop
+    ? { m00: 1, m01: 0, m02: -opts.crop.x, m10: 0, m11: 1, m12: -opts.crop.y }
+    : IDENTITY;
+  walk(root, compose(origin, ownReflection(root)), {
     overrides: new Map(),
     derived: new Map(),
     blobs: byGuid.blobs,
     opacity: 1,
-  });
+  }, true);
   return paths;
 }
 
