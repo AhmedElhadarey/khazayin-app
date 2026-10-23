@@ -85,10 +85,24 @@ Every ticket ran this loop: an implementer with a failing test first, a spec rev
 | Pixel 7 (412dp) | Scholars, Home, plus the `screens:matrix` sweep |
 | Realme Note 50-class AVD (360dp) | Cold start, Home, Sections, Library, More, Mushaf, Books (§4) |
 | Pixel Tablet | Not re-run in this pass. The tablet layout is unchanged since the 2026-10-22 QA, and the iPad Pro 13 covered it here. |
+| iPhone 16 + Pixel 7, frame harness | All 23 frames, before and after (see below) |
 
 **Android matrix.** `docs/audit/screen-matrix/2026-10-23T15-15-54/` holds 60 captures plus the sheets, across 320/360/384/411/480dp × font scale 1 / 1.3 / 1.7.
 - 360dp × 1.3 is clean.
 - 320dp × 1.7 showed three defects; all are fixed and re-run in `2026-10-23T15-37-08/` (§4).
+
+**Paired Figma captures.** `docs/audit/2026-10-23-parity/` (git-ignored) holds the captures and side-by-sides. The frame harness captured 23 frames on iPhone 16 and Pixel 7 before the pass and again after. The 5 transition frames are skipped by design. `compare-before/` and `compare-after/` hold Figma | iPhone | Pixel side-by-sides.
+
+After the pass, every frame matches its reference in structure, type, icons, spacing and colour. The remaining differences are all app state or data:
+- The MiniPlayer is restored on the iPhone.
+- The notification permission differs between the two devices.
+- A saved Mushaf bookmark enables «الانتقال للعلامة» on the iPhone.
+- On the iPhone, the Mushaf index (2207:17898) opens straight into the reader, because FR-009 resumes at the last-read page once per session.
+- Scholar series (2510:1990) carry no duration, so the row shows none.
+- The Archive and Exclusive reference exports (2558:1334, 2869:2306) are blank, as already recorded.
+- Two artefacts are not defects:
+  - The iPhone Home capture (05) caught the launch sequence. A manual retake shows Home matching the frame.
+  - The madda in «القرآن» is present in the Bold face but small enough to vanish at the side-by-side's half scale. The full-resolution crop shows it.
 
 **Screen-reader spot checks (iOS ax tree).**
 - Books rows: one button per row, read title → scholar → duration.
@@ -167,7 +181,7 @@ The first matrix (`docs/audit/screen-matrix/2026-10-23T15-15-54/`) found three d
 | Empty in-progress CTA | May wrap at 320dp. |
 | Reciter tablist | iOS ax-service still reports AXGroup, so it is verified by unit test only. |
 | Saved LectureCard | The bookmark sits inside the row's Pressable, so VoiceOver reaches unsave only through the row's custom action, not as its own element. |
-| Books screen | An empty horizontal scroll bar element sits under the list in the iOS ax tree. |
+| Home book cards | The book rail cards have no tap action (`app/(tabs)/index.tsx:221` passes no `onPress`), so VoiceOver reads them as plain groups. Where they should open is a product decision: the items are lecture ids, and `sections/book/[id]` may expect a book id. |
 | `shouldRasterizeIOS` | Dawah posters can look slightly soft on iOS. |
 | Notes and playback | Notes filtering, and re-render cost during playback, are worth a profiler pass. |
 | Descenders at large font scales | Android 14+ grows `lineHeight` less than `fontSize`; at 1.7 a 14pt role's line box is about 1.26× the size instead of 1.5×, so a TextView clips the descenders of its last line. ListRowCard now carries a layout-neutral `descenderRoom` (635dfd6). Every other role is exposed in the same way; the general fix belongs in `constants/typography.ts`. |
