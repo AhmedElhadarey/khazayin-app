@@ -1,6 +1,22 @@
 import { InlineHeader, ListRowCard } from '@/components/khazain';
 import { HeaderArt } from '@/components/khazain/patterns';
 import { SettingsSection, SettingsToggleRow, SettingsValueRow } from '@/components/khazain/settings';
+import {
+  AboutGlyph,
+  CacheGlyph,
+  CommunityGlyph,
+  ExportNotesGlyph,
+  FontSizeGlyph,
+  InfoGlyph,
+  LanguageGlyph,
+  NotificationsGlyph,
+  PrayerTimesGlyph,
+  PrivacyGlyph,
+  QiraaGlyph,
+  ReciterGlyph,
+  RestoreGlyph,
+  WirdGoalGlyph,
+} from '@/components/khazain/settings/SettingsGlyphs';
 import { COMMUNITY_COPY, mutedMemberLabel, nextAttemptCopy } from '@/constants/communityCopy';
 import { toArabicDigits as toArNum } from '@/constants/progress';
 import { arabicCopyForCode } from '@/services/api/errors';
@@ -38,7 +54,6 @@ import React, { useEffect } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 const FONT_LEVEL_LABELS: Record<FontSizeLevel, string> = {
   1: 'صغير جدًا',
@@ -179,14 +194,14 @@ export default function SettingsScreen() {
             variant="more"
             title="القراءة الافتراضية"
             subtitle={qiraaName}
-            icon={<QiraaIcon />}
+            icon={<QiraaGlyph />}
             onPress={() => router.push('/settings-qiraa' as any)}
           />
           <ListRowCard
             variant="more"
             title="القارئ المفضّل"
             subtitle={reciterName}
-            icon={<ReciterIcon />}
+            icon={<ReciterGlyph />}
             onPress={() => router.push('/settings-reciter' as any)}
           />
         </SettingsSection>
@@ -195,13 +210,13 @@ export default function SettingsScreen() {
             variant="more"
             title="حجم خط القرآن"
             subtitle={FONT_LEVEL_LABELS[fontSizeLevel]}
-            icon={<FontSizeIcon />}
+            icon={<FontSizeGlyph />}
             onPress={() => router.push('/settings-font-size' as any)}
           />
           <SettingsValueRow
             title="هدف الورد اليومي"
             value={`${toArNum(wirdTarget)} صفحة`}
-            icon={<WirdGoalIcon />}
+            icon={<WirdGoalGlyph />}
             onPress={() => router.push('/settings-wird-goal' as any)}
           />
         </SettingsSection>
@@ -210,7 +225,7 @@ export default function SettingsScreen() {
             variant="more"
             title="الإشعارات"
             subtitle={notificationsSummary}
-            icon={<BellIcon />}
+            icon={<NotificationsGlyph />}
             onPress={() => router.push('/settings-notifications' as any)}
           />
         </SettingsSection>
@@ -219,7 +234,7 @@ export default function SettingsScreen() {
             variant="more"
             title="مواقيت الصلاة"
             subtitle={prayerSubtitle}
-            icon={<PrayerTimesIcon />}
+            icon={<PrayerTimesGlyph />}
             onPress={() => router.push('/settings-prayer' as any)}
           />
         </SettingsSection>
@@ -228,7 +243,7 @@ export default function SettingsScreen() {
             variant="more"
             title="اللغة"
             subtitle="العربية"
-            icon={<GlobeIcon />}
+            icon={<LanguageGlyph />}
             onPress={() =>
               Alert.alert('اللغة', 'هذا التطبيق متاح باللغة العربية فقط.')
             }
@@ -237,7 +252,7 @@ export default function SettingsScreen() {
             variant="more"
             title="حول التطبيق"
             subtitle="الإصدار والمؤسسة"
-            icon={<AboutIcon />}
+            icon={<AboutGlyph />}
             onPress={() => router.push('/settings-about' as any)}
           />
         </SettingsSection>
@@ -246,14 +261,14 @@ export default function SettingsScreen() {
             variant="more"
             title="تفريغ الذاكرة المؤقتة"
             subtitle=""
-            icon={<TrashIcon />}
+            icon={<CacheGlyph />}
             onPress={onClearCache}
           />
           <ListRowCard
             variant="more"
             title="تصدير الملاحظات"
             subtitle=""
-            icon={<ExportIcon />}
+            icon={<ExportNotesGlyph />}
             onPress={onExportNotes}
           />
           {RECOMMENDATIONS_ENABLED ? (
@@ -261,7 +276,7 @@ export default function SettingsScreen() {
               variant="more"
               title={RECOMMENDATION_COPY.resetRow}
               subtitle=""
-              icon={<RestoreIcon />}
+              icon={<RestoreGlyph />}
               onPress={onResetRecommendations}
             />
           ) : null}
@@ -272,7 +287,7 @@ export default function SettingsScreen() {
             variant="more"
             title="سياسة الخصوصية"
             subtitle=""
-            icon={<PrivacyIcon />}
+            icon={<PrivacyGlyph />}
             onPress={onOpenPrivacyPolicy}
           />
         </SettingsSection>
@@ -282,14 +297,14 @@ export default function SettingsScreen() {
             variant="more"
               title="إعادة الإعداد الأولي"
               subtitle="عرض شاشة الترحيب من جديد"
-              icon={<AboutIcon />}
+              icon={<InfoGlyph />}
               onPress={onResetOnboarding}
             />
             <ListRowCard
             variant="more"
               title="إرسال حدث تجريبي إلى Sentry"
               subtitle="للتحقق من تسجيل الأعطال"
-              icon={<AboutIcon />}
+              icon={<InfoGlyph />}
               onPress={onTestSentry}
             />
           </SettingsSection>
@@ -359,13 +374,13 @@ function CommunitySettingsSection() {
             ),
             ...(deletion.lastError ? [arabicCopyForCode(deletion.lastError)] : []),
           ]}
-          icon={<TrashIcon />}
+          icon={<CacheGlyph />}
         />
         <ListRowCard
           variant="more"
           title={COMMUNITY_COPY.retryNow}
           subtitle=""
-          icon={<CommunityIcon />}
+          icon={<CommunityGlyph />}
           onPress={() => void runDeletionIfDue(Date.now(), { force: true })}
         />
       </SettingsSection>
@@ -378,7 +393,7 @@ function CommunitySettingsSection() {
         <SettingsToggleRow
           title={COMMUNITY_COPY.participate}
           description={COMMUNITY_COPY.pauseNote}
-          icon={<CommunityIcon />}
+          icon={<CommunityGlyph />}
           value={optedIn && guidelinesVersion >= GUIDELINES_VERSION}
           onValueChange={onParticipate}
         />
@@ -387,7 +402,7 @@ function CommunitySettingsSection() {
           variant="more"
           title={COMMUNITY_COPY.joinCommunity}
           subtitle=""
-          icon={<CommunityIcon />}
+          icon={<CommunityGlyph />}
           onPress={() => router.push(COMMUNITY_HUB as any)}
         />
       )}
@@ -396,7 +411,7 @@ function CommunitySettingsSection() {
           <SettingsValueRow
             title={COMMUNITY_COPY.mutedMembers}
             value={toArNum(muted.length)}
-            icon={<AboutIcon />}
+            icon={<InfoGlyph />}
             expanded={mutedOpen}
             onPress={() => setMutedOpen((v) => !v)}
           />
@@ -406,7 +421,7 @@ function CommunitySettingsSection() {
                   key={id}
                   title={mutedMemberLabel(i + 1)}
                   value={COMMUNITY_COPY.unmute}
-                  icon={<AboutIcon />}
+                  icon={<InfoGlyph />}
                   onPress={() => useCommunityLocalStore.getState().unmute(id)}
                 />
               ))
@@ -418,7 +433,7 @@ function CommunitySettingsSection() {
           variant="more"
           title={COMMUNITY_COPY.deleteMyData}
           subtitle=""
-          icon={<TrashIcon />}
+          icon={<CacheGlyph />}
           onPress={onDelete}
         />
       ) : null}
@@ -440,207 +455,6 @@ function StatusRow({ title, lines, icon }: { title: string; lines: string[]; ico
       </View>
       <View style={styles.statusChip}>{icon}</View>
     </View>
-  );
-}
-
-function CommunityIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path d="M9 11a3 3 0 100-6 3 3 0 000 6zM3 19a6 6 0 0112 0" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
-      <Path d="M16 6.5a2.5 2.5 0 010 5M17.5 14.5A5 5 0 0121 19" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function QiraaIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M4 5a2 2 0 012-2h7l5 5v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5z"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-      <Path d="M13 3v5h5" stroke={c} strokeWidth={1.5} strokeLinejoin="round" />
-      <Path d="M8 13h7M8 16h5" stroke={c} strokeWidth={1.3} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function ReciterIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={9} r={3.5} stroke={c} strokeWidth={1.5} />
-      <Path
-        d="M5 19a7 7 0 0114 0"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-    </Svg>
-  );
-}
-
-function WirdGoalIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={9} stroke={c} strokeWidth={1.5} />
-      <Circle cx={12} cy={12} r={5} stroke={c} strokeWidth={1.5} />
-      <Circle cx={12} cy={12} r={1.6} fill={c} />
-    </Svg>
-  );
-}
-
-function FontSizeIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Rect x={3} y={5} width={9} height={2} fill={c} />
-      <Path d="M7 6v13M5 19h4" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
-      <Rect x={14} y={10} width={7} height={1.6} fill={c} />
-      <Path d="M17.5 11v8M16 19h3" stroke={c} strokeWidth={1.3} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function GlobeIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 20 20" fill="none">
-      <Circle cx={10} cy={10} r={7} stroke={c} strokeWidth={1.5} />
-      <Path
-        d="M3 10h14M10 3c2.5 3 2.5 11 0 14M10 3c-2.5 3-2.5 11 0 14"
-        stroke={c}
-        strokeWidth={1.3}
-      />
-    </Svg>
-  );
-}
-
-function AboutIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={9} stroke={c} strokeWidth={1.5} />
-      <Path d="M12 11v6M12 7v.5" stroke={c} strokeWidth={1.7} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function PrivacyIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 3l8 3v5c0 4.5-3.4 8.5-8 10-4.6-1.5-8-5.5-8-10V6l8-3z"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-        fill="none"
-      />
-      <Path d="M8.5 12l2.5 2.5L15.5 10" stroke={c} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
-
-function RestoreIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M4 12a8 8 0 108-8 8 8 0 00-5.7 2.4L4 8.5"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path d="M4 4v4.5h4.5" stroke={c} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
-
-function TrashIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M5 7h14M9 7V5a1 1 0 011-1h4a1 1 0 011 1v2M7 7l1 12a2 2 0 002 2h4a2 2 0 002-2l1-12"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path d="M10 11v6M14 11v6" stroke={c} strokeWidth={1.3} strokeLinecap="round" />
-    </Svg>
-  );
-}
-
-function BellIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M6 16V11a6 6 0 0112 0v5l1.5 2H4.5L6 16z"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-      <Path d="M10 20a2 2 0 004 0" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
-      <Circle cx={12} cy={5} r={1.2} fill={c} />
-    </Svg>
-  );
-}
-
-function PrayerTimesIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 3c2 2 3 3.5 3 5a3 3 0 01-6 0c0-1.5 1-3 3-5z"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M4 20v-6a8 8 0 0116 0v6"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M3 20h18M10 20v-4a2 2 0 014 0v4"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </Svg>
-  );
-}
-
-function ExportIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M12 4v12M8 8l4-4 4 4"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <Path
-        d="M4 16v3a1 1 0 001 1h14a1 1 0 001-1v-3"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinecap="round"
-      />
-    </Svg>
   );
 }
 

@@ -1,5 +1,6 @@
 import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
+import { ROW_GLYPH } from '@/constants/rowGlyph';
 import { WhatsappRingGlyph } from '@/components/khazain/icons/WhatsappRingGlyph';
 import { WHATSAPP_RING } from '@/components/khazain/icons/whatsappRing';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
@@ -18,7 +19,7 @@ import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsi
 import Svg, { Circle, Path } from 'react-native-svg';
 
 /** Node 2102:2711 draws each row glyph at ~20pt inside the 48pt squircle. */
-const MORE_GLYPH = 20;
+const MORE_GLYPH = ROW_GLYPH;
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();

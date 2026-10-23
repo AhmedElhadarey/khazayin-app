@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
-import Svg, { Circle, Path } from 'react-native-svg';
+import { ClockGlyph, NotificationsGlyph } from '@/components/khazain/settings/SettingsGlyphs';
 import { useRouter } from 'expo-router';
 import { textStyle } from '@/constants/typography';
 import { KhazainColors, KhazainShadows } from '@/constants/theme';
@@ -133,7 +133,7 @@ export default function SettingsNotificationsScreen() {
                   key={cat.id}
                   title={cat.labelAr}
                   description="قريبًا"
-                  icon={<BellIcon />}
+                  icon={<NotificationsGlyph />}
                   value={false}
                   onValueChange={() => undefined}
                   disabled
@@ -149,7 +149,7 @@ export default function SettingsNotificationsScreen() {
                   key={cat.id}
                   title={cat.labelAr}
                   description={cat.descriptionAr}
-                  icon={<BellIcon />}
+                  icon={<NotificationsGlyph />}
                   // NOT `enabled` — the stored preference alone. `wird-daily` is
                   // `defaultOn: true`, so on a fresh install this rendered ON
                   // while nothing was scheduled and the Library card correctly
@@ -171,7 +171,7 @@ export default function SettingsNotificationsScreen() {
                 key={cat.id}
                 title={cat.labelAr}
                 description={cat.descriptionAr}
-                icon={<BellIcon />}
+                icon={<NotificationsGlyph />}
                 value={enabled}
                 onValueChange={(next) => setNotificationEnabled(cat.id, next)}
                 disabled={false}
@@ -186,7 +186,7 @@ export default function SettingsNotificationsScreen() {
           <SettingsValueRow
             title="وقت تذكير الورد"
             value={formatClockTime(wirdReminderTime)}
-            icon={<ClockIcon />}
+            icon={<ClockGlyph />}
             onPress={() => router.push('/settings-wird-reminder' as any)}
           />
         ) : null}
@@ -206,16 +206,6 @@ export default function SettingsNotificationsScreen() {
   );
 }
 
-function ClockIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Circle cx={12} cy={12} r={9} stroke={c} strokeWidth={1.5} />
-      <Path d="M12 7v5l3.5 2" stroke={c} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
-    </Svg>
-  );
-}
-
 function PermissionDeniedBanner({ onPress }: { onPress: () => void }) {
   return (
     <Pressable
@@ -231,22 +221,6 @@ function PermissionDeniedBanner({ onPress }: { onPress: () => void }) {
         لتفعيل التذكيرات، اضغط هنا لفتح إعدادات النظام والسماح بالإشعارات.
       </Text>
     </Pressable>
-  );
-}
-
-function BellIcon() {
-  const c = KhazainColors.navy800;
-  return (
-    <Svg width={28} height={28} viewBox="0 0 24 24" fill="none">
-      <Path
-        d="M6 16V11a6 6 0 0112 0v5l1.5 2H4.5L6 16z"
-        stroke={c}
-        strokeWidth={1.5}
-        strokeLinejoin="round"
-      />
-      <Path d="M10 20a2 2 0 004 0" stroke={c} strokeWidth={1.5} strokeLinecap="round" />
-      <Circle cx={12} cy={5} r={1.2} fill={c} />
-    </Svg>
   );
 }
 
