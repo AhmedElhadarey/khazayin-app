@@ -5,7 +5,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { textStyle } from '@/constants/typography';
 
 // Row used inside telegram / youtube / share sheets.
-// Per Figma each row is its own cream rounded card, with a navy circular disc
+// No Figma frame covers these sheets; the contract is theme.ts card tokens.
+// Each row is its own cream rounded card, with a navy circular disc
 // on the RTL-start side (right edge) holding the brand glyph, the title to the
 // left of the disc, and an optional second line for subtitle.
 export function SheetRow({

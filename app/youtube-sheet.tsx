@@ -6,7 +6,7 @@ import React from 'react';
 import { Alert, Linking, StyleSheet, Text, View } from 'react-native';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 
-// Featured channels per Figma page-38. Real YouTube URLs to be supplied by the
+// Featured channels (no Figma frame for this sheet). Real YouTube URLs to be supplied by the
 // foundation; falls back to a friendly Arabic alert if a link cannot be opened.
 const ITEMS: { title: string; url: string }[] = [
   { title: 'قناة الشيخ محمد العريفي', url: 'https://youtube.com/@MohammadAlarefe' },
@@ -37,7 +37,7 @@ export default function YouTubeSheet() {
         {ITEMS.map((it) => (
           <SheetRow
             key={it.title}
-            icon={<PlayGlyph />}
+            icon={<YoutubeMark />}
             title={it.title}
             onPress={() => open(it.url)}
           />
@@ -48,7 +48,7 @@ export default function YouTubeSheet() {
   );
 }
 
-function PlayGlyph() {
+function YoutubeMark() {
   // `MoreYoutube` (node 2106:2237), the mark the More row draws; cream50 on the
   // navy disc. The sheet has no frame of its own.
   return <FigmaIcon name="MoreYoutube" size={18} color={KhazainColors.cream50} />;

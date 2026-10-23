@@ -26,7 +26,15 @@ describe('share-sheet', () => {
     expect(src).not.toMatch(/ShareRow|styles\.row|styles\.label|styles\.disc/);
   });
   it('keeps the Figma Telegram glyph in cream50', () => {
-    expect(src).toMatch(/name="MoreTelegram" size=\{18\} color=\{INK\}/);
+    expect(src).toMatch(/name="MoreTelegram" size=\{MARK\} color=\{INK\}/);
     expect(src).toMatch(/INK = KhazainColors\.cream50/);
+  });
+});
+
+describe('share-sheet marks', () => {
+  const src = read('app/share-sheet.tsx');
+  it('draws every mark in one 18pt box and names no frame it lacks', () => {
+    expect(src).toMatch(/const MARK = 18/);
+    expect(src).not.toMatch(/<Svg width=\{1[24]\}|Per Figma/);
   });
 });
