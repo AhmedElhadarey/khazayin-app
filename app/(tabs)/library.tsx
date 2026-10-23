@@ -176,23 +176,23 @@ export default function LibraryScreen() {
       id,
       () =>
         setCategoryEnabled(id, next).then((outcome) => {
-        if (outcome === 'permission-denied') {
-          Alert.alert(
-            'إذن الإشعارات مطلوب',
-            'لتفعيل التذكير، يرجى السماح بالإشعارات من إعدادات النظام.',
-            [
-              { text: 'إلغاء', style: 'cancel' },
-              {
-                text: 'فتح الإعدادات',
-                onPress: () => {
-                  Linking.openSettings().catch(() => {
-                    Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
-                  });
+          if (outcome === 'permission-denied') {
+            Alert.alert(
+              'إذن الإشعارات مطلوب',
+              'لتفعيل التذكير، يرجى السماح بالإشعارات من إعدادات النظام.',
+              [
+                { text: 'إلغاء', style: 'cancel' },
+                {
+                  text: 'فتح الإعدادات',
+                  onPress: () => {
+                    Linking.openSettings().catch(() => {
+                      Alert.alert('خطأ', 'تعذّر فتح الإعدادات.');
+                    });
+                  },
                 },
-              },
-            ],
-          );
-        }
+              ],
+            );
+          }
         }),
       (err) => {
         // The switch stays where it was; only surface the cause in development.

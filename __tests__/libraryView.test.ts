@@ -96,6 +96,16 @@ describe('runSingleFlight', () => {
     runSingleFlight(pending, 'k', task);
     expect(task).toHaveBeenCalledTimes(2);
   });
+  it('a synchronously throwing task releases the key and does not reject', async () => {
+    const pending = new Set<string>();
+    const onError = jest.fn();
+    const task = () => {
+      throw new Error('sync');
+    };
+    await expect(runSingleFlight(pending, 'k', task, onError)).resolves.toBeUndefined();
+    expect(onError).toHaveBeenCalledTimes(1);
+    expect(pending.has('k')).toBe(false);
+  });
   it('releases the key and reports a failure to onError', async () => {
     const pending = new Set<string>();
     const onError = jest.fn();

@@ -86,6 +86,33 @@ describe('SearchResultRow accessory', () => {
     expect(hostTexts(row)[0]).toBe('ACC');
   });
 
+  it('the button keeps the full card hit area through hitSlop (padding sits on the row)', () => {
+    const withAcc = render(
+      <SearchResultRow iconNode={null} title="عنوان" accessory={<Text>ACC</Text>} onPress={() => {}} />,
+    );
+    const press = hostViews(withAcc).find((v) => v.props.accessible === true)!;
+    // Row padding is 16 horizontal / 8 vertical; the accessory covers the left edge itself.
+    expect(press.props.hitSlop).toEqual({ top: 8, bottom: 8, right: 16, left: 0 });
+    const plain = render(<SearchResultRow iconNode={null} title="عنوان" onPress={() => {}} />);
+    const press2 = hostViews(plain).find((v) => v.props.accessible === true)!;
+    expect(press2.props.hitSlop).toEqual({ top: 8, bottom: 8, right: 16, left: 16 });
+  });
+
+  it('press feedback lands on the outer card frame, not just the inner content', () => {
+    const r = render(<SearchResultRow iconNode={null} title="عنوان" onPress={() => {}} />);
+    const rowOf = () =>
+      hostViews(r).find((v) => flat(v).direction === 'ltr' && flat(v).flexDirection === 'row')!;
+    // The composite Pressable element: it owns the onPressIn/onPressOut props.
+    const pressable = r.root.findAll((n) => typeof n.type !== 'string' && typeof n.props.onPressIn === 'function')[0];
+    expect(flat(rowOf()).opacity ?? 1).toBe(1);
+    act(() => pressable.props.onPressIn({}));
+    expect(flat(rowOf()).opacity).toBe(0.92);
+    expect(flat(rowOf()).transform).toEqual([{ scale: 0.99 }]);
+    act(() => pressable.props.onPressOut({}));
+    expect(flat(rowOf()).opacity).toBe(1);
+    expect(flat(rowOf()).transform).toEqual([{ scale: 1 }]);
+  });
+
   it('without an accessory the row is still one button', () => {
     const r = render(<SearchResultRow iconNode={null} title="عنوان" onPress={() => {}} />);
     const btns = hostViews(r).filter((v) => v.props.accessible === true);
@@ -112,6 +139,11 @@ describe('ToastOverlay', () => {
     const kids = card.children as Node[];
     expect(kids).toHaveLength(3);
     // first child (physical right) is the badge: no message text in it
+    // positively the badge: a 24x24 circle
+    const badge = kids[0].findAll((n) => n.type === 'View')[0];
+    expect(flat(badge).width).toBe(24);
+    expect(flat(badge).height).toBe(24);
+    expect(flat(badge).borderRadius).toBe(12);
     expect(hostTexts(kids[0])).not.toContain('تم الحفظ');
     expect(hostTexts(kids[0])).not.toContain('تراجع');
     expect(hostTexts(kids[1])).toEqual(['تم الحفظ']);
@@ -120,6 +152,8 @@ describe('ToastOverlay', () => {
     const scale = (StyleSheet.flatten(textStyle('cardTitle')) as any).fontSize;
     const body = (StyleSheet.flatten(textStyle('bodyCompact')) as any).fontSize;
     expect([scale, body]).toContain(flat(msg).fontSize);
+    // achievement variant uses exactly the cardTitle role
+    expect(flat(msg).fontSize).toBe(scale);
     expect(hostTexts(kids[2])).toEqual(['تراجع']);
     expect(kids[2].props.accessibilityRole).toBe('button');
     act(() => useToastStore.getState().dismiss());
@@ -171,8 +205,6 @@ describe('WirdHistory calendar', () => {
     expect(flat(digit).color).not.toBe(KhazainColors.ink400);
     const cell = noData.root.findAll((n) => n.type === 'View' && flat(n).borderColor === KhazainColors.hairlineFaint && flat(n).borderWidth === 1)[0];
     expect(flat(cell).backgroundColor).toBe('transparent');
-    expect(flat(cell).borderColor).toBeDefined();
-    expect(flat(cell).borderColor).not.toBe('transparent');
   });
 
   it('cell text inside the square cells caps the font scale', () => {

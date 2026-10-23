@@ -118,7 +118,9 @@ export function runSingleFlight<K>(
 ): Promise<void> | null {
   if (pending.has(key)) return null;
   pending.add(key);
-  return task()
+  // The executor runs task() synchronously (so it starts now) and turns a
+  // synchronous throw into a rejection that the catch below handles.
+  return new Promise<unknown>((resolve) => resolve(task()))
     .then(() => undefined)
     .catch((err) => onError?.(err))
     .finally(() => {

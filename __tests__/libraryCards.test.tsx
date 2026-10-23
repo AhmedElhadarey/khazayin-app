@@ -73,6 +73,17 @@ describe('EmptyInProgressCard (T16)', () => {
     expect(label.props.numberOfLines).toBeUndefined(); // wraps at large font scales instead of ellipsizing
     expect(KhazainColors.pageBg).toBeTruthy();
   });
+
+  it('the cta has a definite width and a stretched, centred label (no shrink-wrapped Arabic)', () => {
+    const r = render(<EmptyInProgressCard onBrowse={() => {}} />);
+    const btn = r.root.findAll((n) => n.type === 'View' && n.props.accessibilityRole === 'button')[0];
+    const cs = style(btn);
+    expect(cs.maxWidth).toBe('45%');
+    expect(cs.width ?? cs.flexBasis).toBeDefined();
+    const label = btn.findAll((n) => n.type === 'Text')[0];
+    expect(style(label).alignSelf).toBe('stretch');
+    expect(style(label).textAlign).toBe('center');
+  });
 });
 
 const rowsOf = (r: Renderer) => r.root.findAll((n) => n.type === 'View' && style(n).flexDirection === 'row');

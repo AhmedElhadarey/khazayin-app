@@ -32,9 +32,7 @@ export function EmptyInProgressCard({
           accessibilityRole="button"
           style={({ pressed }) => [styles.cta, { opacity: pressed ? 0.85 : 1 }]}
         >
-          <Text style={styles.ctaLabel}>
-            تصفّح المحاضرات
-          </Text>
+          <Text style={styles.ctaLabel}>تصفّح المحاضرات</Text>
         </Pressable>
       ) : null}
     </View>
@@ -61,6 +59,8 @@ const styles = StyleSheet.create({
   cta: {
     minHeight: 36,
     paddingVertical: 6,
+    // Definite width: a shrink-wrapped Arabic label can lose its last word on Android 15+.
+    flexBasis: '40%',
     flexShrink: 1,
     maxWidth: '45%',
     paddingHorizontal: 16,
@@ -69,5 +69,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
+  ctaLabel: {
+    ...textStyle('cardTitle', { color: KhazainColors.pageBg }),
+    alignSelf: 'stretch',
+    textAlign: 'center',
+  },
 });
