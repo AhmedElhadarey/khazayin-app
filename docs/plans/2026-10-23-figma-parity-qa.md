@@ -201,7 +201,10 @@ One tooling note: on this letterboxed tablet, argent's normalised taps land in t
 
 - **Licensed faces.** TheSansArabic, TheMixArab and a Uthmani Quran face. Until they arrive, typography parity stays provisional (`typographyParityResolved()` is false).
 - **Mushaf page art.** The page images inside the `.fig` are screenshots from a third-party Mushaf app and must not ship. A test enforces this.
-- **«المفضلة» filter chip.** The file has only the chip label. There is no heart icon, favourite node or favourite action anywhere in `KHAZAYIN.fig`, and the app has no favourites model, only المحفوظات (saved). It needs a product decision on whether «المفضلة» is a new list or a renaming of المحفوظات (D7). «تذكيراتي» is done: it counts armed reminders and shows the reminder cards (d8ca4c3).
+- **«المفضلة» filter chip.** Figma's row (`DIV-141`, BUTTON-190 → 142) reads الكل · المحفوظات · المفضلة · قوائم التشغيل · المكتمل · ملاحظاتي · تذكيراتي. The app's row reads the same without «المفضلة» and with «السجل» added (D6).
+  - The file has only the chip label for «المفضلة». There is no heart icon, favourite node or favourite action anywhere in `KHAZAYIN.fig`, and the app has no favourites model.
+  - **Decision (2026-10-23, product owner): leave it out until product defines what a favourite is.** No dead chip ships.
+  - «تذكيراتي» is done: it counts armed reminders and shows the reminder cards (d8ca4c3).
 
 ### Deliberate deviations
 
@@ -216,7 +219,7 @@ One tooling note: on this letterboxed tablet, argent's normalised taps land in t
 
 | Item | Detail |
 |---|---|
-| Gold on cream contrast | `goldAccent` is 3.22:1 on 14pt text, and the gold buttons are close to the AA limit. It is the file's own colour, so it matches Figma. Whether to darken it for accessibility is a product decision. |
+| Gold on cream contrast | `goldAccent` is 3.22:1 on 14pt text, and the gold buttons are close to the AA limit. It is the file's own colour, so it matches Figma; this is an accessibility note, not a parity gap. |
 | TalkBack order | On Library › المحفوظات the bookmark is still its own element, read before its row: it is a sibling at the physical left. Since 5a03ec9 it names its item («إزالة من المحفوظات: البقرة»), so the order is clear. Reordering it would mean pinning it absolutely. |
 | Wrapped Mushaf meta line | About 10pt off centre when it wraps. |
 | Meta text at 320dp × 2.0 | Needs `flexShrink` on the meta text. |
@@ -225,7 +228,7 @@ One tooling note: on this letterboxed tablet, argent's normalised taps land in t
 | `shouldRasterizeIOS` | Dawah posters can look slightly soft on iOS. |
 | Notes and playback | Notes filtering, and re-render cost during playback, are worth a profiler pass. |
 | Descenders at large font scales | Android 14+ grows `lineHeight` less than `fontSize`. At 1.7 a 14pt role's line box is about 1.26× the size instead of 1.5×, so a TextView clips the descenders of its last line. Covered so far: ListRowCard (`descenderRoom`, 635dfd6) and single-line inputs (`inputTextStyle`, 55de5c8). Unclamped multi-line text looked fine in the 320dp × 1.7 sweep, but no other role is guarded yet. |
-| Android alert layout | `showNotice` labels the button «حسناً», but the native AlertDialog lays out by the system locale. On an English-language phone the title sits on the left. Fixing it means an in-app modal instead of `Alert`. |
+| Android alert layout | `showNotice` labels the button «حسناً», but the native AlertDialog lays out by the system locale, so on an English-language phone the title sits on the left. No frame covers dialogs. **Decision (2026-10-23, product owner): keep native alerts.** |
 | Dawah month counts | The file writes «٥ تخطيط» … «٩ تخطيط»; standard agreement for ٣–١٠ is the plural. The app keeps the file's copy. A question for the client. |
 | Modal sheets and the screen behind | With a sheet open, VoiceOver can still reach the screen underneath while the keyboard is up. This is the same for every transparent-modal route. |
 | Contact numbers at 320dp × 1.7 | The WhatsApp number wraps a single digit onto a second line. It is readable, but a bidi-isolated, non-breaking number would read better. |
