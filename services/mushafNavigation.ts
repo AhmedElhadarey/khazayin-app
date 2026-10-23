@@ -142,13 +142,29 @@ export function segmentForAyah(segments: readonly SegmentLike[], n: number): num
 export const END_OF_AYAH = '\u06DD';
 
 /**
- * The marker rendered after each ayah's text: the end-of-ayah sign and the
- * Arabic-Indic digits, one space each side. `AyahNum` in
+ * The marker rendered after each ayah's text: a no-break space (so the medallion
+ * never wraps away from its ayah), the end-of-ayah sign and the Arabic-Indic
+ * digits. The single-space separator between ayat follows it, so the segment
+ * ends on the last marker. `AyahNum` in
  * app/(tabs)/sections/mushaf.tsx renders exactly this string, and the offsets
  * below count it, so deep-link scroll precision depends on it staying the one
  * source.
  */
-export const ayahMarker = (n: number): string => ` ${END_OF_AYAH}${toArabicDigits(n)} `;
+export const ayahMarker = (n: number): string => `\u00A0${END_OF_AYAH}${toArabicDigits(n)}`;
+
+type RouteLike = { name: string; params?: { surah?: string } | object };
+
+/**
+ * What the footer Index button does. `replace` would turn [..., list, reader]
+ * into [..., list, list], so when the screen below is the Mushaf list (the
+ * mushaf route with no `surah`) it goes back to it. Anything else (auto-resume
+ * and deep links, where nothing useful is below) replaces.
+ */
+export function indexExit(routes: readonly RouteLike[], index: number): 'back' | 'replace' {
+  const below = routes[index - 1] as { name?: string; params?: { surah?: string } } | undefined;
+  if (!below || below.name !== 'mushaf') return 'replace';
+  return below.params?.surah ? 'replace' : 'back';
+}
 
 /**
  * Characters before ayah `n` in a segment's rendered string: for every earlier

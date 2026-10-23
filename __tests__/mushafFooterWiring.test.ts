@@ -7,8 +7,8 @@ const chrome = read('components/khazain/mushaf/MushafChrome.tsx');
 
 describe('footer button (MUSHAF-10)', () => {
   it('is a padded vertical stack with a 32x32 icon box, not a fixed height', () => {
-    expect(screen).toMatch(/minHeight: 68/);
-    expect(screen).not.toMatch(/height: 68/);
+    expect(screen).toMatch(/minHeight: 70/);
+    expect(screen).not.toMatch(/[^n]height: 7[08]/);
     expect(screen).toMatch(/paddingVertical: 8/);
     expect(screen).toMatch(/paddingHorizontal: 12/);
     expect(screen).toMatch(/footerIconBox: \{[^}]*width: 32[^}]*height: 32/s);
@@ -25,7 +25,9 @@ describe('footer position (MUSHAF-11)', () => {
 
 describe('footer buttons are live (MUSHAF-12)', () => {
   it('wires all three, and disables go-to-bookmark without one', () => {
+    expect(screen).toMatch(/indexExit\(/);
     expect(screen).toMatch(/router\.replace\('\/sections\/mushaf'/);
+    expect(screen).toMatch(/router\.replace\(`\/sections\/mushaf\?surah=\$\{target\.surah\}/);
     expect(screen).toMatch(/saveMushafBookmark\(/);
     expect(screen).toMatch(/bookmarkTarget\(/);
     expect(screen).toMatch(/accessibilityState=\{\{ disabled/);
@@ -45,5 +47,15 @@ describe('meta strip (MUSHAF-09)', () => {
   it('renders the parts as separate children in a physical row', () => {
     expect(screen).toMatch(/surahMetaRow\(/);
     expect(screen).toMatch(/metaRow: \{[^}]*\.\.\.PHYSICAL_ROW/s);
+  });
+});
+
+describe('ayah marker colour', () => {
+  it('is the cartouche ink brown, sampled from the page image medallions', () => {
+    const ayat = readFileSync(join(__dirname, '..', 'components/khazain/mushaf/AyatSegments.tsx'), 'utf8');
+    expect(ayat).toMatch(/ayahNum: \{[^}]*KhazainColors\.inkBrown/s);
+  });
+  it('estimates the footer at 70', () => {
+    expect(screen).toMatch(/CHROME_BOTTOM_ESTIMATE = 70/);
   });
 });

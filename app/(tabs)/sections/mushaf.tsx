@@ -30,6 +30,7 @@ import { MUSHAF_FOOTER_ORDER, type MushafFooterSlot } from '@/constants/rtlContr
 import {
   ayahCharOffset,
   ayahScrollY,
+  indexExit,
   findSurahIdForPage,
   normalizeAyahParam,
   normalizeSurahParam,
@@ -42,8 +43,8 @@ import {
 import { ReadingPlaceController, currentKeyEntry } from '@/services/mushafAnchor';
 import { MushafPageTrackingController, groupAyatByPage } from '@/services/mushafPageTracking';
 import {
+  META_GAP,
   chromeBottomPad,
-  metaGap,
   metaTopPad,
   mushafAccessibilityActions,
 } from '@/services/mushafChrome';
@@ -82,9 +83,9 @@ const MUSHAF_BG = KhazainColors.pageBg;
 const AYAH_SCROLL_HEADROOM = 80;
 /** Clearance between the header overlay and a linked ayah. */
 const AYAH_CHROME_CLEARANCE = 16;
-/** Chrome heights before the first layout: 44 header + 20 meta + 8 pad; the 68 button (the bottom inset is added). */
-const CHROME_TOP_ESTIMATE = 72;
-const CHROME_BOTTOM_ESTIMATE = 68;
+/** Chrome heights before the first layout: 44 header + 21 meta + 8 pad; the 70 button (the bottom inset is added). */
+const CHROME_TOP_ESTIMATE = 73;
+const CHROME_BOTTOM_ESTIMATE = 70;
 
 export default function MushafScreen() {
   const router = useRouter();
@@ -544,14 +545,19 @@ function ReadingView({
   const metaParts = { revelationType: surahRecord?.revelationType, ayahCount, page: currentPage };
   const metaLine = surahMetaLine(metaParts);
   const metaRow = surahMetaRow(metaParts);
-  const { width: windowWidth, fontScale: windowFontScale } = useWindowDimensions();
+  const { fontScale: windowFontScale } = useWindowDimensions();
   const cartoucheAyahCount = ayahCount;
 
   // ---- Footer: index, go to bookmark, save bookmark (MUSHAF-12) --------------
   // The footer lives in MushafChrome, a sibling of the page's touch gate, so a
-  // press here never reaches `onPageTouchEnd` and cannot toggle the chrome.
+  // press here never reaches the page's touch gate (`pageTouchHandlers`) and cannot toggle the chrome.
   const bookmark = useMushafBookmarkStore((s) => s.bookmark);
-  const onGoToIndex = useCallback(() => router.replace('/sections/mushaf' as any), [router]);
+  const navigation = useNavigation();
+  const onGoToIndex = useCallback(() => {
+    const state = navigation.getState();
+    if (state && indexExit(state.routes, state.index) === 'back') router.back();
+    else router.replace('/sections/mushaf' as any);
+  }, [navigation, router]);
   const onSaveBookmark = useCallback(() => {
     const layouts = new Map<number, { y: number; height: number }>();
     for (const [page, entry] of layoutsRef.current) {
@@ -572,7 +578,7 @@ function ReadingView({
     const target = bookmarkTarget(bookmark, surahId);
     if (!target) return;
     if (target.kind === 'jump') jumpToAyah(target.ayah);
-    else router.push(`/sections/mushaf?surah=${target.surah}&ayah=${target.ayah}` as any);
+    else router.replace(`/sections/mushaf?surah=${target.surah}&ayah=${target.ayah}` as any);
   }, [bookmark, surahId, jumpToAyah, router]);
   const footerActions: Record<MushafFooterSlot, { onPress: () => void; disabled?: boolean }> = {
     index: { onPress: onGoToIndex },
@@ -680,7 +686,7 @@ function ReadingView({
               style={[
                 styles.metaRow,
                 {
-                  columnGap: metaGap(windowWidth),
+                  columnGap: META_GAP,
                   paddingTop: metaTopPad(inlineHeaderHeight(windowFontScale)),
                 },
               ]}
@@ -837,9 +843,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   // Vertical auto-layout: padding [8,12], itemSpacing 4, radius 8, a 32x32
-  // icon box and the label. 8 + 32 + 4 + 16 + 8 = 68.
+  // icon box and the label. The caption role is 12 on an 18 line (1.5 floor;
+  // the file's 12/16 is unreachable): 8 + 32 + 4 + 18 + 8 = 70.
   footerBtn: {
-    minHeight: 68,
+    minHeight: 70,
     alignItems: 'center',
     gap: 4,
     paddingVertical: 8,

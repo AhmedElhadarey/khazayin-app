@@ -3,6 +3,7 @@ import {
   ayahCharOffset,
   ayahCountLabel,
   ayahMarker,
+  indexExit,
   END_OF_AYAH,
   surahMetaRow,
   ayahScrollY,
@@ -113,10 +114,11 @@ describe('surahMetaRow (DIV-47)', () => {
 });
 
 describe('ayah marker', () => {
-  it('is the end-of-ayah sign and Arabic-Indic digits, one space each side', () => {
+  it('is a no-break space, the end-of-ayah sign and Arabic-Indic digits, with no trailing space', () => {
     expect(END_OF_AYAH).toBe('\u06DD');
-    expect(ayahMarker(7)).toBe(' \u06DD٧ ');
-    expect(ayahMarker(255)).toBe(' \u06DD٢٥٥ ');
+    expect(ayahMarker(7)).toBe('\u00A0\u06DD٧');
+    expect(ayahMarker(255)).toBe('\u00A0\u06DD٢٥٥');
+    expect(ayahMarker(7).length).toBe(3);
     expect(/[0-9]/.test(ayahMarker(12))).toBe(false);
   });
 
@@ -127,6 +129,19 @@ describe('ayah marker', () => {
     );
     expect(src).toMatch(/\{ayahMarker\(n\)\}/);
     expect(src).not.toMatch(/\{'  '\}/);
+  });
+
+  it('leaves one space between an ayah and the next, and none after the last', () => {
+    const mk = (number: number, text: string) => ({ surahId: '002', number, text });
+    const ayat = [mk(1, 'aa'), mk(2, 'bb')];
+    const rendered = ayat
+      .map((a, i) => a.text + ayahMarker(a.number) + (i < ayat.length - 1 ? ' ' : ''))
+      .join('');
+    expect(rendered).toBe('aa\u00A0\u06DD١ bb\u00A0\u06DD٢');
+    expect(rendered.includes('  ')).toBe(false);
+    expect(rendered.endsWith(' ')).toBe(false);
+    expect(segmentCharLength(ayat)).toBe(rendered.length);
+    expect(ayahCharOffset(ayat, 2)).toBe(rendered.indexOf('bb'));
   });
 });
 
@@ -162,13 +177,13 @@ describe('ayah deep link', () => {
     const ayat = [ay(1, 'aaaa'), ay(2, 'bb'), ay(3, 'c')];
     expect(ayahCharOffset(ayat, 1)).toBe(0);
     expect(ayahCharOffset(ayat, 2)).toBe(4 + ayahMarker(1).length + 1);
-    expect(ayahCharOffset(ayat, 2)).toBe(4 + 4 + 1); // ' ۝١ ' is 4 characters
-    expect(ayahCharOffset(ayat, 3)).toBe(9 + 2 + ayahMarker(2).length + 1);
+    expect(ayahCharOffset(ayat, 2)).toBe(4 + 3 + 1); // NBSP, sign, digit
+    expect(ayahCharOffset(ayat, 3)).toBe(8 + 2 + ayahMarker(2).length + 1);
   });
 
   it('ayahCharOffset handles multi-digit markers', () => {
     expect(ayahCharOffset([ay(9, 'x'), ay(10, 'y')], 10)).toBe(1 + ayahMarker(9).length + 1);
-    expect(ayahCharOffset([ay(100, 'x'), ay(101, 'y')], 101)).toBe(1 + 6 + 1); // ' ۝١٠٠ '
+    expect(ayahCharOffset([ay(100, 'x'), ay(101, 'y')], 101)).toBe(1 + 5 + 1); // NBSP, sign, 3 digits
   });
 
   it('segmentCharLength matches the rendered string', () => {
@@ -244,5 +259,19 @@ describe('next surah params (C1)', () => {
   it('has no next surah after the last', () => {
     expect(nav.LAST_SURAH).toBe(114);
     expect(nav.nextSurahParams(114)).toBeNull();
+  });
+});
+
+describe('indexExit (footer Index button)', () => {
+  const list = { name: 'mushaf' };
+  const reader = { name: 'mushaf', params: { surah: '002' } };
+  it('goes back when the screen below is the Mushaf list, so no second list is stacked', () => {
+    expect(indexExit([list, reader], 1)).toBe('back');
+  });
+  it('replaces when the screen below is anything else, or a reader (auto-resume, deep link)', () => {
+    expect(indexExit([reader], 0)).toBe('replace');
+    expect(indexExit([{ name: 'index' }, reader], 1)).toBe('replace');
+    expect(indexExit([reader, reader], 1)).toBe('replace');
+    expect(indexExit([], 0)).toBe('replace');
   });
 });

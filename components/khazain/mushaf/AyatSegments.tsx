@@ -123,8 +123,11 @@ const styles = StyleSheet.create({
   ayahHighlight: { backgroundColor: KhazainColors.cream200 },
   // Inherits the body size: Amiri draws the medallion round the digits at the
   // size of the text beside it.
+  // The page image's medallions sample to an outline #5D4933, fill #957B63 and
+  // black digits; `inkBrown` (#5F482D) is the nearest token and the one the
+  // cartouche's inner rule already uses.
   ayahNum: {
-    color: KhazainColors.gold600,
+    color: KhazainColors.inkBrown,
     fontFamily: 'Amiri-Bold',
     fontWeight: '400',
   },

@@ -1,3 +1,4 @@
+import { TEXT_ROLES } from '@/constants/typography';
 /**
  * Pure decisions for the Mushaf reader's tap-to-show chrome (design
  * 2026-10-23 D3). Frame 2349:829 is the bare page; 2349:982 is the same page
@@ -163,15 +164,13 @@ export function chromeBottomPad(insetBottom: number): number {
   return Math.max(insetBottom, 8);
 }
 
-/** DIV-47 (2349:994): items 16 apart. A 320dp phone closes that to 8 so the strip stays on one line. */
-export function metaGap(windowWidth: number): number {
-  return windowWidth < 340 ? 8 : 16;
-}
+/** DIV-47 (2349:994): items 16 apart. `flexWrap` handles large type and narrow phones. */
+export const META_GAP = 16;
 
 /** The meta text box (89-109) is centred 54 below the status bar inset. */
 export const META_CENTRE_BELOW_INSET = 54;
-/** DIV-47's text is TheMixArab 14 on a 20pt line. */
-export const META_LINE_HEIGHT = 20;
+/** DIV-47's text is TheMixArab 14; the role's 1.5 floor makes the line 21, not the frame's 20. */
+export const META_LINE_HEIGHT = TEXT_ROLES.bodyCompact.lineHeight;
 
 /** Top padding that lands the meta line's centre on the frame, under a header of `headerHeight`. */
 export function metaTopPad(headerHeight: number): number {
