@@ -48,7 +48,7 @@ describe('tab bar Figma parity (GLOBAL-05..09)', () => {
   });
 
   it('applies phone-only styles and hit slop to phones only', () => {
-    expect(src).toMatch(/hitSlop=\{tablet \? undefined :/);
+    expect(src).toMatch(/hitSlop=\{\s*tablet\s*\? undefined/);
     expect(src).toMatch(/!tablet && styles\.barPhone/);
     expect(src).toMatch(/!tablet && styles\.itemPhone/);
     expect(src).toMatch(/active && !tablet && styles\.itemActivePhone/);
