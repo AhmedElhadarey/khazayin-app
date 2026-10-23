@@ -19,9 +19,8 @@ import React from 'react';
 import type { SearchResultGroup } from './searchAll';
 import { searchTargetFor, type SearchTarget } from './searchTarget';
 
-// ---------------------------------------------------------------------------
-// Row badges (no frame covers search or the Library saved rows)
-// ---------------------------------------------------------------------------
+/** Leading badge size. No frame covers search or the Library saved rows. */
+const BADGE = 40;
 
 // ---------------------------------------------------------------------------
 // Row props builder
@@ -62,7 +61,7 @@ export function rowPropsForSearchResult(
   if (group.type === 'scholar') {
     const s = item as Scholar;
     return {
-      iconNode: <QuillBadge size={40} />,
+      iconNode: <QuillBadge size={BADGE} />,
       title: s.name,
       target,
     };
@@ -70,7 +69,7 @@ export function rowPropsForSearchResult(
   if (group.type === 'book') {
     const b = item as Book;
     return {
-      iconNode: <OpenBookBadge size={40} />,
+      iconNode: <OpenBookBadge size={BADGE} />,
       title: b.title,
       target,
     };
@@ -100,13 +99,13 @@ export function rowPropsForSavedItem(item: SavedItem): RowProps {
       };
     case 'scholar':
       return {
-        iconNode: <QuillBadge size={40} />,
+        iconNode: <QuillBadge size={BADGE} />,
         title: item.snapshot.name,
         route: `/sections/scholar/${item.entityId}`,
       };
     case 'book':
       return {
-        iconNode: <OpenBookBadge size={40} />,
+        iconNode: <OpenBookBadge size={BADGE} />,
         title: item.snapshot.title,
         route: '/sections/books',
       };
@@ -120,7 +119,7 @@ export function rowPropsForSavedItem(item: SavedItem): RowProps {
       };
     case 'dawah':
       return {
-        iconNode: <OpenBookBadge size={40} />,
+        iconNode: <OpenBookBadge size={BADGE} />,
         title: item.snapshot.title,
         subtitle: item.snapshot.body,
         route: '/sections/dawah',
@@ -133,11 +132,11 @@ export function rowPropsForSavedItem(item: SavedItem): RowProps {
 // ---------------------------------------------------------------------------
 
 function lectureIconFor(category: Lecture['category']): React.ReactNode {
-  return category === 'prophet' ? <ProphetMedallionBadge size={40} /> :
-         category === 'queen'   ? <TulipBadge size={40} /> :
-         category === 'radio'   ? <MicBadge size={40} /> :
-         category === 'book'    ? <OpenBookBadge size={40} /> :
-         /* scholar | general */  <OpenBookBadge size={40} />;
+  return category === 'prophet' ? <ProphetMedallionBadge size={BADGE} /> :
+         category === 'queen'   ? <TulipBadge size={BADGE} /> :
+         category === 'radio'   ? <MicBadge size={BADGE} /> :
+         category === 'book'    ? <OpenBookBadge size={BADGE} /> :
+         /* scholar | general */  <OpenBookBadge size={BADGE} />;
 }
 
 function lectureRouteFor(category: Lecture['category']): string {

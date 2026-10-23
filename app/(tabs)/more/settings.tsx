@@ -7,6 +7,7 @@ import {
   CommunityGlyph,
   ExportNotesGlyph,
   FontSizeGlyph,
+  InfoGlyph,
   LanguageGlyph,
   NotificationsGlyph,
   PrayerTimesGlyph,
@@ -296,14 +297,14 @@ export default function SettingsScreen() {
               variant="more"
               title="إعادة الإعداد الأولي"
               subtitle="عرض شاشة الترحيب من جديد"
-              icon={<AboutGlyph />}
+              icon={<InfoGlyph />}
               onPress={onResetOnboarding}
             />
             <ListRowCard
               variant="more"
               title="إرسال حدث تجريبي لتسجيل الأعطال"
               subtitle="للتحقق من تسجيل الأعطال"
-              icon={<AboutGlyph />}
+              icon={<InfoGlyph />}
               onPress={onTestSentry}
             />
           </SettingsSection>
@@ -410,7 +411,7 @@ function CommunitySettingsSection() {
           <SettingsValueRow
             title={COMMUNITY_COPY.mutedMembers}
             value={toArNum(muted.length)}
-            icon={<AboutGlyph />}
+            icon={<InfoGlyph />}
             expanded={mutedOpen}
             onPress={() => setMutedOpen((v) => !v)}
           />
@@ -420,7 +421,7 @@ function CommunitySettingsSection() {
                   key={id}
                   title={mutedMemberLabel(i + 1)}
                   value={COMMUNITY_COPY.unmute}
-                  icon={<AboutGlyph />}
+                  icon={<InfoGlyph />}
                   onPress={() => useCommunityLocalStore.getState().unmute(id)}
                 />
               ))

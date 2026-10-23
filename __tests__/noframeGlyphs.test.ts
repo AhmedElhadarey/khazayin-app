@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { subpathAreas } from './helpers/pathArea';
 import { FIGMA_ICONS } from '@/components/khazain/icons/generated/figmaIcons';
 
 const ROOT = path.join(__dirname, '..');
@@ -15,8 +16,10 @@ describe('NOFRAME-08: search / saved badges', () => {
   it('uses the surah star and the quill badge, not inline discs', () => {
     expect(src).toMatch(/<SurahStar[^>]*index=\{[^}]*displayNumber[^}]*\}/);
     expect(src).not.toMatch(/SurahNumberBadge|ScholarMedallion/);
+    expect(src).toMatch(/const BADGE = 40/);
+    expect(src).not.toMatch(/size=\{40\}/);
     expect(src).toMatch(/CARD_DENSITY\.surahBadgeDisc/);
-    expect(src).toMatch(/<QuillBadge size=\{40\}/);
+    expect(src).toMatch(/<QuillBadge size=\{BADGE\}/);
     expect(src).not.toMatch(/badgeStyles|surahBadge:|scholarBadge:/);
   });
   it('the glyphs exist in the generated set', () => {
@@ -31,19 +34,22 @@ describe('NOFRAME-13: note editor format toolbar', () => {
   const shared = read('components/khazain/primitives/FormatButton.tsx');
   it('draws the three file marks through the shared button', () => {
     for (const name of ['NoteBold', 'NoteItalic', 'NoteListFormat']) {
-      expect(editor).toMatch(new RegExp(`name="${name}"`));
-      expect(library).toMatch(new RegExp(`name="${name}"`));
+      expect(editor).toMatch(new RegExp(`mark="${name}"`));
+      expect(library).toMatch(new RegExp(`mark="${name}"`));
+      expect(shared).toMatch(new RegExp(`'${name}'`));
     }
+    expect(shared).toMatch(/size=\{GLYPH\} color=\{KhazainColors\.ink500\}/);
     expect(editor).toMatch(/FormatButton/);
     expect(library).toMatch(/FormatButton/);
-    expect(editor).not.toMatch(/function FormatBtn|ListGlyph|fontFamily: 'System'/);
+    expect(editor).not.toMatch(/function FormatBtn|ListGlyph|fontFamily: 'System'|FORMAT_GLYPH/);
+    expect(library).not.toMatch(/FORMAT_GLYPH/);
     expect(library).not.toMatch(/function FormatBtn/);
   });
   it('the shared button is 32 at radius 16 on cardBg with a 6pt hitSlop', () => {
-    expect(shared).toMatch(/width: 32/);
-    expect(shared).toMatch(/borderRadius: 16/);
+    expect(shared).toMatch(/SIZE = 32/);
+    expect(shared).toMatch(/borderRadius: SIZE \/ 2/);
     expect(shared).toMatch(/backgroundColor: KhazainColors\.cardBg/);
-    expect(shared).toMatch(/hitSlop=\{6\}/);
+    expect(shared).toMatch(/hitSlop=\{\(MIN_TOUCH_TARGET - SIZE\) \/ 2\}/);
   });
 });
 
@@ -78,29 +84,46 @@ describe('NOFRAME-21: settings row glyphs', () => {
       ['LibraryWird', 'WirdGoalGlyph'],
       ['LibraryNotes', 'ExportNotesGlyph'],
     ]) {
-      expect(glyphs).toMatch(new RegExp(`${glyph} = \\(\\) => file\\('${name}'\\)`));
+      expect(glyphs).toMatch(new RegExp(`${glyph} = \\(\\) => fileGlyph\\('${name}'\\)`));
       expect(settings).toMatch(new RegExp(`<${glyph} />`));
       expect(FIGMA_ICONS).toHaveProperty(name);
     }
     expect(notif).toMatch(/<NotificationsGlyph \/>/);
   });
   it('shares one glyph size with More and no 28pt drawn marks remain', () => {
-    expect(read('constants/rowGlyph.ts')).toMatch(/ROW_GLYPH\s*=\s*20/);
-    expect(more).toMatch(/MORE_GLYPH = ROW_GLYPH/);
-    expect(glyphs).toMatch(/size=\{ROW_GLYPH\}/);
+    expect(read('constants/layout.ts')).toMatch(/moreGlyphSize: 20/);
+    expect(fs.existsSync(path.join(ROOT, 'constants/rowGlyph.ts'))).toBe(false);
+    expect(more).toMatch(/CARD_DENSITY\.moreGlyphSize/);
+    expect(more).not.toMatch(/MORE_GLYPH =/);
+    expect(glyphs).toMatch(/CARD_DENSITY\.moreGlyphSize/);
     for (const s of [settings, notif, glyphs]) {
       expect(s).not.toMatch(/width=\{28\}/);
     }
     expect(settings).not.toMatch(/<Svg/);
     expect(notif).not.toMatch(/<Svg/);
   });
-  it('no drawn path repeats an arc command back to back (zero-area subpath)', () => {
-    const ds = [...glyphs.matchAll(/ d="([^"]+)"/g)].map((m) => m[1]);
-    expect(ds.length).toBeGreaterThan(5);
-    for (const d of ds) {
-      const arcs = d.match(/[aA][^a-zA-Z]*/g) ?? [];
-      for (let i = 1; i < arcs.length; i++) expect(arcs[i]).not.toBe(arcs[i - 1]);
+  it('every filled drawn subpath encloses area (nothing retraces itself)', () => {
+    const filled = [...glyphs.matchAll(/<Path d="([^"]+)"([^>]*)\/>/g)].filter(
+      (m) => /fill=/.test(m[2]) && !/stroke=/.test(m[2]),
+    );
+    expect(filled.length).toBeGreaterThan(10);
+    for (const m of filled) {
+      for (const area of subpathAreas(m[1])) {
+        expect(Math.abs(area)).toBeGreaterThan(1);
+      }
     }
+  });
+  it('the area check catches the retraced second head from c86f3bd', () => {
+    const old =
+      'M16 4.7a3.5 3.5 0 010 6.6 3.5 3.5 0 000-6.6zM17.5 14.2A6.5 6.5 0 0121.5 20.5H18a8 8 0 00-2-5.2l1.5-1.1z';
+    const areas = subpathAreas(old);
+    expect(Math.abs(areas[0])).toBeLessThan(0.01);
+    expect(Math.abs(areas[1])).toBeGreaterThan(1);
+  });
+  it('non-about rows use InfoGlyph, which is the file\'s i', () => {
+    expect(glyphs).toMatch(/InfoGlyph = \(\) => fileGlyph\('MoreAbout'\)/);
+    expect(settings.match(/<InfoGlyph \/>/g)).toHaveLength(4);
+    expect(settings.match(/<AboutGlyph \/>/g)).toHaveLength(1);
   });
   it('drawn marks are filled, not 1.5pt outlines', () => {
     expect(glyphs).not.toMatch(/strokeWidth=\{1\.5\}/);

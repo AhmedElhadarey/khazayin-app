@@ -1,5 +1,5 @@
-import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
-import { ROW_GLYPH } from '@/constants/rowGlyph';
+import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
+import { CARD_DENSITY } from '@/constants/layout';
 import { KhazainColors } from '@/constants/theme';
 import React from 'react';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -8,7 +8,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
  * Row glyphs for the settings screens, which have no Figma frame.
  *
  * Where the file carries a mark for the row's subject the row draws it
- * (`FigmaIcon`, navy800, `ROW_GLYPH`) — the same family the More rows use:
+ * (`FigmaIcon`, navy800, `CARD_DENSITY.moreGlyphSize`) — the same family the More rows use:
  *   - about          MoreAbout        2106:2291
  *   - language       MoreWeb          2106:2219
  *   - notifications  LibraryReminders 2095:1608
@@ -17,28 +17,30 @@ import Svg, { Circle, Path } from 'react-native-svg';
  * The rest (qira'a, reciter, font size, privacy, cache, restore, prayer,
  * community, info) have no mark in the file, so they are drawn here in the
  * file family's bulk style: a solid shape plus a 40% secondary, filled, no
- * 1.5pt outline. They are 24-unit drawings scaled to `ROW_GLYPH`.
+ * 1.5pt outline. They are 24-unit drawings scaled to `CARD_DENSITY.moreGlyphSize`.
  */
 const C = KhazainColors.navy800;
 const SECONDARY = 0.4;
 
-function file(name: React.ComponentProps<typeof FigmaIcon>['name']) {
-  return <FigmaIcon name={name} size={ROW_GLYPH} color={C} />;
+function fileGlyph(name: FigmaIconName) {
+  return <FigmaIcon name={name} size={CARD_DENSITY.moreGlyphSize} color={C} />;
 }
 
 function Drawn({ children }: { children: React.ReactNode }) {
   return (
-    <Svg width={ROW_GLYPH} height={ROW_GLYPH} viewBox="0 0 24 24" fill="none">
+    <Svg width={CARD_DENSITY.moreGlyphSize} height={CARD_DENSITY.moreGlyphSize} viewBox="0 0 24 24" fill="none">
       {children}
     </Svg>
   );
 }
 
-export const AboutGlyph = () => file('MoreAbout');
-export const LanguageGlyph = () => file('MoreWeb');
-export const NotificationsGlyph = () => file('LibraryReminders');
-export const WirdGoalGlyph = () => file('LibraryWird');
-export const ExportNotesGlyph = () => file('LibraryNotes');
+export const AboutGlyph = () => fileGlyph('MoreAbout');
+/** The file's «i» again, for rows that are not About (developer and moderation rows). */
+export const InfoGlyph = () => fileGlyph('MoreAbout');
+export const LanguageGlyph = () => fileGlyph('MoreWeb');
+export const NotificationsGlyph = () => fileGlyph('LibraryReminders');
+export const WirdGoalGlyph = () => fileGlyph('LibraryWird');
+export const ExportNotesGlyph = () => fileGlyph('LibraryNotes');
 
 export function QiraaGlyph() {
   return (

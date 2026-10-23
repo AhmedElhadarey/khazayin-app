@@ -1,6 +1,5 @@
 import { AsyncContent, ListRowCard, SkeletonRibbonList, Wordmark } from '@/components/khazain';
 import { FigmaIcon, type FigmaIconName } from '@/components/khazain/icons/FigmaIcon';
-import { ROW_GLYPH } from '@/constants/rowGlyph';
 import { WhatsappRingGlyph } from '@/components/khazain/icons/WhatsappRingGlyph';
 import { WHATSAPP_RING } from '@/components/khazain/icons/whatsappRing';
 import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
@@ -17,9 +16,6 @@ import { Alert, Linking, ScrollView, StyleSheet, Text, View, useWindowDimensions
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout, useWindowControlsInset } from '@/hooks/useResponsiveLayout';
 import Svg, { Circle, Path } from 'react-native-svg';
-
-/** Node 2102:2711 draws each row glyph at ~20pt inside the 48pt squircle. */
-const MORE_GLYPH = ROW_GLYPH;
 
 export default function MoreScreen() {
   const insets = useSafeAreaInsets();
@@ -151,7 +147,7 @@ function RowGlyph({ id }: { id: string }) {
   if (id === 'whatsapp') return <WhatsappRingGlyph spec={WHATSAPP_RING.more} />;
   const fromFile = ROW_ICONS[id];
   if (fromFile) {
-    return <FigmaIcon name={fromFile} size={MORE_GLYPH} color={KhazainColors.navy800} />;
+    return <FigmaIcon name={fromFile} size={CARD_DENSITY.moreGlyphSize} color={KhazainColors.navy800} />;
   }
   return <DrawnRowGlyph id={id} />;
 }
@@ -159,7 +155,7 @@ function RowGlyph({ id }: { id: string }) {
 /** The rows the design file has no frame for (settings, progress, community). */
 function DrawnRowGlyph({ id }: { id: string }) {
   const c = KhazainColors.navy800;
-  const size = MORE_GLYPH;
+  const size = CARD_DENSITY.moreGlyphSize;
   switch (id) {
     case 'progress':
       return (

@@ -113,8 +113,6 @@ function surahNameForPage(page: number): { name: string; surahNumber: number } |
 
 /** `DIV-46` draws its stat glyph at 22.2 x 21.3 inside a 40pt chip. */
 const STAT_GLYPH = 22;
-/** `BUTTON-113` draws its toolbar mark at 16.7 x 16 inside a 32pt button. */
-const FORMAT_GLYPH = 16;
 
 export default function LibraryScreen() {
   const { columnStyle } = useResponsiveLayout();
@@ -564,15 +562,9 @@ export default function LibraryScreen() {
               <Text style={styles.noteSaveLabel}>حفظ</Text>
             </Pressable>
             <View style={{ flex: 1 }} />
-            <FormatButton accessibilityLabel="قائمة">
-              <FigmaIcon name="NoteListFormat" size={FORMAT_GLYPH} color={KhazainColors.ink500} />
-            </FormatButton>
-            <FormatButton accessibilityLabel="مائل">
-              <FigmaIcon name="NoteItalic" size={FORMAT_GLYPH} color={KhazainColors.ink500} />
-            </FormatButton>
-            <FormatButton accessibilityLabel="عريض">
-              <FigmaIcon name="NoteBold" size={FORMAT_GLYPH} color={KhazainColors.ink500} />
-            </FormatButton>
+            <FormatButton mark="NoteListFormat" accessibilityLabel="قائمة" />
+            <FormatButton mark="NoteItalic" accessibilityLabel="مائل" />
+            <FormatButton mark="NoteBold" accessibilityLabel="عريض" />
           </View>
           <View style={styles.recentBlock}>
             <Text style={styles.recentHeader}>آخر الملاحظات</Text>

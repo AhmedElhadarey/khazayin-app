@@ -21,7 +21,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
 import { FormatButton } from '@/components/khazain/primitives/FormatButton';
 
 // `id`/`title` predate linked notes; the `ref*` keys are written by
@@ -180,15 +179,9 @@ export default function NoteEditor() {
                   <Text style={styles.saveLabel}>حفظ</Text>
                 </Pressable>
                 <View style={{ flex: 1 }} />
-                <FormatButton accessibilityLabel="قائمة">
-                  <FigmaIcon name="NoteListFormat" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
-                </FormatButton>
-                <FormatButton accessibilityLabel="مائل">
-                  <FigmaIcon name="NoteItalic" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
-                </FormatButton>
-                <FormatButton accessibilityLabel="عريض">
-                  <FigmaIcon name="NoteBold" size={FORMAT_GLYPH} color={KhazainColors.ink700} />
-                </FormatButton>
+                <FormatButton mark="NoteListFormat" accessibilityLabel="قائمة" />
+                <FormatButton mark="NoteItalic" accessibilityLabel="مائل" />
+                <FormatButton mark="NoteBold" accessibilityLabel="عريض" />
               </View>
 
               {editingId ? (
@@ -231,9 +224,6 @@ export default function NoteEditor() {
     </KeyboardAvoidingView>
   );
 }
-
-/** Glyph size inside the 32pt FormatButton, as in the Library quick-note card. */
-const FORMAT_GLYPH = 16;
 
 const styles = StyleSheet.create({
   // The dim lives on the KAV so its padding strip under the keyboard is dimmed

@@ -125,9 +125,10 @@ describe('Library glyph and placeholder colours (LIBRARY-02, 19)', () => {
     expect(chunk.match(/KhazainColors\.goldAccent/g)!.length).toBeGreaterThanOrEqual(5);
     expect(lib).toMatch(/stroke=\{KhazainColors\.goldAccent\}/);
   });
-  it('uses the placeholder token and ink500 format glyphs', () => {
+  it('uses the placeholder token and the shared ink500 format buttons', () => {
     expect(KhazainColors.placeholder).toBe('#9CA3AF');
     expect(lib).toMatch(/noteBodyPlaceholder: textStyle\('cardTitle', \{ color: KhazainColors\.placeholder \}\)/);
-    expect(lib.match(/name="Note(ListFormat|Italic|Bold)" size=\{FORMAT_GLYPH\} color=\{KhazainColors\.ink500\}/g)).toHaveLength(3);
+    expect(lib.match(/<FormatButton mark="Note(ListFormat|Italic|Bold)"/g)).toHaveLength(3);
+    expect(src('components/khazain/primitives/FormatButton.tsx')).toMatch(/size=\{GLYPH\} color=\{KhazainColors\.ink500\}/);
   });
 });

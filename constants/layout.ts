@@ -383,6 +383,8 @@ export const CARD_DENSITY = Object.freeze({
   moreCardPaddingHorizontal: 16,
   /** `DIV-24` — 48 x 48 at radius 16, so it reads as a squircle, not a circle. */
   moreChipSize: 48,
+  /** Node 2102:2711 draws each row glyph at ~20pt in the chip; Settings shares it. */
+  moreGlyphSize: 20,
   moreChipRadius: 16,
   /** Each `margin-wrap` is 94 over an 82 card, and the cards step 94 apart. */
   moreListGap: 12,
