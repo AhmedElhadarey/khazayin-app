@@ -130,6 +130,9 @@ describe('BookCard without an action (the book detail cover)', () => {
     expect(r.root.findAll((n) => n.type === Text && n.props.children === 'زاد المعاد')).toHaveLength(1);
   });
 
+});
+
+describe('cards without an action', () => {
   it('does not shrink under a press it does not handle', () => {
     for (const el of [<BookCard key="b" id="b1" name="زاد المعاد" />, <ScholarCard key="s" id="s4" nameArt={1} name="ابن باز" />]) {
       const r = render(el);

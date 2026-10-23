@@ -44,8 +44,26 @@ export const SAVED_COPY = Object.freeze({
  */
 export function bookmarkLabel(saved: boolean, snapshot: SavedSnapshot): string {
   const base = saved ? SAVED_COPY.unsaveLabel : SAVED_COPY.saveLabel;
-  const name = 'name' in snapshot ? snapshot.name : snapshot.title;
+  const name = snapshotName(snapshot);
   return name ? `${base}: ${name}` : base;
+}
+
+/** The display name of a saved item, per snapshot kind. */
+function snapshotName(snapshot: SavedSnapshot): string {
+  switch (snapshot.type) {
+    case 'surah':
+    case 'scholar':
+      return snapshot.name;
+    case 'book':
+    case 'lecture':
+    case 'dawah':
+      return snapshot.title;
+    default: {
+      // A new snapshot kind must decide here what names it.
+      const unhandled: never = snapshot;
+      return unhandled;
+    }
+  }
 }
 
 export const SAVE_TOAST_MS = 3000;

@@ -35,7 +35,14 @@ export function RecentSearchRow({ query, onPress, onRemove }: Props) {
           <View style={[styles.xLine, { transform: [{ rotate: '-45deg' }] }]} />
         </View>
       </Pressable>
-      <Pressable onPress={onPress} accessibilityRole="button" accessibilityLabel={query} style={styles.tap}>
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={query}
+        // The row's hairline leaves the tap 43 tall; this restores the 44 target.
+        hitSlop={{ bottom: 1 }}
+        style={styles.tap}
+      >
         <Text style={styles.text} numberOfLines={oneLine}>
           {query}
         </Text>
