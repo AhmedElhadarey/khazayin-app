@@ -96,6 +96,15 @@ export const QIRAAT: Qiraat[] = [
 // RECITERS
 // ---------------------------------------------------------------------------
 
+// The three style labels are written with escapes: the .fig stores the shadda
+// BEFORE the vowel mark, and editors/IMEs may reorder literal marks on save.
+/** المصحف المجوَّد — node 2457:943 (…0648 0651 064E 062F). */
+const LABEL_MUJAWWAD = 'المصحف المجو\u0651\u064Eد';
+/** المصحف المرتَّل — node 2457:950 (…062A 0651 064E 0644). */
+const LABEL_MURATTAL = 'المصحف المرت\u0651\u064Eل';
+/** المصحف المعلِّم — node 2457:953 (…0644 0651 0650 0645). */
+const LABEL_MUALLIM = 'المصحف المعل\u0651\u0650م';
+
 /**
  * Reciters, distributed across the 4 tab styles.
  *
@@ -113,21 +122,21 @@ export const QIRAAT: Qiraat[] = [
  * implying a source that does not exist.
  */
 export const RECITERS: Reciter[] = [
-  { id: 'r1',  name: 'الشيخ عبد الباسط عبد الصمد',    style: 'tajweed',  styleLabel: 'المصحف المجو\u0651\u064Eد'  },
-  { id: 'r2',  name: 'الشيخ محمود خليل الحصري',        style: 'tajweed',  styleLabel: 'المصحف المجو\u0651\u064Eد'  },
-  { id: 'r8',  name: 'الشيخ مصطفى إسماعيل',            style: 'tajweed',  styleLabel: 'المصحف المجو\u0651\u064Eد'  },
-  { id: 'r9',  name: 'الشيخ أبو العينين شعيشع',        style: 'tajweed',  styleLabel: 'المصحف المجو\u0651\u064Eد'  },
-  { id: 'r10', name: 'الشيخ محمود علي البنا',          style: 'tajweed',  styleLabel: 'المصحف المجو\u0651\u064Eد'  },
-  { id: 'r11', name: 'الشيخ الشحات محمد أنور',         style: 'tajweed',  styleLabel: 'المصحف المجو\u0651\u064Eد'  },
-  { id: 'r3',  name: 'الشيخ محمد صديق المنشاوي',       style: 'murattal', styleLabel: 'المصحف المرت\u0651\u064Eل'  },
-  { id: 'r4',  name: 'الشيخ عبد الرحمن السديس',        style: 'murattal', styleLabel: 'المصحف المرت\u0651\u064Eل'  },
-  { id: 'r5',  name: 'الشيخ سعد الغامدي',              style: 'murattal', styleLabel: 'المصحف المرت\u0651\u064Eل'  },
-  { id: 'r12', name: 'الشيخ مشاري راشد العفاسي',       style: 'murattal', styleLabel: 'المصحف المرت\u0651\u064Eل'  },
-  { id: 'r13', name: 'الشيخ أحمد بن علي العجمي',       style: 'murattal', styleLabel: 'المصحف المرت\u0651\u064Eل'  },
-  { id: 'r14', name: 'الشيخ ياسر الدوسري',             style: 'murattal', styleLabel: 'المصحف المرت\u0651\u064Eل'  },
-  { id: 'r6',  name: 'الشيخ محمد أيوب',                style: 'muallam',  styleLabel: 'المصحف المعل\u0651\u0650م' },
-  { id: 'r15', name: 'الشيخ عبد الله بصفر',            style: 'muallam',  styleLabel: 'المصحف المعل\u0651\u0650م' },
-  { id: 'r16', name: 'الشيخ خليفة الطنيجي',            style: 'muallam',  styleLabel: 'المصحف المعل\u0651\u0650م' },
+  { id: 'r1',  name: 'الشيخ عبد الباسط عبد الصمد',    style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r2',  name: 'الشيخ محمود خليل الحصري',        style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r8',  name: 'الشيخ مصطفى إسماعيل',            style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r9',  name: 'الشيخ أبو العينين شعيشع',        style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r10', name: 'الشيخ محمود علي البنا',          style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r11', name: 'الشيخ الشحات محمد أنور',         style: 'tajweed',  styleLabel: LABEL_MUJAWWAD  },
+  { id: 'r3',  name: 'الشيخ محمد صديق المنشاوي',       style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r4',  name: 'الشيخ عبد الرحمن السديس',        style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r5',  name: 'الشيخ سعد الغامدي',              style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r12', name: 'الشيخ مشاري راشد العفاسي',       style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r13', name: 'الشيخ أحمد بن علي العجمي',       style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r14', name: 'الشيخ ياسر الدوسري',             style: 'murattal', styleLabel: LABEL_MURATTAL  },
+  { id: 'r6',  name: 'الشيخ محمد أيوب',                style: 'muallam',  styleLabel: LABEL_MUALLIM },
+  { id: 'r15', name: 'الشيخ عبد الله بصفر',            style: 'muallam',  styleLabel: LABEL_MUALLIM },
+  { id: 'r16', name: 'الشيخ خليفة الطنيجي',            style: 'muallam',  styleLabel: LABEL_MUALLIM },
   { id: 'r7',  name: 'الشيخ ماهر المعيقلي',            style: 'qiraat',   styleLabel: 'قراءات'          },
 ];
 
@@ -135,10 +144,10 @@ export const RECITERS: Reciter[] = [
 // RECITER_TABS
 // ---------------------------------------------------------------------------
 
-/** From reciter.tsx:19-25. */
+/** Tab strip of frame 2031:6193. */
 export const RECITER_TABS: { key: string; label: string }[] = [
-  { key: 'tajweed',  label: 'المصحف المجو\u0651\u064Eد'  },
-  { key: 'murattal', label: 'المصحف المرت\u0651\u064Eل'  },
-  { key: 'muallam',  label: 'المصحف المعل\u0651\u0650م' },
+  { key: 'tajweed',  label: LABEL_MUJAWWAD  },
+  { key: 'murattal', label: LABEL_MURATTAL  },
+  { key: 'muallam',  label: LABEL_MUALLIM },
   { key: 'qiraat',   label: 'قراءات'          },
 ];

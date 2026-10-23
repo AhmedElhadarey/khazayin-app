@@ -1,5 +1,5 @@
 import { KhazainColors } from '@/constants/theme';
-import { textStyle } from '@/constants/typography';
+import { textStyle, CHROME_MAX_FONT_SCALE } from '@/constants/typography';
 import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { FigmaIcon } from '../icons/FigmaIcon';
@@ -38,6 +38,7 @@ export function SurahStar({
           { lineHeight: 20 },
         ]}
         numberOfLines={1}
+        maxFontSizeMultiplier={CHROME_MAX_FONT_SCALE}
       >
         {index}
       </Text>

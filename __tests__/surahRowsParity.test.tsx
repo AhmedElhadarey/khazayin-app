@@ -59,7 +59,7 @@ describe('badge numerals are unpadded', () => {
   it('keeps displayNumber in the data and in search', () => {
     expect(pick(1).displayNumber).toBe('٠١');
     const run = (query: string) =>
-      searchAll({ query, surahs: SURAHS, scholars: [], books: [], lectures: [] })[0]?.items ?? [];
+      (searchAll({ query, surahs: SURAHS, scholars: [], books: [], lectures: [] }).find((g) => g.type === 'surah') as any)?.items ?? [];
     expect((run('٠١') as any[]).some((s) => s.number === 1)).toBe(true);
     expect((run('١') as any[]).some((s) => s.number === 1)).toBe(true);
     expect((run('1') as any[]).some((s) => s.number === 1)).toBe(true);
@@ -80,10 +80,11 @@ describe('SurahStar labelRole', () => {
     const s = flat(label);
     expect(s.height).toBeUndefined();
     expect(s.lineHeight).toBe(20);
+    expect(s.textAlignVertical).toBeUndefined();
+    expect(s.includeFontPadding).toBe(false);
     const wrap = r.root.findAll((n) => n.type === 'View' && n.props.style && flat(n).width === 36)[0];
     expect(flat(wrap)).toMatchObject({ alignItems: 'center', justifyContent: 'center' });
   });
-
 });
 
 describe('meta separator and tab labels', () => {

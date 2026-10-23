@@ -34,6 +34,8 @@ export function SurahRow({
   return (
     <Pressable
       onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={`${surah.name}، ${surah.meta}`}
       style={({ pressed }) => [
         styles.row,
         { transform: [{ scale: pressed ? 0.99 : 1 }], opacity: pressed ? 0.92 : 1 },
@@ -84,7 +86,7 @@ const styles = StyleSheet.create({
   body: {
     flex: 1,
     minWidth: 0,
-    alignItems: 'flex-end',
+    alignItems: 'stretch',
   },
   name: textStyle('bodyCompactLoose', { color: KhazainColors.inkTitle }),
   meta: { ...textStyle('caption', { color: KhazainColors.ink500 }), lineHeight: 20 },
