@@ -727,7 +727,7 @@ const styles = StyleSheet.create({
   dbErrorText: {
     fontSize: 13,
     color: KhazainColors.ink700,
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     writingDirection: 'rtl',
     textAlign: 'center',
   },
@@ -740,7 +740,7 @@ const styles = StyleSheet.create({
   dbErrorBtnLabel: {
     color: '#fff',
     fontSize: 13,
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: dbErrorBtnLabel is a heading/label the file shows bold
     writingDirection: 'rtl',
     textAlign: 'center',
   },
@@ -903,7 +903,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   historyLoading: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 13,
     color: KhazainColors.ink400,
     writingDirection: 'rtl',

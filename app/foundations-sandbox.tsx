@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
     color: KhazainColors.navy900,
   },
   p: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 14,
     color: KhazainColors.ink500,
     lineHeight: 22,
@@ -265,7 +265,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   patternLabel: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: patternLabel is a heading/label the file shows bold
     color: KhazainColors.cream100,
     fontSize: 13,
   },
@@ -298,7 +298,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   iconLabel: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 9,
     color: KhazainColors.ink500,
   },

@@ -196,7 +196,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   cardBody: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 12,
     color: KhazainColors.ink500,
     lineHeight: 20,
@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.gold400,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 18,
     color: KhazainColors.navy800,
     textAlign: 'right',
@@ -227,20 +227,20 @@ const styles = StyleSheet.create({
     borderColor: '#C04A3A',
   },
   inputSuffix: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 12,
     color: KhazainColors.ink500,
     writingDirection: 'rtl',
   },
   hint: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 11,
     color: KhazainColors.ink500,
     writingDirection: 'rtl',
     textAlign: 'right',
   },
   error: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 11,
     color: '#C04A3A',
     writingDirection: 'rtl',
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   },
   saveLabel: {
     color: '#fff',
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: saveLabel is a heading/label the file shows bold
     fontSize: 13,
   },
   resetBtn: {
@@ -270,7 +270,7 @@ const styles = StyleSheet.create({
   },
   resetLabel: {
     color: '#fff',
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: resetLabel is a heading/label the file shows bold
     fontSize: 13,
   },
 });

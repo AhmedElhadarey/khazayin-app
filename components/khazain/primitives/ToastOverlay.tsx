@@ -173,7 +173,7 @@ const styles = StyleSheet.create({
   },
   messageAchievement: {
     color: KhazainColors.navy800,
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: achievement toast message was 700
   },
   actionBtn: {
     paddingHorizontal: 8,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
   },
   actionLabel: {
     color: KhazainColors.gold200,
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: actionLabel is a heading/label the file shows bold
     fontSize: 14,
   },
 });

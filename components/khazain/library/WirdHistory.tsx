@@ -229,7 +229,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   emptyBody: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 12,
     color: KhazainColors.ink500,
     writingDirection: 'rtl',
@@ -240,7 +240,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingBottom: 8,
     marginTop: 4,
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: sectionLabel is a heading/label the file shows bold
     fontSize: 14,
     color: KhazainColors.ink900,
     writingDirection: 'rtl',
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   },
   weekdayPct: {
     width: 44,
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: weekdayPct is a heading/label the file shows bold
     fontSize: 12,
     color: KhazainColors.navy800,
     textAlign: 'left',
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   weekdayLabel: {
     width: 56,
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 12,
     color: KhazainColors.ink700,
     textAlign: 'right',
@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   headerCell: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 10,
     color: KhazainColors.ink400,
     textAlign: 'center',
@@ -331,12 +331,12 @@ const styles = StyleSheet.create({
   },
   cellCheck: {
     // Bold face (not fontWeight): a registered family is one static face.
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: the check glyph was bold
     fontSize: 13,
     color: KhazainColors.cream50,
    writingDirection: 'rtl',},
   cellDay: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 10,
     color: KhazainColors.ink500,
    writingDirection: 'rtl',},
@@ -366,12 +366,12 @@ const styles = StyleSheet.create({
   },
   legendCheck: {
     // Bold face (not fontWeight): a registered family is one static face.
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: the check glyph was bold
     fontSize: 9,
     color: KhazainColors.cream50,
    writingDirection: 'rtl',},
   legendLabel: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 11,
     color: KhazainColors.ink500,
     writingDirection: 'rtl',
@@ -385,7 +385,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cream100,
   },
   showMoreLabel: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: showMoreLabel is a heading/label the file shows bold
     fontSize: 13,
     color: KhazainColors.navy800,
     writingDirection: 'rtl',

@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   chipText: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: chipText is a heading/label the file shows bold
     fontSize: 13,
     color: KhazainColors.ink900,
   },

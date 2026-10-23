@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   chipTitle: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 11,
     color: KhazainColors.ink500,
     writingDirection: 'rtl',

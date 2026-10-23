@@ -77,14 +77,14 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
   },
   title: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: title is a heading/label the file shows bold
     fontSize: 15,
     color: KhazainColors.ink900,
     textAlign: 'right',
     writingDirection: 'rtl',
   },
   subtitle: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 13,
     color: KhazainColors.inkSubtle,
     marginTop: 2,
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   metaText: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: metaText is a heading/label the file shows bold
     fontSize: 12,
     color: KhazainColors.ink900,
     writingDirection: 'rtl',

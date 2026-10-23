@@ -51,7 +51,7 @@ const badgeStyles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   surahBadgeText: {
-    fontFamily: 'TheSansArabic', fontSize: 14,
+    fontFamily: 'TheSansArabic', fontSize: 14, // bold-ok: surahBadgeText is a heading/label the file shows bold
     color: KhazainColors.gold200,
   },
   scholarBadge: {
@@ -60,7 +60,7 @@ const badgeStyles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
   },
   scholarBadgeText: {
-    fontFamily: 'TheSansArabic', fontSize: 18,
+    fontFamily: 'TheSansArabic', fontSize: 18, // bold-ok: scholarBadgeText is a heading/label the file shows bold
     color: KhazainColors.cream50,
   },
 });

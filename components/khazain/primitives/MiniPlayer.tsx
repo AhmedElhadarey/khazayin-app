@@ -217,7 +217,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   reciter: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 12,
     fontWeight: '400',
     color: KhazainColors.ink500,

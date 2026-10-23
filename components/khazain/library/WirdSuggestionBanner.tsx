@@ -55,7 +55,7 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   message: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: message is a heading/label the file shows bold
     fontSize: 13,
     color: KhazainColors.navy800,
     writingDirection: 'rtl',
@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   },
   dismissLabel: {
     color: KhazainColors.ink700,
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: dismissLabel is a heading/label the file shows bold
     fontSize: 12,
     writingDirection: 'rtl',
   },
@@ -87,7 +87,7 @@ const styles = StyleSheet.create({
   },
   acceptLabel: {
     color: '#fff',
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: acceptLabel is a heading/label the file shows bold
     fontSize: 12,
     writingDirection: 'rtl',
   },

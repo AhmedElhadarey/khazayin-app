@@ -73,7 +73,7 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   title: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: title is a heading/label the file shows bold
     fontSize: 16,
     lineHeight: 22,
     color: KhazainColors.inkTitle,
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
     textAlign: 'right',
   },
   description: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 13,
     lineHeight: 18,
     color: KhazainColors.inkSubtle,

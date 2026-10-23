@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.goldBar,
   },
   title: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: title is a heading/label the file shows bold
     fontSize: 16,
     color: KhazainColors.navy900,
     lineHeight: 21,

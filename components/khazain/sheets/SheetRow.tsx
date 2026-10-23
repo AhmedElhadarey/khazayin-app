@@ -93,14 +93,14 @@ const styles = StyleSheet.create({
     paddingRight: 56, // disc width 32 + right inset 12 + gap 12
   },
   title: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheSansArabic', // bold-ok: title is a heading/label the file shows bold
     fontSize: 15,
     color: KhazainColors.ink900,
     writingDirection: 'rtl',
     textAlign: 'right',
   },
   sub: {
-    fontFamily: 'TheSansArabic',
+    fontFamily: 'TheMixArab',
     fontSize: 12,
     color: KhazainColors.ink500,
     marginTop: 2,
