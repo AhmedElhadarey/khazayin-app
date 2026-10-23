@@ -9,7 +9,7 @@ import { ReciterSurahRow } from '@/components/khazain/sections/ReciterSurahRow';
 import { SurahRow } from '@/components/khazain/sections/SurahRow';
 import { SurahStar } from '@/components/khazain/primitives/SurahStar';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
-import { RECITER_TABS, SURAHS } from '@/data/content/quran';
+import { RECITERS, RECITER_TABS, SURAHS } from '@/data/content/quran';
 import { searchAll } from '@/services/search/searchAll';
 import { TEXT_ROLES } from '@/constants/typography';
 
@@ -74,12 +74,16 @@ describe('SurahStar labelRole', () => {
     expect(flat(textOf(b, '١١٤')).fontSize).toBe(TEXT_ROLES.cardTitle.fontSize);
     expect(flat(textOf(b, '١١٤')).lineHeight).toBe(20);
   });
-  it('centres the label in a star-sized box', () => {
+  it('has no fixed label height; the parent centres it', () => {
     const r = render(<SurahStar index="١" size={36} />);
-    const s = flat(textOf(r, '١'));
-    expect(s.textAlignVertical).toBe('center');
-    expect(s.height).toBe(36);
+    const label = textOf(r, '١');
+    const s = flat(label);
+    expect(s.height).toBeUndefined();
+    expect(s.lineHeight).toBe(20);
+    const wrap = r.root.findAll((n) => n.type === 'View' && n.props.style && flat(n).width === 36)[0];
+    expect(flat(wrap)).toMatchObject({ alignItems: 'center', justifyContent: 'center' });
   });
+
 });
 
 describe('meta separator and tab labels', () => {
@@ -94,7 +98,14 @@ describe('meta separator and tab labels', () => {
   });
   it('tab labels carry the file diacritics', () => {
     const l = RECITER_TABS.map((t) => t.label);
-    expect(l.slice(0, 3)).toEqual(['المصحف المجوَّد', 'المصحف المرتَّل', 'المصحف المعلِّم']);
+    // The .fig stores shadda first, then the vowel mark.
+    const cps = (t: string) => Array.from(t.split(' ')[1]).map((c) => c.codePointAt(0)!.toString(16).padStart(4, '0'));
+    expect(cps(l[0]).slice(-4)).toEqual(['0648', '0651', '064e', '062f']);
+    expect(cps(l[1]).slice(-4)).toEqual(['062a', '0651', '064e', '0644']);
+    expect(cps(l[2]).slice(-4)).toEqual(['0644', '0651', '0650', '0645']);
+    for (const [style, i] of [['tajweed', 0], ['murattal', 1], ['muallam', 2]] as const) {
+      expect(RECITERS.filter((r) => r.style === style).every((r) => r.styleLabel === l[i])).toBe(true);
+    }
   });
 });
 

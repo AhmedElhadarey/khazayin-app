@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     flex: 1,
     minWidth: 0,
     alignItems: 'flex-end',
-    gap: 2,
+    gap: 0,
   },
   // `H3-73` is TheMixArab Regular 14 in `#281E13`, not navy calligraphy.
   name: textStyle('bodyCompactLoose', { color: KhazainColors.inkTitle }),

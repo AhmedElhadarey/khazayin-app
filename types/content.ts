@@ -37,7 +37,7 @@ export type Lookup<T> = Record<string, T>;
 export interface Surah {
   id: string;           // zero-padded, e.g. "001"
   number: number;       // 1..114
-  displayNumber: string; // Arabic-Indic, two-digit, e.g. "٠١" — shown in the surah-list index badge
+  displayNumber: string; // Arabic-Indic, two-digit, e.g. "٠١" — search and saved snapshots only; the badge renders toArabicDigits(number)
   name: string;         // e.g. "البقرة"
   meta: string;         // e.g. "مكية • 286 آية"
   revelationType: 'meccan' | 'medinan';

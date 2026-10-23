@@ -31,9 +31,11 @@ export function SurahStar({
         style={[
           styles.label,
           textStyle(labelRole, { color: KhazainColors.goldAccent, textAlign: 'center' }),
-          // 20pt leading in a star-high box: the numeral sat ~3pt above the
-          // star's centre at the role's own 18pt leading on iOS.
-          { height: size, lineHeight: 20 },
+          // 20pt leading, centred by the parent (no fixed height: iOS draws a
+          // fixed-height Text from the top). 14/20 under `cardTitle` is below
+          // MIN_LINE_HEIGHT_RATIO on purpose — node 2345:2014 states 14/20 and
+          // digits carry no marks that need the headroom.
+          { lineHeight: 20 },
         ]}
         numberOfLines={1}
       >
@@ -51,6 +53,5 @@ const styles = StyleSheet.create({
   label: {
     position: 'absolute',
     includeFontPadding: false,
-    textAlignVertical: 'center',
   },
 });
