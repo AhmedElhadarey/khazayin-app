@@ -14,7 +14,7 @@ import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
 import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
 import { toArabicDigits } from '@/constants/progress';
 import { COMPOSER_ORDER, type ComposerSlot } from '@/constants/rtlContracts';
-import { Colors, KhazainColors } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { codePointLength, counterAnnouncement, normalizePostInput } from '@/services/community/postForm';
 
@@ -114,5 +114,5 @@ const styles = StyleSheet.create({
   counter: { ...RTL_TEXT, ...textStyle('caption', { color: KhazainColors.ink500 }) },
   note: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.ink900 }) },
   // Legacy palette: the Khazain tokens carry no error colour.
-  error: { ...RTL_TEXT, ...textStyle('label', { color: Colors.light.error }) },
+  error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

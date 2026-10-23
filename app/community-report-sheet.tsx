@@ -6,7 +6,7 @@ import { COMMUNITY_COPY } from '@/constants/communityCopy';
 import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
 import { CARD_DENSITY, PHYSICAL_BOX, RTL_TEXT } from '@/constants/layout';
 import { toArabicDigits } from '@/constants/progress';
-import { Colors, KhazainColors } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { arabicCopyForCode, isApiError } from '@/services/api/errors';
@@ -257,5 +257,5 @@ const styles = StyleSheet.create({
   },
   counter: { ...RTL_TEXT, ...textStyle('caption', { color: KhazainColors.ink500 }) },
   // Legacy palette: the Khazain tokens carry no error colour.
-  error: { ...RTL_TEXT, ...textStyle('label', { color: Colors.light.error }) },
+  error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

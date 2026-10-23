@@ -1,7 +1,7 @@
 import { InlineHeader } from '@/components/khazain';
 import { HeaderArt } from '@/components/khazain/patterns';
 import { PHYSICAL_BOX } from '@/constants/layout';
-import { KhazainColors, KhazainShadows } from '@/constants/theme';
+import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
 import {
   MAX_WIRD,
   MIN_WIRD,
@@ -29,7 +29,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
-import { fontFace } from '@/constants/typography';
+import { textStyle } from '@/constants/typography';
 
 const toAr = toArabicDigits;
 
@@ -115,8 +115,8 @@ export default function SettingsProgressScreen() {
             </Text>
             <View style={styles.inputRow}>
               <TextInput
-                value={draft}
-                onChangeText={(v) => setDraft(v)}
+                value={toArabicDigits(draft)}
+                onChangeText={(t) => setDraft(fromArabicDigits(t).replace(/[^0-9]/g, ''))}
                 keyboardType="number-pad"
                 maxLength={3}
                 style={[styles.input, !valid && styles.inputError]}
@@ -180,30 +180,17 @@ const styles = StyleSheet.create({
   },
   card: {
     padding: 16,
-    borderRadius: 18,
+    borderRadius: KhazainRadius.lg,
     backgroundColor: KhazainColors.cream50,
     borderWidth: 1,
-    borderColor: 'rgba(141,107,52,0.1)',
+    borderColor: KhazainColors.cardBorder,
     gap: 10,
   },
   resetCard: {
-    borderColor: 'rgba(176,52,40,0.18)',
+    borderColor: KhazainColors.dangerBorder,
   },
-  cardTitle: {
-    fontFamily: 'Amiri-Bold',
-    fontSize: 16,
-    color: KhazainColors.navy800,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  cardBody: {
-    fontFamily: 'TheMixArab',
-    fontSize: 12,
-    color: KhazainColors.ink500,
-    lineHeight: 20,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  cardTitle: textStyle('sectionTitle', { color: KhazainColors.navy800 }),
+  cardBody: textStyle('caption', { color: KhazainColors.ink500 }),
   inputRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -211,6 +198,7 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   input: {
+    ...textStyle('bodyLarge', { color: KhazainColors.navy800 }),
     flex: 1,
     backgroundColor: KhazainColors.cream100,
     borderRadius: 12,
@@ -218,60 +206,30 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.gold400,
     paddingHorizontal: 14,
     paddingVertical: 10,
-    fontFamily: 'TheMixArab',
-    fontSize: 18,
-    color: KhazainColors.navy800,
-    textAlign: 'right',
-    writingDirection: 'rtl',
   },
   inputError: {
-    borderColor: '#C04A3A',
+    borderColor: KhazainColors.danger,
   },
-  inputSuffix: {
-    fontFamily: 'TheMixArab',
-    fontSize: 12,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-  },
-  hint: {
-    fontFamily: 'TheMixArab',
-    fontSize: 11,
-    color: KhazainColors.ink500,
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
-  error: {
-    fontFamily: 'TheMixArab',
-    fontSize: 11,
-    color: '#C04A3A',
-    writingDirection: 'rtl',
-    textAlign: 'right',
-  },
+  inputSuffix: textStyle('caption', { color: KhazainColors.ink500 }),
+  hint: textStyle('caption', { color: KhazainColors.ink500 }),
+  error: textStyle('caption', { color: KhazainColors.danger }),
   saveBtn: {
     marginTop: 8,
     paddingVertical: 11,
-    borderRadius: 12,
+    borderRadius: KhazainRadius.lg,
     backgroundColor: KhazainColors.navy800,
     alignItems: 'center',
   },
   saveBtnDisabled: {
     backgroundColor: KhazainColors.ink400,
   },
-  saveLabel: {
-    color: '#fff',
-    ...fontFace(700),
-    fontSize: 13,
-  },
+  saveLabel: textStyle('cardTitle', { color: KhazainColors.pageBg, textAlign: 'center' }),
   resetBtn: {
     marginTop: 4,
     paddingVertical: 11,
-    borderRadius: 12,
-    backgroundColor: '#C04A3A',
+    borderRadius: KhazainRadius.lg,
+    backgroundColor: KhazainColors.danger,
     alignItems: 'center',
   },
-  resetLabel: {
-    color: '#fff',
-    ...fontFace(700),
-    fontSize: 13,
-  },
+  resetLabel: textStyle('cardTitle', { color: KhazainColors.pageBg, textAlign: 'center' }),
 });

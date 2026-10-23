@@ -1,4 +1,5 @@
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
+import { SheetHandle } from '@/components/khazain/sheets';
 import { sheetColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { textStyle } from '@/constants/typography';
@@ -46,7 +47,7 @@ export default function NotesViewer() {
       >
         <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
           <View style={styles.handleWrap}>
-            <View style={styles.handle} />
+            <SheetHandle />
           </View>
           <Text style={styles.sheetTitle}>عرض الملاحظات</Text>
 
@@ -120,13 +121,13 @@ function NoteRow({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(20,30,30,0.35)',
+    backgroundColor: SHEET_CHROME.backdrop,
     justifyContent: 'flex-end',
   },
   sheetOuter: {
     backgroundColor: KhazainColors.pageBg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: SHEET_CHROME.topRadius,
+    borderTopRightRadius: SHEET_CHROME.topRadius,
     maxHeight: '88%',
     minHeight: '50%',
     overflow: 'hidden',
@@ -136,12 +137,6 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     alignItems: 'center',
   },
-  handle: {
-    width: 48,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(120,100,80,0.25)',
-  },
   sheetTitle: {
     ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 4,
@@ -149,7 +144,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     ...PHYSICAL_BOX,
-    paddingHorizontal: 18,
+    paddingHorizontal: SHEET_CHROME.paddingHorizontal,
     paddingBottom: 12,
   },
   row: {
@@ -164,7 +159,7 @@ const styles = StyleSheet.create({
     borderColor: KhazainColors.cardBorder,
   },
   rowColumn: { flex: 1, gap: 2 },
-  rowTitle: textStyle('sectionTitle', { color: KhazainColors.ink900 }),
+  rowTitle: textStyle('cardTitle', { color: KhazainColors.ink900 }),
   rowTime: textStyle('caption', { color: KhazainColors.ink400 }),
   empty: {
     alignItems: 'center',

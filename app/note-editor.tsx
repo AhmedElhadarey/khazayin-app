@@ -1,8 +1,10 @@
-import { PHYSICAL_BOX, PHYSICAL_ROW } from '@/constants/layout';
+import { PHYSICAL_BOX, PHYSICAL_ROW, SHEET_CHROME } from '@/constants/layout';
+import { RECENT_NOTE_ROW } from '@/components/khazain/library/libraryLayout';
+import { SheetHandle } from '@/components/khazain/sheets';
 import { noteEditorSheetExtra, sheetColumn } from '@/constants/responsive';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { textStyle } from '@/constants/typography';
-import { KhazainColors, KhazainRadius, KhazainShadows } from '@/constants/theme';
+import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { editorSeed, linkedNoteRow, NoteRefLink } from '@/components/khazain/notes';
 import { useNotesStore } from '@/store/notesStore';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -134,7 +136,7 @@ export default function NoteEditor() {
         >
           <SafeAreaView edges={['bottom']} style={{ flex: 1 }}>
             <View style={styles.handleWrap}>
-              <View style={styles.handle} />
+              <SheetHandle />
             </View>
 
             <ScrollView
@@ -206,7 +208,7 @@ export default function NoteEditor() {
                   {recentNotes.map((n) => {
                     const row = linkedNoteRow(n);
                     return (
-                      <View key={n.id} style={[styles.recentRow, KhazainShadows.card]}>
+                      <View key={n.id} style={styles.recentRow}>
                         {/* Physical left -> right: relative time, title (+ source label). */}
                         <Text style={styles.recentTime} numberOfLines={1}>
                           {row.time}
@@ -238,7 +240,7 @@ const styles = StyleSheet.create({
   // too (it shows through translucent keyboard corners and while animating).
   root: {
     flex: 1,
-    backgroundColor: 'rgba(20,30,30,0.35)',
+    backgroundColor: SHEET_CHROME.backdrop,
   },
   backdrop: {
     flex: 1,
@@ -246,8 +248,8 @@ const styles = StyleSheet.create({
   },
   sheetOuter: {
     backgroundColor: KhazainColors.pageBg,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: SHEET_CHROME.topRadius,
+    borderTopRightRadius: SHEET_CHROME.topRadius,
     maxHeight: '88%',
     minHeight: '50%',
     overflow: 'hidden',
@@ -257,17 +259,11 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
     alignItems: 'center',
   },
-  handle: {
-    width: 48,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(120,100,80,0.25)',
-  },
   scrollContent: {
     // Pinned so the sheet title and the "آخر الملاحظات" heading resolve
     // `textAlign: 'right'` to the physical right. Unpinned they rendered left.
     ...PHYSICAL_BOX,
-    paddingHorizontal: 18,
+    paddingHorizontal: SHEET_CHROME.paddingHorizontal,
     paddingTop: 12,
     paddingBottom: 24,
     gap: 14,
@@ -277,7 +273,7 @@ const styles = StyleSheet.create({
     backgroundColor: KhazainColors.cream50,
     borderRadius: KhazainRadius.lg,
     borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
+    borderColor: KhazainColors.hairlineWarm,
     minHeight: 140,
     paddingHorizontal: 14,
     paddingVertical: 14,
@@ -292,20 +288,21 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   saveBtn: {
-    paddingHorizontal: 28,
-    paddingVertical: 11,
-    borderRadius: 10,
+    // Library quick-note save button (frame 2031:4659): 36 tall, radius 8, padH 16.
+    height: 36,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     backgroundColor: KhazainColors.navy800,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  saveLabel: textStyle('cardTitle', { color: '#fff' }),
+  saveLabel: textStyle('cardTitle', { color: KhazainColors.pageBg }),
   deleteRow: {
     ...PHYSICAL_BOX,
     paddingVertical: 4,
     alignItems: 'flex-end',
   },
-  deleteLabel: textStyle('label', { color: '#B43838' }),
+  deleteLabel: textStyle('label', { color: KhazainColors.danger }),
   recentBlock: {
     marginTop: 4,
     gap: 8,
@@ -316,16 +313,16 @@ const styles = StyleSheet.create({
   recentRow: {
     ...PHYSICAL_ROW,
     alignItems: 'center',
-    backgroundColor: KhazainColors.cream50,
-    borderRadius: KhazainRadius.md,
-    borderWidth: 1,
-    borderColor: KhazainColors.cardBorder,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    // Library recent-note row (RECENT_NOTE_ROW, frame 2031:4659): a flat 36pt
+    // card, radius 8, no stroke or shadow. minHeight so a source label can grow it.
+    backgroundColor: KhazainColors.cardBg,
+    borderRadius: RECENT_NOTE_ROW.radius,
+    minHeight: RECENT_NOTE_ROW.height,
+    paddingHorizontal: 12,
     gap: 8,
   },
-  recentTime: textStyle('caption', { color: KhazainColors.ink400 }),
+  recentTime: textStyle('label', { color: KhazainColors.ink500 }),
   recentColumn: { flex: 1, gap: 2 },
-  recentTitle: textStyle('cardTitle', { color: KhazainColors.ink900 }),
+  recentTitle: textStyle('cardTitle', { color: KhazainColors.ink500 }),
 });
 

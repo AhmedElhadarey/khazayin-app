@@ -19,7 +19,7 @@ import {
 } from '@/constants/communityCopy';
 import { PHYSICAL_BOX, RTL_TEXT } from '@/constants/layout';
 import { PAGES_PER_QURAN } from '@/constants/progress';
-import { Colors, KhazainColors, KhazainRadius } from '@/constants/theme';
+import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -340,5 +340,5 @@ const styles = StyleSheet.create({
   heading: { ...RTL_TEXT, ...textStyle('sectionTitle', { color: KhazainColors.navy900 }) },
   members: { gap: 8 },
   // Legacy palette: the Khazain tokens carry no error colour.
-  error: { ...RTL_TEXT, ...textStyle('label', { color: Colors.light.error }) },
+  error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

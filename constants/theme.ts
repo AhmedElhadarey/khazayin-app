@@ -160,12 +160,26 @@ export const Shadows = {
 // The legacy Colors/Shadows exports above remain for existing screens.
 // =====================================================================
 
+/**
+ * `hex` (#RRGGBB) at `alpha` as an `rgba()` string. For derived tints so a
+ * translucent colour names the token it comes from instead of repeating its
+ * channels as a literal.
+ */
+export function withAlpha(hex: string, alpha: number): string {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) throw new Error(`withAlpha expects #RRGGBB, got ${hex}`);
+  const [r, g, b] = [m[1], m[2], m[3]].map((h) => parseInt(h, 16));
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
 export const KhazainColors = {
   // Surfaces
   pageBg: '#F8F2ED',
   cardBg: '#FCFAF8',
   cardBorder: 'rgba(141, 107, 52, 0.10)',
   iconChipBg: 'rgba(215, 185, 149, 0.16)',
+  /** The 1pt top stroke of the qiraat list sheet (frame 2457:954). */
+  sheetStroke: 'rgba(215,185,149,0.16)',
 
   // Cream scale
   cream50: '#FCFAF8',
@@ -229,6 +243,11 @@ export const KhazainColors = {
   /** Queen card body copy (node 2812:1401). */
   queenBody: '#B07F4B',
   inkArrow: '#281E13',
+
+  // Destructive actions and form errors. The one red in the app; the legacy
+  // `Colors.light.error` (#D94040) and two screen-local reds are retired.
+  danger: '#B43838',
+  dangerBorder: 'rgba(180, 56, 56, 0.18)', // withAlpha(danger, 0.18), pinned by sheetChrome.test
 
   // Accent
   teal600: '#2E6B6B',

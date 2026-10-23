@@ -6,7 +6,7 @@ import { COMMUNITY_COPY, rangeHint } from '@/constants/communityCopy';
 import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
 import { CARD_DENSITY, PHYSICAL_BOX, READING_GRID, RTL_TEXT } from '@/constants/layout';
 import { toLocalDay } from '@/constants/progress';
-import { Colors, KhazainColors, KhazainRadius } from '@/constants/theme';
+import { KhazainColors, KhazainRadius } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -267,5 +267,5 @@ const styles = StyleSheet.create({
   optionLabel: { ...RTL_TEXT, ...textStyle('bodyCompact', { color: KhazainColors.navy800 }) },
   optionLabelOn: { color: KhazainColors.cream100 },
   // Legacy palette: the Khazain tokens carry no error colour.
-  error: { ...RTL_TEXT, ...textStyle('label', { color: Colors.light.error }) },
+  error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

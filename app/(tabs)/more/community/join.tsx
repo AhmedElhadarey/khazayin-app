@@ -5,7 +5,7 @@ import { PillButton } from '@/components/khazain/primitives';
 import { COMMUNITY_COPY } from '@/constants/communityCopy';
 import { COMMUNITY_LIMITS } from '@/constants/communityLimits';
 import { CARD_DENSITY, PHYSICAL_BOX, PHYSICAL_ROW, RTL_TEXT } from '@/constants/layout';
-import { Colors, KhazainColors } from '@/constants/theme';
+import { KhazainColors } from '@/constants/theme';
 import { textStyle } from '@/constants/typography';
 import { useCommunityGuard } from '@/hooks/useCommunityGuard';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
@@ -148,5 +148,5 @@ const styles = StyleSheet.create({
     letterSpacing: 4,
   },
   // Legacy palette: the Khazain tokens carry no error colour.
-  error: { ...RTL_TEXT, ...textStyle('label', { color: Colors.light.error }) },
+  error: { ...RTL_TEXT, ...textStyle('label', { color: KhazainColors.danger }) },
 });

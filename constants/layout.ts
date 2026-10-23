@@ -1,4 +1,4 @@
-import { KhazainColors } from '@/constants/theme';
+import { KhazainColors, withAlpha } from '@/constants/theme';
 
 // Layout constants for tab screens.
 //
@@ -107,6 +107,22 @@ export function responsiveCarouselCardWidth(
 //
 // Nothing here reads `I18nManager` — these are frozen literals, so physical
 // order cannot change with module-initialization order or platform.
+
+/**
+ * The chrome every default bottom sheet and modal shares: the handle, the top
+ * radius, the scrim and the side padding. There is no Figma frame for these
+ * sheets; this contract is the authority. The qiraat list sheet is the one
+ * exception, because it has a frame (2457:954) and keeps its own geometry in
+ * `SHEET_LIST_GEOMETRY`.
+ */
+export const SHEET_CHROME = Object.freeze({
+  handleWidth: 44,
+  handleHeight: 4,
+  handleColor: withAlpha(KhazainColors.inkTitle, 0.18),
+  topRadius: 24,
+  backdrop: 'rgba(20,15,8,0.45)',
+  paddingHorizontal: 16,
+} as const);
 
 /** Text style base for Arabic copy. */
 export const RTL_TEXT = Object.freeze({

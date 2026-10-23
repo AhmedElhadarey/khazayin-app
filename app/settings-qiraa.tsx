@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { SheetHandle } from '@/components/khazain/sheets';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { usePageSheetLayout } from '@/hooks/useResponsiveLayout';
@@ -28,7 +29,7 @@ export default function SettingsQiraaScreen() {
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
       <View style={styles.handleWrap}>
-        <View style={styles.handle} />
+        <SheetHandle />
       </View>
       <Text style={styles.title}>اختر القراءة الافتراضية</Text>
       <ScrollView
@@ -77,12 +78,6 @@ function SelectableRow({
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: KhazainColors.pageBg },
   handleWrap: { alignItems: 'center', paddingTop: 8, paddingBottom: 4 },
-  handle: {
-    width: 44,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: 'rgba(40,30,19,0.18)',
-  },
   title: {
     ...textStyle('bodyLarge', { color: KhazainColors.ink900, textAlign: 'center' }),
     paddingTop: 6,
