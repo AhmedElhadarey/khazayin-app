@@ -355,6 +355,41 @@ describe('the header art the frames lay over the page', () => {
       expect([file, src.includes('HeaderArt')]).toEqual([file, true]);
     }
   });
+
+  // Every frame below carries `Vector Smart Object` and `Shape 2 copy`, and paints
+  // its StatusBar + Header opaque above the tile. Band kind follows the frame's
+  // `Frame 4header` (137 = search, 81 = inline, 155 = home); a pushed screen has the
+  // single corner, a tab root the pair. Qiraat (2457:954) has none of it.
+  it('mounts the header art on every screen whose frame has it, with that frame\'s band', () => {
+    const sub = (f: string) => `app/(tabs)/sections/${f}.tsx`;
+    const cases: [string, 'search' | 'inline' | 'home', 'single' | 'pair'][] = [
+      ['app/(tabs)/index.tsx', 'home', 'pair'], // 2001:940
+      [sub('reciter'), 'search', 'single'], // 2031:6193, 2102:3187
+      [sub('reciter/[id]'), 'search', 'single'], // 2207:5270
+      [sub('scholar'), 'search', 'single'], // 2102:2975
+      [sub('scholar/[id]'), 'search', 'single'], // 2510:1990
+      [sub('prophet'), 'search', 'single'], // 2465:1911
+      [sub('queen'), 'search', 'single'], // 2589:1772
+      [sub('books'), 'search', 'single'], // 2597:2552
+      [sub('radio'), 'search', 'single'], // 2606:3830
+      ['components/khazain/sections/RailedLectureList.tsx', 'search', 'single'], // 2869:2088, 2869:2306
+      [sub('dawah'), 'inline', 'single'], // 2120:942
+      [sub('dawah/[month]'), 'inline', 'single'], // 2120:1857
+    ];
+    for (const [file, kind, corners] of cases) {
+      const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
+      expect([file, src.includes('OrnamentPattern')]).toEqual([file, false]);
+      expect([file, src.includes('<HeaderArt')]).toEqual([file, true]);
+      expect([file, src.includes(`headerBandHeight(insets.top, '${kind}', fontScale)`)]).toEqual([
+        file,
+        true,
+      ]);
+      if (corners === 'single') expect([file, src.includes('corners="single"')]).toEqual([file, true]);
+      else expect([file, src.includes('smallCorner="home"')]).toEqual([file, true]);
+    }
+    const qiraat = fs.readFileSync(path.join(ROOT, sub('qiraat')), 'utf8');
+    expect(qiraat.includes('HeaderArt')).toBe(false);
+  });
 });
 
 /**

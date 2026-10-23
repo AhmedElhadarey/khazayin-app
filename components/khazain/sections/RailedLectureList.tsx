@@ -15,8 +15,9 @@ import type { Lecture } from '@/types/content';
 import { openSearch } from '@/services/searchNavigation';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
+import { FlatList, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 import { railListGeometry } from '@/constants/responsive';
 
@@ -46,8 +47,11 @@ export function RailedLectureList({
   const { columnStyle, isTablet, reading } = useResponsiveLayout();
   const rail = railListGeometry({ isTablet, reading });
 
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'search', fontScale)} />
       <InlineHeader title={title} onBack={() => router.back()} style={columnStyle} />
       <View style={[styles.searchBlock, columnStyle]}>
         <SearchPill placeholder="بحث.." onPress={openSearch} />

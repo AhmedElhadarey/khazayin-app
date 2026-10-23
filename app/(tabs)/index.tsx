@@ -12,6 +12,7 @@ import {
   SkeletonCardList,
   SkeletonPosterList,
 } from '@/components/khazain';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
 import { RtlCarousel } from '@/components/khazain/primitives';
 import { RecommendedSection } from '@/components/khazain/recommendations/RecommendedSection';
 import {
@@ -41,7 +42,7 @@ import { useSavedStore } from '@/store/savedStore';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useEffect, useRef } from 'react';
-import { InteractionManager, ScrollView, StyleSheet, View } from 'react-native';
+import { InteractionManager, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
@@ -81,6 +82,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { width, isTablet, homeColumnStyle } = useResponsiveLayout();
+  const { fontScale } = useWindowDimensions();
 
   const goToSections = () => router.push('/sections');
 
@@ -267,6 +269,15 @@ export default function HomeScreen() {
     // sits, so it would jump as it landed (launch design R6).
     <View style={[styles.screen, { paddingTop: insets.top }]}>
       <StatusBar style="dark" backgroundColor={KhazainColors.pageBg} />
+      {/* 2001:940 lays the tile, the corner pair (the small one rotated 20.8deg) and
+          the opaque 155pt header over the page. Drawn behind the scroll, so the
+          cards pass over it; the title sits in the Home column, whose right edge
+          is the column's border plus the 16pt page padding. */}
+      <HeaderArt
+        smallCorner="home"
+        inset={(homeColumnStyle.borderRightWidth ?? 0) + 16}
+        bandHeight={headerBandHeight(insets.top, 'home', fontScale)}
+      />
       <ScrollView
         contentContainerStyle={[
           styles.container,

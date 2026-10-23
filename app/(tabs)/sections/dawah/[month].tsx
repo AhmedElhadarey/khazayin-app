@@ -4,8 +4,9 @@ import { KhazainColors } from '@/constants/theme';
 import { useDawahByMonthStore, useDawahMonthsStore } from '@/store';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { HeaderArt, headerBandHeight } from '@/components/khazain/patterns';
+import { Alert, ScrollView, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useResponsiveLayout } from '@/hooks/useResponsiveLayout';
 
 // Page 30: تصميمات دعوية → month detail. Header is the month-pair title
@@ -39,8 +40,11 @@ export default function DawahMonthScreen() {
   const handleShare = () => router.push('/share-sheet' as any);
   const handleDownload = () => Alert.alert('تنزيل', 'سيتم التنزيل قريباً');
 
+  const insets = useSafeAreaInsets();
+  const { fontScale } = useWindowDimensions();
   return (
     <SafeAreaView style={styles.screen} edges={['top', 'bottom']}>
+      <HeaderArt corners="single" bandHeight={headerBandHeight(insets.top, 'inline', fontScale)} />
       <InlineHeader title={title} onBack={() => router.back()} style={columnStyle} />
       <ScrollView
         contentContainerStyle={[styles.list, { paddingBottom: 24 }, columnStyle]}
