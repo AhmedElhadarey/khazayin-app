@@ -97,8 +97,10 @@ describe('QuickChip label', () => {
     expect(flat(label).alignSelf).toBe('stretch');
     expect(flat(label).textAlign).toBe('center');
     expect(typeof flat(label).lineHeight).toBe('number');
-    // Clear of the badge (bottom at 13) by as much as a single-line chip, wrapped or not.
+    // Starts 16 from the chip's top (2093:1759 in 2093:1757), top-aligned so one-line
+    // and wrapped labels start at the same place, 3 clear of the badge's bottom (13).
     const chip = flat(press(tree));
-    expect(chip.paddingTop + flat(label).marginTop).toBeGreaterThanOrEqual(20);
+    expect(chip.paddingTop + flat(label).marginTop).toBe(16);
+    expect(chip.justifyContent).toBe('flex-start');
   });
 });

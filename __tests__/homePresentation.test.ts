@@ -6,6 +6,7 @@ import {
   HOME_SECTION_ORDER,
   type HomeSectionKey,
 } from '@/constants/homePresentation';
+import { HEADER_BAND } from '@/components/khazain/patterns/HeaderArt';
 import { CONTENT_MAX_WIDTH, responsiveCarouselCardWidth } from '@/constants/layout';
 
 /**
@@ -113,6 +114,7 @@ describe('Home header band', () => {
   // content (54 row + 8 + 40 pill): 8pt of its own below.
   it('is the frame’s 110 at the design header height', () => {
     expect(homeHeaderBand(47, 102)).toBe(47 + 110);
+    expect(homeHeaderBand(0, 102)).toBe(HEADER_BAND.home);
   });
 
   it('grows with the header at large text instead of leaving tile showing under it', () => {

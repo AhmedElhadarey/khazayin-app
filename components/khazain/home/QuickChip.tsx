@@ -50,14 +50,15 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 48,
     borderRadius: 7.5,
-    // Clearance under the floating badge (bottom at 13): with the label's marginTop
-    // the text starts at 20 whether it takes one line or wraps to two, and the chip
-    // grows to fit two. Siblings stretch to the tallest, so heights stay equal.
-    paddingTop: 12,
+    // The label starts 16 from the chip's top (node 2093:1759 at y 1199 in chip
+    // 2093:1757 at y 1183): 8 padding + 8 margin, 3 clear of the badge's bottom at
+    // 13. Top-aligned so a one-line label sits where a wrapped label's first line
+    // does; the chip grows to fit two lines and siblings stretch to the tallest.
+    paddingTop: 8,
     paddingBottom: 6,
     backgroundColor: KhazainColors.heroCream,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     position: 'relative',
     // Breathing room for the floating badge (top:-11) and navy stripe (bottom:-2)
     // is owned by the parent quickChipsRow paddingTop/Bottom in app/(tabs)/index.tsx (G8).

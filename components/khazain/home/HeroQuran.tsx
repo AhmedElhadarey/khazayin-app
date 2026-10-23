@@ -98,7 +98,7 @@ export function HeroQuran({
           >
             {SUBTITLE}
           </Text>
-          <View style={[styles.pillRow, { marginTop: PILL_GAP * scale }]}>
+          <View importantForAccessibility="no-hide-descendants" style={[styles.pillRow, { marginTop: PILL_GAP * scale }]}>
             <SmallMoreButton onPress={onMore ?? onPress} />
           </View>
         </>

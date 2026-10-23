@@ -34,6 +34,7 @@ const { act, create } = require('react-test-renderer') as {
   create: (el: React.ReactElement) => {
     root: { findAll: (p: (n: any) => boolean) => any[] };
     update: (el: React.ReactElement) => void;
+    unmount: () => void;
   };
 };
 
@@ -58,5 +59,7 @@ describe('DawahCarousel slots', () => {
     );
     act(() => tree.update(<DawahCarousel items={items} stageWidth={393} />));
     slots().forEach((s: any) => expect(StyleSheet.flatten(s.props.style).opacity).toBe(1));
+    // A pending anchor frame must not fire after jest teardown.
+    act(() => tree.unmount());
   });
 });

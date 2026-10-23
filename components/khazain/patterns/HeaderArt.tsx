@@ -100,7 +100,11 @@ export const HEADER_BAND = Object.freeze({
   root: 91,
   /** Sub-screens with a search or tab row: lists, scholars, Archive 2558:1334 (137). */
   search: 92,
-  /** Home 2001:940 (155). Frame literal: like `root`, it does not follow font scale. */
+  /**
+   * Home 2001:940 (155). Frame literal. Home does not use headerBandHeight('home'); its band
+   * is homeHeaderBand (constants/homePresentation.ts), never below this, growing with the
+   * measured header.
+   */
   home: 110,
 });
 
@@ -117,7 +121,8 @@ export type HeaderBandKind = keyof typeof HEADER_BAND;
  * - `more`: PAGE_CHROME.headerPaddingTop plus the title line. `app/_layout.tsx`
  *   caps every Text at CHROME_MAX_FONT_SCALE and the More title does not
  *   override it, so the line is capped (8 + 28 = 36 at scale 1; the frame says 35).
- * `root` and `home` use the frame's literal height.
+ * `root` uses the frame's literal height. `home` is the frame literal too, but Home does not
+ * call this for it: see `homeHeaderBand` (constants/homePresentation.ts).
  */
 export function headerBandHeight(insetTop: number, kind: HeaderBandKind, fontScale = 1): number {
   if (kind === 'inline') return insetTop + inlineHeaderHeight(fontScale);

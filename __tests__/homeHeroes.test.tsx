@@ -5,6 +5,7 @@
 import React from 'react';
 import { StyleSheet } from 'react-native';
 import { HeroProphet } from '@/components/khazain/home/HeroProphet';
+import { QueenCard } from '@/components/khazain/home/QueenCard';
 import { HeroQuran } from '@/components/khazain/home/HeroQuran';
 import { KhazainColors } from '@/constants/theme';
 
@@ -101,8 +102,21 @@ describe('HeroProphet', () => {
 
 describe('hero accessibility', () => {
   it.each([
+    ['HeroQuran', <HeroQuran />],
+    ['HeroProphet', <HeroProphet />],
+    ['QueenCard', <QueenCard />],
+  ])('%s hides the nested المزيد pill from TalkBack (the card action covers it)', (_n, el) => {
+    const tree = mount(el);
+    const pill = tree.root.findAll(
+      (n: any) => n.props.importantForAccessibility === 'no-hide-descendants',
+    );
+    expect(pill.length).toBeGreaterThan(0);
+  });
+
+  it.each([
     ['HeroQuran', (p: any) => <HeroQuran {...p} />],
     ['HeroProphet', (p: any) => <HeroProphet {...p} />],
+    ['QueenCard', (p: any) => <QueenCard {...p} />],
   ])('%s exposes المزيد to VoiceOver as a custom action and reads its copy as the hint', (_n, make) => {
     const onPress = jest.fn();
     const onMore = jest.fn();

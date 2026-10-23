@@ -127,7 +127,7 @@ export function QueenCard({
           <Text style={[styles.body, { marginTop: COLUMN_GAP * scale }]} maxFontSizeMultiplier={1}>
             {BODY}
           </Text>
-          <View style={[styles.pillRow, { marginTop: COLUMN_GAP * scale }]}>
+          <View importantForAccessibility="no-hide-descendants" style={[styles.pillRow, { marginTop: COLUMN_GAP * scale }]}>
             <SmallMoreButton onPress={onMore ?? onPress} />
           </View>
         </>

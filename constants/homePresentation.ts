@@ -6,6 +6,8 @@
  * reorders the screen, and the order is asserted without a renderer.
  */
 
+import { HEADER_BAND } from '@/components/khazain/patterns/HeaderArt';
+
 export const HOME_SECTION_ORDER = Object.freeze([
   'header',
   'quranHero',
@@ -87,6 +89,6 @@ export const HOME_QUICK_CHIPS: readonly HomeQuickChip[] = Object.freeze([
  * passing a font scale) keeps it in step with whatever the header grows to at
  * large text.
  */
-export function homeHeaderBand(insetTop: number, headerHeight: number, frameBand = 110, below = 8): number {
+export function homeHeaderBand(insetTop: number, headerHeight: number, frameBand: number = HEADER_BAND.home, below = 8): number {
   return insetTop + Math.max(frameBand, headerHeight + below);
 }
