@@ -1,5 +1,11 @@
 const { withAndroidManifest, AndroidConfig } = require('expo/config-plugins');
 
+// NOT REGISTERED in v1 (store-submission design section 0: prayer notifications
+// are gated off). Kept on purpose. Re-register it in app.json together with
+// flipping prayer notifications on, and update the native-config gate in
+// scripts/store/check-release-config.mjs (checkNativeConfig, which fails while
+// this plugin is registered) at the same time.
+
 /**
  * Declares the two Android exact-alarm permissions with the correct API-level
  * split. This cannot be expressed through `expo.android.permissions` in

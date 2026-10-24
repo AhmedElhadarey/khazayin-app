@@ -5,17 +5,14 @@ import { useRouter } from 'expo-router';
 import React from 'react';
 import { Linking, StyleSheet, Text, View } from 'react-native';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { visibleYoutubeRows } from '@/services/foundationLinks';
 import { showNotice } from '@/services/notice';
 
-// Featured channels (no Figma frame for this sheet). Real YouTube URLs to be supplied by the
-// foundation; falls back to a friendly Arabic alert if a link cannot be opened.
-const ITEMS: { title: string; url: string }[] = [
-  { title: 'قناة الشيخ محمد العريفي', url: 'https://youtube.com/@MohammadAlarefe' },
-  { title: 'قناة الشيخ عبد الرحمن السديس', url: 'https://youtube.com/@AbdulrahmanAlSudais' },
-  { title: 'قناة الشيخ صالح المغامسي', url: 'https://youtube.com/@SalehAlMaghamsi' },
-  { title: 'قناة الشيخ خالد الراشد', url: 'https://youtube.com/@KhalidAlrashed' },
-  { title: 'قناة الشيخ نبيل العوضي', url: 'https://youtube.com/@NabilAlAwadi' },
-];
+// Foundation channel first, then scholar channels (no Figma frame for this sheet).
+// Scholar URLs are unverified until the Foundation confirms them, so their rows
+// (and the "و ٦٠ قناة أخرى..." footer) render only in __DEV__; both decisions are the
+// pure `visibleYoutubeRows` in services/foundationLinks.ts. A friendly Arabic
+// alert shows if a link cannot be opened.
 
 export default function YouTubeSheet() {
   const router = useRouter();
@@ -32,10 +29,12 @@ export default function YouTubeSheet() {
     }
   };
 
+  const { rows, showMoreFooter } = visibleYoutubeRows(__DEV__);
+
   return (
     <SheetShell title="قنوات اليوتيوب" onClose={close}>
       <View style={styles.list}>
-        {ITEMS.map((it) => (
+        {rows.map((it) => (
           <SheetRow
             key={it.title}
             icon={<YoutubeMark />}
@@ -43,7 +42,7 @@ export default function YouTubeSheet() {
             onPress={() => open(it.url)}
           />
         ))}
-        <Text style={styles.more}>و ٦٠ قناة أخرى...</Text>
+        {showMoreFooter ? <Text style={styles.more}>و ٦٠ قناة أخرى...</Text> : null}
       </View>
     </SheetShell>
   );

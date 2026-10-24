@@ -1,3 +1,4 @@
+import { FOUNDATION_CONTACT } from '@/constants/foundationContact';
 import type {
   CalculationMethodId,
   FontSizeLevel,
@@ -105,9 +106,9 @@ export const ONBOARDING_POPULAR_RECITER_IDS: readonly string[] = Object.freeze(
  * Primary foundation community channels promoted during onboarding (track 003).
  */
 export const ONBOARDING_CHANNELS = {
-  telegramUrl: 'https://t.me/Alrahmn',
-  youtubeUrl: 'https://www.youtube.com/@khazayin',
-  whatsappUrl: 'https://www.whatsapp.com/channel/0029Va5gnMH7dmec2xxICO0a',
+  telegramUrl: FOUNDATION_CONTACT.telegramMain,
+  youtubeUrl: FOUNDATION_CONTACT.youtube,
+  whatsappUrl: FOUNDATION_CONTACT.whatsappChannel,
 } as const;
 
 export const FONT_SIZE_SCALE: Record<FontSizeLevel, { fontSize: number; lineHeight: number }> = {

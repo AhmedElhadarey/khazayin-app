@@ -2,23 +2,23 @@ import React from 'react';
 import { Linking, StyleSheet, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { FigmaIcon } from '@/components/khazain/icons/FigmaIcon';
+import { FOUNDATION_CONTACT } from '@/constants/foundationContact';
 import { KhazainColors } from '@/constants/theme';
 import { SheetRow, SheetShell } from '@/components/khazain/sheets';
 import { showNotice } from '@/services/notice';
 
-// Real channel URLs to be supplied by the foundation. Until then we fall back
-// to a generic Telegram URL and surface a friendly Arabic alert when the link
-// cannot be opened.
+// The Foundation's two official channels (constants/foundationContact.ts); a
+// friendly Arabic alert surfaces when the link cannot be opened.
 const CHANNELS: { title: string; sub: string; url: string }[] = [
   {
     title: 'القناة الرسمية الأولى',
     sub: 'المحتوى الديني والدعوي',
-    url: 'https://t.me/khazain',
+    url: FOUNDATION_CONTACT.telegramMain,
   },
   {
     title: 'القناة الرسمية الثانية',
     sub: 'الأخبار والإعلانات',
-    url: 'https://t.me/khazain_news',
+    url: FOUNDATION_CONTACT.telegramSecondary,
   },
 ];
 

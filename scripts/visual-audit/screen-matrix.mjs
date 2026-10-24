@@ -24,13 +24,16 @@
  * on Ctrl-C — a half-swept emulator silently invalidates every later capture.
  */
 import { execFileSync } from 'node:child_process';
-import { mkdirSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, writeFileSync, existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 
 const ADB = process.env.ADB_PATH
   ?? path.join(os.homedir(), 'Library/Android/sdk/platform-tools/adb');
-const PKG = 'com.ahmed.elhadarey94.khazayinapp';
+// Single source of truth: app.json (android.package).
+const PKG = JSON.parse(
+  readFileSync(new URL('../../app.json', import.meta.url), 'utf8'),
+).expo.android.package;
 const ACTIVITY = `${PKG}/.MainActivity`;
 
 const argv = process.argv.slice(2);

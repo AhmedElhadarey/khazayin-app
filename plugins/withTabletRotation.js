@@ -33,7 +33,8 @@ const TABLET_MIN_DP = 600;
  * Every inserted block is wrapped in MARKER comments, and a source that already
  * carries the marker is returned unchanged, so repeated prebuilds add nothing.
  *
- * Must be a config plugin: `android/` is gitignored and EAS re-runs prebuild.
+ * Must be a config plugin: `android/` is gitignored and `.easignore` leaves it
+ * out of the upload, so EAS generates it with a clean prebuild (CNG) on every build.
  * Known limitation: on API 31-35 a tablet cold-started in landscape briefly
  * shows the portrait starting window before rotating. Native change: ships in
  * a new binary, not an OTA update.

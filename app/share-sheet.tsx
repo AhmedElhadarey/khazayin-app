@@ -1,4 +1,5 @@
 import { SheetRow, SheetShell } from '@/components/khazain/sheets';
+import { FOUNDATION_CONTACT } from '@/constants/foundationContact';
 import { KhazainColors } from '@/constants/theme';
 import { useRouter } from 'expo-router';
 import React from 'react';
@@ -27,8 +28,8 @@ export default function ShareSheet() {
   const router = useRouter();
   const close = () => router.back();
 
-  const SHARE_URL = 'https://khazayin.com';
-  const SHARE_TEXT = 'مؤسسة خزائن الرحمن العالمية';
+  const SHARE_URL = FOUNDATION_CONTACT.website;
+  const SHARE_TEXT = FOUNDATION_CONTACT.name;
 
   const openExternal = async (url: string, platformName: string) => {
     try {

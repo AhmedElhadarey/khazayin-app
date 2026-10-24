@@ -12,6 +12,7 @@
  * Track: khazain-content-service_20260506  Phase 1 / T1.5
  */
 
+import { FOUNDATION_CONTACT } from '../../constants/foundationContact';
 import type { LibraryFilterChip, Lookup, MoreRow, SectionEntry } from '../../types/content';
 import type { CommunityMode } from '../../services/community/gate';
 
@@ -184,9 +185,9 @@ export function visibleExtensionRows(
 // ---------------------------------------------------------------------------
 
 export const MORE_EXTERNAL_URLS: Lookup<string> = {
-  web:        'https://khazayin.com',
-  whatsapp:   'https://wa.me/',
-  soundcloud: 'https://soundcloud.com/khazain',
+  web:        FOUNDATION_CONTACT.website,
+  whatsapp:   FOUNDATION_CONTACT.whatsappChannel,
+  soundcloud: FOUNDATION_CONTACT.soundcloud,
 };
 
 // ---------------------------------------------------------------------------

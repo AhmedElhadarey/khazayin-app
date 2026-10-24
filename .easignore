@@ -22,13 +22,20 @@ dist/
 **/*.test.ts
 **/*.test.tsx
 
-# Native BUILD OUTPUTS. The native sources themselves are deliberately NOT
-# excluded: android/ and ios/ are gitignored, but EAS is told to build from
-# them so the cloud build is the same project that was verified on device,
-# rather than a fresh cloud prebuild that could differ. Only the generated
-# artefacts are dropped — EAS runs `pod install` and Gradle itself.
+# Native projects. The release is a CLOUD PREBUILD (CNG): android/ and ios/ are
+# gitignored, generated from app.json + plugins/, and must NOT be uploaded, or
+# EAS would build a stale local copy (old bundle id, old PrivacyInfo, local
+# Pods) instead of the one the config describes. A clean prebuild diffed against
+# the local dirs on 2026-10-24 found no hand edits: Android identical, iOS only
+# differed by pod-install integration and PrivacyInfo.xcprivacy, which now
+# lives in app.json (ios.privacyManifests). Every native change belongs in
+# app.json or a config plugin.
 #
-# Without this the archive was 978MB (android/app/build alone is ~2.4GB).
+# The per-directory build-output lines below are redundant while /ios and
+# /android are excluded; they are kept so that removing the two lines above
+# (to build from a local prebuild again) cannot upload a 2.4GB android/app/build.
+/ios
+/android
 android/app/build/
 android/app/.cxx/
 android/build/
@@ -40,8 +47,17 @@ ios/DerivedData/
 *.apk
 *.aab
 
+# Store-console credentials (e.g. the Play service-account key): never upload.
+secrets/
+
 # Machine-local SDK path. Generated for the local Gradle build and MUST NOT be
 # uploaded: it names this Mac's SDK directory, which does not exist on the EAS
 # builder, producing "sdk.dir property in local.properties: Directory does not
 # exist" on every cloud build.
 android/local.properties
+
+# Local design source and capture tooling: never needed by the build, and the
+# .fig holds the client's design plus third-party page images.
+assets/figma/*.fig
+.argent/
+fig-geom-*.json
