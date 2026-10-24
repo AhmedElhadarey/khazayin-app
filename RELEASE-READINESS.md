@@ -29,9 +29,12 @@ tooling run, a device test, or a server action. Do these, then merge.
   `.env` or the EAS profile `env`. The value is **inlined into the JS bundle at
   build time**, so a **new build** is required — `expo-updates` is not installed,
   so there is no OTA path. Until it is set, the row shows the Arabic "ستُضاف قريبًا" alert.
-- ☐ **Store submit config** (T0.3): `eas.json` `submit.production` is empty (works via
-  interactive prompt). For non-interactive submit, add `android` (service-account key
-  / track) and `ios` (ascAppId, appleTeamId) — these are your credentials.
+- ☐ **Store submit config** (T0.3): the `eas.json` `submit.production` skeleton is in
+  place (track `store-submission_20261024`). Only `ascAppId` and `appleTeamId` are
+  left to fill, and `node scripts/store/check-release-config.mjs` reports them.
+  **The full submission checklist (accounts, signing, consoles, rollout) is
+  `docs/store/SUBMISSION-RUNBOOK.md`.** Its §0 lists the release blockers, including
+  the Mushaf text (only البقرة 1–5 is bundled) and the missing recitation audio.
 
 ## 2. Build / size (Phase 6)
 
