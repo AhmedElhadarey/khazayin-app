@@ -1,0 +1,110 @@
+{
+  "app": {
+    "displayName": "مكتبة خزائن الرحمن",
+    "publisher": "مؤسسة «خزائن الرحمن» العلمية",
+    "bundleId": "com.khazayin.app",
+    "version": "1.0.0"
+  },
+  "defaultLanguage": {
+    "appStore": "ar-SA",
+    "play": "ar"
+  },
+  "copyFiles": {
+    "appStore": "app-store/ar-SA/",
+    "play": "play/ar/"
+  },
+  "categories": {
+    "appStore": {
+      "primary": "Reference",
+      "secondary": "Education"
+    },
+    "play": {
+      "applicationType": "App",
+      "category": "Books & Reference"
+    }
+  },
+  "playTags": {
+    "note": "Play Console > Store settings > Manage tags. Pick up to 5 from Play's own tag list; these are intents in priority order. Match each to the nearest tag name the console offers (names vary), and skip any with no close match.",
+    "suggested": ["Religion", "Islam", "Education", "Podcasts & lectures", "Reference"]
+  },
+  "contact": {
+    "website": "https://khazayin.com",
+    "email": "«[يُستكمل: البريد الإلكتروني للتواصل]»",
+    "phone": null,
+    "phoneNote": "Optional on both stores. The number +20 111 142 4312 is unconfirmed; leave empty unless the Foundation confirms it.",
+    "supportUrl": "«[يُستكمل: رابط صفحة الدعم]»",
+    "marketingUrl": "https://khazayin.com",
+    "privacyPolicyUrl": "«[يُستكمل: رابط سياسة الخصوصية على khazayin.com]»",
+    "playAddress": "«[يُستكمل: العنوان القانوني للمؤسسة — يظهر علنًا في Play إن كانت المؤسسة تاجرًا]»"
+  },
+  "price": {
+    "appStore": "Free (Tier 0)",
+    "play": "Free",
+    "inAppPurchases": false,
+    "containsAds": false
+  },
+  "preOrder": false,
+  "availability": {
+    "appStore": {
+      "mode": "all territories except listed",
+      "excluded": ["CN"],
+      "exclusionReason": "China mainland requires an ICP filing number for new apps (MIIT rule enforced by Apple since 2023-2024); the Foundation has none. Hong Kong (HK), Macao (MO) and Taiwan (TW) stay included.",
+      "storeControlled": "Apple itself does not operate the App Store in sanctioned territories (e.g. Iran, Syria, North Korea, Cuba); those cannot be ticked and need no action."
+    },
+    "play": {
+      "mode": "all countries/regions",
+      "excluded": [],
+      "storeControlled": "Google Play does not distribute in sanctioned regions (e.g. Iran, Syria, North Korea, Cuba, Crimea); the console does not offer them. Nothing to exclude manually."
+    },
+    "gccMenaConfirmedIncluded": {
+      "SA": "Saudi Arabia",
+      "AE": "United Arab Emirates",
+      "KW": "Kuwait",
+      "QA": "Qatar",
+      "BH": "Bahrain",
+      "OM": "Oman",
+      "EG": "Egypt",
+      "JO": "Jordan",
+      "LB": "Lebanon",
+      "IQ": "Iraq",
+      "MA": "Morocco",
+      "DZ": "Algeria",
+      "TN": "Tunisia",
+      "LY": "Libya",
+      "SD": "Sudan",
+      "YE": "Yemen",
+      "PS": "Palestinian Territories (Play lists it; confirm whether App Store Connect offers it as a storefront and tick it if so)",
+      "MR": "Mauritania"
+    },
+    "gccMenaStoreControlled": {
+      "SY": "Syria: sanctioned; neither store distributes there, nothing to configure",
+      "IR": "Iran: sanctioned; neither store distributes there"
+    },
+    "verify": "Before submitting, open each store's availability page and confirm every code in gccMenaConfirmedIncluded is ticked; storefront lists change."
+  },
+  "euDigitalServicesAct": {
+    "traderStatus": "DECISION_REQUIRED",
+    "note": "Both stores block EU distribution until this is declared. A trader must publish a verified address, phone and email on the listing; a non-trader (non-commercial, free, no ads, no IAP) declares none. The Foundation decides with counsel; if 'trader', contact.playAddress and a public phone/email become mandatory."
+  },
+  "ageRating": {
+    "appStore": "4+",
+    "appStoreAnswers": "rating/apple-age-rating.md",
+    "iarcExpected": {
+      "ESRB": "Everyone",
+      "PEGI": "3",
+      "USK": "0",
+      "ClassInd": "L",
+      "IARC": "3+"
+    },
+    "playAnswers": "rating/play-iarc.md",
+    "playTargetAudience": ["13-15", "16-17", "18+"],
+    "madeForKids": false
+  },
+  "privacy": {
+    "policy": ["privacy/privacy-policy.ar.md", "privacy/privacy-policy.ar.html"],
+    "appStoreLabel": "privacy/app-store-privacy-label.md",
+    "playDataSafety": "privacy/play-data-safety.md",
+    "playForegroundService": "privacy/play-foreground-service-declaration.md",
+    "playExactAlarm": "privacy/play-exact-alarm-note.md"
+  }
+}
