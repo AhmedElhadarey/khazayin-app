@@ -12,15 +12,20 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { mkdirSync, existsSync } from 'node:fs';
+import { mkdirSync, existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { buildCaptureTargets, loadScreenManifest, MASK_REGIONS } from './manifest.js';
 import { parseCliArgs, reportRun, settle } from './run.js';
 
+// Single source of truth: app.json (ios.bundleIdentifier).
+const APP_ID = JSON.parse(
+  readFileSync(new URL('../../app.json', import.meta.url), 'utf8'),
+).expo.ios.bundleIdentifier;
+
 const options = parseCliArgs(process.argv.slice(2), {
   device: 'iPhone 16',
-  bundleId: 'com.ahmed.elhadarey94.khazayinapp',
+  bundleId: APP_ID,
   node: '',
   out: '/tmp/khazayin-capture/ios',
   scheme: 'khazayinapp',

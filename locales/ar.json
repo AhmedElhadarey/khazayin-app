@@ -1,0 +1,6 @@
+{
+  "ios": {
+    "CFBundleDisplayName": "مكتبة خزائن الرحمن",
+    "NSLocationWhenInUseUsageDescription": "يستخدم التطبيق موقعك التقريبي لحساب مواقيت الصلاة في مدينتك، ولا يُرسَل إلى المؤسسة."
+  }
+}

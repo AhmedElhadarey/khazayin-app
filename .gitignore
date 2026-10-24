@@ -65,10 +65,24 @@ scripts/*
 !scripts/visual-audit/
 # The .fig decoder is source too — it is how design values get read.
 !scripts/figma/
+# Store-release tooling (copy validation, image compose, release gate) is source.
+!scripts/store/
 CLAUDE.md
 .specify
 specs/*
 .claude/*
 
+# Store-console credentials (Play service-account key). Never committed.
+secrets/
+
 # jest
 coverage/
+# Store screenshots. Raw device captures are composer inputs and never belong in
+# git. The composed slots stay drafts until the content-completeness track lands
+# (docs/store/SUBMISSION-RUNBOOK.md §8); remove these slot lines when committing
+# the final set.
+docs/store/assets/raw/
+docs/store/assets/ios-6.9/
+docs/store/assets/ipad-13/
+docs/store/assets/play-phone/
+docs/store/assets/play-tablet/

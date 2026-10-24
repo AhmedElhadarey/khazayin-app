@@ -10,7 +10,9 @@
 #
 # Usage: bash scripts/visual-audit/skip-onboarding-ios.sh
 set -e
-BID=com.ahmed.elhadarey94.khazayinapp
+# Must equal expo.ios.bundleIdentifier in app.json (read it so it cannot drift).
+APP_JSON="$(cd "$(dirname "$0")/../.." && pwd)/app.json"
+BID=$(node -p "require('$APP_JSON').expo.ios.bundleIdentifier")
 CONTAINER=$(xcrun simctl get_app_container booted "$BID" data)
 DIR="$CONTAINER/Library/Application Support/$BID/RCTAsyncLocalStorage_V1"
 KEY='@khazain/settings/v1'

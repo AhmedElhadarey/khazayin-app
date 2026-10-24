@@ -15,7 +15,7 @@
  */
 
 import { execFileSync, spawnSync } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 
@@ -27,9 +27,14 @@ import {
 } from './manifest.js';
 import { parseCliArgs, reportRun, settle } from './run.js';
 
+// Single source of truth: app.json (android.package).
+const APP_ID = JSON.parse(
+  readFileSync(new URL('../../app.json', import.meta.url), 'utf8'),
+).expo.android.package;
+
 const options = parseCliArgs(process.argv.slice(2), {
   serial: '',
-  package: 'com.ahmed.elhadarey94.khazayinapp',
+  package: APP_ID,
   node: '',
   out: '/tmp/khazayin-capture/android',
   scheme: 'khazayinapp',
