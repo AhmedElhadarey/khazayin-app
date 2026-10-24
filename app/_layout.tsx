@@ -35,6 +35,7 @@ import {
   shouldRedirectToOnboarding,
 } from '@/services/onboardingGate';
 import * as Sentry from '@sentry/react-native';
+import { applyAnonymousUser, buildSentryOptions } from '@/services/sentryOptions';
 import Animated from 'react-native-reanimated';
 
 I18nManager.allowRTL(true);
@@ -76,15 +77,10 @@ if (__DEV__ && process.env.EXPO_PUBLIC_VISUAL_AUDIT === '1') {
 // so no secret is committed; when unset, reporting is disabled and the app runs
 // normally. Captures native crashes and unhandled JS errors.
 const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN;
-Sentry.init({
-  dsn: SENTRY_DSN,
-  // Disabled in development so dev/test crashes don't pollute the production
-  // Sentry issue stream (T7.4).
-  enabled: !__DEV__ && !!SENTRY_DSN,
-  // Performance tracing: full in dev, sampled in production.
-  tracesSampleRate: __DEV__ ? 1.0 : 0.2,
-  sendDefaultPii: false,
-});
+Sentry.init(buildSentryOptions(SENTRY_DSN, __DEV__));
+// No per-install id as user.id: setUser syncs to the native scope, so native
+// crashes carry the anonymous user too (see services/sentryOptions.ts).
+applyAnonymousUser(Sentry);
 
 // Register the image-cache root with the cacheFacade so the Settings "Clear
 // Cache" action knows what to clear. Idempotent (deduped by id).
