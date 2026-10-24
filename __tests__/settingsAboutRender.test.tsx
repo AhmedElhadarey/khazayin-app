@@ -55,7 +55,7 @@ describe('settings-about', () => {
   const count = (s: string) => all.filter((t) => t === s).length;
 
   it('shows the foundation name exactly once', () => {
-    expect(count('مؤسسة خزائن الرحمن العالمية')).toBe(1);
+    expect(count('مؤسسة خزائن الرحمن العلمية')).toBe(1);
   });
   it('shows the app name exactly once', () => {
     expect(count('خزائن الرحمن')).toBe(1);

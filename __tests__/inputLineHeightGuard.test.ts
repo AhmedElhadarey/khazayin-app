@@ -137,7 +137,7 @@ describe('single-line TextInputs do not fix a line height', () => {
   });
 
   it('finds the inputs it guards', () => {
-    expect(guarded().length).toBeGreaterThanOrEqual(7);
+    expect(guarded().length).toBeGreaterThanOrEqual(6); // 7 before the fake contact form was removed
   });
 
   it('every single-line TextInput that fixes a line height releases it when text is enlarged', () => {

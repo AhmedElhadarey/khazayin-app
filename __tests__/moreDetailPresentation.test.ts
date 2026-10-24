@@ -1,15 +1,10 @@
 import { ABOUT_CARDS, ABOUT_PARAGRAPHS, ABOUT_SECTION_ORDER } from '@/data/content/about';
 import { ARCHIVE_ROWS } from '@/data/content/archive';
-import {
-  CONTACT_INCOMPLETE_ALERT,
-  CONTACT_SENT_ALERT,
-  isContactFormComplete,
-} from '@/services/contactForm';
 
 /**
  * Task 5.2 — Contact (2106:2598), About (2106:2712) and Archive (2558:1334).
  *
- * Section order, Archive destinations, and contact validation behaviour.
+ * Section order and Archive destinations.
  */
 
 describe('About screen presentation (2106:2712)', () => {
@@ -55,30 +50,5 @@ describe('Archive destinations (2558:1334)', () => {
       expect([row.id, row.subtitle.length > 0]).toEqual([row.id, true]);
       expect([row.id, row.count.length > 0]).toEqual([row.id, true]);
     });
-  });
-});
-
-describe('Contact form validation (2106:2598)', () => {
-  const full = { name: 'أحمد', email: 'a@example.com', message: 'السلام عليكم' };
-
-  it('accepts a fully filled form', () => {
-    expect(isContactFormComplete(full)).toBe(true);
-  });
-
-  it.each(['name', 'email', 'message'] as const)('rejects a missing %s', (field) => {
-    expect(isContactFormComplete({ ...full, [field]: '' })).toBe(false);
-  });
-
-  it.each(['name', 'email', 'message'] as const)(
-    'rejects a whitespace-only %s',
-    (field) => {
-      expect(isContactFormComplete({ ...full, [field]: '   \n\t' })).toBe(false);
-    },
-  );
-
-  it('keeps the Arabic alert copy', () => {
-    expect(CONTACT_INCOMPLETE_ALERT.title).toBe('البيانات ناقصة');
-    expect(CONTACT_INCOMPLETE_ALERT.body).toBe('يرجى ملء جميع الحقول.');
-    expect(CONTACT_SENT_ALERT.title).toBe('تم الإرسال');
   });
 });

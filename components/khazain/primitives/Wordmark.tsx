@@ -1,5 +1,6 @@
 import React from 'react';
 import { StyleProp, Text, TextStyle } from 'react-native';
+import { FOUNDATION_CONTACT } from '@/constants/foundationContact';
 import { KhazainColors } from '@/constants/theme';
 
 type Props = {
@@ -8,7 +9,7 @@ type Props = {
   style?: StyleProp<TextStyle>;
 };
 
-// Foundation wordmark: "مؤسسة خزائن الرحمن العالمية" in Amiri 700, centered, navy.
+// Foundation wordmark: "مؤسسة خزائن الرحمن العلمية" in Amiri 700, centered, navy.
 // Used on About and Archive screens (handoff §6).
 export function Wordmark({ size = 22, color = KhazainColors.navy900, style }: Props) {
   return (
@@ -24,7 +25,7 @@ export function Wordmark({ size = 22, color = KhazainColors.navy900, style }: Pr
         style,
       ]}
     >
-      مؤسسة خزائن الرحمن العالمية
+      {FOUNDATION_CONTACT.name}
     </Text>
   );
 }
